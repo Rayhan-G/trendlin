@@ -1,0 +1,79 @@
+{
+  "products": [
+    {
+      "id": "1",
+      "slug": "sony-wh1000xm6",
+      "name": "Sony WH-1000XM6",
+      "brand": "Sony",
+      "description": "Industry-leading noise cancellation with 40-hour battery life. Perfect for travel, work, and deep focus sessions.",
+      "fullDescription": "<p>The Sony WH-1000XM6 raises the bar for active noise cancellation. The new QN2e processor eliminates 30% more ambient noise than its predecessor. With 40-hour battery life and quick charging (3 hours of playback from a 10-minute charge), these headphones are perfect for frequent travelers.</p><h3>Key Features</h3><ul><li>Industry-leading ANC</li><li>40-hour battery life</li><li>LDAC support for high-res audio</li><li>Multipoint Bluetooth connection</li><li>Speak-to-chat technology</li></ul>",
+      "price": 399.99,
+      "compareAtPrice": 499.99,
+      "image": "https://picsum.photos/id/1/400/250",
+      "buyLink": "https://www.amazon.com/dp/example-headphones?tag=modernpress-20",
+      "featured": true,
+      "rating": 4.8,
+      "pros": [
+        "Best-in-class noise cancellation",
+        "Excellent 40-hour battery life",
+        "Super comfortable for all-day wear",
+        "Fast charging (3 hours in 10 minutes)"
+      ],
+      "cons": [
+        "Expensive at $400",
+        "No hard carrying case included",
+        "Touch controls can be finicky"
+      ]
+    },
+    {
+      "id": "2",
+      "slug": "ergoflex-chair",
+      "name": "ErgoFlex Professional Mesh Chair",
+      "brand": "ErgoFlex",
+      "description": "Ergonomic mesh chair with 4D adjustable armrests, lumbar support, and breathable mesh back. Perfect for long work sessions.",
+      "fullDescription": "<p>Back pain from sitting 8+ hours is real. The ErgoFlex Chair solves this with 8-point adjustable ergonomics. The breathable mesh keeps you cool, while the 4D armrests and adjustable lumbar support ensure perfect posture.</p><h3>Why You'll Love It</h3><ul><li>Reduces back pain within days</li><li>Breathable mesh - no more sweaty back</li><li>Fits users from 5'2\" to 6'5\"</li><li>10-year warranty for peace of mind</li></ul>",
+      "price": 399.00,
+      "compareAtPrice": 599.00,
+      "image": "https://picsum.photos/id/26/400/250",
+      "buyLink": "https://www.amazon.com/dp/example-chair?tag=modernpress-20",
+      "featured": true,
+      "rating": 4.6,
+      "pros": [
+        "Excellent lumbar support",
+        "Breathable mesh material",
+        "Fully adjustable (armrests, height, tilt)",
+        "10-year warranty"
+      ],
+      "cons": [
+        "Assembly required (30-45 minutes)",
+        "Heavy at 55 pounds",
+        "Headrest sold separately"
+      ]
+    },
+    {
+      "id": "3",
+      "slug": "macbook-pro-m3",
+      "name": "MacBook Pro 14-inch M3 Pro",
+      "brand": "Apple",
+      "description": "The ultimate laptop for creators. M3 Pro chip with 12-core CPU, 18-core GPU, and 36GB unified memory.",
+      "fullDescription": "<p>The M3 Pro chip brings desktop-class performance to a laptop. The Liquid Retina XDR display is stunning for HDR content. With 22-hour battery life, you can work anywhere without hunting for an outlet.</p><h3>Perfect For</h3><ul><li>Video editing in Final Cut Pro</li><li>3D rendering and animation</li><li>Software development</li><li>Music production</li></ul>",
+      "price": 1999.00,
+      "compareAtPrice": null,
+      "image": "https://picsum.photos/id/0/400/250",
+      "buyLink": "https://www.amazon.com/dp/example-macbook?tag=modernpress-20",
+      "featured": true,
+      "rating": 4.9,
+      "pros": [
+        "Incredible M3 Pro performance",
+        "22-hour battery life",
+        "Best-in-class XDR display",
+        "Silent operation even under load"
+      ],
+      "cons": [
+        "Very expensive base price",
+        "Limited to 3 USB-C ports",
+        "No upgradeability after purchase"
+      ]
+    }
+  ]
+}

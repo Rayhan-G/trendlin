@@ -1,0 +1,43 @@
+{
+  "posts": [
+    {
+      "id": "1",
+      "slug": "top-10-laptops-2025",
+      "title": "Top 10 Best Laptops for Creators 2025",
+      "excerpt": "Powerful performance meets stunning displays. Discover which laptops made our list this year for video editing, 3D rendering, and graphic design.",
+      "content": "<p>Creative professionals need raw power and color accuracy. After testing 20+ models, the MacBook Pro M3 and Dell XPS 17 stand out. Both offer excellent battery life and high refresh rate screens.</p><h3>Key Takeaways</h3><ul><li>Apple M3 Max: best for Final Cut Pro</li><li>Dell XPS: gorgeous OLED display</li><li>Razer Blade: gaming + creation hybrid</li></ul><p>Make sure to compare prices before buying. Always check for Thunderbolt 4 ports and at least 32GB RAM for video editing.</p>",
+      "featuredImage": "https://picsum.photos/id/0/400/250",
+      "author": "Alex Morgan",
+      "date": "April 5, 2025",
+      "category": "Technology",
+      "tags": ["laptops", "creators", "reviews"],
+      "readingTime": 5
+    },
+    {
+      "id": "2",
+      "slug": "mindfulness-guide",
+      "title": "Daily Mindfulness: A 10-Minute Guide",
+      "excerpt": "Simple practices to reduce stress and increase focus in your daily routine. No meditation experience required.",
+      "content": "<p>Mindfulness doesn't require hours of meditation. Start with deep breathing for 2 minutes each morning. Use the 5-4-3-2-1 grounding technique. Over time, you'll notice less anxiety and better decision making.</p><h3>The 5-4-3-2-1 Technique</h3><p>Notice 5 things you see, 4 things you feel, 3 things you hear, 2 things you smell, and 1 thing you taste. This brings you immediately into the present moment.</p>",
+      "featuredImage": "https://picsum.photos/id/20/400/250",
+      "author": "Jamie Lee",
+      "date": "March 28, 2025",
+      "category": "Lifestyle",
+      "tags": ["wellness", "mindfulness", "mental-health"],
+      "readingTime": 4
+    },
+    {
+      "id": "3",
+      "slug": "future-remote-work",
+      "title": "The Future of Remote Work in 2025",
+      "excerpt": "How hybrid models and AI tools are reshaping where and how we work. Experts weigh in on what's next.",
+      "content": "<p>The pandemic accelerated remote work by a decade. Now, companies are embracing permanent hybrid models. AI collaboration tools are making distributed teams more productive than ever.</p><h3>Key Trends</h3><ul><li>4-day work weeks becoming standard</li><li>AI meeting assistants</li><li>Virtual reality offices</li></ul><p>Companies that embrace flexibility will win the talent war in 2025 and beyond.</p>",
+      "featuredImage": "https://picsum.photos/id/26/400/250",
+      "author": "Sarah Chen",
+      "date": "April 1, 2025",
+      "category": "Business",
+      "tags": ["remote-work", "future", "hybrid"],
+      "readingTime": 6
+    }
+  ]
+}

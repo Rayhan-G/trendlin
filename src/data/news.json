@@ -1,0 +1,49 @@
+{
+  "articles": [
+    {
+      "id": "1",
+      "slug": "ai-breakthrough-2025",
+      "title": "New AI Model 'Nexus-1' Outperforms GPT-5",
+      "summary": "Researchers unveil a breakthrough architecture that reduces hallucination by 70% and achieves 92% accuracy on complex math problems.",
+      "content": "<p>In a surprising reveal at the AI Summit 2025, Frontier AI Lab introduced 'Nexus-1', a model that excels at multi-step reasoning and mathematical logic. Early benchmarks show 92% accuracy on complex math problems, outperforming GPT-5 by a significant margin.</p><h3>Key Innovations</h3><ul><li>Chain-of-thought verification layer</li><li>70% reduction in factual hallucinations</li><li>1 million token context window</li></ul><p>The open-source community is already integrating similar techniques into their models. This breakthrough could revolutionize content generation, customer service automation, and code generation tools.</p>",
+      "featuredImage": "https://picsum.photos/id/42/400/250",
+      "source": "TechCrunch",
+      "sourceUrl": "https://techcrunch.com/2025/04/09/nexus-ai-model",
+      "date": "April 9, 2025",
+      "category": "Technology",
+      "tags": ["AI", "machine-learning", "breakthrough"],
+      "isBreaking": true,
+      "views": 15400
+    },
+    {
+      "id": "2",
+      "slug": "solar-record-2025",
+      "title": "Solar Capacity Grows 35% in Q1 2025",
+      "summary": "Global solar installations reach 180 GW in first quarter, driven by falling panel costs and new government incentives.",
+      "content": "<p>According to IRENA's quarterly report, renewable energy investments surpassed $150 billion in Q1 2025, with solar leading the charge. Global solar capacity grew by 35% compared to the same period last year.</p><h3>Key Statistics</h3><ul><li>China added 80 GW (44% of global)</li><li>US installations up 45% due to Inflation Reduction Act</li><li>Solar panel costs dropped another 12%</li><li>Germany hit 20 GW in Q1 alone</li></ul><p>Homeowners can now save up to 40% on electricity bills with rooftop solar. Analysts predict solar will become the world's largest electricity source by 2027.</p>",
+      "featuredImage": "https://picsum.photos/id/29/400/250",
+      "source": "GreenPost",
+      "sourceUrl": "https://greenpost.com/solar-record-2025",
+      "date": "April 2, 2025",
+      "category": "Environment",
+      "tags": ["solar", "renewable-energy", "climate"],
+      "isBreaking": false,
+      "views": 5600
+    },
+    {
+      "id": "3",
+      "slug": "fed-rate-cut",
+      "title": "Federal Reserve Signals Rate Cut in June",
+      "summary": "Fed officials indicate possible 0.5% rate cut as inflation cools to 2.1%, boosting tech stocks and housing market.",
+      "content": "<p>Federal Reserve Chair Jerome Powell hinted at a June rate cut during yesterday's press conference. Inflation has fallen to 2.1%, nearing the Fed's 2% target for the first time since 2021.</p><h3>Market Reaction</h3><ul><li>S&P 500 up 2.3% on the news</li><li>Tech stocks rally (NASDAQ +3.1%)</li><li>Mortgage rates drop to 5.8%</li><li>Gold hits new all-time high</li></ul><p>Economists expect two more rate cuts before the end of 2025. This is good news for borrowers and the housing market.</p>",
+      "featuredImage": "https://picsum.photos/id/48/400/250",
+      "source": "Reuters",
+      "sourceUrl": "https://reuters.com/economy/fed-rate-cut-2025",
+      "date": "April 7, 2025",
+      "category": "Business",
+      "tags": ["economy", "federal-reserve", "interest-rates"],
+      "isBreaking": false,
+      "views": 8900
+    }
+  ]
+}
