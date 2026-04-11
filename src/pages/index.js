@@ -1,145 +1,64 @@
+import { useState, useEffect } from 'react'
 import Layout from '@/components/Layout'
-import BlogCard from '@/components/BlogCard'
-import ProductCard from '@/components/ProductCard'
-import NewsCard from '@/components/NewsCard'
+import HeroSection from '@/components/HeroSection'
+import HorizontalScroll from '@/components/HorizontalScroll'
 import blogData from '@/data/blog-posts.json'
-import productData from '@/data/products.json'
-import newsData from '@/data/news.json'
 
 export default function Home() {
-  const latestBlogs = blogData.posts.slice(0, 3)
-  const featuredProducts = productData.products.filter(p => p.featured).slice(0, 3)
-  const latestNews = newsData.articles.slice(0, 3)
+  const [todayPosts, setTodayPosts] = useState([])
+  const [popularPosts, setPopularPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const posts = blogData.posts || []
+    
+    // Get today's date
+    const today = new Date()
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+    
+    // Filter today's posts
+    const todayFiltered = posts.filter(post => 
+      post.date === todayStr || post.date === yesterdayStr
+    )
+    
+    // Most popular (by views)
+    const popularFiltered = [...posts].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 12)
+    
+    setTodayPosts(todayFiltered)
+    setPopularPosts(popularFiltered)
+    setLoading(false)
+  }, [])
+
+  const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container" style={{ textAlign: 'center', padding: '4rem' }}>Loading...</div>
+      </Layout>
+    )
+  }
 
   return (
     <Layout>
-      {/* Hero Section */}
-      <div className="hero-section">
-        <div className="container">
-          <h1 className="hero-title">
-            Smart Reviews. Fresh News. Honest Insights.
-          </h1>
-          <p className="hero-subtitle">
-            Discover hand-picked affiliate products, breaking news, and thoughtful blog posts — all in one place.
-          </p>
-        </div>
-      </div>
-
+      <HeroSection />
+      
       <div className="container">
-        {/* Latest Blog Posts Section */}
-        <section className="content-section">
-          <h2 className="section-title">📝 Latest from Blog</h2>
-          <div className="card-grid">
-            {latestBlogs.map(post => (
-              <BlogCard key={post.id} post={post} />
-            ))}
-          </div>
-          <div className="view-all-container">
-            <a href="/blog" className="btn btn-outline">View All Posts →</a>
-          </div>
-        </section>
-
-        {/* Featured Products Section */}
-        <section className="content-section">
-          <h2 className="section-title">🛍️ Featured Affiliate Products</h2>
-          <div className="card-grid">
-            {featuredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
-          <div className="view-all-container">
-            <a href="/products" className="btn btn-outline">View All Products →</a>
-          </div>
-        </section>
-
-        {/* Latest News Section */}
-        <section className="content-section">
-          <h2 className="section-title">📰 Latest News</h2>
-          <div className="card-grid">
-            {latestNews.map(article => (
-              <NewsCard key={article.id} article={article} />
-            ))}
-          </div>
-          <div className="view-all-container">
-            <a href="/news" className="btn btn-outline">View All News →</a>
-          </div>
-        </section>
+        <HorizontalScroll 
+          title="📰 Today's Posts" 
+          posts={todayPosts} 
+          showRank={false}
+        />
+        
+        <HorizontalScroll 
+          title={`🔥 Most Popular - ${currentMonth}`} 
+          posts={popularPosts} 
+          showRank={true}
+        />
       </div>
-
-      <style jsx>{`
-        .hero-section {
-          background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-          padding: 4rem 0;
-          text-align: center;
-          margin-bottom: 2rem;
-          transition: all 0.3s ease;
-        }
-        
-        /* Dark mode hero section */
-        :global(body.dark) .hero-section {
-          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-        }
-        
-        .hero-title {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-          font-weight: 800;
-          color: #111827;
-          transition: color 0.3s ease;
-        }
-        
-        :global(body.dark) .hero-title {
-          color: #ffffff;
-        }
-        
-        .hero-subtitle {
-          font-size: 1.2rem;
-          color: #6b7280;
-          max-width: 600px;
-          margin: 0 auto;
-          transition: color 0.3s ease;
-        }
-        
-        :global(body.dark) .hero-subtitle {
-          color: #cbd5e1;
-        }
-        
-        .content-section {
-          margin: 4rem 0;
-        }
-        
-        .view-all-container {
-          text-align: center;
-          margin-top: 2rem;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-          .hero-section {
-            padding: 2rem 0;
-          }
-          
-          .hero-title {
-            font-size: 1.75rem;
-            padding: 0 1rem;
-          }
-          
-          .hero-subtitle {
-            font-size: 1rem;
-            padding: 0 1rem;
-          }
-          
-          .content-section {
-            margin: 2rem 0;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .hero-title {
-            font-size: 1.5rem;
-          }
-        }
-      `}</style>
     </Layout>
   )
 }
