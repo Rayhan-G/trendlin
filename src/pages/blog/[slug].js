@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
-import blogData from '@/data/blog-posts.json'
-import { trackPostView } from '@/utils/popularityTracker'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
-export default function SingleBlog({ post }) {
+export default function BlogPost({ post, notFound }) {
   const [copied, setCopied] = useState(false)
 
-  useEffect(() => {
-    if (post?.id) {
-      trackPostView(post.id)
-    }
-  }, [post])
-
-  if (!post) return <Layout><div>Post not found</div></Layout>
+  if (notFound || !post) {
+    return (
+      <Layout>
+        <div className="not-found">
+          <h1>Post not found</h1>
+          <p>The article you're looking for doesn't exist.</p>
+        </div>
+      </Layout>
+    )
+  }
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
   const shareTitle = encodeURIComponent(post.title)
@@ -36,23 +38,21 @@ export default function SingleBlog({ post }) {
   return (
     <Layout>
       <article>
-        {/* Hero Image */}
         <div className="hero">
-          <img src={post.featured_image} alt={post.title} />
+          <img src={post.featured_image || '/images/placeholder.jpg'} alt={post.title} />
           <div className="hero-gradient"></div>
         </div>
 
-        {/* Content */}
         <div className="container">
           <div className="content">
             <div className="category">{post.category}</div>
             <h1>{post.title}</h1>
             <div className="meta">
-              <span className="author">By {post.author}</span>
-              <span className="date">{post.date}</span>
+              <span className="author">{post.author}</span>
+              <span className="dot">•</span>
+              <span className="date">{new Date(post.created_at || post.date).toLocaleDateString()}</span>
             </div>
 
-            {/* Share Section - Floating Design */}
             <div className="share-wrapper">
               <div className="share-label">
                 <span>Share</span>
@@ -94,7 +94,6 @@ export default function SingleBlog({ post }) {
               </div>
             </div>
 
-            {/* Article Body */}
             <div className="article-body" dangerouslySetInnerHTML={{ __html: post.content }} />
           </div>
         </div>
@@ -110,7 +109,6 @@ export default function SingleBlog({ post }) {
           background: #000000;
         }
         
-        /* Hero Section */
         .hero {
           position: relative;
           height: 55vh;
@@ -137,14 +135,12 @@ export default function SingleBlog({ post }) {
           background: linear-gradient(to top, #000000, transparent);
         }
         
-        /* Container */
         .container {
           max-width: 750px;
           margin: 0 auto;
           padding: 0 1.25rem;
         }
         
-        /* Content */
         .content {
           margin-top: -2rem;
           position: relative;
@@ -187,13 +183,11 @@ export default function SingleBlog({ post }) {
           border-bottom-color: #1f2937;
         }
         
-        /* Share Wrapper - Elegant Design */
         .share-wrapper {
           margin: 2rem 0;
           padding: 1.5rem;
           background: #f9fafb;
           border-radius: 24px;
-          transition: all 0.3s;
         }
         
         :global(body.dark) .share-wrapper {
@@ -241,7 +235,7 @@ export default function SingleBlog({ post }) {
           background: #ffffff;
           border: 1px solid #e5e7eb;
           cursor: pointer;
-          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: all 0.25s ease;
         }
         
         :global(body.dark) .share-icon {
@@ -260,87 +254,24 @@ export default function SingleBlog({ post }) {
           color: #4b5563;
         }
         
-        :global(body.dark) .share-icon svg {
-          color: #9ca3af;
-        }
-        
         .share-icon:hover {
           transform: translateY(-3px);
         }
         
-        .share-icon.twitter:hover {
-          background: #000000;
-          border-color: #000000;
-        }
-        .share-icon.twitter:hover img {
-          filter: brightness(0) invert(1);
-        }
+        .share-icon.twitter:hover { background: #000000; border-color: #000000; }
+        .share-icon.twitter:hover img { filter: brightness(0) invert(1); }
+        .share-icon.facebook:hover { background: #1877f2; border-color: #1877f2; }
+        .share-icon.facebook:hover img { filter: brightness(0) invert(1); }
+        .share-icon.linkedin:hover { background: #0a66c2; border-color: #0a66c2; }
+        .share-icon.whatsapp:hover { background: #25d366; border-color: #25d366; }
+        .share-icon.telegram:hover { background: #26a5e4; border-color: #26a5e4; }
+        .share-icon.reddit:hover { background: #ff4500; border-color: #ff4500; }
+        .share-icon.email:hover { background: #ea4335; border-color: #ea4335; }
+        .share-icon.copy:hover { background: #10b981; border-color: #10b981; }
+        .share-icon.copy:hover svg { color: white; }
+        .share-icon.copy.copied { background: #10b981; border-color: #10b981; }
+        .share-icon.copy.copied svg { color: white; }
         
-        .share-icon.facebook:hover {
-          background: #1877f2;
-          border-color: #1877f2;
-        }
-        .share-icon.facebook:hover img {
-          filter: brightness(0) invert(1);
-        }
-        
-        .share-icon.linkedin:hover {
-          background: #0a66c2;
-          border-color: #0a66c2;
-        }
-        .share-icon.linkedin:hover img {
-          filter: brightness(0) invert(1);
-        }
-        
-        .share-icon.whatsapp:hover {
-          background: #25d366;
-          border-color: #25d366;
-        }
-        .share-icon.whatsapp:hover img {
-          filter: brightness(0) invert(1);
-        }
-        
-        .share-icon.telegram:hover {
-          background: #26a5e4;
-          border-color: #26a5e4;
-        }
-        .share-icon.telegram:hover img {
-          filter: brightness(0) invert(1);
-        }
-        
-        .share-icon.reddit:hover {
-          background: #ff4500;
-          border-color: #ff4500;
-        }
-        .share-icon.reddit:hover img {
-          filter: brightness(0) invert(1);
-        }
-        
-        .share-icon.email:hover {
-          background: #ea4335;
-          border-color: #ea4335;
-        }
-        .share-icon.email:hover img {
-          filter: brightness(0) invert(1);
-        }
-        
-        .share-icon.copy:hover {
-          background: #10b981;
-          border-color: #10b981;
-        }
-        .share-icon.copy:hover svg {
-          color: white;
-        }
-        
-        .share-icon.copy.copied {
-          background: #10b981;
-          border-color: #10b981;
-        }
-        .share-icon.copy.copied svg {
-          color: white;
-        }
-        
-        /* Article Body */
         .article-body {
           font-size: 1rem;
           line-height: 1.75;
@@ -351,74 +282,22 @@ export default function SingleBlog({ post }) {
           color: #d1d5db;
         }
         
-        .article-body :global(p) {
-          margin-bottom: 1.5rem;
+        .not-found {
+          text-align: center;
+          padding: 4rem 1.5rem;
         }
         
-        .article-body :global(h2) {
-          font-size: 1.5rem;
-          margin: 2rem 0 1rem;
-          color: #111827;
-        }
-        
-        :global(body.dark) .article-body :global(h2) {
-          color: #f9fafb;
-        }
-        
-        .article-body :global(h3) {
-          font-size: 1.25rem;
-          margin: 1.5rem 0 0.75rem;
-          color: #111827;
-        }
-        
-        :global(body.dark) .article-body :global(h3) {
-          color: #f9fafb;
-        }
-        
-        /* Tablet */
         @media (min-width: 768px) {
-          .hero {
-            height: 60vh;
-          }
-          
-          h1 {
-            font-size: 2.5rem;
-          }
-          
-          .share-icons {
-            gap: 1rem;
-          }
-          
-          .share-icon {
-            width: 48px;
-            height: 48px;
-          }
-          
-          .share-icon img,
-          .share-icon svg {
-            width: 22px;
-            height: 22px;
-          }
+          .hero { height: 60vh; }
+          h1 { font-size: 2.5rem; }
+          .share-icon { width: 48px; height: 48px; }
         }
         
-        /* Desktop */
         @media (min-width: 1024px) {
-          .hero {
-            height: 65vh;
-          }
-          
-          h1 {
-            font-size: 3rem;
-          }
-          
-          .share-wrapper {
-            padding: 2rem;
-          }
-          
-          .share-icon {
-            width: 52px;
-            height: 52px;
-          }
+          .hero { height: 65vh; }
+          h1 { font-size: 3rem; }
+          .share-wrapper { padding: 2rem; }
+          .share-icon { width: 52px; height: 52px; }
         }
       `}</style>
     </Layout>
@@ -426,12 +305,38 @@ export default function SingleBlog({ post }) {
 }
 
 export async function getStaticPaths() {
-  const posts = blogData.posts || []
-  const paths = posts.map(post => ({ params: { slug: post.slug } }))
-  return { paths, fallback: false }
+  if (!isSupabaseConfigured()) {
+    return { paths: [], fallback: true }
+  }
+  
+  const { data: posts } = await supabase
+    .from('posts')
+    .select('slug')
+  
+  const paths = posts?.map((post) => ({
+    params: { slug: post.slug }
+  })) || []
+  
+  return { paths, fallback: true }
 }
 
 export async function getStaticProps({ params }) {
-  const post = blogData.posts.find(p => p.slug === params.slug)
-  return { props: { post: post || null } }
+  if (!isSupabaseConfigured()) {
+    return { props: { notFound: true } }
+  }
+  
+  const { data: post, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('slug', params.slug)
+    .single()
+  
+  if (error || !post) {
+    return { props: { notFound: true }, revalidate: 60 }
+  }
+  
+  return {
+    props: { post },
+    revalidate: 3600
+  }
 }
