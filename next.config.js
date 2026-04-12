@@ -1,12 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  swcMinify: true,
   images: {
-    domains: ['picsum.photos', 'via.placeholder.com'],
-    unoptimized: true,
+    domains: ['res.cloudinary.com', 'images.unsplash.com'],
   },
-  // Allow static export if needed
-  output: 'standalone',
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production',
+  },
 }
 
 module.exports = nextConfig

@@ -13,14 +13,15 @@ export default function Navbar() {
 
   // Categories configuration
   const categories = [
-    { name: "Health", icon: "🌿", href: "/category/health" },
-    { name: "Wealth", icon: "💰", href: "/category/wealth" },
-    { name: "Tech", icon: "⚡", href: "/category/tech" },
-    { name: "Growth", icon: "🌱", href: "/category/growth" },
-    { name: "Entertainment", icon: "🎬", href: "/category/entertainment" },
-    { name: "World", icon: "🌍", href: "/category/world" },
-    { name: "Lifestyle", icon: "✨", href: "/category/lifestyle" }
-  ]
+  { name: "Health", icon: "🌿", href: "/category/health" },
+  { name: "Wealth", icon: "💰", href: "/category/wealth" },
+  { name: "Tech", icon: "⚡", href: "/category/tech" },
+  { name: "Growth", icon: "🌱", href: "/category/growth" },
+  { name: "Entertainment", icon: "🎬", href: "/category/entertainment" },
+  { name: "World", icon: "🌍", href: "/category/world" },
+  { name: "Lifestyle", icon: "✨", href: "/category/lifestyle" }
+]
+
 
   // Initialize theme on mount
   useEffect(() => {
