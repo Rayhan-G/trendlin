@@ -23,7 +23,7 @@ export default function Footer() {
     },
     { 
       name: 'Facebook', 
-      href: 'https://facebook.com/trendlin', 
+      href: 'https://www.facebook.com/trendlinsocial', 
       brandClass: 'facebook',
       icon: (props) => (
         <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
