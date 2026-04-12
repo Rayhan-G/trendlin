@@ -13,7 +13,7 @@ export default function Footer() {
   const socialLinks = [
     { 
       name: 'X', 
-      href: 'https://x.com/trendlin', 
+      href: 'https://x.com/trendlinsocial', 
       brandClass: 'x',
       icon: (props) => (
         <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
@@ -33,7 +33,7 @@ export default function Footer() {
     },
     { 
       name: 'Instagram', 
-      href: 'https://instagram.com/trendlin', 
+      href: 'https://www.instagram.com/trendlinsocial/', 
       brandClass: 'instagram',
       icon: (props) => (
         <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
