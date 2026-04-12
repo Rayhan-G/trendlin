@@ -15,7 +15,6 @@ export default function Navbar() {
   const exploreRef = useRef(null)
   const buttonRef = useRef(null)
 
-  // Categories configuration
   const categories = [
     { name: "Health", icon: "🌿", href: "/category/health" },
     { name: "Wealth", icon: "💰", href: "/category/wealth" },
@@ -26,7 +25,7 @@ export default function Navbar() {
     { name: "Lifestyle", icon: "✨", href: "/category/lifestyle" }
   ]
 
-  // Initialize theme on mount
+  // Initialize theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
@@ -37,30 +36,29 @@ export default function Navbar() {
     }
   }, [])
 
-  // Check admin status on mount
+  // Check admin session
   useEffect(() => {
-    checkAdminStatus()
-  }, [])
-
-  const checkAdminStatus = () => {
-    const isLoggedIn = localStorage.getItem('admin_logged_in')
-    const loginTime = localStorage.getItem('admin_login_time')
-    
-    if (isLoggedIn === 'true' && loginTime) {
-      const timeSinceLogin = Date.now() - parseInt(loginTime)
-      const twentyFourHours = 24 * 60 * 60 * 1000
+    const checkAdminSession = () => {
+      const sessionToken = localStorage.getItem('admin_session_token')
+      const sessionExpiry = localStorage.getItem('admin_session_expiry')
       
-      if (timeSinceLogin < twentyFourHours) {
-        setIsAdmin(true)
+      if (sessionToken && sessionExpiry) {
+        const now = Date.now()
+        if (now < parseInt(sessionExpiry)) {
+          setIsAdmin(true)
+        } else {
+          // Session expired
+          localStorage.removeItem('admin_session_token')
+          localStorage.removeItem('admin_session_expiry')
+          setIsAdmin(false)
+        }
       } else {
-        localStorage.removeItem('admin_logged_in')
-        localStorage.removeItem('admin_login_time')
         setIsAdmin(false)
       }
-    } else {
-      setIsAdmin(false)
     }
-  }
+    
+    checkAdminSession()
+  }, [])
 
   const handleAdminLogin = async (e) => {
     e.preventDefault()
@@ -77,15 +75,21 @@ export default function Navbar() {
       const data = await res.json()
 
       if (data.success) {
-        localStorage.setItem('admin_logged_in', 'true')
-        localStorage.setItem('admin_login_time', Date.now().toString())
+        // Store session
+        const expiry = Date.now() + (data.expiresIn || 24 * 60 * 60 * 1000)
+        localStorage.setItem('admin_session_token', data.token)
+        localStorage.setItem('admin_session_expiry', expiry.toString())
         setIsAdmin(true)
         setShowAdminModal(false)
         setAdminPassword('')
+        
+        // Optional: Refresh page to show admin UI
+        router.reload()
       } else {
-        setPasswordError('Invalid password')
+        setPasswordError(data.error || 'Invalid password')
       }
     } catch (error) {
+      console.error('Login error:', error)
       setPasswordError('Network error. Please try again.')
     } finally {
       setPasswordLoading(false)
@@ -93,9 +97,10 @@ export default function Navbar() {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_logged_in')
-    localStorage.removeItem('admin_login_time')
+    localStorage.removeItem('admin_session_token')
+    localStorage.removeItem('admin_session_expiry')
     setIsAdmin(false)
+    router.reload()
   }
 
   // Handle scroll effect
@@ -146,7 +151,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`navbar-premium ${scrolled ? 'scrolled' : ''}`} aria-label="Main navigation">
+      <nav className={`navbar-premium ${scrolled ? 'scrolled' : ''}`}>
         <div className="container">
           <div className="nav-wrapper">
             <Link href="/" className="logo">
@@ -155,10 +160,10 @@ export default function Navbar() {
             </Link>
 
             <div className="nav-actions">
-              {/* Admin Buttons - Only show when logged in */}
+              {/* Admin Icons - Only when logged in */}
               {isAdmin && (
                 <>
-                  <Link href="/admin" className="admin-link" title="Admin Dashboard">
+                  <Link href="/admin" className="admin-link" title="Dashboard">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <rect x="3" y="3" width="18" height="18" rx="2" />
                       <path d="M8 7h8M8 12h6M8 17h4" strokeLinecap="round"/>
@@ -182,7 +187,7 @@ export default function Navbar() {
                 </>
               )}
 
-              {/* Subtle Admin Access Icon - Always visible */}
+              {/* Admin Access Icon - Always visible */}
               <button
                 onClick={() => setShowAdminModal(true)}
                 className="admin-access-icon"
@@ -195,11 +200,7 @@ export default function Navbar() {
               </button>
 
               {/* Theme Toggle */}
-              <button
-                onClick={toggleDarkMode}
-                className="theme-toggle"
-                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
+              <button onClick={toggleDarkMode} className="theme-toggle">
                 {darkMode ? '☀️' : '🌙'}
               </button>
 
@@ -209,7 +210,6 @@ export default function Navbar() {
                   ref={buttonRef}
                   onClick={() => setExploreOpen(!exploreOpen)}
                   className={`explore-trigger ${exploreOpen ? 'active' : ''}`}
-                  aria-expanded={exploreOpen}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -218,23 +218,15 @@ export default function Navbar() {
                     <rect x="14" y="14" width="7" height="7" rx="1" />
                   </svg>
                   <span>Explore</span>
-                  <svg 
-                    width="10" 
-                    height="10" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2"
-                    className={`arrow ${exploreOpen ? 'rotate' : ''}`}
-                  >
+                  <svg className={`arrow ${exploreOpen ? 'rotate' : ''}`} width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="6 9 12 15 18 9" />
                   </svg>
                 </button>
 
                 {exploreOpen && (
-                  <div className="explore-dropdown" role="menu">
+                  <div className="explore-dropdown">
                     <div className="dropdown-header">
-                      <span className="dropdown-title">Browse categories</span>
+                      <span>Browse categories</span>
                     </div>
                     <div className="dropdown-items">
                       {categories.map((category) => (
@@ -276,6 +268,7 @@ export default function Navbar() {
                   onChange={(e) => setAdminPassword(e.target.value)}
                   autoFocus
                   className="password-input"
+                  disabled={passwordLoading}
                 />
                 {passwordError && <div className="error-message">{passwordError}</div>}
               </div>
@@ -312,18 +305,11 @@ export default function Navbar() {
         .navbar-premium.scrolled {
           background: rgba(255, 255, 255, 0.98);
           box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-          border-bottom-color: rgba(0, 0, 0, 0.08);
         }
         
         :global(body.dark) .navbar-premium {
           background: rgba(10, 10, 15, 0.96);
           border-bottom-color: rgba(255, 255, 255, 0.06);
-        }
-        
-        :global(body.dark) .navbar-premium.scrolled {
-          background: rgba(10, 10, 15, 0.98);
-          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-          border-bottom-color: rgba(255, 255, 255, 0.08);
         }
         
         .nav-wrapper {
@@ -333,7 +319,6 @@ export default function Navbar() {
           height: 64px;
         }
         
-        /* Logo */
         .logo {
           display: flex;
           align-items: baseline;
@@ -347,7 +332,6 @@ export default function Navbar() {
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
-          letter-spacing: -0.02em;
         }
         
         .logo-dot {
@@ -366,21 +350,12 @@ export default function Navbar() {
           color: transparent;
         }
         
-        :global(body.dark) .logo-dot {
-          background: linear-gradient(135deg, #fb7185 0%, #f43f5e 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-        }
-        
-        /* Actions */
         .nav-actions {
           display: flex;
           align-items: center;
           gap: 8px;
         }
         
-        /* Admin Links - Small and Subtle */
         .admin-link {
           display: flex;
           align-items: center;
@@ -403,15 +378,6 @@ export default function Navbar() {
           color: #ef4444;
         }
         
-        :global(body.dark) .admin-link {
-          color: #94a3b8;
-        }
-        
-        :global(body.dark) .admin-link:hover {
-          background: rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Subtle Admin Access Icon */
         .admin-access-icon {
           display: flex;
           align-items: center;
@@ -432,11 +398,6 @@ export default function Navbar() {
           color: #667eea;
         }
         
-        :global(body.dark) .admin-access-icon {
-          color: #64748b;
-        }
-        
-        /* Theme Toggle */
         .theme-toggle {
           display: flex;
           align-items: center;
@@ -448,21 +409,6 @@ export default function Navbar() {
           border-radius: 6px;
           cursor: pointer;
           font-size: 1rem;
-          transition: all 0.2s ease;
-        }
-        
-        :global(body.dark) .theme-toggle {
-          border-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        .theme-toggle:hover {
-          background: rgba(0, 0, 0, 0.04);
-          border-color: rgba(0, 0, 0, 0.15);
-        }
-        
-        /* Explore Trigger */
-        .dropdown-wrapper {
-          position: relative;
         }
         
         .explore-trigger {
@@ -477,15 +423,9 @@ export default function Navbar() {
           font-weight: 500;
           color: white;
           cursor: pointer;
-          transition: all 0.2s ease;
         }
         
         :global(body.dark) .explore-trigger {
-          background: #2a2a2a;
-          color: #f4f4f5;
-        }
-        
-        .explore-trigger:hover {
           background: #2a2a2a;
         }
         
@@ -501,14 +441,17 @@ export default function Navbar() {
           transform: rotate(180deg);
         }
         
-        /* Dropdown Menu */
+        .dropdown-wrapper {
+          position: relative;
+        }
+        
         .explore-dropdown {
           position: absolute;
           top: 100%;
           right: 0;
           margin-top: 8px;
           min-width: 220px;
-          background: #ffffff;
+          background: white;
           border-radius: 8px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           overflow: hidden;
@@ -517,20 +460,14 @@ export default function Navbar() {
         
         :global(body.dark) .explore-dropdown {
           background: #1a1a1f;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .dropdown-header {
           padding: 10px 14px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-          background: rgba(0, 0, 0, 0.02);
-        }
-        
-        .dropdown-title {
           font-size: 0.65rem;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
           color: #71717a;
         }
         
@@ -575,7 +512,6 @@ export default function Navbar() {
           font-size: 0.75rem;
           color: #a1a1aa;
           opacity: 0;
-          transition: opacity 0.15s ease;
         }
         
         .dropdown-item:hover .item-arrow {
@@ -627,11 +563,6 @@ export default function Navbar() {
           gap: 10px;
           padding: 1rem 1.25rem;
           border-bottom: 1px solid #e2e8f0;
-          position: relative;
-        }
-        
-        :global(body.dark) .modal-header {
-          border-bottom-color: #334155;
         }
         
         .modal-icon {
@@ -651,18 +582,12 @@ export default function Navbar() {
           font-size: 1.5rem;
           cursor: pointer;
           color: #94a3b8;
-          padding: 0;
           width: 28px;
           height: 28px;
           display: flex;
           align-items: center;
           justify-content: center;
           border-radius: 4px;
-        }
-        
-        .modal-close:hover {
-          background: #f1f5f9;
-          color: #1e293b;
         }
         
         .modal-body {
@@ -703,10 +628,6 @@ export default function Navbar() {
           justify-content: flex-end;
         }
         
-        :global(body.dark) .modal-footer {
-          border-top-color: #334155;
-        }
-        
         .cancel-btn {
           padding: 8px 16px;
           background: #f1f5f9;
@@ -731,7 +652,6 @@ export default function Navbar() {
           cursor: not-allowed;
         }
         
-        /* Mobile Responsive */
         @media (max-width: 768px) {
           .container {
             padding: 0 16px;

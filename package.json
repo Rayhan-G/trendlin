@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Modern affiliate product, blog, and news platform built with Next.js",
   "private": true,
-  
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,6 +13,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
+    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "dotenv": "^17.4.1",
     "framer-motion": "^12.38.0",
