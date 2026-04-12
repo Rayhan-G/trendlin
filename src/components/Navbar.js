@@ -8,20 +8,23 @@ export default function Navbar() {
   const [exploreOpen, setExploreOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [showAdminModal, setShowAdminModal] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
   const exploreRef = useRef(null)
   const buttonRef = useRef(null)
 
   // Categories configuration
   const categories = [
-  { name: "Health", icon: "🌿", href: "/category/health" },
-  { name: "Wealth", icon: "💰", href: "/category/wealth" },
-  { name: "Tech", icon: "⚡", href: "/category/tech" },
-  { name: "Growth", icon: "🌱", href: "/category/growth" },
-  { name: "Entertainment", icon: "🎬", href: "/category/entertainment" },
-  { name: "World", icon: "🌍", href: "/category/world" },
-  { name: "Lifestyle", icon: "✨", href: "/category/lifestyle" }
-]
-
+    { name: "Health", icon: "🌿", href: "/category/health" },
+    { name: "Wealth", icon: "💰", href: "/category/wealth" },
+    { name: "Tech", icon: "⚡", href: "/category/tech" },
+    { name: "Growth", icon: "🌱", href: "/category/growth" },
+    { name: "Entertainment", icon: "🎬", href: "/category/entertainment" },
+    { name: "World", icon: "🌍", href: "/category/world" },
+    { name: "Lifestyle", icon: "✨", href: "/category/lifestyle" }
+  ]
 
   // Initialize theme on mount
   useEffect(() => {
@@ -34,39 +37,66 @@ export default function Navbar() {
     }
   }, [])
 
-  // Check admin status - checks both development mode and localStorage
+  // Check admin status on mount
   useEffect(() => {
-    const checkAdminStatus = () => {
-      // Development mode - always show admin buttons
-      if (process.env.NODE_ENV === 'development') {
-        setIsAdmin(true)
-        return
-      }
-      
-      // Production - check localStorage for admin login
-      const isLoggedIn = localStorage.getItem('admin_logged_in')
-      const loginTime = localStorage.getItem('admin_login_time')
-      
-      // Check if login exists and is not expired (24 hours)
-      if (isLoggedIn === 'true' && loginTime) {
-        const timeSinceLogin = Date.now() - parseInt(loginTime)
-        const twentyFourHours = 24 * 60 * 60 * 1000
-        
-        if (timeSinceLogin < twentyFourHours) {
-          setIsAdmin(true)
-        } else {
-          // Clear expired session
-          localStorage.removeItem('admin_logged_in')
-          localStorage.removeItem('admin_login_time')
-          setIsAdmin(false)
-        }
-      } else {
-        setIsAdmin(false)
-      }
-    }
-    
     checkAdminStatus()
   }, [])
+
+  const checkAdminStatus = () => {
+    const isLoggedIn = localStorage.getItem('admin_logged_in')
+    const loginTime = localStorage.getItem('admin_login_time')
+    
+    if (isLoggedIn === 'true' && loginTime) {
+      const timeSinceLogin = Date.now() - parseInt(loginTime)
+      const twentyFourHours = 24 * 60 * 60 * 1000
+      
+      if (timeSinceLogin < twentyFourHours) {
+        setIsAdmin(true)
+      } else {
+        localStorage.removeItem('admin_logged_in')
+        localStorage.removeItem('admin_login_time')
+        setIsAdmin(false)
+      }
+    } else {
+      setIsAdmin(false)
+    }
+  }
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault()
+    setPasswordLoading(true)
+    setPasswordError('')
+
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        localStorage.setItem('admin_logged_in', 'true')
+        localStorage.setItem('admin_login_time', Date.now().toString())
+        setIsAdmin(true)
+        setShowAdminModal(false)
+        setAdminPassword('')
+      } else {
+        setPasswordError('Invalid password')
+      }
+    } catch (error) {
+      setPasswordError('Network error. Please try again.')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_logged_in')
+    localStorage.removeItem('admin_login_time')
+    setIsAdmin(false)
+  }
 
   // Handle scroll effect
   useEffect(() => {
@@ -91,7 +121,10 @@ export default function Navbar() {
   // Handle escape key
   useEffect(() => {
     const handleEscape = (event) => {
-      if (event.key === 'Escape') setExploreOpen(false)
+      if (event.key === 'Escape') {
+        setExploreOpen(false)
+        setShowAdminModal(false)
+      }
     }
     
     document.addEventListener('keydown', handleEscape)
@@ -111,13 +144,6 @@ export default function Navbar() {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('admin_logged_in')
-    localStorage.removeItem('admin_login_time')
-    setIsAdmin(false)
-    router.push('/')
-  }
-
   return (
     <>
       <nav className={`navbar-premium ${scrolled ? 'scrolled' : ''}`} aria-label="Main navigation">
@@ -132,31 +158,41 @@ export default function Navbar() {
               {/* Admin Buttons - Only show when logged in */}
               {isAdmin && (
                 <>
-                  {/* Write Button - Create new post */}
-                  <Link href="/admin/create" className="write-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <Link href="/admin" className="admin-link" title="Admin Dashboard">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <path d="M8 7h8M8 12h6M8 17h4" strokeLinecap="round"/>
+                    </svg>
+                  </Link>
+                  <Link href="/admin/create" className="admin-link" title="Write Post">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
                     </svg>
-                    <span>Write</span>
                   </Link>
-
-                  {/* Upload Button - Upload images */}
-                  <Link href="/upload" className="upload-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <Link href="/upload" className="admin-link" title="Upload Media">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M12 3v12m0 0-3-3m3 3 3-3M5 21h14" strokeLinecap="round"/>
                     </svg>
-                    <span>Upload</span>
                   </Link>
-
-                  {/* Logout Button */}
-                  <button onClick={handleLogout} className="logout-btn">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <button onClick={handleLogout} className="admin-link logout" title="Logout">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l4-4-4-4M16 8V4m0 9h4" strokeLinecap="round"/>
                     </svg>
-                    <span>Logout</span>
                   </button>
                 </>
               )}
+
+              {/* Subtle Admin Access Icon - Always visible */}
+              <button
+                onClick={() => setShowAdminModal(true)}
+                className="admin-access-icon"
+                title="Admin Access"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M5 20v-2a7 7 0 0 1 14 0v2" />
+                </svg>
+              </button>
 
               {/* Theme Toggle */}
               <button
@@ -175,7 +211,7 @@ export default function Navbar() {
                   className={`explore-trigger ${exploreOpen ? 'active' : ''}`}
                   aria-expanded={exploreOpen}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <rect x="3" y="3" width="7" height="7" rx="1" />
                     <rect x="14" y="3" width="7" height="7" rx="1" />
                     <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -183,8 +219,8 @@ export default function Navbar() {
                   </svg>
                   <span>Explore</span>
                   <svg 
-                    width="12" 
-                    height="12" 
+                    width="10" 
+                    height="10" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     stroke="currentColor" 
@@ -221,6 +257,40 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      {/* Admin Password Modal */}
+      {showAdminModal && (
+        <div className="modal-overlay" onClick={() => setShowAdminModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-icon">🔐</span>
+              <h3>Admin Access</h3>
+              <button className="modal-close" onClick={() => setShowAdminModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleAdminLogin}>
+              <div className="modal-body">
+                <input
+                  type="password"
+                  placeholder="Enter admin password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  autoFocus
+                  className="password-input"
+                />
+                {passwordError && <div className="error-message">{passwordError}</div>}
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setShowAdminModal(false)} className="cancel-btn">
+                  Cancel
+                </button>
+                <button type="submit" disabled={passwordLoading} className="submit-btn">
+                  {passwordLoading ? 'Verifying...' : 'Access Admin'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .container {
@@ -307,78 +377,63 @@ export default function Navbar() {
         .nav-actions {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
         }
         
-        /* Write Button */
-        .write-btn {
+        /* Admin Links - Small and Subtle */
+        .admin-link {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 6px 14px;
-          background: #3b82f6;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
           border-radius: 6px;
-          font-size: 0.85rem;
-          font-weight: 500;
-          color: white;
-          text-decoration: none;
+          color: #64748b;
           transition: all 0.2s ease;
+          opacity: 0.6;
         }
         
-        .write-btn:hover {
-          background: #2563eb;
+        .admin-link:hover {
+          background: rgba(0, 0, 0, 0.05);
+          color: #3b82f6;
+          opacity: 1;
         }
         
-        /* Upload Button */
-        .upload-btn {
+        .admin-link.logout:hover {
+          color: #ef4444;
+        }
+        
+        :global(body.dark) .admin-link {
+          color: #94a3b8;
+        }
+        
+        :global(body.dark) .admin-link:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Subtle Admin Access Icon */
+        .admin-access-icon {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 6px 14px;
-          background: #10b981;
-          border-radius: 6px;
-          font-size: 0.85rem;
-          font-weight: 500;
-          color: white;
-          text-decoration: none;
-          transition: all 0.2s ease;
-        }
-        
-        .upload-btn:hover {
-          background: #059669;
-        }
-        
-        /* Logout Button */
-        .logout-btn {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px 14px;
-          background: #ef4444;
-          border-radius: 6px;
-          font-size: 0.85rem;
-          font-weight: 500;
-          color: white;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 4px;
+          background: transparent;
           border: none;
           cursor: pointer;
+          color: #94a3b8;
+          opacity: 0.3;
           transition: all 0.2s ease;
         }
         
-        .logout-btn:hover {
-          background: #dc2626;
+        .admin-access-icon:hover {
+          opacity: 0.7;
+          color: #667eea;
         }
         
-        /* Dark mode adjustments */
-        :global(body.dark) .write-btn {
-          background: #3b82f6;
-        }
-        
-        :global(body.dark) .upload-btn {
-          background: #059669;
-        }
-        
-        :global(body.dark) .logout-btn {
-          background: #dc2626;
+        :global(body.dark) .admin-access-icon {
+          color: #64748b;
         }
         
         /* Theme Toggle */
@@ -386,13 +441,13 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
           background: transparent;
           border: 1px solid rgba(0, 0, 0, 0.08);
           border-radius: 6px;
           cursor: pointer;
-          font-size: 1.1rem;
+          font-size: 1rem;
           transition: all 0.2s ease;
         }
         
@@ -405,11 +460,6 @@ export default function Navbar() {
           border-color: rgba(0, 0, 0, 0.15);
         }
         
-        :global(body.dark) .theme-toggle:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(255, 255, 255, 0.2);
-        }
-        
         /* Explore Trigger */
         .dropdown-wrapper {
           position: relative;
@@ -418,12 +468,12 @@ export default function Navbar() {
         .explore-trigger {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 6px 16px;
+          gap: 6px;
+          padding: 6px 14px;
           background: #1a1a1a;
           border: none;
           border-radius: 6px;
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           font-weight: 500;
           color: white;
           cursor: pointer;
@@ -437,10 +487,6 @@ export default function Navbar() {
         
         .explore-trigger:hover {
           background: #2a2a2a;
-        }
-        
-        :global(body.dark) .explore-trigger:hover {
-          background: #3a3a3a;
         }
         
         .explore-trigger.active {
@@ -461,7 +507,7 @@ export default function Navbar() {
           top: 100%;
           right: 0;
           margin-top: 8px;
-          min-width: 240px;
+          min-width: 220px;
           background: #ffffff;
           border-radius: 8px;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -475,18 +521,13 @@ export default function Navbar() {
         }
         
         .dropdown-header {
-          padding: 12px 16px;
+          padding: 10px 14px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.06);
           background: rgba(0, 0, 0, 0.02);
         }
         
-        :global(body.dark) .dropdown-header {
-          border-bottom-color: rgba(255, 255, 255, 0.06);
-          background: rgba(255, 255, 255, 0.02);
-        }
-        
         .dropdown-title {
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -503,8 +544,8 @@ export default function Navbar() {
         .dropdown-item {
           display: flex;
           align-items: center;
-          gap: 12px;
-          padding: 10px 12px;
+          gap: 10px;
+          padding: 8px 12px;
           border-radius: 6px;
           text-decoration: none;
           transition: all 0.15s ease;
@@ -514,17 +555,13 @@ export default function Navbar() {
           background: rgba(0, 0, 0, 0.04);
         }
         
-        :global(body.dark) .dropdown-item:hover {
-          background: rgba(255, 255, 255, 0.06);
-        }
-        
         .item-icon {
-          font-size: 1.1rem;
-          width: 24px;
+          font-size: 1rem;
+          width: 22px;
         }
         
         .item-name {
-          font-size: 0.85rem;
+          font-size: 0.8rem;
           font-weight: 500;
           color: #27272a;
           flex: 1;
@@ -535,7 +572,7 @@ export default function Navbar() {
         }
         
         .item-arrow {
-          font-size: 0.8rem;
+          font-size: 0.75rem;
           color: #a1a1aa;
           opacity: 0;
           transition: opacity 0.15s ease;
@@ -545,88 +582,172 @@ export default function Navbar() {
           opacity: 1;
         }
         
-        /* ==================== */
-        /* MOBILE OPTIMIZATIONS */
-        /* ==================== */
+        /* Modal Styles */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
         
+        .modal-content {
+          background: white;
+          border-radius: 12px;
+          width: 90%;
+          max-width: 400px;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          animation: modalFadeIn 0.2s ease;
+        }
+        
+        @keyframes modalFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        :global(body.dark) .modal-content {
+          background: #1e293b;
+        }
+        
+        .modal-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 1rem 1.25rem;
+          border-bottom: 1px solid #e2e8f0;
+          position: relative;
+        }
+        
+        :global(body.dark) .modal-header {
+          border-bottom-color: #334155;
+        }
+        
+        .modal-icon {
+          font-size: 1.25rem;
+        }
+        
+        .modal-header h3 {
+          font-size: 1rem;
+          font-weight: 600;
+          margin: 0;
+          flex: 1;
+        }
+        
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+          color: #94a3b8;
+          padding: 0;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+        }
+        
+        .modal-close:hover {
+          background: #f1f5f9;
+          color: #1e293b;
+        }
+        
+        .modal-body {
+          padding: 1.25rem;
+        }
+        
+        .password-input {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 0.9rem;
+        }
+        
+        :global(body.dark) .password-input {
+          background: #0f172a;
+          border-color: #334155;
+          color: white;
+        }
+        
+        .password-input:focus {
+          outline: none;
+          border-color: #667eea;
+          box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .error-message {
+          margin-top: 0.75rem;
+          color: #ef4444;
+          font-size: 0.75rem;
+        }
+        
+        .modal-footer {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          border-top: 1px solid #e2e8f0;
+          justify-content: flex-end;
+        }
+        
+        :global(body.dark) .modal-footer {
+          border-top-color: #334155;
+        }
+        
+        .cancel-btn {
+          padding: 8px 16px;
+          background: #f1f5f9;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.85rem;
+        }
+        
+        .submit-btn {
+          padding: 8px 16px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.85rem;
+        }
+        
+        .submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        
+        /* Mobile Responsive */
         @media (max-width: 768px) {
           .container {
-            padding: 0 12px;
+            padding: 0 16px;
           }
           
-          .nav-wrapper {
-            height: 56px;
-          }
-          
-          /* Touch-friendly button sizes */
-          .write-btn,
-          .upload-btn,
-          .logout-btn,
-          .theme-toggle,
-          .explore-trigger {
-            min-height: 40px;
-            min-width: 40px;
-          }
-          
-          /* Hide text labels on mobile */
-          .write-btn span,
-          .upload-btn span,
-          .logout-btn span,
-          .explore-trigger span {
-            display: none;
-          }
-          
-          /* Show only icons */
-          .write-btn,
-          .upload-btn,
-          .logout-btn {
-            padding: 8px 10px;
-          }
-          
-          /* Smaller logo */
           .logo-text,
           .logo-dot {
             font-size: 1.2rem;
           }
           
-          /* Full-width dropdown on mobile */
-          .explore-dropdown {
-            position: fixed;
-            top: 56px;
-            left: 0;
-            right: 0;
-            width: 100%;
-            border-radius: 0;
-            margin-top: 0;
-            max-height: 80vh;
-            overflow-y: auto;
+          .explore-trigger span {
+            display: none;
           }
           
-          /* Larger touch targets for dropdown items */
-          .dropdown-item {
-            padding: 14px 16px;
-          }
-          
-          .item-icon {
-            font-size: 1.3rem;
-            width: 32px;
-          }
-          
-          .item-name {
-            font-size: 1rem;
-          }
-        }
-        
-        /* Small phones (under 480px) */
-        @media (max-width: 480px) {
-          .write-btn,
-          .upload-btn,
-          .logout-btn {
-            padding: 6px 8px;
-          }
-          
-          .nav-actions {
-            gap: 6px;
+          .explore-trigger {
+            padding: 6px 10px;
           }
         }
       `}</style>
