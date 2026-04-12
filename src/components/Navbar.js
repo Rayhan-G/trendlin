@@ -7,6 +7,7 @@ export default function Navbar() {
   const [darkMode, setDarkMode] = useState(false)
   const [exploreOpen, setExploreOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const exploreRef = useRef(null)
   const buttonRef = useRef(null)
 
@@ -30,6 +31,40 @@ export default function Navbar() {
       setDarkMode(true)
       document.body.classList.add('dark')
     }
+  }, [])
+
+  // Check admin status - checks both development mode and localStorage
+  useEffect(() => {
+    const checkAdminStatus = () => {
+      // Development mode - always show admin buttons
+      if (process.env.NODE_ENV === 'development') {
+        setIsAdmin(true)
+        return
+      }
+      
+      // Production - check localStorage for admin login
+      const isLoggedIn = localStorage.getItem('admin_logged_in')
+      const loginTime = localStorage.getItem('admin_login_time')
+      
+      // Check if login exists and is not expired (24 hours)
+      if (isLoggedIn === 'true' && loginTime) {
+        const timeSinceLogin = Date.now() - parseInt(loginTime)
+        const twentyFourHours = 24 * 60 * 60 * 1000
+        
+        if (timeSinceLogin < twentyFourHours) {
+          setIsAdmin(true)
+        } else {
+          // Clear expired session
+          localStorage.removeItem('admin_logged_in')
+          localStorage.removeItem('admin_login_time')
+          setIsAdmin(false)
+        }
+      } else {
+        setIsAdmin(false)
+      }
+    }
+    
+    checkAdminStatus()
   }, [])
 
   // Handle scroll effect
@@ -75,6 +110,13 @@ export default function Navbar() {
     }
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('admin_logged_in')
+    localStorage.removeItem('admin_login_time')
+    setIsAdmin(false)
+    router.push('/')
+  }
+
   return (
     <>
       <nav className={`navbar-premium ${scrolled ? 'scrolled' : ''}`} aria-label="Main navigation">
@@ -86,6 +128,35 @@ export default function Navbar() {
             </Link>
 
             <div className="nav-actions">
+              {/* Admin Buttons - Only show when logged in */}
+              {isAdmin && (
+                <>
+                  {/* Write Button - Create new post */}
+                  <Link href="/admin/create" className="write-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" strokeLinecap="round"/>
+                    </svg>
+                    <span>Write</span>
+                  </Link>
+
+                  {/* Upload Button - Upload images */}
+                  <Link href="/upload" className="upload-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 3v12m0 0-3-3m3 3 3-3M5 21h14" strokeLinecap="round"/>
+                    </svg>
+                    <span>Upload</span>
+                  </Link>
+
+                  {/* Logout Button */}
+                  <button onClick={handleLogout} className="logout-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l4-4-4-4M16 8V4m0 9h4" strokeLinecap="round"/>
+                    </svg>
+                    <span>Logout</span>
+                  </button>
+                </>
+              )}
+
               {/* Theme Toggle */}
               <button
                 onClick={toggleDarkMode}
@@ -103,16 +174,16 @@ export default function Navbar() {
                   className={`explore-trigger ${exploreOpen ? 'active' : ''}`}
                   aria-expanded={exploreOpen}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                    <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                    <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
                   </svg>
                   <span>Explore</span>
                   <svg 
-                    width="14" 
-                    height="14" 
+                    width="12" 
+                    height="12" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     stroke="currentColor" 
@@ -164,12 +235,12 @@ export default function Navbar() {
           background: rgba(255, 255, 255, 0.96);
           backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.3s ease;
         }
         
         .navbar-premium.scrolled {
           background: rgba(255, 255, 255, 0.98);
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
           border-bottom-color: rgba(0, 0, 0, 0.08);
         }
         
@@ -180,7 +251,7 @@ export default function Navbar() {
         
         :global(body.dark) .navbar-premium.scrolled {
           background: rgba(10, 10, 15, 0.98);
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
           border-bottom-color: rgba(255, 255, 255, 0.08);
         }
         
@@ -188,7 +259,7 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          height: 72px;
+          height: 64px;
         }
         
         /* Logo */
@@ -196,11 +267,10 @@ export default function Navbar() {
           display: flex;
           align-items: baseline;
           text-decoration: none;
-          transition: all 0.3s ease;
         }
         
         .logo-text {
-          font-size: 1.75rem;
+          font-size: 1.5rem;
           font-weight: 700;
           background: linear-gradient(135deg, #1a1a1a 0%, #3a3a3a 100%);
           -webkit-background-clip: text;
@@ -210,7 +280,7 @@ export default function Navbar() {
         }
         
         .logo-dot {
-          font-size: 1.75rem;
+          font-size: 1.5rem;
           font-weight: 700;
           background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
           -webkit-background-clip: text;
@@ -232,16 +302,82 @@ export default function Navbar() {
           color: transparent;
         }
         
-        .logo:hover {
-          opacity: 0.85;
-          transform: scale(0.98);
-        }
-        
         /* Actions */
         .nav-actions {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
+        }
+        
+        /* Write Button */
+        .write-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          background: #3b82f6;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: white;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+        
+        .write-btn:hover {
+          background: #2563eb;
+        }
+        
+        /* Upload Button */
+        .upload-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          background: #10b981;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: white;
+          text-decoration: none;
+          transition: all 0.2s ease;
+        }
+        
+        .upload-btn:hover {
+          background: #059669;
+        }
+        
+        /* Logout Button */
+        .logout-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 14px;
+          background: #ef4444;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          font-weight: 500;
+          color: white;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        
+        .logout-btn:hover {
+          background: #dc2626;
+        }
+        
+        /* Dark mode adjustments */
+        :global(body.dark) .write-btn {
+          background: #3b82f6;
+        }
+        
+        :global(body.dark) .upload-btn {
+          background: #059669;
+        }
+        
+        :global(body.dark) .logout-btn {
+          background: #dc2626;
         }
         
         /* Theme Toggle */
@@ -249,14 +385,14 @@ export default function Navbar() {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 42px;
-          height: 42px;
+          width: 36px;
+          height: 36px;
           background: transparent;
           border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 50%;
+          border-radius: 6px;
           cursor: pointer;
-          font-size: 1.2rem;
-          transition: all 0.3s ease;
+          font-size: 1.1rem;
+          transition: all 0.2s ease;
         }
         
         :global(body.dark) .theme-toggle {
@@ -265,7 +401,6 @@ export default function Navbar() {
         
         .theme-toggle:hover {
           background: rgba(0, 0, 0, 0.04);
-          transform: scale(1.05);
           border-color: rgba(0, 0, 0, 0.15);
         }
         
@@ -282,47 +417,37 @@ export default function Navbar() {
         .explore-trigger {
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 10px 24px;
-          background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+          gap: 8px;
+          padding: 6px 16px;
+          background: #1a1a1a;
           border: none;
-          border-radius: 40px;
-          font-size: 0.9rem;
+          border-radius: 6px;
+          font-size: 0.85rem;
           font-weight: 500;
           color: white;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          transition: all 0.2s ease;
         }
         
         :global(body.dark) .explore-trigger {
-          background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+          background: #2a2a2a;
           color: #f4f4f5;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         
         .explore-trigger:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-          background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+          background: #2a2a2a;
         }
         
         :global(body.dark) .explore-trigger:hover {
-          background: linear-gradient(135deg, #3a3a3a 0%, #2a2a2a 100%);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-        
-        .explore-trigger:active {
-          transform: translateY(0);
+          background: #3a3a3a;
         }
         
         .explore-trigger.active {
-          background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
-          box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
+          background: #e11d48;
         }
         
         .arrow {
-          transition: transform 0.3s ease;
+          transition: transform 0.2s ease;
         }
         
         .arrow.rotate {
@@ -334,34 +459,22 @@ export default function Navbar() {
           position: absolute;
           top: 100%;
           right: 0;
-          margin-top: 16px;
-          min-width: 280px;
+          margin-top: 8px;
+          min-width: 240px;
           background: #ffffff;
-          border-radius: 20px;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.02);
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           overflow: hidden;
-          animation: dropdownFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
           z-index: 1000;
-        }
-        
-        @keyframes dropdownFade {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
         
         :global(body.dark) .explore-dropdown {
           background: #1a1a1f;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .dropdown-header {
-          padding: 16px 20px;
+          padding: 12px 16px;
           border-bottom: 1px solid rgba(0, 0, 0, 0.06);
           background: rgba(0, 0, 0, 0.02);
         }
@@ -375,34 +488,29 @@ export default function Navbar() {
           font-size: 0.7rem;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.08em;
-          color: #71717a;
-        }
-        
-        :global(body.dark) .dropdown-title {
+          letter-spacing: 0.5px;
           color: #71717a;
         }
         
         .dropdown-items {
           display: flex;
           flex-direction: column;
-          padding: 8px;
-          gap: 4px;
+          padding: 4px;
+          gap: 2px;
         }
         
         .dropdown-item {
           display: flex;
           align-items: center;
-          gap: 14px;
-          padding: 12px 16px;
-          border-radius: 14px;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 6px;
           text-decoration: none;
-          transition: all 0.25s ease;
+          transition: all 0.15s ease;
         }
         
         .dropdown-item:hover {
           background: rgba(0, 0, 0, 0.04);
-          transform: translateX(4px);
         }
         
         :global(body.dark) .dropdown-item:hover {
@@ -410,12 +518,12 @@ export default function Navbar() {
         }
         
         .item-icon {
-          font-size: 1.2rem;
-          width: 28px;
+          font-size: 1.1rem;
+          width: 24px;
         }
         
         .item-name {
-          font-size: 0.9rem;
+          font-size: 0.85rem;
           font-weight: 500;
           color: #27272a;
           flex: 1;
@@ -426,61 +534,98 @@ export default function Navbar() {
         }
         
         .item-arrow {
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           color: #a1a1aa;
           opacity: 0;
-          transform: translateX(-8px);
-          transition: all 0.25s ease;
+          transition: opacity 0.15s ease;
         }
         
         .dropdown-item:hover .item-arrow {
           opacity: 1;
-          transform: translateX(0);
-          color: #e11d48;
         }
         
-        :global(body.dark) .dropdown-item:hover .item-arrow {
-          color: #fb7185;
-        }
+        /* ==================== */
+        /* MOBILE OPTIMIZATIONS */
+        /* ==================== */
         
-        /* Mobile Responsive */
         @media (max-width: 768px) {
           .container {
-            padding: 0 20px;
+            padding: 0 12px;
           }
           
-          .logo-text,
-          .logo-dot {
-            font-size: 1.4rem;
+          .nav-wrapper {
+            height: 56px;
           }
           
+          /* Touch-friendly button sizes */
+          .write-btn,
+          .upload-btn,
+          .logout-btn,
+          .theme-toggle,
+          .explore-trigger {
+            min-height: 40px;
+            min-width: 40px;
+          }
+          
+          /* Hide text labels on mobile */
+          .write-btn span,
+          .upload-btn span,
+          .logout-btn span,
           .explore-trigger span {
             display: none;
           }
           
-          .explore-trigger {
-            padding: 10px 14px;
+          /* Show only icons */
+          .write-btn,
+          .upload-btn,
+          .logout-btn {
+            padding: 8px 10px;
           }
           
-          .explore-dropdown {
-            min-width: 240px;
-            right: -10px;
-          }
-        }
-        
-        @media (max-width: 480px) {
+          /* Smaller logo */
           .logo-text,
           .logo-dot {
             font-size: 1.2rem;
           }
           
-          .theme-toggle {
-            width: 38px;
-            height: 38px;
+          /* Full-width dropdown on mobile */
+          .explore-dropdown {
+            position: fixed;
+            top: 56px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            border-radius: 0;
+            margin-top: 0;
+            max-height: 80vh;
+            overflow-y: auto;
           }
           
-          .explore-trigger {
-            padding: 8px 12px;
+          /* Larger touch targets for dropdown items */
+          .dropdown-item {
+            padding: 14px 16px;
+          }
+          
+          .item-icon {
+            font-size: 1.3rem;
+            width: 32px;
+          }
+          
+          .item-name {
+            font-size: 1rem;
+          }
+        }
+        
+        /* Small phones (under 480px) */
+        @media (max-width: 480px) {
+          .write-btn,
+          .upload-btn,
+          .logout-btn {
+            padding: 6px 8px;
+          }
+          
+          .nav-actions {
+            gap: 6px;
           }
         }
       `}</style>

@@ -3,27 +3,45 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
 export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabaseAnonKey && supabaseUrl !== 'your_supabase_project_url')
+  return !!(supabaseUrl && supabaseAnonKey)
 }
 
-export const supabase = isSupabaseConfigured() 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
-
-export async function getPostBySlug(slug) {
-  if (!supabase) return null
+// Get all published posts
+export async function getPublishedPosts() {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('published', true)
+    .order('created_at', { ascending: false })
   
+  if (error) return []
+  return data || []
+}
+
+// Get post by slug
+export async function getPostBySlug(slug) {
   const { data, error } = await supabase
     .from('posts')
     .select('*')
     .eq('slug', slug)
+    .eq('published', true)
     .single()
   
-  if (error) {
-    console.error('Error fetching post:', error)
-    return null
-  }
+  if (error) return null
+  return data
+}
+
+// Create new post (admin only)
+export async function createPost(postData) {
+  const { data, error } = await supabase
+    .from('posts')
+    .insert([postData])
+    .select()
+    .single()
   
+  if (error) throw error
   return data
 }
