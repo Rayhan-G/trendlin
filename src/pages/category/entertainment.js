@@ -14,10 +14,7 @@ export default function EntertainmentCategory() {
   const [sortBy, setSortBy] = useState('newest')
   const [visibleCount, setVisibleCount] = useState(15)
   const [isSortOpen, setIsSortOpen] = useState(false)
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const [searchSuggestions, setSearchSuggestions] = useState([])
   const sortRef = useRef(null)
-  const searchRef = useRef(null)
 
   // Close sort dropdown when clicking outside
   useEffect(() => {
@@ -30,21 +27,6 @@ export default function EntertainmentCategory() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Search suggestions
-  useEffect(() => {
-    if (searchTerm.length > 1) {
-      const suggestions = categoryPosts
-        .filter(post => 
-          post.title.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        .slice(0, 5)
-        .map(post => post.title)
-      setSearchSuggestions(suggestions)
-    } else {
-      setSearchSuggestions([])
-    }
-  }, [searchTerm, categoryPosts])
-
   let filteredPosts = [...categoryPosts]
 
   // Search filter
@@ -54,7 +36,7 @@ export default function EntertainmentCategory() {
     )
   }
 
-  // Date filter - FIXED: No calendar icon showing date
+  // Date filter
   const now = new Date()
   if (dateFilter === 'week') {
     const weekAgo = new Date()
@@ -95,10 +77,9 @@ export default function EntertainmentCategory() {
 
   return (
     <Layout>
-      {/* Hero Section - Enhanced Dark Mode */}
+      {/* Hero Section */}
       <div className="hero">
         <div className="hero-bg"></div>
-        <div className="hero-overlay"></div>
         <div className="container hero-container">
           <div className="hero-content">
             <div className="hero-badge">
@@ -129,46 +110,25 @@ export default function EntertainmentCategory() {
         </div>
       </div>
 
-      {/* Filter Bar - Premium Design */}
+      {/* Filter Bar */}
       <div className="filter-bar">
         <div className="container">
           <div className="filter-row">
-            {/* Premium Search with Suggestions */}
-            <div className="search-wrapper" ref={searchRef}>
+            {/* Search */}
+            <div className="search-wrapper">
               <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="M21 21L16.65 16.65"/>
               </svg>
               <input 
                 type="text" 
-                placeholder="Search articles, topics, or keywords..." 
+                placeholder="Search entertainment..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
                 className="search-input"
               />
               {searchTerm && (
                 <button className="search-clear" onClick={() => setSearchTerm('')}>✕</button>
-              )}
-              
-              {/* Search Suggestions */}
-              {isSearchFocused && searchSuggestions.length > 0 && (
-                <div className="search-suggestions">
-                  {searchSuggestions.map((suggestion, index) => (
-                    <button 
-                      key={index}
-                      className="suggestion-item"
-                      onClick={() => setSearchTerm(suggestion)}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8"/>
-                        <path d="M21 21L16.65 16.65"/>
-                      </svg>
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
               )}
             </div>
 
@@ -218,7 +178,7 @@ export default function EntertainmentCategory() {
               )}
             </div>
 
-            {/* Date Filter Tabs - No calendar icon showing date */}
+            {/* Date Filter Tabs */}
             <div className="date-tabs">
               <button 
                 className={`date-tab ${dateFilter === 'all' ? 'active' : ''}`}
@@ -297,12 +257,14 @@ export default function EntertainmentCategory() {
           </div>
         ) : (
           <>
+            {/* RESPONSIVE GRID */}
             <div className="posts-grid">
               {visiblePosts.map(post => (
                 <PostCard key={post.id} post={post} />
               ))}
             </div>
 
+            {/* LOAD MORE BUTTON */}
             {hasMore && (
               <div className="load-more">
                 <button onClick={loadMore} className="load-more-btn">
@@ -318,16 +280,12 @@ export default function EntertainmentCategory() {
       </div>
 
       <style jsx>{`
-        /* Hero Section - Enhanced Dark Mode */
+        /* Hero Section */
         .hero {
           position: relative;
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           padding: 5rem 0 4rem;
           overflow: hidden;
-        }
-        
-        :global(body.dark) .hero {
-          background: linear-gradient(135deg, #1e1b4b 0%, #2e1065 100%);
         }
         
         .hero-bg {
@@ -336,17 +294,8 @@ export default function EntertainmentCategory() {
           right: -20%;
           width: 60%;
           height: 150%;
-          background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
           border-radius: 50%;
-        }
-        
-        .hero-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(135deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.2) 100%);
         }
         
         .hero-container { position: relative; z-index: 2; }
@@ -365,10 +314,6 @@ export default function EntertainmentCategory() {
           font-size: 0.8rem;
           font-weight: 500;
           letter-spacing: 1px;
-        }
-        
-        :global(body.dark) .hero-badge span {
-          background: rgba(255,255,255,0.15);
         }
         
         .hero-title {
@@ -407,15 +352,12 @@ export default function EntertainmentCategory() {
         .stat strong { font-size: 1.5rem; font-weight: 700; }
         .stat span { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* Filter Bar - Enhanced Dark Mode */
+        /* Filter Bar */
         .filter-bar {
           background: white;
           border-bottom: 1px solid #eef2f6;
           padding: 1rem 0;
           margin-bottom: 1rem;
-          position: sticky;
-          top: 0;
-          z-index: 100;
         }
         
         :global(body.dark) .filter-bar {
@@ -430,11 +372,11 @@ export default function EntertainmentCategory() {
           flex-wrap: wrap;
         }
         
-        /* Premium Search with Suggestions */
+        /* Search */
         .search-wrapper {
           position: relative;
           flex: 2;
-          min-width: 260px;
+          min-width: 220px;
         }
         
         .search-icon {
@@ -443,7 +385,6 @@ export default function EntertainmentCategory() {
           top: 50%;
           transform: translateY(-50%);
           color: #94a3b8;
-          pointer-events: none;
         }
         
         .search-input {
@@ -459,18 +400,13 @@ export default function EntertainmentCategory() {
         :global(body.dark) .search-input {
           background: #1e293b;
           border-color: #334155;
-          color: #f1f5f9;
+          color: white;
         }
         
         .search-input:focus {
           outline: none;
           border-color: #764ba2;
           box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
-        }
-        
-        :global(body.dark) .search-input:focus {
-          border-color: #a78bfa;
-          box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
         }
         
         .search-clear {
@@ -482,53 +418,6 @@ export default function EntertainmentCategory() {
           border: none;
           cursor: pointer;
           color: #94a3b8;
-          font-size: 1rem;
-        }
-        
-        /* Search Suggestions */
-        .search-suggestions {
-          position: absolute;
-          top: calc(100% + 8px);
-          left: 0;
-          right: 0;
-          background: white;
-          border: 1px solid #e2e8f0;
-          border-radius: 16px;
-          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-          overflow: hidden;
-          z-index: 30;
-        }
-        
-        :global(body.dark) .search-suggestions {
-          background: #1e293b;
-          border-color: #334155;
-        }
-        
-        .suggestion-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          padding: 0.75rem 1rem;
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-size: 0.85rem;
-          text-align: left;
-          transition: all 0.2s;
-          color: #334155;
-        }
-        
-        :global(body.dark) .suggestion-item {
-          color: #cbd5e1;
-        }
-        
-        .suggestion-item:hover {
-          background: #f1f5f9;
-        }
-        
-        :global(body.dark) .suggestion-item:hover {
-          background: #334155;
         }
         
         /* Sort Dropdown */
@@ -554,15 +443,11 @@ export default function EntertainmentCategory() {
         :global(body.dark) .sort-trigger {
           background: #1e293b;
           border-color: #334155;
-          color: #f1f5f9;
+          color: white;
         }
         
         .sort-trigger:hover {
           border-color: #764ba2;
-        }
-        
-        :global(body.dark) .sort-trigger:hover {
-          border-color: #a78bfa;
         }
         
         .sort-icon { font-size: 0.9rem; }
@@ -606,11 +491,6 @@ export default function EntertainmentCategory() {
           font-size: 0.85rem;
           text-align: left;
           transition: background 0.2s;
-          color: #334155;
-        }
-        
-        :global(body.dark) .sort-item {
-          color: #cbd5e1;
         }
         
         .sort-item:hover {
@@ -631,7 +511,7 @@ export default function EntertainmentCategory() {
           color: #a78bfa;
         }
         
-        /* Date Tabs - FIXED: No calendar icon showing date */
+        /* Date Tabs */
         .date-tabs {
           display: flex;
           gap: 0.5rem;
@@ -669,7 +549,6 @@ export default function EntertainmentCategory() {
         :global(body.dark) .date-tab.active {
           background: #0f172a;
           color: #a78bfa;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
         /* Active Filters */
@@ -707,7 +586,6 @@ export default function EntertainmentCategory() {
           border: none;
           cursor: pointer;
           color: inherit;
-          font-size: 0.9rem;
         }
         
         .clear-all {
@@ -717,11 +595,6 @@ export default function EntertainmentCategory() {
           cursor: pointer;
           font-size: 0.75rem;
           padding: 0.4rem 0.8rem;
-          font-weight: 500;
-        }
-        
-        :global(body.dark) .clear-all {
-          color: #a78bfa;
         }
         
         /* Results */
@@ -738,11 +611,11 @@ export default function EntertainmentCategory() {
           color: #64748b;
         }
         
-        :global(body.dark) .results-count {
-          color: #94a3b8;
-        }
+        /* ============================================ */
+        /* RESPONSIVE GRID */
+        /* ============================================ */
         
-        /* Responsive Grid */
+        /* DESKTOP: 5 COLUMNS */
         .posts-grid {
           display: grid;
           grid-template-columns: repeat(5, 1fr);
@@ -750,6 +623,7 @@ export default function EntertainmentCategory() {
           padding-bottom: 2rem;
         }
         
+        /* TABLET: 3 COLUMNS */
         @media (max-width: 1024px) {
           .posts-grid {
             grid-template-columns: repeat(3, 1fr);
@@ -757,6 +631,7 @@ export default function EntertainmentCategory() {
           }
         }
         
+        /* MOBILE: 3 COLUMNS */
         @media (max-width: 768px) {
           .posts-grid {
             grid-template-columns: repeat(3, 1fr);
@@ -788,6 +663,7 @@ export default function EntertainmentCategory() {
           }
         }
         
+        /* SMALL MOBILE: 2 COLUMNS */
         @media (max-width: 550px) {
           .posts-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -795,6 +671,7 @@ export default function EntertainmentCategory() {
           }
         }
         
+        /* EXTRA SMALL: 1 COLUMN */
         @media (max-width: 380px) {
           .posts-grid {
             grid-template-columns: 1fr;
@@ -835,20 +712,13 @@ export default function EntertainmentCategory() {
           transform: translateY(-2px);
         }
         
-        :global(body.dark) .load-more-btn:hover {
-          background: #a78bfa;
-          border-color: #a78bfa;
-          color: #0f172a;
-        }
-        
-        /* Empty State - Enhanced Dark Mode */
+        /* Empty State */
         .empty {
           text-align: center;
           padding: 4rem 2rem;
           background: #f8fafc;
           border-radius: 24px;
           margin: 2rem 0;
-          transition: all 0.3s ease;
         }
         
         :global(body.dark) .empty {
@@ -856,50 +726,10 @@ export default function EntertainmentCategory() {
         }
         
         .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
-        .empty h3 { 
-          font-size: 1.2rem; 
-          margin-bottom: 0.5rem; 
-          color: #0f172a;
-          transition: color 0.3s ease;
-        }
-        
-        :global(body.dark) .empty h3 { 
-          color: #f1f5f9;
-        }
-        
-        .empty p { 
-          color: #64748b; 
-          margin-bottom: 1.5rem;
-          transition: color 0.3s ease;
-        }
-        
-        :global(body.dark) .empty p { 
-          color: #94a3b8;
-        }
-        
-        .empty-btn { 
-          padding: 0.6rem 1.5rem; 
-          background: #764ba2; 
-          color: white; 
-          border: none; 
-          border-radius: 40px; 
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .empty-btn:hover {
-          background: #5b3a82;
-          transform: translateY(-2px);
-        }
-        
-        :global(body.dark) .empty-btn {
-          background: #a78bfa;
-          color: #0f172a;
-        }
-        
-        :global(body.dark) .empty-btn:hover {
-          background: #c4b5fd;
-        }
+        .empty h3 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #0f172a; }
+        :global(body.dark) .empty h3 { color: #f1f5f9; }
+        .empty p { color: #64748b; margin-bottom: 1.5rem; }
+        .empty-btn { padding: 0.6rem 1.5rem; background: #764ba2; color: white; border: none; border-radius: 40px; cursor: pointer; }
         
         @media (min-width: 1024px) {
           .hero-title {
