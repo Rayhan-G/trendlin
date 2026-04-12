@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '@/lib/supabase'
-import AdminLayout from '@/components/AdminLayout'
-import Link from 'next/link'
+import Layout from '@/components/Layout'
 
 export default function AdminPosts() {
+  const router = useRouter()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [deleting, setDeleting] = useState(null)
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('admin_logged_in')
-    if (!isLoggedIn) {
-      router.push('/admin/login')
-      return
-    }
+    checkAuth()
     fetchPosts()
   }, [])
+
+  const checkAuth = () => {
+    const isLoggedIn = localStorage.getItem('admin_logged_in')
+    const sessionToken = localStorage.getItem('admin_session_token')
+    
+    if (!isLoggedIn && !sessionToken) {
+      router.push('/')
+    }
+  }
 
   const fetchPosts = async () => {
     const { data } = await supabase
@@ -28,211 +33,252 @@ export default function AdminPosts() {
     setLoading(false)
   }
 
-  const deletePost = async (id) => {
-    if (confirm('Delete this post permanently?')) {
-      await supabase.from('posts').delete().eq('id', id)
-      await fetchPosts()
+  const deletePost = async (id, title) => {
+    // Confirm deletion
+    const confirm = window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)
+    
+    if (!confirm) return
+    
+    setDeleting(id)
+    
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      // Remove from UI
+      setPosts(posts.filter(post => post.id !== id))
+      alert('Post deleted successfully!')
+      
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert('Failed to delete post. Please try again.')
+    } finally {
+      setDeleting(null)
     }
   }
 
-  if (loading) return <AdminLayout title="Posts"><div>Loading...</div></AdminLayout>
+  if (loading) {
+    return (
+      <Layout>
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
+      </Layout>
+    )
+  }
 
   return (
-    <AdminLayout title="All Posts">
-      <div className="posts-page">
-        <div className="page-header">
-          <h1>All Posts</h1>
-          <Link href="/admin/create" className="new-post-btn">
-            + New Post
-          </Link>
+    <Layout>
+      <div className="container">
+        <div className="header">
+          <h1>Manage Posts ({posts.length})</h1>
+          <button onClick={() => router.push('/admin/create')} className="create-btn">
+            + Create New Post
+          </button>
         </div>
 
         {posts.length === 0 ? (
           <div className="empty-state">
-            <span className="empty-icon">📝</span>
-            <h3>No posts yet</h3>
-            <p>Create your first blog post</p>
-            <Link href="/admin/create" className="create-first-btn">Create Post</Link>
+            <p>No posts yet. Create your first post!</p>
           </div>
         ) : (
-          <div className="posts-grid">
-            {posts.map(post => (
-              <div key={post.id} className="post-card">
-                {post.image_url && (
-                  <div className="post-image">
-                    <img src={post.image_url} alt={post.title} />
-                  </div>
-                )}
-                <div className="post-content">
-                  <div className="post-category">{post.category}</div>
-                  <h3>{post.title}</h3>
-                  <p>{post.excerpt?.substring(0, 100)}...</p>
-                  <div className="post-meta">
-                    <span>📅 {new Date(post.created_at).toLocaleDateString()}</span>
-                    <span>👁️ {post.views || 0}</span>
-                  </div>
-                  <div className="post-actions">
-                    <a href={`/blog/${post.slug}`} target="_blank" className="action-view">View</a>
-                    <button onClick={() => deletePost(post.id)} className="action-delete">Delete</button>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="posts-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th>Views</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {posts.map((post) => (
+                  <tr key={post.id}>
+                    <td>
+                      <a href={`/blog/${post.slug}`} target="_blank" className="post-title">
+                        {post.title}
+                      </a>
+                    </td>
+                    <td>
+                      <span className="category-badge">{post.category}</span>
+                    </td>
+                    <td>{post.views || 0}</td>
+                    <td>{new Date(post.created_at).toLocaleDateString()}</td>
+                    <td className="actions">
+                      <button
+                        onClick={() => router.push(`/admin/edit/${post.id}`)}
+                        className="edit-btn"
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => deletePost(post.id, post.title)}
+                        disabled={deleting === post.id}
+                        className="delete-btn"
+                        title="Delete"
+                      >
+                        {deleting === post.id ? '...' : '🗑️'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
 
       <style jsx>{`
-        .posts-page {
+        .container {
           max-width: 1200px;
           margin: 0 auto;
+          padding: 2rem;
         }
         
-        .page-header {
+        .header {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-bottom: 2rem;
         }
         
-        .page-header h1 {
+        .header h1 {
           font-size: 1.5rem;
-          font-weight: 700;
         }
         
-        .new-post-btn {
+        .create-btn {
           padding: 0.5rem 1rem;
           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
           color: white;
-          text-decoration: none;
-          border-radius: 8px;
-          font-size: 0.85rem;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
         }
         
-        .posts-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-          gap: 1.5rem;
-        }
-        
-        .post-card {
+        .posts-table {
           background: white;
           border-radius: 12px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-          transition: transform 0.2s;
+          overflow-x: auto;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
-        .post-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-        
-        :global(body.dark) .post-card {
+        :global(body.dark) .posts-table {
           background: #1e293b;
         }
         
-        .post-image {
-          height: 180px;
-          overflow: hidden;
-        }
-        
-        .post-image img {
+        table {
           width: 100%;
-          height: 100%;
-          object-fit: cover;
+          border-collapse: collapse;
         }
         
-        .post-content {
+        th, td {
           padding: 1rem;
+          text-align: left;
+          border-bottom: 1px solid #e2e8f0;
         }
         
-        .post-category {
+        :global(body.dark) th,
+        :global(body.dark) td {
+          border-bottom-color: #334155;
+        }
+        
+        th {
+          font-weight: 600;
+          color: #475569;
+        }
+        
+        .post-title {
+          color: #3b82f6;
+          text-decoration: none;
+          font-weight: 500;
+        }
+        
+        .post-title:hover {
+          text-decoration: underline;
+        }
+        
+        .category-badge {
           display: inline-block;
           padding: 0.25rem 0.5rem;
           background: #f1f5f9;
           border-radius: 4px;
-          font-size: 0.7rem;
-          text-transform: capitalize;
-          margin-bottom: 0.5rem;
-        }
-        
-        .post-content h3 {
-          font-size: 1rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        .post-content p {
-          font-size: 0.85rem;
-          color: #64748b;
-          margin-bottom: 0.5rem;
-        }
-        
-        .post-meta {
-          display: flex;
-          gap: 1rem;
           font-size: 0.75rem;
-          color: #64748b;
-          margin-bottom: 1rem;
+          text-transform: capitalize;
         }
         
-        .post-actions {
+        :global(body.dark) .category-badge {
+          background: #334155;
+          color: #e2e8f0;
+        }
+        
+        .actions {
           display: flex;
           gap: 0.5rem;
         }
         
-        .action-view {
-          padding: 0.25rem 0.75rem;
-          background: #3b82f6;
-          color: white;
-          text-decoration: none;
-          border-radius: 4px;
-          font-size: 0.75rem;
-        }
-        
-        .action-delete {
-          padding: 0.25rem 0.75rem;
-          background: #ef4444;
-          color: white;
+        .edit-btn, .delete-btn {
+          padding: 0.25rem 0.5rem;
           border: none;
           border-radius: 4px;
           cursor: pointer;
-          font-size: 0.75rem;
+          font-size: 1rem;
+          transition: all 0.2s;
+        }
+        
+        .edit-btn {
+          background: #3b82f6;
+          color: white;
+        }
+        
+        .edit-btn:hover {
+          background: #2563eb;
+        }
+        
+        .delete-btn {
+          background: #ef4444;
+          color: white;
+        }
+        
+        .delete-btn:hover:not(:disabled) {
+          background: #dc2626;
+        }
+        
+        .delete-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
         }
         
         .empty-state {
           text-align: center;
-          padding: 4rem;
+          padding: 3rem;
           background: white;
           border-radius: 12px;
         }
         
-        .empty-icon {
-          font-size: 3rem;
-          display: block;
-          margin-bottom: 1rem;
-        }
-        
-        .empty-state h3 {
-          margin-bottom: 0.5rem;
-        }
-        
-        .create-first-btn {
-          display: inline-block;
-          margin-top: 1rem;
-          padding: 0.5rem 1rem;
-          background: #10b981;
-          color: white;
-          text-decoration: none;
-          border-radius: 8px;
+        :global(body.dark) .empty-state {
+          background: #1e293b;
         }
         
         @media (max-width: 768px) {
-          .posts-grid {
-            grid-template-columns: 1fr;
+          .container {
+            padding: 1rem;
+          }
+          
+          th, td {
+            padding: 0.75rem;
+            font-size: 0.85rem;
+          }
+          
+          .actions {
+            flex-direction: column;
           }
         }
       `}</style>
-    </AdminLayout>
+    </Layout>
   )
 }
