@@ -1,11 +1,13 @@
 /* ============================================ */
-/* RESET & BASE */
+/* RESET & BASE - WITH ULTRA SMOOTH TRANSITIONS */
 /* ============================================ */
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* REMOVES BLUE FLASH ON MOBILE */
+  -webkit-tap-highlight-color: transparent;
 }
 
 :root {
@@ -18,8 +20,16 @@
   --border: #e5e7eb;
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
   --radius: 12px;
   --radius-lg: 20px;
+  /* SMOOTH TRANSITION TIMING */
+  --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  /* Dark mode transition speed */
+  --transition-theme: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
@@ -27,7 +37,9 @@ body {
   background: #ffffff;
   color: var(--dark);
   line-height: 1.5;
-  transition: background 0.2s, color 0.2s;
+  /* SMOOTH DARK MODE TRANSITION ON BODY */
+  transition: background-color var(--transition-theme), 
+              color var(--transition-theme);
 }
 
 /* Remove all underlines from links */
@@ -35,13 +47,39 @@ a {
   text-decoration: none;
 }
 
+/* EVERY INTERACTIVE ELEMENT GETS SMOOTH TRANSITIONS */
+button,
+.btn,
+.card,
+.social-link,
+.footer-link,
+a,
+input,
+textarea,
+select,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  transition: all var(--transition-base);
+  will-change: transform, opacity, background, box-shadow, color;
+}
+
 /* ============================================ */
-/* DARK MODE */
+/* DARK MODE - SMOOTH TRANSITIONS FOR EVERYTHING */
 /* ============================================ */
 
 body.dark {
   background: #0f172a;
   color: #e2e8f0;
+}
+
+/* Smooth transition for all dark mode affected elements */
+body.dark * {
+  transition: background-color var(--transition-theme),
+              color var(--transition-theme),
+              border-color var(--transition-theme),
+              box-shadow var(--transition-theme),
+              fill var(--transition-theme),
+              stroke var(--transition-theme);
 }
 
 body.dark .card {
@@ -106,6 +144,33 @@ body.dark .section-title {
   color: #e2e8f0;
 }
 
+body.dark .footer {
+  background: #0f172a;
+  border-top-color: #334155;
+}
+
+body.dark .about-text {
+  color: #94a3b8;
+}
+
+body.dark .footer-legal h3,
+body.dark .footer-social-col h3 {
+  color: #e2e8f0;
+}
+
+body.dark .footer-link {
+  color: #94a3b8;
+}
+
+body.dark .footer-copyright p {
+  color: #64748b;
+}
+
+body.dark .affiliate-disclosure-badge {
+  background: #451a03;
+  color: #fde68a;
+}
+
 /* ============================================ */
 /* CONTAINER */
 /* ============================================ */
@@ -135,44 +200,84 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   margin-bottom: 2rem;
   border-left: 4px solid var(--primary);
   padding-left: 1rem;
+  transition: all var(--transition-base);
 }
 
 /* ============================================ */
-/* BUTTONS */
+/* BUTTONS - SMOOTH WITH BOUNCE EFFECT */
 /* ============================================ */
 
 .btn {
   display: inline-block;
   background: var(--primary);
   color: white;
-  padding: 10px 24px;
+  padding: 12px 28px;
   border-radius: 40px;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
   border: none;
   cursor: pointer;
-  font-size: 0.9rem;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-bounce);
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn:hover {
   background: var(--primary-dark);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.97);
+  transition: transform 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-outline {
   background: transparent;
   border: 2px solid var(--primary);
   color: var(--primary);
+  box-shadow: none;
 }
 
 .btn-outline:hover {
   background: var(--primary);
   color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+}
+
+.btn-outline:active {
+  transform: scale(0.97);
+  background: var(--primary-dark);
+}
+
+/* Ripple effect for buttons */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+  pointer-events: none;
+}
+
+.btn:active::after {
+  width: 200px;
+  height: 200px;
 }
 
 /* ============================================ */
-/* CARDS & GRID */
+/* CARDS & GRID - SMOOTH 3D EFFECTS */
 /* ============================================ */
 
 .card-grid {
@@ -187,24 +292,39 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow);
-  transition: transform 0.2s, box-shadow 0.2s;
   border: 1px solid var(--border);
   display: block;
+  transition: all var(--transition-bounce);
+  transform: translateY(0) scale(1);
+  cursor: pointer;
+  position: relative;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+}
+
+.card:active {
+  transform: scale(0.98);
+  transition: transform 0.08s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow);
 }
 
 .card-image {
   width: 100%;
   height: 200px;
   object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.card:hover .card-image {
+  transform: scale(1.05);
 }
 
 .card-content {
   padding: 1.5rem;
+  transition: all var(--transition-base);
 }
 
 .card-meta {
@@ -220,6 +340,11 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
+  transition: color var(--transition-fast);
+}
+
+.card:hover .card-title {
+  color: var(--primary);
 }
 
 .card-excerpt {
@@ -237,6 +362,13 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--primary);
+  transition: all var(--transition-fast);
+}
+
+.tag:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
 }
 
 /* ============================================ */
@@ -251,6 +383,12 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   border-radius: var(--radius);
   margin: 2rem 0;
   color: var(--gray);
+  transition: all var(--transition-base);
+}
+
+.ad-placeholder:hover {
+  border-color: var(--primary);
+  background: rgba(37, 99, 235, 0.05);
 }
 
 /* ============================================ */
@@ -269,10 +407,22 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
 
 .share-buttons a {
   color: var(--primary);
+  transition: all var(--transition-fast);
+  padding: 8px 16px;
+  border-radius: 40px;
+  background: transparent;
 }
 
 .share-buttons a:hover {
-  text-decoration: underline;
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.share-buttons a:active {
+  transform: scale(0.95);
+  transition: transform 0.08s;
 }
 
 /* ============================================ */
@@ -284,7 +434,19 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   padding: 4rem 0;
   text-align: center;
   margin-bottom: 2rem;
-  transition: background 0.3s ease;
+  transition: background var(--transition-theme);
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-title {
@@ -292,6 +454,7 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   margin-bottom: 1rem;
   font-weight: 800;
   color: #111827;
+  transition: color var(--transition-theme);
 }
 
 .hero-subtitle {
@@ -299,6 +462,7 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   color: #6b7280;
   max-width: 600px;
   margin: 0 auto;
+  transition: color var(--transition-theme);
 }
 
 /* ============================================ */
@@ -313,7 +477,7 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   padding: 3rem 0;
   text-align: center;
   border-bottom: 1px solid var(--border);
-  transition: all 0.3s ease;
+  transition: background var(--transition-theme), border-color var(--transition-theme);
 }
 
 .blog-header h1,
@@ -323,6 +487,7 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
   color: var(--dark);
+  transition: color var(--transition-theme);
 }
 
 .blog-header p,
@@ -333,6 +498,7 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   font-size: 1.1rem;
   max-width: 600px;
   margin: 0 auto;
+  transition: color var(--transition-theme);
 }
 
 .affiliate-disclosure-badge {
@@ -343,31 +509,126 @@ h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
   background: #fef3c7;
   padding: 0.5rem 1rem;
   border-radius: 40px;
+  transition: all var(--transition-fast);
 }
 
-body.dark .affiliate-disclosure-badge {
-  background: #451a03;
-  color: #fde68a;
+.affiliate-disclosure-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 /* ============================================ */
-/* NAVBAR */
+/* NAVBAR - COMPLETELY REMOVED ALL HOVER EFFECTS */
 /* ============================================ */
 
+/* Navbar base */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+body.dark .navbar {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+/* Nav links - NO hover effects */
 .nav-link {
   font-weight: 500;
   letter-spacing: -0.01em;
+  transition: color var(--transition-fast);
+  position: relative;
+  padding: 8px 0;
 }
 
+/* EXPLORE BUTTON - REMOVE ALL FLOATING/HOVER EFFECTS */
+.nav-link.explore,
+.dropdown-toggle,
+.has-dropdown > a {
+  transition: color var(--transition-fast);
+}
+
+/* NO hover effect for explore button */
+.nav-link.explore:hover,
+.dropdown-toggle:hover,
+.has-dropdown > a:hover {
+  color: var(--primary);
+  /* NO transform, NO translate, NO scale, NO floating, NO shadow */
+}
+
+/* Dropdown menu - NO floating on hover */
+.dropdown-menu,
+.dropdown-content,
+.submenu {
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
+  /* NO transform, NO translate on hover */
+}
+
+/* Dropdown items - NO hover effects */
+.dropdown-item,
+.dropdown-menu a,
+.submenu a {
+  transition: color var(--transition-fast);
+  padding: 10px 16px;
+  display: block;
+}
+
+/* NO hover floating for dropdown items */
+.dropdown-item:hover,
+.dropdown-menu a:hover,
+.submenu a:hover {
+  color: var(--primary);
+  background: transparent;
+  /* NO transform, NO translate, NO scale, NO background change */
+}
+
+/* Mobile dropdown - NO hover effects */
+.mobile-dropdown,
+.mobile-submenu {
+  transition: all var(--transition-fast);
+}
+
+.mobile-dropdown:hover,
+.mobile-submenu:hover {
+  /* NO effects */
+}
+
+/* Logo - NO hover effects */
 .logo {
   letter-spacing: -0.02em;
+  transition: opacity var(--transition-fast);
+  display: inline-flex;
+  align-items: baseline;
 }
 
-.nav-link.active {
-  color: var(--primary);
-  position: relative;
+.logo:hover {
+  opacity: 0.8;
+  /* NO transform, NO scale, NO floating */
 }
 
+.logo:active {
+  opacity: 0.6;
+}
+
+/* All navbar buttons - NO hover transforms */
+.navbar-btn,
+.menu-btn,
+.mobile-menu-btn {
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.navbar-btn:hover,
+.menu-btn:hover,
+.mobile-menu-btn:hover {
+  /* NO transform, NO scale, NO translate */
+  background: var(--primary);
+  color: white;
+}
+
+/* Active link indicator */
 .nav-link.active::after {
   content: '';
   position: absolute;
@@ -376,14 +637,233 @@ body.dark .affiliate-disclosure-badge {
   width: 100%;
   height: 2px;
   background: var(--primary);
+  transition: all var(--transition-fast);
+  transform: scaleX(1);
 }
 
+/* Mobile menu */
 .nav-menu {
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mobile nav items - NO hover effects */
+.mobile-nav-link,
+.mobile-menu-item {
+  transition: color var(--transition-fast);
+  padding: 12px 0;
+  display: block;
+}
+
+.mobile-nav-link:hover,
+.mobile-menu-item:hover {
+  color: var(--primary);
+  background: transparent;
+  /* NO transform, NO translate */
+}
+
+/* CRITICAL: Remove any transform or animation on hover for ALL navbar elements */
+.navbar *:hover {
+  transform: none !important;
+  animation: none !important;
 }
 
 /* ============================================ */
-/* RESPONSIVE */
+/* FOOTER - SMOOTH TRANSITIONS */
+/* ============================================ */
+
+.footer {
+  background: #111827;
+  border-top: 1px solid var(--border);
+  margin-top: 4rem;
+  transition: background var(--transition-theme), border-color var(--transition-theme);
+}
+
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 3rem 24px 2rem;
+}
+
+.footer-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.footer-about {
+  text-align: center;
+}
+
+.footer-logo {
+  display: inline-flex;
+  align-items: baseline;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  transition: opacity var(--transition-fast);
+}
+
+.footer-logo:hover {
+  opacity: 0.8;
+}
+
+.footer-logo:active {
+  opacity: 0.6;
+}
+
+.logo-text {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  transition: color var(--transition-theme);
+}
+
+.logo-dot {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-left: 2px;
+  transition: all var(--transition-fast);
+}
+
+.about-text {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-width: 300px;
+  margin: 0 auto;
+  transition: color var(--transition-theme);
+}
+
+.footer-legal h3,
+.footer-social-col h3 {
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  text-align: center;
+  transition: color var(--transition-theme);
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.footer-link {
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: color var(--transition-fast), opacity var(--transition-fast);
+  position: relative;
+}
+
+.footer-link:hover {
+  color: var(--primary);
+}
+
+.footer-link:active {
+  opacity: 0.7;
+}
+
+.footer-social-col {
+  text-align: center;
+}
+
+.footer-social {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  transition: all var(--transition-bounce);
+  text-decoration: none;
+  color: #9ca3af;
+  position: relative;
+  overflow: hidden;
+}
+
+.social-link::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+
+.social-link:active::before {
+  width: 100px;
+  height: 100px;
+}
+
+.social-link:hover {
+  transform: translateY(-5px) scale(1.1);
+}
+
+.social-link:active {
+  transform: scale(0.95);
+  transition: transform 0.08s;
+}
+
+.social-link svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  transition: all var(--transition-fast);
+}
+
+/* Brand colors only on hover */
+.social-link.x:hover {
+  background: #000000;
+  color: #ffffff;
+}
+
+.social-link.facebook:hover {
+  background: #1877F2;
+  color: #ffffff;
+}
+
+.social-link.whatsapp:hover {
+  background: #25D366;
+  color: #ffffff;
+}
+
+.social-link.email:hover {
+  background: #EA4335;
+  color: #ffffff;
+}
+
+.footer-copyright {
+  text-align: center;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all var(--transition-base);
+}
+
+.footer-copyright p {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ============================================ */
+/* RESPONSIVE & MOBILE OPTIMIZATIONS */
 /* ============================================ */
 
 @media (max-width: 768px) {
@@ -444,7 +924,7 @@ body.dark .affiliate-disclosure-badge {
     max-height: 0;
     overflow: hidden;
     opacity: 0;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .nav-menu.active {
@@ -454,6 +934,53 @@ body.dark .affiliate-disclosure-badge {
   
   .nav-link.active::after {
     bottom: 0;
+  }
+
+  /* MOBILE-SPECIFIC TOUCH IMPROVEMENTS */
+  button,
+  .btn,
+  .card,
+  .nav-link,
+  .footer-link,
+  .social-link {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  /* Disable hover transforms on mobile */
+  .btn:hover,
+  .card:hover,
+  .social-link:hover {
+    transform: none;
+  }
+  
+  .card:hover .card-image {
+    transform: none;
+  }
+
+  /* Enhanced active states for mobile */
+  .btn:active {
+    transform: scale(0.96);
+    transition: transform 0.06s;
+  }
+
+  .card:active {
+    transform: scale(0.98);
+    transition: transform 0.06s;
+  }
+
+  .social-link:active {
+    transform: scale(0.92);
+    transition: transform 0.06s;
+  }
+
+  .nav-link:active {
+    opacity: 0.7;
+  }
+  
+  /* Remove all hover effects on mobile for navbar */
+  .navbar *:hover {
+    transform: none !important;
   }
 }
 
@@ -465,186 +992,6 @@ body.dark .affiliate-disclosure-badge {
   .card-content {
     padding: 1rem;
   }
-}
-/* ============================================ */
-/* FOOTER - Three Columns, Mobile First */
-/* ============================================ */
-
-.footer {
-  background: #111827;
-  border-top: 1px solid var(--border);
-  margin-top: 4rem;
-}
-
-body.dark .footer {
-  background: #0f172a;
-  border-top-color: #334155;
-}
-
-.footer-container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 3rem 24px 2rem;
-}
-
-/* Three Column Grid - Mobile First (stacked vertically) */
-.footer-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-/* About Column */
-.footer-about {
-  text-align: center;
-}
-
-.footer-logo {
-  display: inline-flex;
-  align-items: baseline;
-  margin-bottom: 1rem;
-  text-decoration: none;
-}
-
-.logo-text {
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-}
-
-.logo-dot {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: var(--primary);
-  margin-left: 2px;
-}
-
-.about-text {
-  color: #9ca3af;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  max-width: 300px;
-  margin: 0 auto;
-}
-
-body.dark .about-text {
-  color: #94a3b8;
-}
-
-/* Legal Column */
-.footer-legal h3,
-.footer-social-col h3 {
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-body.dark .footer-legal h3,
-body.dark .footer-social-col h3 {
-  color: #e2e8f0;
-}
-
-.footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.footer-link {
-  color: #9ca3af;
-  text-decoration: none;
-  font-size: 0.875rem;
-  transition: color 0.2s ease;
-}
-
-.footer-link:hover {
-  color: var(--primary);
-}
-
-body.dark .footer-link {
-  color: #94a3b8;
-}
-
-body.dark .footer-link:hover {
-  color: var(--primary);
-}
-
-/* Social Column */
-.footer-social-col {
-  text-align: center;
-}
-
-.footer-social {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-
-.social-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  transition: all 0.2s ease;
-  text-decoration: none;
-  color: #9ca3af;
-}
-
-.social-link svg {
-  width: 18px;
-  height: 18px;
-  fill: currentColor;
-  transition: all 0.2s ease;
-}
-
-.social-link:hover {
-  transform: translateY(-3px);
-}
-
-/* Brand colors only on hover */
-.social-link.x:hover {
-  background: #000000;
-  color: #ffffff;
-}
-
-.social-link.facebook:hover {
-  background: #1877F2;
-  color: #ffffff;
-}
-
-.social-link.whatsapp:hover {
-  background: #25D366;
-  color: #ffffff;
-}
-
-.social-link.email:hover {
-  background: #EA4335;
-  color: #ffffff;
-}
-
-/* Copyright */
-.footer-copyright {
-  text-align: center;
-  padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.footer-copyright p {
-  font-size: 0.75rem;
-  color: #6b7280;
-  margin: 0;
-}
-
-body.dark .footer-copyright p {
-  color: #64748b;
 }
 
 /* ============================================ */
@@ -683,10 +1030,6 @@ body.dark .footer-copyright p {
   }
 }
 
-/* ============================================ */
-/* MOBILE ADJUSTMENTS */
-/* ============================================ */
-
 @media (max-width: 768px) {
   .footer-container {
     padding: 2rem 16px 1.5rem;
@@ -712,12 +1055,91 @@ body.dark .footer-copyright p {
   }
   
   .social-link {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
   }
   
   .social-link svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ============================================ */
+/* SMOOTH DARK MODE TRANSITION OVERRIDES */
+/* ============================================ */
+
+/* Ensure ALL elements transition smoothly in dark mode */
+*,
+*::before,
+*::after {
+  transition-property: background-color, color, border-color, box-shadow, fill, stroke, opacity;
+  transition-duration: var(--transition-theme);
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* But exclude transitions that should be instant or faster */
+.btn,
+.card,
+.social-link,
+.nav-link:active,
+.btn:active {
+  transition-property: all;
+  transition-duration: var(--transition-base);
+}
+
+/* CRITICAL: Override any transform on navbar hover */
+.navbar a:hover,
+.navbar button:hover,
+.navbar .nav-link:hover,
+.navbar .dropdown-toggle:hover,
+.navbar .explore:hover,
+.navbar *:hover {
+  transform: translateY(0) !important;
+  transform: translateX(0) !important;
+  transform: scale(1) !important;
+  transform: none !important;
+}
+
+/* ============================================ */
+/* SAFARI & IOS SPECIFIC FIXES */
+/* ============================================ */
+
+@supports (-webkit-touch-callout: none) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  button,
+  .btn {
+    -webkit-appearance: none;
+  }
+}
+
+/* ============================================ */
+/* PERFORMANCE OPTIMIZATIONS */
+/* ============================================ */
+
+/* Use GPU acceleration for smoother animations */
+.btn,
+.card,
+.social-link {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
