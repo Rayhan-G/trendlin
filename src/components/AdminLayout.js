@@ -7,16 +7,16 @@ export default function AdminLayout({ children, title }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_logged_in')
-    localStorage.removeItem('admin_login_time')
-    router.push('/admin/login')
+    localStorage.removeItem('admin_session_token')
+    localStorage.removeItem('admin_session_expiry')
+    router.push('/')
   }
 
   const navItems = [
     { name: 'Dashboard', icon: '📊', href: '/admin' },
     { name: 'New Post', icon: '✏️', href: '/admin/create' },
     { name: 'All Posts', icon: '📝', href: '/admin/posts' },
-    { name: 'Uploads', icon: '📤', href: '/upload' },
+    // Removed Uploads - not needed
   ]
 
   return (
@@ -60,10 +60,9 @@ export default function AdminLayout({ children, title }) {
           <div className="top-bar-title">
             <h2>{title}</h2>
           </div>
-          <div className="top-bar-user">
-            <span className="user-avatar">👨‍💻</span>
-            <span className="user-name">Admin</span>
-          </div>
+          <Link href="/" className="view-site-btn">
+            🌐 View Site
+          </Link>
         </div>
         
         <div className="content-area">
@@ -246,23 +245,18 @@ export default function AdminLayout({ children, title }) {
           color: #f1f5f9;
         }
         
-        .top-bar-user {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
+        .view-site-btn {
+          padding: 0.5rem 1rem;
+          background: #64748b;
+          color: white;
+          text-decoration: none;
+          border-radius: 6px;
+          font-size: 0.85rem;
+          transition: all 0.2s;
         }
         
-        .user-avatar {
-          font-size: 1.5rem;
-        }
-        
-        .user-name {
-          font-weight: 500;
-          color: #475569;
-        }
-        
-        :global(body.dark) .user-name {
-          color: #94a3b8;
+        .view-site-btn:hover {
+          background: #475569;
         }
         
         .content-area {

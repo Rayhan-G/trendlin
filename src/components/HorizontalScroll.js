@@ -13,34 +13,7 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
   }
 
   if (!posts || posts.length === 0) {
-    return (
-      <div className="section">
-        <div className="section-header">
-          <h2 className="section-title">{title}</h2>
-        </div>
-        <div className="empty-state">No posts available. Check back soon!</div>
-        <style jsx>{`
-          .section { margin: 3rem 0; }
-          .section-header { margin-bottom: 1.5rem; }
-          .section-title {
-            font-size: 1.6rem;
-            font-weight: 700;
-            border-left: 4px solid #2563eb;
-            padding-left: 1rem;
-          }
-          .empty-state {
-            text-align: center;
-            padding: 2rem;
-            background: #f8fafc;
-            border-radius: 16px;
-            color: #64748b;
-          }
-          @media (max-width: 768px) {
-            .section-title { font-size: 1.3rem; }
-          }
-        `}</style>
-      </div>
-    )
+    return null
   }
 
   return (
@@ -50,14 +23,10 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
         {posts.length > 4 && (
           <div className="scroll-controls">
             <button className="scroll-btn" onClick={() => scroll('left')} aria-label="Scroll left">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 18l-6-6 6-6"/>
-              </svg>
+              ←
             </button>
             <button className="scroll-btn" onClick={() => scroll('right')} aria-label="Scroll right">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
+              →
             </button>
           </div>
         )}
@@ -71,7 +40,7 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
 
       <style jsx>{`
         .section {
-          margin: 3rem 0;
+          margin: 2.5rem 0;
         }
         
         .section-header {
@@ -83,9 +52,9 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
         }
         
         .section-title {
-          font-size: 1.6rem;
+          font-size: 1.5rem;
           font-weight: 700;
-          border-left: 4px solid #2563eb;
+          border-left: 4px solid #667eea;
           padding-left: 1rem;
         }
         
@@ -99,8 +68,8 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
         }
         
         .scroll-btn {
-          width: 38px;
-          height: 38px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           background: white;
           border: 1px solid #e2e8f0;
@@ -109,17 +78,18 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
           align-items: center;
           justify-content: center;
           transition: all 0.2s;
+          font-size: 1rem;
+        }
+        
+        .scroll-btn:hover {
+          background: #667eea;
+          border-color: #667eea;
+          color: white;
         }
         
         :global(body.dark) .scroll-btn {
           background: #1e293b;
           border-color: #334155;
-          color: white;
-        }
-        
-        .scroll-btn:hover {
-          background: #2563eb;
-          border-color: #2563eb;
           color: white;
         }
         
@@ -138,22 +108,19 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
         
         @media (max-width: 768px) {
           .section {
-            margin: 2rem 0;
+            margin: 1.5rem 0;
           }
+          
           .section-title {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
           }
+          
           .scroll-controls {
             display: none;
           }
+          
           .horizontal-scroll {
             gap: 1rem;
-          }
-        }
-        
-        @media (max-width: 480px) {
-          .section-title {
-            font-size: 1.2rem;
           }
         }
       `}</style>

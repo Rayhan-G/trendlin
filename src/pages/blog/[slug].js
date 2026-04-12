@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase, isSupabaseConfigured, getPostBySlug } from '@/lib/supabase'
+import { optimizeImage } from '@/lib/cloudinary'
 
 export default function BlogPost({ post, notFound }) {
   const [copied, setCopied] = useState(false)
@@ -35,12 +36,21 @@ export default function BlogPost({ post, notFound }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Process content to optimize images
+  const processContent = (content) => {
+    if (!content) return '<p>Content coming soon...</p>'
+    return content.replace(
+      /https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/[^\s"']+/g,
+      (match) => optimizeImage(match)
+    )
+  }
+
   return (
     <Layout>
       <article>
         <div className="hero">
           <img 
-            src={post.featured_image || post.image_url || 'https://via.placeholder.com/1200x600?text=No+Image'} 
+            src={optimizeImage(post.featured_image || post.image_url || 'https://via.placeholder.com/1200x600?text=No+Image')} 
             alt={post.title} 
           />
           <div className="hero-gradient"></div>
@@ -131,7 +141,7 @@ export default function BlogPost({ post, notFound }) {
 
             <div 
               className="article-body" 
-              dangerouslySetInnerHTML={{ __html: post.content || post.excerpt || '<p>Content coming soon...</p>' }} 
+              dangerouslySetInnerHTML={{ __html: processContent(post.content || post.excerpt) }} 
             />
           </div>
         </div>
@@ -463,7 +473,7 @@ export async function getStaticPaths() {
   
   return { 
     paths, 
-    fallback: 'blocking' // Use 'blocking' for better SEO
+    fallback: 'blocking'
   }
 }
 
@@ -484,6 +494,6 @@ export async function getStaticProps({ params }) {
   
   return {
     props: { post },
-    revalidate: 3600 // Revalidate every hour
+    revalidate: 3600
   }
 }
