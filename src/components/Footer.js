@@ -1,7 +1,55 @@
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const [showAdminModal, setShowAdminModal] = useState(false)
+  const [adminPassword, setAdminPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // Check if already logged in
+  useEffect(() => {
+    const sessionToken = localStorage.getItem('admin_session_token')
+    const sessionExpiry = localStorage.getItem('admin_session_expiry')
+    
+    if (sessionToken && sessionExpiry && Date.now() < parseInt(sessionExpiry)) {
+      setIsAdmin(true)
+    }
+  }, [])
+
+  const handleAdminLogin = async (e) => {
+    e.preventDefault()
+    setPasswordLoading(true)
+    setPasswordError('')
+
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword })
+      })
+
+      const data = await res.json()
+
+      if (data.success) {
+        const expiry = Date.now() + (24 * 60 * 60 * 1000)
+        localStorage.setItem('admin_session_token', 'logged_in')
+        localStorage.setItem('admin_session_expiry', expiry.toString())
+        setIsAdmin(true)
+        setShowAdminModal(false)
+        setAdminPassword('')
+        window.location.href = '/admin'
+      } else {
+        setPasswordError('Invalid password')
+      }
+    } catch (error) {
+      setPasswordError('Network error. Please try again.')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
 
   const legalLinks = [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -44,61 +92,120 @@ export default function Footer() {
   ]
 
   return (
-    <footer className="footer">
-      <div className="footer-container">
-        {/* Three Column Grid */}
-        <div className="footer-grid">
-          {/* Column 1: About */}
-          <div className="footer-about">
-            <Link href="/" className="footer-logo">
-              <span className="logo-text">trendlin</span>
-              <span className="logo-dot">.</span>
-            </Link>
-            <p className="about-text">
-              Curating the latest trends and insights to help you stay ahead in a fast-changing world.
-            </p>
+    <>
+      <footer className="footer">
+        <div className="footer-container">
+          {/* Three Column Grid */}
+          <div className="footer-grid">
+            {/* Column 1: About */}
+            <div className="footer-about">
+              <Link href="/" className="footer-logo">
+                <span className="logo-text">trendlin</span>
+                <span className="logo-dot">.</span>
+              </Link>
+              <p className="about-text">
+                Curating the latest trends and insights to help you stay ahead in a fast-changing world.
+              </p>
+            </div>
+
+            {/* Column 2: Legal Links */}
+            <div className="footer-legal">
+              <h3>Legal</h3>
+              <div className="footer-links">
+                {legalLinks.map((link) => (
+                  <Link key={link.name} href={link.href} className="footer-link">
+                    {link.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Column 3: Social Icons */}
+            <div className="footer-social-col">
+              <h3>Follow Us</h3>
+              <div className="footer-social">
+                {socialLinks.map((social) => {
+                  const Icon = social.icon
+                  return (
+                    <a
+                      key={social.name}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`social-link ${social.brandClass}`}
+                      aria-label={social.name}
+                    >
+                      <Icon />
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
           </div>
 
-          {/* Column 2: Legal Links */}
-          <div className="footer-legal">
-            <h3>Legal</h3>
-            <div className="footer-links">
-              {legalLinks.map((link) => (
-                <Link key={link.name} href={link.href} className="footer-link">
-                  {link.name}
+          {/* Copyright with Tiny Admin Icon */}
+          <div className="footer-copyright">
+            <p>© {currentYear} trendlin. All rights reserved.</p>
+            {/* Tiny unnoticeable admin icon */}
+            <div className="admin-icon-container">
+              {!isAdmin ? (
+                <button 
+                  onClick={() => setShowAdminModal(true)}
+                  className="admin-icon"
+                  title="Admin Access"
+                >
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M5 20v-2a7 7 0 0 1 14 0v2" />
+                  </svg>
+                </button>
+              ) : (
+                <Link href="/admin" className="admin-icon" title="Go to Admin">
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M8 7h8M8 12h6M8 17h4" />
+                  </svg>
                 </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Column 3: Social Icons */}
-          <div className="footer-social-col">
-            <h3>Follow Us</h3>
-            <div className="footer-social">
-              {socialLinks.map((social) => {
-                const Icon = social.icon
-                return (
-                  <a
-                    key={social.name}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`social-link ${social.brandClass}`}
-                    aria-label={social.name}
-                  >
-                    <Icon />
-                  </a>
-                )
-              })}
+              )}
             </div>
           </div>
         </div>
+      </footer>
 
-        {/* Copyright */}
-        <div className="footer-copyright">
-          <p>© {currentYear} trendlin. All rights reserved.</p>
+      {/* Admin Password Modal */}
+      {showAdminModal && (
+        <div className="modal-overlay" onClick={() => setShowAdminModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-icon">🔐</span>
+              <h3>Admin Access</h3>
+              <button className="modal-close" onClick={() => setShowAdminModal(false)}>×</button>
+            </div>
+            <form onSubmit={handleAdminLogin}>
+              <div className="modal-body">
+                <input
+                  type="password"
+                  placeholder="Enter admin password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  autoFocus
+                  className="password-input"
+                  disabled={passwordLoading}
+                />
+                {passwordError && <div className="error-message">{passwordError}</div>}
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={() => setShowAdminModal(false)} className="cancel-btn">
+                  Cancel
+                </button>
+                <button type="submit" disabled={passwordLoading} className="submit-btn">
+                  {passwordLoading ? 'Verifying...' : 'Access Admin'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
       <style jsx>{`
         .footer {
@@ -272,6 +379,7 @@ export default function Footer() {
           text-align: center;
           padding-top: 2rem;
           border-top: 1px solid #e5e7eb;
+          position: relative;
         }
         
         :global(body.dark) .footer-copyright {
@@ -285,6 +393,123 @@ export default function Footer() {
         
         :global(body.dark) .footer-copyright p {
           color: #6b7280;
+        }
+        
+        /* Tiny Unnoticeable Admin Icon */
+        .admin-icon-container {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          opacity: 0.15;
+          transition: opacity 0.2s;
+        }
+        
+        .admin-icon-container:hover {
+          opacity: 0.5;
+        }
+        
+        .admin-icon {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #64748b;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+          transition: all 0.2s;
+        }
+        
+        .admin-icon:hover {
+          color: #667eea;
+        }
+        
+        /* Modal */
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .modal-content {
+          background: white;
+          border-radius: 12px;
+          width: 90%;
+          max-width: 380px;
+        }
+        
+        :global(body.dark) .modal-content {
+          background: #1e293b;
+        }
+        
+        .modal-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 1rem 1.25rem;
+          border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .modal-header h3 {
+          flex: 1;
+          font-size: 1rem;
+        }
+        
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 1.5rem;
+          cursor: pointer;
+        }
+        
+        .modal-body {
+          padding: 1.25rem;
+        }
+        
+        .password-input {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+        }
+        
+        .error-message {
+          margin-top: 0.75rem;
+          color: #ef4444;
+          font-size: 0.75rem;
+        }
+        
+        .modal-footer {
+          display: flex;
+          gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          border-top: 1px solid #e2e8f0;
+          justify-content: flex-end;
+        }
+        
+        .cancel-btn {
+          padding: 8px 16px;
+          background: #f1f5f9;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+        }
+        
+        .submit-btn {
+          padding: 8px 16px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
         }
         
         /* Mobile Responsive */
@@ -311,8 +536,12 @@ export default function Footer() {
           .footer-social {
             justify-content: center;
           }
+          
+          .admin-icon-container {
+            opacity: 0.3;
+          }
         }
       `}</style>
-    </footer>
+    </>
   )
 }
