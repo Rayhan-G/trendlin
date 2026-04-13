@@ -44,7 +44,7 @@ export default function HealthCategory() {
       .from('posts')
       .select('*')
       .eq('category', 'health')
-      .eq('published', true)
+      .eq('status', 'published')
       .order('created_at', { ascending: false })
     
     if (!error && data) {

@@ -44,7 +44,7 @@ export default function LifestyleCategory() {
       .from('posts')
       .select('*')
       .eq('category', 'lifestyle')
-      .eq('published', true)
+      .eq('status', 'published')
       .order('created_at', { ascending: false })
     
     if (!error && data) {

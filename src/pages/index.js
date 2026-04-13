@@ -25,24 +25,25 @@ export default function Home() {
       const currentMonth = today.getMonth() + 1
       const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
 
-      // 1. Fetch Editor's Picks from database (manually selected by admin)
-      const { data: editorPicksData, error: editorError } = await supabase
+      // 1. Fetch Editor's Picks (featured posts that are published)
+      const { data: editorPicksData } = await supabase
         .from('posts')
         .select('*')
-        .eq('published', true)
-        .eq('is_editor_pick', true)
+        .eq('status', 'published')
+        .eq('is_featured', true)
         .limit(6)
 
-      if (editorError) throw editorError
-
-      // 2. Fetch all published posts for other sections
-      const { data: posts, error } = await supabase
+      // 2. Fetch all published posts
+      const { data: posts } = await supabase
         .from('posts')
         .select('*')
-        .eq('published', true)
+        .eq('status', 'published')
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (!posts || posts.length === 0) {
+        setLoading(false)
+        return
+      }
 
       // 3. Today's Posts (posts created today)
       const todayFiltered = posts.filter(post => 
@@ -103,8 +104,8 @@ export default function Home() {
     <Layout>
       <HeroSection />
       
-      <div className="container">
-        {/* Editor's Picks Section - Manually curated by admin */}
+      <div className="home-container">
+        {/* Editor's Picks Section */}
         {editorsPicks.length > 0 && (
           <HorizontalScroll 
             title="⭐ Editor's Picks" 
@@ -122,7 +123,7 @@ export default function Home() {
           />
         )}
 
-        {/* Most Popular Section - Current Month Only */}
+        {/* Most Popular Section */}
         {popularPosts.length > 0 && (
           <HorizontalScroll 
             title={`🔥 Most Popular - ${currentMonthName}`} 
@@ -131,7 +132,7 @@ export default function Home() {
           />
         )}
 
-        {/* If no posts in any section */}
+        {/* If no posts */}
         {todayPosts.length === 0 && popularPosts.length === 0 && editorsPicks.length === 0 && (
           <div className="empty-state">
             <p>No posts yet. Check back soon!</p>
@@ -140,10 +141,10 @@ export default function Home() {
       </div>
 
       <style jsx>{`
-        .container {
+        .home-container {
           max-width: 1400px;
           margin: 0 auto;
-          padding: 0 2rem 2rem;
+          padding: 0 2rem;
         }
         
         .empty-state {
@@ -159,8 +160,8 @@ export default function Home() {
         }
         
         @media (max-width: 768px) {
-          .container {
-            padding: 0 1rem 1rem;
+          .home-container {
+            padding: 0 1rem;
           }
         }
       `}</style>

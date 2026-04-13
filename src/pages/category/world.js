@@ -44,7 +44,7 @@ export default function WorldCategory() {
       .from('posts')
       .select('*')
       .eq('category', 'world')
-      .eq('published', true)
+      .eq('status', 'published')
       .order('created_at', { ascending: false })
     
     if (!error && data) {

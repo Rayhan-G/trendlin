@@ -6,8 +6,7 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
 
   const scroll = (direction) => {
     if (scrollRef.current) {
-      const cardWidth = window.innerWidth >= 1280 ? 320 : window.innerWidth >= 768 ? 280 : 260
-      const scrollAmount = direction === 'left' ? -cardWidth * 3 : cardWidth * 3
+      const scrollAmount = direction === 'left' ? -400 : 400
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' })
     }
   }
@@ -17,15 +16,15 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
   }
 
   return (
-    <div className="section">
+    <div className="horizontal-section">
       <div className="section-header">
         <h2 className="section-title">{title}</h2>
-        {posts.length > 4 && (
-          <div className="scroll-controls">
-            <button className="scroll-btn" onClick={() => scroll('left')} aria-label="Scroll left">
+        {posts.length > 3 && (
+          <div className="scroll-buttons">
+            <button onClick={() => scroll('left')} className="scroll-btn" aria-label="Scroll left">
               ←
             </button>
-            <button className="scroll-btn" onClick={() => scroll('right')} aria-label="Scroll right">
+            <button onClick={() => scroll('right')} className="scroll-btn" aria-label="Scroll right">
               →
             </button>
           </div>
@@ -39,7 +38,7 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
       </div>
 
       <style jsx>{`
-        .section {
+        .horizontal-section {
           margin: 2.5rem 0;
         }
         
@@ -48,7 +47,6 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 1.25rem;
-          padding: 0 0.25rem;
         }
         
         .section-title {
@@ -62,7 +60,7 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
           color: #f1f5f9;
         }
         
-        .scroll-controls {
+        .scroll-buttons {
           display: flex;
           gap: 0.5rem;
         }
@@ -107,7 +105,7 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
         }
         
         @media (max-width: 768px) {
-          .section {
+          .horizontal-section {
             margin: 1.5rem 0;
           }
           
@@ -115,7 +113,7 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
             font-size: 1.2rem;
           }
           
-          .scroll-controls {
+          .scroll-buttons {
             display: none;
           }
           

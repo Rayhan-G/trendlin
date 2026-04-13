@@ -44,7 +44,7 @@ export default function EntertainmentCategory() {
       .from('posts')
       .select('*')
       .eq('category', 'entertainment')
-      .eq('published', true)
+      .eq('status', 'published')
       .order('created_at', { ascending: false })
     
     if (!error && data) {

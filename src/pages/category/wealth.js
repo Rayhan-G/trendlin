@@ -44,7 +44,7 @@ export default function WealthCategory() {
       .from('posts')
       .select('*')
       .eq('category', 'wealth')
-      .eq('published', true)
+      .eq('status', 'published')
       .order('created_at', { ascending: false })
     
     if (!error && data) {
