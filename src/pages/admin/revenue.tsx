@@ -248,7 +248,7 @@ export default function RevenueTracker() {
   const totalRevenue = revenueEntries.reduce((sum, e) => sum + e.amount, 0);
   const dailyAverage = revenueEntries.length > 0 ? totalRevenue / revenueEntries.length : 0;
   
-  const dates = [...new Set(revenueEntries.map(e => e.date))].sort();
+  const dates = Array.from(new Set(revenueEntries.map(e => e.date))).sort();
   let bestDay = { date: '', amount: 0 };
   dates.forEach(date => {
     const dayTotal = revenueEntries.filter(e => e.date === date).reduce((sum, e) => sum + e.amount, 0);
