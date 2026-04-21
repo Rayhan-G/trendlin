@@ -1,1015 +1,800 @@
-import { useState, useEffect, useRef } from 'react';
-import Layout from '@/components/Layout';
-import { supabase, getPostBySlug } from '@/lib/supabase';
-import { optimizeImage } from '@/lib/cloudinary';
-import Link from 'next/link';
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/router'
+import { useState, useEffect, useCallback } from 'react'
+import Head from 'next/head'
+import RatingSection from '@/components/blog/RatingSection'
+import ShareButtons from '@/components/blog/ShareButtons'
+import RightBlock from '@/components/blog/RightBlock'
+import RelatedPosts from '@/components/blog/RelatedPosts'
 
-export default function BlogPost({ post, notFound }) {
-  const [copied, setCopied] = useState(false);
-  const [showShareSheet, setShowShareSheet] = useState(false);
-  const [relatedPosts, setRelatedPosts] = useState([]);
-  const [estimatedTime, setEstimatedTime] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [isTocOpen, setIsTocOpen] = useState(false);
-  const [headings, setHeadings] = useState([]);
-  const articleRef = useRef(null);
+// Helper functions
+const getReadingTime = (content) => {
+  if (!content) return 1
+  const text = content.replace(/<[^>]*>/g, '')
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0).length
+  return Math.max(1, Math.ceil(words / 200))
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Recent'
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+}
+
+export default function BlogPost({ post, error }) {
+  const router = useRouter()
+  const [readingTime, setReadingTime] = useState(1)
+  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false)
+  const [scrollProgress, setScrollProgress] = useState(0)
+  const [isMounted, setIsMounted] = useState(false)
+
+  const handleScroll = useCallback(() => {
+    const scrolled = window.scrollY > 100
+    setIsScrolled(scrolled)
+    
+    const winScroll = document.documentElement.scrollTop
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight
+    const scrolledProgress = height > 0 ? (winScroll / height) * 100 : 0
+    setScrollProgress(scrolledProgress)
+  }, [])
 
   useEffect(() => {
-    if (!post) return;
-
-    const text = post.content?.replace(/<[^>]*>/g, '') || '';
-    const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
-    setEstimatedTime(Math.ceil(wordCount / 200));
-
-    // Extract headings for TOC
-    const headingMatches = post.content?.match(/<h2[^>]*>(.*?)<\/h2>/g) || [];
-    const extractedHeadings = headingMatches.slice(0, 6).map((heading, idx) => ({
-      text: heading.replace(/<[^>]*>/g, ''),
-      id: `heading-${idx}`
-    }));
-    setHeadings(extractedHeadings);
-
-    fetchRelatedPosts();
-
-    // Scroll progress tracking
-    const handleScroll = () => {
-      const winScroll = window.scrollY;
-      const height = document.documentElement.scrollHeight - window.innerHeight;
-      const scrolled = (winScroll / height) * 100;
-      setProgress(scrolled);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [post]);
-
-  const fetchRelatedPosts = async () => {
-    if (!post) return;
-
-    const { data } = await supabase
-      .from('posts')
-      .select('id, title, slug, image_url, created_at')
-      .eq('category', post.category)
-      .eq('status', 'published')
-      .neq('id', post.id)
-      .limit(3);
-
-    setRelatedPosts(data || []);
-  };
-
-  if (notFound || !post) {
-    return (
-      <Layout>
-        <div className="not-found">
-          <div className="not-found-content">
-            <span className="not-found-emoji">🔍</span>
-            <h1>Post not found</h1>
-            <p>The article you're looking for doesn't exist or has been moved.</p>
-            <Link href="/blog" className="back-home-btn">Browse articles →</Link>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-  const shareTitle = encodeURIComponent(post.title);
-  const shareDescription = encodeURIComponent(post.excerpt?.substring(0, 150) || '');
-  const shareImage = encodeURIComponent(post.featured_image || post.image_url || '');
-
-  const shareLinks = {
-    twitter: `https://twitter.com/intent/tweet?text=${shareTitle}&url=${shareUrl}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`,
-    whatsapp: `https://wa.me/?text=${shareTitle}%20${shareUrl}`,
-    telegram: `https://t.me/share/url?url=${shareUrl}&text=${shareTitle}`,
-    reddit: `https://reddit.com/submit?url=${shareUrl}&title=${shareTitle}`,
-    email: `mailto:?subject=${shareTitle}&body=${shareUrl}`,
-  };
-
-  const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const processContent = (content) => {
-    if (!content) return '<p>Content coming soon...</p>';
-    let processed = content.replace(
-      /https:\/\/res\.cloudinary\.com\/[^\/]+\/image\/upload\/[^\s"']+/g,
-      (match) => optimizeImage(match)
-    );
-    processed = processed.replace(/<img /g, '<img loading="lazy" ');
-    // Add responsive wrapper for images
-    processed = processed.replace(/<img([^>]+)>/g, '<div class="responsive-image"><img$1></div>');
-    return processed;
-  };
-
-  const scrollToHeading = (id) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setIsTocOpen(false);
+    setIsMounted(true)
+    if (post?.content) setReadingTime(getReadingTime(post.content))
+    
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
     }
-  };
+    
+    checkDarkMode()
+    window.addEventListener('scroll', handleScroll)
+    
+    const observer = new MutationObserver(checkDarkMode)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      observer.disconnect()
+    }
+  }, [post?.content, handleScroll])
 
-  return (
-    <Layout>
-      <div className="blog-post">
-        {/* Reading Progress Bar */}
-        <div className="progress-bar" style={{ width: `${progress}%` }} />
-
-        {/* Hero Section - Mobile First */}
-        <div className="hero-section">
-          <div className="hero-image-container">
-            <div className="hero-image">
-              <img
-                src={optimizeImage(post.featured_image || post.image_url || 'https://via.placeholder.com/1200x600?text=No+Image')}
-                alt={post.title}
-                loading="eager"
-              />
-            </div>
-            <div className="hero-overlay" />
-          </div>
-          <div className="hero-content">
-            <div className="hero-meta">
-              <span className="hero-category">{post.category || 'General'}</span>
-            </div>
-            <h1 className="hero-title">{post.title}</h1>
-            <div className="hero-stats">
-              <div className="stat">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
-                <span>{estimatedTime} min read</span>
-              </div>
-              <div className="stat">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <span>{post.views?.toLocaleString() || 0} views</span>
-              </div>
-              <div className="stat">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <span>{new Date(post.created_at || post.date).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}</span>
-              </div>
-            </div>
-            <div className="hero-author">
-              <div className="author-avatar">
-                <span>{post.author?.charAt(0) || 'A'}</span>
-              </div>
-              <div className="author-details">
-                <span className="author-name">{post.author || 'Admin'}</span>
-                <span className="author-title">Writer</span>
-              </div>
-            </div>
-          </div>
+  if (router.isFallback || !isMounted) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-content">
+          <div className="loading-logo">T</div>
+          <div className="loading-spinner"></div>
+          <p>Loading article...</p>
         </div>
-
-        {/* Floating Action Buttons */}
-        <div className="fab-container">
-          <button className="fab share-fab" onClick={() => setShowShareSheet(true)}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-              <polyline points="16 6 12 2 8 6"/>
-              <line x1="12" y1="2" x2="12" y2="15"/>
-            </svg>
-          </button>
-          {headings.length > 0 && (
-            <button className="fab toc-fab" onClick={() => setIsTocOpen(true)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <line x1="3" y1="6" x2="3.01" y2="6"/>
-                <line x1="3" y1="12" x2="3.01" y2="12"/>
-                <line x1="3" y1="18" x2="3.01" y2="18"/>
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Share Bottom Sheet */}
-        {showShareSheet && (
-          <div className="modal-overlay" onClick={() => setShowShareSheet(false)}>
-            <div className="bottom-sheet" onClick={(e) => e.stopPropagation()}>
-              <div className="bottom-sheet-handle" />
-              <h3>Share this article</h3>
-              <div className="share-grid">
-                <button onClick={() => window.open(shareLinks.twitter, '_blank')} className="share-sheet-btn twitter">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231z"/>
-                  </svg>
-                  <span>Twitter</span>
-                </button>
-                <button onClick={() => window.open(shareLinks.facebook, '_blank')} className="share-sheet-btn facebook">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                  <span>Facebook</span>
-                </button>
-                <button onClick={() => window.open(shareLinks.whatsapp, '_blank')} className="share-sheet-btn whatsapp">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12.032 2.016c-5.52 0-10 4.48-10 10 0 1.876.518 3.63 1.422 5.14l-1.51 4.834 4.976-1.478c1.478.888 3.186 1.392 5.112 1.392 5.52 0 10-4.48 10-10s-4.48-10-10-10z"/>
-                  </svg>
-                  <span>WhatsApp</span>
-                </button>
-                <button onClick={() => window.open(shareLinks.telegram, '_blank')} className="share-sheet-btn telegram">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
-                  </svg>
-                  <span>Telegram</span>
-                </button>
-                <button onClick={handleCopyLink} className="share-sheet-btn copy">
-                  {copied ? (
-                    <>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                      </svg>
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                      </svg>
-                      <span>Copy link</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TOC Bottom Sheet */}
-        {isTocOpen && headings.length > 0 && (
-          <div className="modal-overlay" onClick={() => setIsTocOpen(false)}>
-            <div className="bottom-sheet" onClick={(e) => e.stopPropagation()}>
-              <div className="bottom-sheet-handle" />
-              <h3>Table of Contents</h3>
-              <div className="toc-list">
-                {headings.map((heading, index) => (
-                  <button
-                    key={index}
-                    className="toc-sheet-link"
-                    onClick={() => scrollToHeading(heading.id)}
-                  >
-                    {heading.text}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Content Container */}
-        <div className="content-container">
-          <div className="article-wrapper" ref={articleRef}>
-            {/* Author Card - Mobile Optimized */}
-            <div className="author-card">
-              <div className="author-card-avatar">
-                <span>{post.author?.charAt(0) || 'A'}</span>
-              </div>
-              <div className="author-card-info">
-                <h4>{post.author || 'Admin'}</h4>
-                <p>Content creator passionate about sharing insights that help readers stay ahead.</p>
-              </div>
-            </div>
-
-            {/* Article Body */}
-            <div
-              className="article-body"
-              dangerouslySetInnerHTML={{ __html: processContent(post.content || post.excerpt) }}
-            />
-
-            {/* Tags */}
-            {post.tags && post.tags.length > 0 && (
-              <div className="tags-section">
-                <div className="tags-list">
-                  {post.tags.map((tag, index) => (
-                    <span key={index} className="tag">#{tag}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Related Posts */}
-            {relatedPosts.length > 0 && (
-              <div className="related-posts">
-                <div className="related-header">
-                  <span className="related-icon">✨</span>
-                  <h3>Recommended for you</h3>
-                </div>
-                <div className="related-list">
-                  {relatedPosts.map(related => (
-                    <Link key={related.id} href={`/blog/${related.slug}`} className="related-item">
-                      {related.image_url && (
-                        <div className="related-item-image">
-                          <img src={optimizeImage(related.image_url)} alt={related.title} />
-                        </div>
-                      )}
-                      <div className="related-item-content">
-                        <h4>{related.title}</h4>
-                        <span>{new Date(related.created_at).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}</span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
         <style jsx>{`
-          .blog-post {
-            background: #ffffff;
-            min-height: 100vh;
-            position: relative;
-          }
-
-          :global(body.dark) .blog-post {
-            background: #0a0a0a;
-          }
-
-          /* Progress Bar */
-          .progress-bar {
+          .loading-screen {
             position: fixed;
-            top: 0;
-            left: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            z-index: 1000;
-            transition: width 0.1s ease;
-          }
-
-          /* Hero Section - Mobile First */
-          .hero-section {
-            position: relative;
-            min-height: 85vh;
+            inset: 0;
+            background: #ffffff;
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             justify-content: center;
-            overflow: hidden;
+            z-index: 9999;
           }
-
-          .hero-image-container {
-            position: absolute;
-            inset: 0;
+          .loading-content {
+            text-align: center;
           }
-
-          .hero-image {
-            width: 100%;
-            height: 100%;
-          }
-
-          .hero-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-
-          .hero-overlay {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.2) 100%);
-          }
-
-          .hero-content {
-            position: relative;
-            z-index: 2;
-            padding: 2rem 1.5rem 2.5rem;
-            width: 100%;
-          }
-
-          .hero-meta {
-            margin-bottom: 1rem;
-          }
-
-          .hero-category {
-            display: inline-block;
-            padding: 0.3rem 1rem;
-            background: rgba(102, 126, 234, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: white;
-            letter-spacing: 0.5px;
-          }
-
-          .hero-title {
-            font-size: 2rem;
+          .loading-logo {
+            font-size: 3rem;
             font-weight: 800;
-            color: white;
+            background: linear-gradient(135deg, #0056b3, #00a6ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
             margin-bottom: 1rem;
-            line-height: 1.3;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
           }
-
-          .hero-stats {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-          }
-
-          .stat {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            color: rgba(255,255,255,0.85);
-            font-size: 0.7rem;
-            background: rgba(0,0,0,0.3);
-            padding: 0.25rem 0.6rem;
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
-          }
-
-          .hero-author {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: rgba(0,0,0,0.3);
-            backdrop-filter: blur(5px);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            width: fit-content;
-          }
-
-          .author-avatar {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: white;
-          }
-
-          .author-details {
-            display: flex;
-            flex-direction: column;
-          }
-
-          .author-name {
-            font-weight: 600;
-            color: white;
-            font-size: 0.85rem;
-          }
-
-          .author-title {
-            font-size: 0.65rem;
-            color: rgba(255,255,255,0.7);
-          }
-
-          /* Floating Action Buttons */
-          .fab-container {
-            position: fixed;
-            bottom: 80px;
-            right: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 100;
-          }
-
-          .fab {
-            width: 48px;
-            height: 48px;
-            border-radius: 24px;
-            background: #ffffff;
-            border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: #667eea;
-          }
-
-          :global(body.dark) .fab {
-            background: #1e293b;
-            color: #667eea;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          }
-
-          .fab:active {
-            transform: scale(0.95);
-          }
-
-          /* Bottom Sheet */
-          .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-          }
-
-          .bottom-sheet {
-            background: #ffffff;
-            border-radius: 24px 24px 0 0;
-            width: 100%;
-            max-width: 500px;
-            padding: 1rem 1.5rem 2rem;
-            animation: slideUp 0.3s ease;
-          }
-
-          :global(body.dark) .bottom-sheet {
-            background: #1e293b;
-          }
-
-          .bottom-sheet-handle {
+          .loading-spinner {
             width: 40px;
-            height: 4px;
-            background: #cbd5e1;
-            border-radius: 2px;
-            margin: 0 auto 1.5rem;
-          }
-
-          @keyframes slideUp {
-            from {
-              transform: translateY(100%);
-            }
-            to {
-              transform: translateY(0);
-            }
-          }
-
-          .bottom-sheet h3 {
-            font-size: 1.2rem;
-            margin-bottom: 1.5rem;
-            text-align: center;
-          }
-
-          .share-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-          }
-
-          .share-sheet-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.875rem;
-            background: #f1f5f9;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-
-          :global(body.dark) .share-sheet-btn {
-            background: #334155;
-            color: #e2e8f0;
-          }
-
-          .share-sheet-btn:active {
-            transform: scale(0.98);
-          }
-
-          .share-sheet-btn.twitter { color: #000; }
-          .share-sheet-btn.facebook { color: #1877f2; }
-          .share-sheet-btn.whatsapp { color: #25d366; }
-          .share-sheet-btn.telegram { color: #26a5e4; }
-          .share-sheet-btn.copy { color: #10b981; }
-
-          .toc-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-          }
-
-          .toc-sheet-link {
-            padding: 0.75rem 0;
-            background: none;
-            border: none;
-            text-align: left;
-            font-size: 0.95rem;
-            color: #334155;
-            border-bottom: 1px solid #e2e8f0;
-            cursor: pointer;
-          }
-
-          :global(body.dark) .toc-sheet-link {
-            color: #cbd5e1;
-            border-bottom-color: #334155;
-          }
-
-          /* Content Container */
-          .content-container {
-            max-width: 800px;
-            margin: -2rem auto 0;
-            padding: 0 1rem;
-            position: relative;
-            z-index: 3;
-          }
-
-          .article-wrapper {
-            background: white;
-            border-radius: 24px;
-            padding: 1.5rem;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
-          }
-
-          :global(body.dark) .article-wrapper {
-            background: #1e293b;
-          }
-
-          /* Author Card */
-          .author-card {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            padding: 1rem;
-            border-radius: 16px;
-            margin-bottom: 2rem;
-          }
-
-          :global(body.dark) .author-card {
-            background: linear-gradient(135deg, #0f172a, #1e293b);
-          }
-
-          .author-card-avatar {
-            width: 52px;
-            height: 52px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 40px;
+            border: 3px solid #e9ecef;
+            border-top-color: #0056b3;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: white;
-            flex-shrink: 0;
+            animation: spin 0.6s linear infinite;
+            margin: 1rem auto;
           }
-
-          .author-card-info h4 {
-            font-size: 0.9rem;
-            margin-bottom: 0.25rem;
+          .loading-content p {
+            color: #6c757d;
+            font-size: 0.875rem;
           }
-
-          .author-card-info p {
-            font-size: 0.75rem;
-            color: #64748b;
-            line-height: 1.4;
-          }
-
-          :global(body.dark) .author-card-info p {
-            color: #94a3b8;
-          }
-
-          /* Article Body */
-          .article-body {
-            font-size: 1rem;
-            line-height: 1.75;
-            color: #334155;
-          }
-
-          :global(body.dark) .article-body {
-            color: #cbd5e1;
-          }
-
-          .article-body :global(h1),
-          .article-body :global(h2),
-          .article-body :global(h3) {
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-            scroll-margin-top: 80px;
-          }
-
-          .article-body :global(h2) {
-            font-size: 1.35rem;
-          }
-          .article-body :global(h3) {
-            font-size: 1.15rem;
-          }
-
-          .article-body :global(p) {
-            margin-bottom: 1.25rem;
-          }
-
-          .article-body :global(.responsive-image) {
-            margin: 1.5rem -1.5rem;
-          }
-
-          .article-body :global(img) {
-            width: 100%;
-            border-radius: 16px;
-          }
-
-          .article-body :global(blockquote) {
-            border-left: 3px solid #667eea;
-            margin: 1.5rem 0;
-            padding: 0.75rem 1rem;
-            background: #f8fafc;
-            font-style: italic;
-            border-radius: 12px;
-            font-size: 0.95rem;
-          }
-
-          :global(body.dark) .article-body :global(blockquote) {
-            background: #0f172a;
-          }
-
-          .article-body :global(pre) {
-            background: #1e293b;
-            padding: 1rem;
-            border-radius: 12px;
-            overflow-x: auto;
-            margin: 1.5rem 0;
-          }
-
-          .article-body :global(code) {
-            background: #f1f5f9;
-            padding: 0.2rem 0.4rem;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.85rem;
-          }
-
-          :global(body.dark) .article-body :global(code) {
-            background: #334155;
-          }
-
-          /* Tags */
-          .tags-section {
-            margin: 2rem 0;
-            padding-top: 1rem;
-            border-top: 1px solid #e2e8f0;
-          }
-
-          .tags-list {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-          }
-
-          .tag {
-            font-size: 0.7rem;
-            padding: 0.3rem 0.8rem;
-            background: #f1f5f9;
-            border-radius: 20px;
-            color: #475569;
-          }
-
-          :global(body.dark) .tag {
-            background: #334155;
-            color: #94a3b8;
-          }
-
-          /* Related Posts */
-          .related-posts {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #e2e8f0;
-          }
-
-          .related-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-          }
-
-          .related-icon {
-            font-size: 1.2rem;
-          }
-
-          .related-posts h3 {
-            font-size: 1rem;
-          }
-
-          .related-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-          }
-
-          .related-item {
-            display: flex;
-            gap: 1rem;
-            background: #f8fafc;
-            border-radius: 16px;
-            overflow: hidden;
-            text-decoration: none;
-            transition: all 0.2s;
-          }
-
-          .related-item:active {
-            transform: scale(0.98);
-          }
-
-          :global(body.dark) .related-item {
-            background: #0f172a;
-          }
-
-          .related-item-image {
-            width: 80px;
-            height: 80px;
-            flex-shrink: 0;
-          }
-
-          .related-item-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-
-          .related-item-content {
-            padding: 0.75rem 0.75rem 0.75rem 0;
-            flex: 1;
-          }
-
-          .related-item-content h4 {
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            color: #0f172a;
-            line-height: 1.3;
-          }
-
-          :global(body.dark) .related-item-content h4 {
-            color: #f1f5f9;
-          }
-
-          .related-item-content span {
-            font-size: 0.65rem;
-            color: #64748b;
-          }
-
-          /* Not Found */
-          .not-found {
-            min-height: 60vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-          }
-
-          .not-found-content {
-            text-align: center;
-          }
-
-          .not-found-emoji {
-            font-size: 4rem;
-            display: block;
-            margin-bottom: 1rem;
-          }
-
-          .not-found-content h1 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-          }
-
-          .not-found-content p {
-            color: #64748b;
-            margin-bottom: 1.5rem;
-          }
-
-          .back-home-btn {
-            display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 30px;
-            font-weight: 500;
-          }
-
-          /* Tablet and Desktop */
-          @media (min-width: 768px) {
-            .hero-section {
-              min-height: 70vh;
-            }
-
-            .hero-content {
-              padding: 2rem 2rem 3rem;
-              max-width: 800px;
-              margin: 0 auto;
-            }
-
-            .hero-title {
-              font-size: 3rem;
-            }
-
-            .hero-stats {
-              justify-content: center;
-            }
-
-            .hero-author {
-              margin: 0 auto;
-            }
-
-            .fab-container {
-              bottom: 40px;
-              right: 24px;
-            }
-
-            .fab {
-              width: 52px;
-              height: 52px;
-            }
-
-            .fab:hover {
-              transform: scale(1.05);
-            }
-
-            .content-container {
-              padding: 0 1.5rem;
-            }
-
-            .article-wrapper {
-              padding: 2rem;
-            }
-
-            .article-body :global(.responsive-image) {
-              margin: 2rem 0;
-            }
-
-            .related-list {
-              display: grid;
-              grid-template-columns: repeat(3, 1fr);
-              gap: 1rem;
-            }
-
-            .related-item {
-              flex-direction: column;
-            }
-
-            .related-item-image {
-              width: 100%;
-              height: 120px;
-            }
-
-            .related-item-content {
-              padding: 0.75rem;
-            }
-          }
-
-          @media (min-width: 1024px) {
-            .hero-title {
-              font-size: 3.5rem;
-            }
-
-            .article-wrapper {
-              padding: 2.5rem;
-            }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
           }
         `}</style>
       </div>
-    </Layout>
-  );
+    )
+  }
+
+  if (error || !post) {
+    return (
+      <div className="error-page">
+        <div className="error-content">
+          <div className="error-code">404</div>
+          <h1>Article Not Found</h1>
+          <p>The article you're looking for doesn't exist or has been moved.</p>
+          <div className="error-actions">
+            <a href="/" className="btn-primary">← Back to Home</a>
+            <a href="/blog" className="btn-secondary">Browse All Articles</a>
+          </div>
+        </div>
+        <style jsx>{`
+          .error-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+          }
+          .error-content {
+            text-align: center;
+            color: white;
+            max-width: 500px;
+          }
+          .error-code {
+            font-size: 8rem;
+            font-weight: 800;
+            line-height: 1;
+            opacity: 0.3;
+            margin-bottom: 1rem;
+          }
+          h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+          }
+          p {
+            opacity: 0.9;
+            margin-bottom: 2rem;
+          }
+          .error-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+          }
+          .btn-primary, .btn-secondary {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+          }
+          .btn-primary {
+            background: white;
+            color: #667eea;
+          }
+          .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+          }
+          .btn-primary:hover, .btn-secondary:hover {
+            transform: translateY(-2px);
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  const postUrl = `https://trendlin.com/blog/${post.slug}`
+  const publishedDate = post.published_at || post.created_at
+  const postCategory = post.category?.toLowerCase() || 'general'
+  
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "description": post.excerpt,
+    "image": post.image_url,
+    "datePublished": publishedDate,
+    "dateModified": post.updated_at,
+    "author": {
+      "@type": "Person",
+      "name": post.author || "Trendlin Team"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Trendlin",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://trendlin.com/logo.png"
+      }
+    },
+    "mainEntityOfPage": {
+      "@type": "WebPage",
+      "@id": postUrl
+    }
+  }
+
+  return (
+    <div className={`blog-post ${isDarkMode ? 'dark' : 'light'}`}>
+      <Head>
+        <title>{post.seo_title || `${post.title} | Trendlin`}</title>
+        <meta name="description" content={post.seo_description || post.excerpt || `Read ${post.title} on Trendlin`} />
+        <meta name="keywords" content={post.tags?.join(', ') || post.category} />
+        <meta name="author" content={post.author || "Trendlin Team"} />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.excerpt || `Read ${post.title} on Trendlin`} />
+        <meta property="og:image" content={post.image_url || post.featured_image} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:url" content={postUrl} />
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content="Trendlin" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={post.excerpt || `Read ${post.title} on Trendlin`} />
+        <meta name="twitter:image" content={post.image_url || post.featured_image} />
+        <link rel="canonical" href={postUrl} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      </Head>
+
+      {/* Progress Bar */}
+      <div className="progress-bar">
+        <div className="progress-fill" style={{ width: `${scrollProgress}%` }}></div>
+      </div>
+
+      <div className="container">
+        {/* Header Section */}
+        <header className="header">
+          <nav className="breadcrumb" aria-label="Breadcrumb">
+            <a href="/">Home</a>
+            <span className="separator">/</span>
+            <a href={`/category/${postCategory}`}>{post.category}</a>
+            <span className="separator">/</span>
+            <span className="current" aria-current="page">{post.title}</span>
+          </nav>
+          
+          <div className="category-tag">
+            <a href={`/category/${postCategory}`} className="category-link">
+              {post.category}
+            </a>
+          </div>
+          
+          <h1 className="post-title">{post.title}</h1>
+          
+          {post.excerpt && (
+            <p className="post-excerpt">{post.excerpt}</p>
+          )}
+          
+          <div className="post-meta">
+            <div className="meta-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+              <time dateTime={publishedDate}>{formatDate(publishedDate)}</time>
+            </div>
+            <div className="meta-divider"></div>
+            <div className="meta-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 12v8H4v-8M12 2v8m0 0-3-3m3 3 3-3"/>
+              </svg>
+              <span>{readingTime} min read</span>
+            </div>
+            <div className="meta-divider"></div>
+            <div className="meta-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span>{post.views?.toLocaleString() || 0} views</span>
+            </div>
+            {post.author && (
+              <>
+                <div className="meta-divider"></div>
+                <div className="meta-item">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                  </svg>
+                  <span>{post.author}</span>
+                </div>
+              </>
+            )}
+          </div>
+        </header>
+
+        {/* Featured Image */}
+        {post.image_url && (
+          <div className="featured-image">
+            <div className="image-wrapper">
+              <img 
+                src={post.image_url} 
+                alt={post.title}
+                loading="eager"
+                fetchpriority="high"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Content Grid */}
+        <div className="content-grid">
+          {/* Main Content */}
+          <article className="main-content">
+            <div className="content-wrapper">
+              <div 
+                className="article-content"
+                dangerouslySetInnerHTML={{ __html: post.content || '<p>No content available.</p>' }}
+              />
+              
+              {/* Post Footer */}
+              <footer className="post-footer">
+                {post.tags && post.tags.length > 0 && (
+                  <div className="post-tags">
+                    <span className="tags-label">Tags:</span>
+                    <div className="tags-list">
+                      {post.tags.map((tag, index) => (
+                        <a key={index} href={`/tag/${tag.toLowerCase()}`} className="tag">
+                          #{tag}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </footer>
+            </div>
+          </article>
+
+          {/* Sidebar */}
+          <aside className="sidebar">
+            <div className="sticky-sidebar">
+              <ShareButtons url={postUrl} title={post.title} imageUrl={post.image_url || postUrl} />
+              <RightBlock postSlug={post.slug} />
+            </div>
+          </aside>
+        </div>
+
+        {/* Rating Section */}
+        <RatingSection postSlug={post.slug} postTitle={post.title} />
+
+        {/* Related Posts */}
+        <RelatedPosts 
+          currentPostId={post.id} 
+          currentCategory={post.category}
+        />
+      </div>
+
+      {/* Scroll to Top Button */}
+      <button 
+        className={`scroll-top ${isScrolled ? 'visible' : ''}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Scroll to top"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
+      </button>
+
+      <style jsx>{`
+        .blog-post {
+          min-height: 100vh;
+          background: #ffffff;
+          transition: background 0.3s ease;
+        }
+        .blog-post.dark {
+          background: #0a0a0a;
+        }
+
+        .progress-bar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: rgba(0,0,0,0.05);
+          z-index: 1001;
+        }
+        .blog-post.dark .progress-bar {
+          background: rgba(255,255,255,0.05);
+        }
+        .progress-fill {
+          height: 100%;
+          background: linear-gradient(90deg, #0056b3, #00a6ff);
+          width: 0%;
+          transition: width 0.3s ease-out;
+        }
+
+        .container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 3rem 2rem;
+        }
+
+        .header {
+          text-align: left;
+          margin-bottom: 3rem;
+        }
+
+        .breadcrumb {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.85rem;
+          margin-bottom: 1.5rem;
+          flex-wrap: wrap;
+        }
+        .breadcrumb a {
+          color: #0056b3;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        .blog-post.dark .breadcrumb a {
+          color: #66b0ff;
+        }
+        .breadcrumb a:hover {
+          text-decoration: underline;
+        }
+        .breadcrumb .separator {
+          color: #6c757d;
+        }
+        .breadcrumb .current {
+          color: #6c757d;
+        }
+
+        .category-tag {
+          margin-bottom: 1rem;
+        }
+        .category-link {
+          display: inline-block;
+          padding: 0.25rem 0.75rem;
+          background: rgba(0, 86, 179, 0.1);
+          color: #0056b3;
+          text-decoration: none;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          transition: all 0.2s;
+        }
+        .blog-post.dark .category-link {
+          background: rgba(102, 176, 255, 0.15);
+          color: #66b0ff;
+        }
+        .category-link:hover {
+          background: rgba(0, 86, 179, 0.2);
+          transform: translateY(-1px);
+        }
+
+        .post-title {
+          font-size: clamp(2.5rem, 5vw, 3.8rem);
+          font-weight: 800;
+          margin-bottom: 1rem;
+          color: #1a1a2e;
+          line-height: 1.2;
+          letter-spacing: -0.02em;
+        }
+        .blog-post.dark .post-title {
+          color: #ffffff;
+        }
+
+        .post-excerpt {
+          font-size: 1.125rem;
+          line-height: 1.6;
+          color: #6c757d;
+          margin-bottom: 1.5rem;
+          max-width: 800px;
+        }
+
+        .post-meta {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+        .meta-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.9rem;
+          color: #6c757d;
+        }
+        .blog-post.dark .meta-item {
+          color: #a0a0a0;
+        }
+        .meta-item svg {
+          stroke: currentColor;
+        }
+        .meta-divider {
+          width: 4px;
+          height: 4px;
+          background: #6c757d;
+          border-radius: 50%;
+        }
+
+        .featured-image {
+          margin: 2rem 0 3rem;
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .image-wrapper {
+          position: relative;
+          width: 100%;
+          background: #f0f0f0;
+        }
+        .featured-image img {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .content-grid {
+          display: grid;
+          grid-template-columns: 1fr 320px;
+          gap: 3rem;
+        }
+
+        .article-content {
+          font-size: 1.125rem;
+          line-height: 1.8;
+          color: #2c3e50;
+        }
+        .blog-post.dark .article-content {
+          color: #d1d5db;
+        }
+        .article-content p {
+          margin-bottom: 1.5rem;
+        }
+        .article-content h2 {
+          font-size: clamp(1.6rem, 4vw, 2rem);
+          margin-top: 2.5rem;
+          margin-bottom: 1rem;
+          font-weight: 700;
+          color: #1a1a2e;
+        }
+        .blog-post.dark .article-content h2 {
+          color: #ffffff;
+        }
+        .article-content h3 {
+          font-size: clamp(1.3rem, 3.5vw, 1.5rem);
+          margin-top: 2rem;
+          margin-bottom: 0.75rem;
+          font-weight: 600;
+          color: #1a1a2e;
+        }
+        .blog-post.dark .article-content h3 {
+          color: #ffffff;
+        }
+        .article-content a {
+          color: #0056b3;
+          text-decoration: underline;
+          text-underline-offset: 4px;
+        }
+        .blog-post.dark .article-content a {
+          color: #66b0ff;
+        }
+        .article-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 16px;
+          margin: 2rem 0;
+        }
+        .article-content ul, .article-content ol {
+          margin: 1.5rem 0;
+          padding-left: 1.75rem;
+        }
+        .article-content li {
+          margin: 0.5rem 0;
+        }
+        .article-content blockquote {
+          border-left: 4px solid #0056b3;
+          padding-left: 1.5rem;
+          margin: 2rem 0;
+          font-style: italic;
+          color: #6c757d;
+        }
+        .blog-post.dark .article-content blockquote {
+          border-left-color: #66b0ff;
+          color: #a0a0a0;
+        }
+        .article-content code {
+          background: #f0f0f0;
+          padding: 0.2rem 0.5rem;
+          border-radius: 6px;
+          font-size: 0.9rem;
+          font-family: monospace;
+        }
+        .blog-post.dark .article-content code {
+          background: #1a1a2e;
+          color: #e9ecef;
+        }
+        .article-content pre {
+          background: #1a1a2e;
+          color: #e9ecef;
+          padding: 1.5rem;
+          border-radius: 16px;
+          overflow-x: auto;
+          margin: 2rem 0;
+        }
+        .article-content pre code {
+          background: none;
+          padding: 0;
+        }
+
+        .post-footer {
+          margin-top: 3rem;
+          padding-top: 2rem;
+          border-top: 1px solid #e9ecef;
+        }
+        .blog-post.dark .post-footer {
+          border-top-color: #2c3e50;
+        }
+        .post-tags {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+        .tags-label {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #6c757d;
+        }
+        .tags-list {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .tag {
+          display: inline-block;
+          padding: 0.25rem 0.75rem;
+          background: #f0f0f0;
+          color: #495057;
+          text-decoration: none;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          transition: all 0.2s;
+        }
+        .blog-post.dark .tag {
+          background: #1a1a2e;
+          color: #a0a0a0;
+        }
+        .tag:hover {
+          background: #e0e0e0;
+          transform: translateY(-1px);
+        }
+
+        .sidebar {
+          position: relative;
+        }
+        .sticky-sidebar {
+          position: sticky;
+          top: 100px;
+        }
+
+        .scroll-top {
+          position: fixed;
+          bottom: 2rem;
+          right: 2rem;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #ffffff;
+          color: #0056b3;
+          border: 1px solid #e9ecef;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          z-index: 100;
+        }
+        .blog-post.dark .scroll-top {
+          background: #1a1a2e;
+          color: #66b0ff;
+          border-color: #2c3e50;
+        }
+        .scroll-top.visible {
+          opacity: 1;
+          visibility: visible;
+        }
+        .scroll-top:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        @media (max-width: 1024px) {
+          .content-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+          }
+          .sidebar {
+            order: -1;
+          }
+          .sticky-sidebar {
+            position: static;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .container {
+            padding: 1.5rem 1rem;
+          }
+          .post-title {
+            font-size: 1.75rem;
+          }
+          .post-excerpt {
+            font-size: 1rem;
+          }
+          .article-content {
+            font-size: 1rem;
+          }
+          .scroll-top {
+            bottom: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .post-meta {
+            gap: 0.5rem;
+          }
+          .meta-item {
+            font-size: 0.75rem;
+          }
+        }
+      `}</style>
+    </div>
+  )
 }
 
 export async function getStaticPaths() {
-  const { data: posts } = await supabase
-    .from('posts')
-    .select('slug')
-    .eq('status', 'published');
-
-  const paths = posts?.filter(post => post.slug).map((post) => ({
-    params: { slug: post.slug }
-  })) || [];
-
-  return { paths, fallback: 'blocking' };
+  try {
+    const { data: posts } = await supabase
+      .from('posts')
+      .select('slug')
+      .eq('status', 'published')
+      .limit(100)
+    
+    const paths = posts?.map(post => ({ params: { slug: post.slug } })) || []
+    return { paths, fallback: 'blocking' }
+  } catch (error) {
+    return { paths: [], fallback: 'blocking' }
+  }
 }
 
 export async function getStaticProps({ params }) {
-  const post = await getPostBySlug(params.slug);
+  const { slug } = params
+  
+  try {
+    const { data: post } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .maybeSingle()
 
-  if (!post) {
-    return { props: { notFound: true }, revalidate: 60 };
+    if (!post) {
+      return { props: { error: 'Post not found', post: null }, revalidate: 60 }
+    }
+
+    // Increment view count asynchronously
+    supabase
+      .from('posts')
+      .update({ views: (post.views || 0) + 1 })
+      .eq('id', post.id)
+      .then()
+
+    return { props: { post, error: null }, revalidate: 3600 }
+  } catch (error) {
+    return { props: { error: 'Internal error', post: null }, revalidate: 60 }
   }
-
-  return {
-    props: { post },
-    revalidate: 3600
-  };
 }

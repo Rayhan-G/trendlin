@@ -1,245 +1,79 @@
-import Layout from '@/components/Layout'
+// src/pages/terms.js (COMPLETE FILE - NO CHANGES NEEDED)
+
 import Link from 'next/link'
 
 export default function TermsConditions() {
+  const currentDate = new Date().toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  })
+
   return (
-    <Layout>
-      <div className="container">
-        <div className="hero">
-          <h1>Terms</h1>
-          <div className="hero-line"></div>
-          <p className="date">Last updated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-        </div>
-
-        <div className="content">
-          <p className="lead">
-            By using this site, you agree to these simple terms. 
-            We're here to share trends and news — nothing more.
-          </p>
-
-          <div className="section">
-            <h2>Content</h2>
-            <p>
-              Our content is for informational purposes only. We share trends in technology, 
-              markets, wellness, and culture. We're not financial advisors or medical professionals. 
-              Use your own judgment.
-            </p>
-          </div>
-
-          <div className="section">
-            <h2>Use of site</h2>
-            <p>
-              You're welcome to read, share, and link to our content. Please don't scrape, 
-              copy entire articles, or misuse the site. Be respectful.
-            </p>
-          </div>
-
-          <div className="section">
-            <h2>Intellectual property</h2>
-            <p>
-              The trends belong to the world. Our writing and analysis belong to us. 
-              Share with credit. Don't claim our work as your own.
-            </p>
-          </div>
-
-          <div className="section">
-            <h2>Limitations</h2>
-            <p>
-              We're not liable for decisions you make based on our content. 
-              Trends change. Information evolves. Do your own research.
-            </p>
-          </div>
-
-          <div className="section">
-            <h2>Changes</h2>
-            <p>
-              If these terms change, we'll update this page. Our philosophy stays the same: 
-              simple, transparent, and focused on trends.
-            </p>
-          </div>
-
-          <div className="contact">
-            <p>Questions about these terms?</p>
-            <Link href="/contact" className="contact-link">Contact us →</Link>
-          </div>
-        </div>
+    <div className="container mx-auto max-w-3xl px-4 py-12 md:py-16">
+      <div className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold mb-3">Terms</h1>
+        <div className="w-10 h-0.5 bg-gray-900 dark:bg-white mb-4"></div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Last updated: {currentDate}</p>
       </div>
 
-      <style jsx>{`
-        .container {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 4rem 1.5rem 6rem;
-        }
-        
-        .hero {
-          margin-bottom: 3rem;
-        }
-        
-        h1 {
-          font-size: 2.5rem;
-          font-weight: 500;
-          margin-bottom: 1rem;
-          color: #111827;
-          letter-spacing: -0.02em;
-        }
-        
-        :global(body.dark) h1 {
-          color: #ffffff;
-        }
-        
-        .hero-line {
-          width: 40px;
-          height: 2px;
-          background: #111827;
-          margin-bottom: 1.5rem;
-        }
-        
-        :global(body.dark) .hero-line {
-          background: #ffffff;
-        }
-        
-        .date {
-          font-size: 0.8rem;
-          color: #6b7280;
-        }
-        
-        :global(body.dark) .date {
-          color: #9ca3af;
-        }
-        
-        .content {
-          color: #4b5563;
-        }
-        
-        :global(body.dark) .content {
-          color: #9ca3af;
-        }
-        
-        .lead {
-          font-size: 1.2rem;
-          line-height: 1.5;
-          margin-bottom: 3rem;
-          padding-bottom: 2rem;
-          border-bottom: 1px solid #e5e7eb;
-          color: #111827;
-        }
-        
-        :global(body.dark) .lead {
-          color: #e5e7eb;
-          border-bottom-color: #1f2937;
-        }
-        
-        .section {
-          margin-bottom: 2.5rem;
-        }
-        
-        h2 {
-          font-size: 1rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 1rem;
-          color: #6b7280;
-        }
-        
-        :global(body.dark) h2 {
-          color: #9ca3af;
-        }
-        
-        p {
-          font-size: 0.95rem;
-          line-height: 1.6;
-          margin: 0;
-        }
-        
-        .contact {
-          margin-top: 3rem;
-          padding-top: 2rem;
-          border-top: 1px solid #e5e7eb;
-          text-align: center;
-        }
-        
-        :global(body.dark) .contact {
-          border-top-color: #1f2937;
-        }
-        
-        .contact p {
-          font-size: 0.85rem;
-          margin-bottom: 0.75rem;
-          color: #6b7280;
-        }
-        
-        .contact-link {
-          display: inline-block;
-          font-size: 1rem;
-          color: #111827;
-          text-decoration: none;
-          font-weight: 500;
-          padding: 0.5rem 1rem;
-          border: 1px solid #111827;
-          transition: all 0.2s;
-        }
-        
-        :global(body.dark) .contact-link {
-          color: #ffffff;
-          border-color: #ffffff;
-        }
-        
-        .contact-link:hover {
-          background: #111827;
-          color: white;
-        }
-        
-        :global(body.dark) .contact-link:hover {
-          background: #ffffff;
-          color: #111827;
-        }
-        
-        /* Tablet */
-        @media (max-width: 768px) {
-          .container {
-            padding: 3rem 1.5rem 5rem;
-          }
-          
-          h1 {
-            font-size: 2.2rem;
-          }
-          
-          .lead {
-            font-size: 1.1rem;
-          }
-        }
-        
-        /* Mobile */
-        @media (max-width: 640px) {
-          .container {
-            padding: 2rem 1rem 4rem;
-          }
-          
-          h1 {
-            font-size: 1.8rem;
-          }
-          
-          .lead {
-            font-size: 1rem;
-            margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-          }
-          
-          .section {
-            margin-bottom: 2rem;
-          }
-          
-          h2 {
-            font-size: 0.85rem;
-          }
-          
-          p {
-            font-size: 0.85rem;
-          }
-        }
-      `}</style>
-    </Layout>
+      <div className="space-y-8">
+        <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed pb-4 border-b border-gray-200 dark:border-gray-800">
+          By using this site, you agree to these simple terms. 
+          We're here to share trends and news — nothing more.
+        </p>
+
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Content</h2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+            Our content is for informational purposes only. We share trends in technology, 
+            markets, wellness, and culture. We're not financial advisors or medical professionals. 
+            Use your own judgment.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Use of site</h2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+            You're welcome to read, share, and link to our content. Please don't scrape, 
+            copy entire articles, or misuse the site. Be respectful.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Intellectual property</h2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+            The trends belong to the world. Our writing and analysis belong to us. 
+            Share with credit. Don't claim our work as your own.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Limitations</h2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+            We're not liable for decisions you make based on our content. 
+            Trends change. Information evolves. Do your own research.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Changes</h2>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+            If these terms change, we'll update this page. Our philosophy stays the same: 
+            simple, transparent, and focused on trends.
+          </p>
+        </section>
+
+        <div className="text-center pt-4 border-t border-gray-200 dark:border-gray-800">
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-3">Questions about these terms?</p>
+          <Link 
+            href="/contact" 
+            className="inline-block px-5 py-2 border border-gray-900 dark:border-white text-gray-900 dark:text-white rounded-lg hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 transition-all duration-200"
+          >
+            Contact us →
+          </Link>
+        </div>
+      </div>
+    </div>
   )
 }

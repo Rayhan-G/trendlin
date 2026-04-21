@@ -1,0 +1,230 @@
+/* src/styles/globals.css (COMPLETE FIXED FILE) */
+
+/* ✅ REMOVED: Duplicate Google Fonts import (already in _document.js) */
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap'); */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border m-0 p-0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-inter antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+  }
+
+  /* Minimal Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 dark:bg-gray-600 rounded-full;
+  }
+
+  ::selection {
+    @apply bg-purple-500/20 text-purple-900 dark:text-purple-100;
+  }
+}
+
+@layer components {
+  /* Premium Gradients */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-purple-600 to-pink-600;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent;
+  }
+
+  /* Glass Effects */
+  .glass-card {
+    @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md 
+           border border-white/20 dark:border-gray-800/50 
+           shadow-lg;
+  }
+
+  /* Premium Buttons */
+  .btn-primary {
+    @apply px-5 py-2 rounded-xl font-semibold transition-all duration-200 
+           gradient-primary text-white shadow-md hover:shadow-lg
+           focus:outline-none focus:ring-2 focus:ring-purple-500/50;
+  }
+
+  .btn-secondary {
+    @apply px-5 py-2 rounded-xl font-semibold transition-all duration-200 
+           bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 
+           hover:bg-gray-200 dark:hover:bg-gray-700;
+  }
+
+  /* Premium Input */
+  .input-premium {
+    @apply w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700
+           bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 
+           focus:ring-purple-500/20 focus:border-purple-500 transition-all;
+  }
+
+  /* Premium Dropdown */
+  .dropdown-premium {
+    @apply absolute z-50 mt-2 py-1 min-w-[180px] 
+           bg-white dark:bg-gray-900 rounded-xl shadow-xl 
+           border border-gray-200 dark:border-gray-700
+           animate-fade-in;
+  }
+
+  .dropdown-item {
+    @apply px-3 py-2 text-sm transition-all duration-150 
+           cursor-pointer flex items-center gap-2
+           hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .animate-fade-in {
+    animation: fade-in 0.15s ease-out;
+  }
+}
+
+@layer utilities {
+  .animation-delay-100 { animation-delay: 100ms; }
+  .animation-delay-200 { animation-delay: 200ms; }
+  .animation-delay-300 { animation-delay: 300ms; }
+  .animation-delay-500 { animation-delay: 500ms; }
+}
+
+/* ============================================ */
+/* TIPTAP EDITOR - CLEAN & PREMIUM */
+/* ============================================ */
+
+.ProseMirror {
+  @apply outline-none min-h-[500px] p-8 max-w-none;
+}
+
+.ProseMirror p {
+  @apply mb-4 leading-relaxed text-gray-700 dark:text-gray-300;
+}
+
+.ProseMirror h1 {
+  @apply text-4xl font-bold mb-4 mt-6 gradient-text;
+}
+
+.ProseMirror h2 {
+  @apply text-3xl font-bold mb-3 mt-5 text-gray-800 dark:text-gray-200;
+}
+
+.ProseMirror h3 {
+  @apply text-2xl font-semibold mb-2 mt-4 text-gray-800 dark:text-gray-200;
+}
+
+.ProseMirror h4 {
+  @apply text-xl font-semibold mb-2 mt-3 text-gray-800 dark:text-gray-200;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-purple-500 pl-4 italic my-4 text-gray-600 dark:text-gray-400;
+}
+
+.ProseMirror code {
+  @apply bg-gray-100 dark:bg-gray-800 rounded-md px-1.5 py-0.5 text-sm font-mono;
+}
+
+.ProseMirror pre {
+  @apply bg-gray-900 dark:bg-gray-950 text-gray-100 p-4 rounded-xl overflow-x-auto my-4;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent p-0;
+}
+
+.ProseMirror ul, .ProseMirror ol {
+  @apply pl-6 my-4;
+}
+
+.ProseMirror li {
+  @apply mb-1;
+}
+
+.ProseMirror img {
+  @apply max-w-full h-auto rounded-xl my-4 shadow-md;
+}
+
+.ProseMirror hr {
+  @apply my-6 border-0 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  @apply text-gray-400 float-left h-0 pointer-events-none;
+}
+
+/* Ensure inline styles are respected */
+.ProseMirror span[style*="font-family"],
+.ProseMirror p[style*="font-family"],
+.ProseMirror div[style*="font-family"] {
+  font-family: var(--font-family, inherit) !important;
+}
+
+.ProseMirror span[style*="font-size"],
+.ProseMirror p[style*="font-size"],
+.ProseMirror div[style*="font-size"] {
+  font-size: var(--font-size, inherit) !important;
+}
+
+/* Selected text styling */
+.ProseMirror .selection {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================ */
+/* REACT TOASTIFY - PREMIUM */
+/* ============================================ */
+
+.Toastify__toast {
+  @apply rounded-xl shadow-lg font-inter;
+}
+
+.Toastify__toast--success {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.Toastify__toast--error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.Toastify__toast--info {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+/* ============================================ */
+/* ACCESSIBILITY */
+/* ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 768px) {
+  button, a, [role="button"] {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}

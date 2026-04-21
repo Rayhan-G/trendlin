@@ -1,158 +1,127 @@
+// src/pages/admin/content-calendar.js
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '@/lib/supabase'
+import AdminNavigation from '@/components/admin/AdminNavigation'
 import Link from 'next/link'
+import { formatNumber } from '@/utils/formatters'
 
 export default function ContentCalendar() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('month')
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [showDayModal, setShowDayModal] = useState(false)
   const [posts, setPosts] = useState([])
-  const [ideas, setIdeas] = useState([])
-  const [showIdeaModal, setShowIdeaModal] = useState(false)
+  const [debug, setDebug] = useState(null)
   const [toast, setToast] = useState({ show: false, message: '', type: '' })
-  const [trends, setTrends] = useState([])
   
-  const [ideaForm, setIdeaForm] = useState({
-    title: '',
-    description: '',
-    priority: 'medium',
-    source: '',
-    notes: ''
+  // Stats
+  const [stats, setStats] = useState({
+    total: 0,
+    published: 0,
+    draft: 0,
+    scheduled: 0
   })
 
   useEffect(() => {
-    checkAuth()
-    fetchData()
-    fetchTrends()
-  }, [currentDate])
+    const sessionToken = localStorage.getItem('admin_session_token')
+    if (!sessionToken) {
+      router.push('/admin/login')
+      return
+    }
+    fetchAllData()
+  }, [])
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type })
     setTimeout(() => setToast({ show: false, message: '', type: '' }), 3000)
   }
 
-  const checkAuth = () => {
-    const sessionToken = localStorage.getItem('admin_session_token')
-    const sessionExpiry = localStorage.getItem('admin_session_expiry')
-    
-    if (!sessionToken || !sessionExpiry) {
-      router.push('/')
-      return
-    }
-    
-    const now = Date.now()
-    if (now > parseInt(sessionExpiry)) {
-      localStorage.removeItem('admin_session_token')
-      localStorage.removeItem('admin_session_expiry')
-      router.push('/')
-    }
-  }
-
-  const fetchData = async () => {
-    const { data: postsData } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    const { data: ideasData } = await supabase
-      .from('content_ideas')
-      .select('*')
-      .order('created_at', { ascending: false })
-    
-    setPosts(postsData || [])
-    setIdeas(ideasData || [])
-    setLoading(false)
-  }
-
-  const fetchTrends = async () => {
-    // Fetch real trends from your trends table
-    const { data: trendsData } = await supabase
-      .from('trends')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(10)
-    
-    setTrends(trendsData || [])
-  }
-
-  const saveIdea = async () => {
-    if (!ideaForm.title.trim()) {
-      showToast('Please enter an idea title', 'error')
-      return
-    }
-    
-    const { error } = await supabase.from('content_ideas').insert([{
-      title: ideaForm.title,
-      description: ideaForm.description,
-      priority: ideaForm.priority,
-      source: ideaForm.source,
-      notes: ideaForm.notes,
-      status: 'pending',
-      created_at: new Date().toISOString()
-    }])
-    
-    if (error) {
-      showToast('Error saving idea', 'error')
-    } else {
-      showToast('Idea saved successfully!')
-      await fetchData()
-      setShowIdeaModal(false)
-      setIdeaForm({
-        title: '',
-        description: '',
-        priority: 'medium',
-        source: '',
-        notes: ''
+  const fetchAllData = async () => {
+    setLoading(true)
+    try {
+      // Fetch all posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+      
+      if (postsError) throw postsError
+      
+      const allPosts = postsData || []
+      setPosts(allPosts)
+      
+      // Debug: Check date fields
+      const samplePost = allPosts[0]
+      if (samplePost) {
+        setDebug({
+          samplePost: {
+            title: samplePost.title,
+            status: samplePost.status,
+            created_at: samplePost.created_at,
+            published_at: samplePost.published_at,
+            scheduled_for: samplePost.scheduled_for
+          },
+          totalPosts: allPosts.length,
+          postsWithPublishedAt: allPosts.filter(p => p.published_at).length,
+          postsWithCreatedAt: allPosts.filter(p => p.created_at).length
+        })
+      }
+      
+      // Calculate stats
+      const published = allPosts.filter(p => p.status === 'published').length
+      const draft = allPosts.filter(p => p.status === 'draft').length
+      const scheduled = allPosts.filter(p => p.status === 'scheduled').length
+      
+      setStats({
+        total: allPosts.length,
+        published,
+        draft,
+        scheduled
       })
+      
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      showToast('Failed to load data', 'error')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const createPostFromIdea = async (idea) => {
-    const slug = idea.title
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-    
-    const { error } = await supabase.from('posts').insert([{
-      title: idea.title,
-      slug: `${slug}-${Date.now()}`,
-      excerpt: idea.description,
-      content: idea.notes || '',
-      status: 'draft',
-      created_at: new Date().toISOString()
-    }])
-    
-    if (error) {
-      showToast('Error creating post', 'error')
-    } else {
-      await supabase.from('content_ideas').update({ status: 'converted' }).eq('id', idea.id)
-      showToast('Post created from idea!')
-      await fetchData()
-      router.push('/admin/create')
+  const handleStatusChange = async (post, newStatus) => {
+    try {
+      const updateData = { 
+        status: newStatus, 
+        updated_at: new Date().toISOString() 
+      }
+      if (newStatus === 'published') {
+        updateData.published_at = new Date().toISOString()
+        updateData.scheduled_for = null
+      }
+      
+      const { error } = await supabase
+        .from('posts')
+        .update(updateData)
+        .eq('id', post.id)
+      
+      if (error) throw error
+      
+      showToast(`Post ${newStatus === 'published' ? 'published' : 'updated'}`)
+      fetchAllData()
+      setShowDayModal(false)
+    } catch (error) {
+      console.error('Error updating status:', error)
+      showToast('Failed to update status', 'error')
     }
   }
 
-  const deleteIdea = async (id) => {
-    if (!confirm('Delete this idea?')) return
-    
-    const { error } = await supabase.from('content_ideas').delete().eq('id', id)
-    
-    if (!error) {
-      showToast('Idea deleted')
-      await fetchData()
-    }
-  }
-
-  const getMonthDays = () => {
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
     const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const daysInMonth = lastDay.getDate()
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
     const startingDayOfWeek = firstDay.getDay()
     
     const days = []
@@ -165,684 +134,345 @@ export default function ContentCalendar() {
     return days
   }
 
-  const getWeekDays = () => {
-    const today = new Date()
-    const startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - today.getDay())
-    
-    const days = []
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(startOfWeek)
-      day.setDate(startOfWeek.getDate() + i)
-      days.push(day)
-    }
-    return days
+  const getDateKey = (date) => {
+    return date.toISOString().split('T')[0]
   }
 
   const getPostsForDate = (date) => {
-    if (!date) return { published: [], scheduled: [], drafts: [] }
-    const dateStr = date.toISOString().split('T')[0]
+    if (!date) return []
+    const dateStr = getDateKey(date)
     
-    return {
-      published: posts.filter(p => p.status === 'published' && p.created_at?.split('T')[0] === dateStr),
-      scheduled: posts.filter(p => p.scheduled_for?.split('T')[0] === dateStr && new Date(p.scheduled_for) > new Date()),
-      drafts: posts.filter(p => p.status === 'draft' && p.created_at?.split('T')[0] === dateStr)
-    }
-  }
-
-  const getContentGaps = () => {
-    const gaps = []
-    const sortedPosts = [...posts]
-      .filter(p => p.status === 'published')
-      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-    
-    for (let i = 0; i < sortedPosts.length - 1; i++) {
-      const currentDate = new Date(sortedPosts[i].created_at)
-      const nextDate = new Date(sortedPosts[i + 1].created_at)
-      const diffDays = Math.ceil((nextDate - currentDate) / (1000 * 60 * 60 * 24))
-      
-      if (diffDays > 7) {
-        gaps.push({
-          start: currentDate,
-          end: nextDate,
-          days: diffDays,
-          message: `${diffDays} days without content`
-        })
+    return posts.filter(post => {
+      // For published posts - use published_at if exists, otherwise use created_at
+      if (post.status === 'published') {
+        const postDate = post.published_at || post.created_at
+        if (postDate) {
+          const postDateStr = new Date(postDate).toISOString().split('T')[0]
+          if (postDateStr === dateStr) return true
+        }
       }
-    }
-    
-    return gaps
+      // For scheduled posts - use scheduled_for
+      if (post.status === 'scheduled' && post.scheduled_for) {
+        const scheduledDateStr = new Date(post.scheduled_for).toISOString().split('T')[0]
+        if (scheduledDateStr === dateStr) return true
+      }
+      // For draft posts - use created_at
+      if (post.status === 'draft' && post.created_at) {
+        const createdDateStr = new Date(post.created_at).toISOString().split('T')[0]
+        if (createdDateStr === dateStr) return true
+      }
+      return false
+    })
   }
 
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const getCategoryIcon = (category) => {
+    const icons = {
+      health: '🌿',
+      tech: '⚡',
+      entertainment: '🎬',
+      wealth: '💰',
+      world: '🌍',
+      lifestyle: '✨',
+      growth: '🌱'
+    }
+    return icons[category] || '📄'
+  }
+
+  const getStatusIcon = (status) => {
+    switch(status) {
+      case 'published': return '✓'
+      case 'scheduled': return '⏰'
+      case 'draft': return '✎'
+      default: return '📄'
+    }
+  }
+
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'published': return '#10b981'
+      case 'scheduled': return '#8b5cf6'
+      case 'draft': return '#f59e0b'
+      default: return '#6b7280'
+    }
+  }
+
+  const getStatusBg = (status) => {
+    switch(status) {
+      case 'published': return '#ecfdf5'
+      case 'scheduled': return '#f5f3ff'
+      case 'draft': return '#fffbeb'
+      default: return '#f5f5f5'
+    }
+  }
+
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const days = getDaysInMonth(currentMonth)
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <style jsx>{`
-          .loading-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f8fafc;
-          }
-          .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid #e2e8f0;
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
+      <AdminNavigation>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ width: '40px', height: '40px', border: '2px solid #eaeaea', borderTopColor: '#000', borderRadius: '50%', animation: 'spin 0.6s linear infinite' }}></div>
+        </div>
+      </AdminNavigation>
     )
   }
 
   return (
-    <div className="calendar-page">
-      {toast.show && (
-        <div className={`toast toast-${toast.type}`}>
-          <span>{toast.type === 'error' ? '❌' : '✅'}</span>
-          <span>{toast.message}</span>
-        </div>
-      )}
+    <AdminNavigation>
+      <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+        {/* Toast */}
+        {toast.show && (
+          <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 1000, background: toast.type === 'error' ? '#ef4444' : '#10b981', color: 'white', padding: '12px 20px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+            {toast.message}
+          </div>
+        )}
 
-      <div className="calendar-header">
-        <div className="header-left">
-          <h1>Content Calendar</h1>
-          <p>Plan, schedule, and manage your content pipeline</p>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <h1 style={{ fontSize: '28px', fontWeight: 600, margin: 0 }}>📅 Content Calendar</h1>
+            <p style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>View all your content by date</p>
+          </div>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button onClick={fetchAllData} style={{ padding: '10px 20px', background: '#f5f5f5', border: '1px solid #eaeaea', borderRadius: '12px', cursor: 'pointer' }}>
+              🔄 Refresh
+            </button>
+            <Link href="/create-post">
+              <button style={{ padding: '10px 20px', background: '#000', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 500 }}>
+                + New Post
+              </button>
+            </Link>
+          </div>
         </div>
-        <div className="header-right">
-          <button onClick={() => setShowIdeaModal(true)} className="idea-btn">
-            + Add Idea
+
+        {/* Debug Info - Remove after fixing */}
+        {debug && (
+          <div style={{ background: '#fef3c7', border: '1px solid #fbbf24', borderRadius: '12px', padding: '16px', marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 8px 0', color: '#92400e' }}>📋 Debug Info:</h3>
+            <p style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>Total Posts: {debug.totalPosts}</p>
+            <p style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>Posts with published_at: {debug.postsWithPublishedAt}</p>
+            <p style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>Posts with created_at: {debug.postsWithCreatedAt}</p>
+            <p style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>Sample Post: {debug.samplePost.title}</p>
+            <p style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>Status: {debug.samplePost.status}</p>
+            <p style={{ fontSize: '12px', color: '#92400e', marginBottom: '4px' }}>created_at: {debug.samplePost.created_at}</p>
+            <p style={{ fontSize: '12px', color: '#92400e' }}>published_at: {debug.samplePost.published_at || 'NULL'}</p>
+          </div>
+        )}
+
+        {/* Stats Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '32px' }}>
+          <div style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '16px', padding: '20px' }}>
+            <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px' }}>Total Posts</div>
+            <div style={{ fontSize: '32px', fontWeight: 700 }}>{stats.total}</div>
+          </div>
+          <div style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '16px', padding: '20px' }}>
+            <div style={{ fontSize: '12px', color: '#10b981', marginBottom: '8px' }}>Published</div>
+            <div style={{ fontSize: '32px', fontWeight: 700, color: '#10b981' }}>{stats.published}</div>
+          </div>
+          <div style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '16px', padding: '20px' }}>
+            <div style={{ fontSize: '12px', color: '#f59e0b', marginBottom: '8px' }}>Drafts</div>
+            <div style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b' }}>{stats.draft}</div>
+          </div>
+          <div style={{ background: '#fff', border: '1px solid #eaeaea', borderRadius: '16px', padding: '20px' }}>
+            <div style={{ fontSize: '12px', color: '#8b5cf6', marginBottom: '8px' }}>Scheduled</div>
+            <div style={{ fontSize: '32px', fontWeight: 700, color: '#8b5cf6' }}>{stats.scheduled}</div>
+          </div>
+        </div>
+
+        {/* Calendar Navigation */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))} style={{ padding: '10px 20px', background: '#f5f5f5', border: '1px solid #eaeaea', borderRadius: '10px', cursor: 'pointer' }}>
+            ← Previous
+          </button>
+          <h2 style={{ fontSize: '22px', fontWeight: 600 }}>{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h2>
+          <button onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))} style={{ padding: '10px 20px', background: '#f5f5f5', border: '1px solid #eaeaea', borderRadius: '10px', cursor: 'pointer' }}>
+            Next →
           </button>
         </div>
-      </div>
 
-      <div className="stats-overview">
-        <div className="stat-card">
-          <span className="stat-icon">💡</span>
-          <div>
-            <div className="stat-value">{ideas.filter(i => i.status === 'pending').length}</div>
-            <div className="stat-label">Ideas in Queue</div>
-          </div>
+        {/* Calendar Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', background: '#eaeaea', border: '1px solid #eaeaea', borderRadius: '16px', overflow: 'hidden' }}>
+          {weekDays.map(day => (
+            <div key={day} style={{ background: '#fafafa', padding: '16px', textAlign: 'center', fontWeight: 600, fontSize: '13px', color: '#666' }}>
+              {day}
+            </div>
+          ))}
+          {days.map((date, index) => {
+            const postsForDay = date ? getPostsForDate(date) : []
+            const isToday = date && date.toDateString() === new Date().toDateString()
+            const publishedCount = postsForDay.filter(p => p.status === 'published').length
+            const scheduledCount = postsForDay.filter(p => p.status === 'scheduled').length
+            const draftCount = postsForDay.filter(p => p.status === 'draft').length
+            
+            return (
+              <div
+                key={index}
+                onClick={() => {
+                  if (date && postsForDay.length > 0) {
+                    setSelectedDate(date)
+                    setShowDayModal(true)
+                  }
+                }}
+                style={{
+                  background: '#fff',
+                  minHeight: '120px',
+                  padding: '12px',
+                  backgroundColor: isToday ? '#fef3c7' : '#fff',
+                  cursor: date && postsForDay.length > 0 ? 'pointer' : 'default',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  if (date && postsForDay.length > 0) e.currentTarget.style.backgroundColor = '#f5f5f5'
+                }}
+                onMouseLeave={(e) => {
+                  if (date && postsForDay.length > 0) e.currentTarget.style.backgroundColor = isToday ? '#fef3c7' : '#fff'
+                }}
+              >
+                {date && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: isToday ? 700 : 400, color: isToday ? '#d97706' : '#333' }}>
+                        {date.getDate()}
+                      </span>
+                      {postsForDay.length > 0 && (
+                        <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '10px', background: '#f0f0f0', color: '#666' }}>
+                          {postsForDay.length}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Show post count by type */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                      {publishedCount > 0 && (
+                        <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ color: '#10b981' }}>✓</span>
+                          <span style={{ color: '#666' }}>{publishedCount} published</span>
+                        </div>
+                      )}
+                      {scheduledCount > 0 && (
+                        <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ color: '#8b5cf6' }}>⏰</span>
+                          <span style={{ color: '#666' }}>{scheduledCount} scheduled</span>
+                        </div>
+                      )}
+                      {draftCount > 0 && (
+                        <div style={{ fontSize: '10px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ color: '#f59e0b' }}>✎</span>
+                          <span style={{ color: '#666' }}>{draftCount} draft</span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })}
         </div>
-        <div className="stat-card">
-          <span className="stat-icon">📝</span>
-          <div>
-            <div className="stat-value">{posts.filter(p => p.status === 'draft').length}</div>
-            <div className="stat-label">Drafts</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <span className="stat-icon">📅</span>
-          <div>
-            <div className="stat-value">{posts.filter(p => p.scheduled_for && new Date(p.scheduled_for) > new Date()).length}</div>
-            <div className="stat-label">Scheduled</div>
-          </div>
-        </div>
-        <div className="stat-card">
-          <span className="stat-icon">📊</span>
-          <div>
-            <div className="stat-value">{posts.filter(p => p.status === 'published').length}</div>
-            <div className="stat-label">Published</div>
-          </div>
-        </div>
-      </div>
 
-      <div className="view-toggle">
-        <button className={view === 'month' ? 'active' : ''} onClick={() => setView('month')}>📅 Month</button>
-        <button className={view === 'week' ? 'active' : ''} onClick={() => setView('week')}>📆 Week</button>
-        <button className={view === 'ideas' ? 'active' : ''} onClick={() => setView('ideas')}>💡 Ideas</button>
-        <button className={view === 'gaps' ? 'active' : ''} onClick={() => setView('gaps')}>⚠️ Gaps</button>
-      </div>
-
-      {view === 'month' && (
-        <div className="month-view">
-          <div className="month-nav">
-            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}>←</button>
-            <h2>{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
-            <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}>→</button>
-          </div>
-          
-          <div className="calendar-grid">
-            {weekDays.map(day => <div key={day} className="calendar-weekday">{day}</div>)}
-            {getMonthDays().map((date, index) => {
-              const postsForDate = date ? getPostsForDate(date) : null
-              return (
-                <div key={index} className={`calendar-day ${!date ? 'empty' : ''} ${date && date.toDateString() === new Date().toDateString() ? 'today' : ''}`}>
-                  {date && (
-                    <>
-                      <div className="day-number">{date.getDate()}</div>
-                      <div className="day-posts">
-                        {postsForDate.scheduled.slice(0, 2).map(post => (
-                          <div key={post.id} className="day-post scheduled" title={post.title}>📅 {post.title.substring(0, 15)}</div>
-                        ))}
-                        {postsForDate.published.slice(0, 2).map(post => (
-                          <div key={post.id} className="day-post published" title={post.title}>✓ {post.title.substring(0, 15)}</div>
-                        ))}
+        {/* Day Modal - Show all posts for selected date */}
+        {showDayModal && selectedDate && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }} onClick={() => setShowDayModal(false)}>
+            <div style={{ background: '#fff', borderRadius: '20px', maxWidth: '600px', width: '100%', maxHeight: '80vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: '20px', borderBottom: '1px solid #eaeaea', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#fff' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 600 }}>
+                  {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                </h3>
+                <button onClick={() => setShowDayModal(false)} style={{ fontSize: '24px', background: 'none', border: 'none', cursor: 'pointer' }}>&times;</button>
+              </div>
+              <div style={{ padding: '20px' }}>
+                {getPostsForDate(selectedDate).length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                    No posts for this date
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {getPostsForDate(selectedDate).map(post => (
+                      <div key={post.id} style={{ 
+                        padding: '16px', 
+                        border: '1px solid #eaeaea', 
+                        borderRadius: '12px',
+                        background: '#fafafa'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                              <span style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '4px',
+                                padding: '2px 8px', 
+                                borderRadius: '20px', 
+                                fontSize: '10px', 
+                                fontWeight: 500,
+                                background: getStatusBg(post.status),
+                                color: getStatusColor(post.status)
+                              }}>
+                                {getStatusIcon(post.status)} {post.status}
+                              </span>
+                              <span style={{ fontSize: '11px', color: '#888' }}>
+                                {getCategoryIcon(post.category)} {post.category || 'Uncategorized'}
+                              </span>
+                              {post.views > 0 && (
+                                <span style={{ fontSize: '11px', color: '#888' }}>👁️ {formatNumber(post.views)}</span>
+                              )}
+                            </div>
+                            <h4 style={{ fontSize: '16px', fontWeight: 600, margin: '8px 0' }}>
+                              <Link href={`/edit-post/${post.id}`} style={{ color: '#000', textDecoration: 'none' }}>
+                                {post.title || 'Untitled'}
+                              </Link>
+                            </h4>
+                            <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                              📅 Created: {new Date(post.created_at).toLocaleDateString()}
+                            </div>
+                            {post.scheduled_for && (
+                              <div style={{ fontSize: '12px', color: '#8b5cf6', marginTop: '4px' }}>
+                                ⏰ Scheduled for: {new Date(post.scheduled_for).toLocaleString()}
+                              </div>
+                            )}
+                            {post.published_at && (
+                              <div style={{ fontSize: '12px', color: '#10b981', marginTop: '4px' }}>
+                                ✓ Published on: {new Date(post.published_at).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <Link href={`/edit-post/${post.id}`}>
+                              <button style={{ padding: '4px 12px', fontSize: '12px', background: '#f5f5f5', border: '1px solid #eaeaea', borderRadius: '6px', cursor: 'pointer' }}>Edit</button>
+                            </Link>
+                            {post.status === 'scheduled' && (
+                              <button 
+                                onClick={() => handleStatusChange(post, 'published')}
+                                style={{ padding: '4px 12px', fontSize: '12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                              >
+                                Publish Now
+                              </button>
+                            )}
+                            {post.status === 'draft' && (
+                              <button 
+                                onClick={() => handleStatusChange(post, 'published')}
+                                style={{ padding: '4px 12px', fontSize: '12px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                              >
+                                Publish
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {view === 'week' && (
-        <div className="week-view">
-          <div className="week-grid">
-            {getWeekDays().map(day => {
-              const postsForDate = getPostsForDate(day)
-              const isToday = day.toDateString() === new Date().toDateString()
-              return (
-                <div key={day.toISOString()} className={`week-day ${isToday ? 'today' : ''}`}>
-                  <div className="week-day-header">
-                    <div className="week-day-name">{weekDays[day.getDay()]}</div>
-                    <div className="week-day-date">{day.getDate()}</div>
-                  </div>
-                  <div className="week-day-posts">
-                    {postsForDate.scheduled.map(post => (
-                      <div key={post.id} className="week-post scheduled">📅 {post.title}</div>
-                    ))}
-                    {postsForDate.published.map(post => (
-                      <div key={post.id} className="week-post published">✓ {post.title}</div>
-                    ))}
-                    {postsForDate.drafts.map(post => (
-                      <div key={post.id} className="week-post draft">✏️ {post.title}</div>
                     ))}
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {view === 'ideas' && (
-        <div className="ideas-view">
-          <div className="priority-columns">
-            <div className="priority-column high">
-              <div className="column-header">🔥 High Priority</div>
-              {ideas.filter(i => i.priority === 'high').map(idea => (
-                <div key={idea.id} className="idea-card">
-                  <div className="idea-title">{idea.title}</div>
-                  <div className="idea-description">{idea.description?.substring(0, 80)}</div>
-                  <div className="idea-actions">
-                    <button onClick={() => createPostFromIdea(idea)} className="create-post-btn">Create Post</button>
-                    <button onClick={() => deleteIdea(idea.id)} className="delete-idea-btn">Delete</button>
-                  </div>
-                </div>
-              ))}
-              {ideas.filter(i => i.priority === 'high').length === 0 && <div className="empty-column">No high priority ideas</div>}
-            </div>
-            
-            <div className="priority-column medium">
-              <div className="column-header">📌 Medium Priority</div>
-              {ideas.filter(i => i.priority === 'medium').map(idea => (
-                <div key={idea.id} className="idea-card">
-                  <div className="idea-title">{idea.title}</div>
-                  <div className="idea-description">{idea.description?.substring(0, 80)}</div>
-                  <div className="idea-actions">
-                    <button onClick={() => createPostFromIdea(idea)} className="create-post-btn">Create Post</button>
-                    <button onClick={() => deleteIdea(idea.id)} className="delete-idea-btn">Delete</button>
-                  </div>
-                </div>
-              ))}
-              {ideas.filter(i => i.priority === 'medium').length === 0 && <div className="empty-column">No medium priority ideas</div>}
-            </div>
-            
-            <div className="priority-column low">
-              <div className="column-header">📋 Low Priority</div>
-              {ideas.filter(i => i.priority === 'low').map(idea => (
-                <div key={idea.id} className="idea-card">
-                  <div className="idea-title">{idea.title}</div>
-                  <div className="idea-description">{idea.description?.substring(0, 80)}</div>
-                  <div className="idea-actions">
-                    <button onClick={() => createPostFromIdea(idea)} className="create-post-btn">Create Post</button>
-                    <button onClick={() => deleteIdea(idea.id)} className="delete-idea-btn">Delete</button>
-                  </div>
-                </div>
-              ))}
-              {ideas.filter(i => i.priority === 'low').length === 0 && <div className="empty-column">No low priority ideas</div>}
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {view === 'gaps' && (
-        <div className="gaps-view">
-          {getContentGaps().length === 0 ? (
-            <div className="no-gaps">
-              <span>🎉</span>
-              <h4>No content gaps found!</h4>
-              <p>Your publishing schedule is consistent</p>
-            </div>
-          ) : (
-            getContentGaps().map((gap, index) => (
-              <div key={index} className="gap-card">
-                <div className="gap-icon">⚠️</div>
-                <div className="gap-info">
-                  <div className="gap-message">{gap.message} without content</div>
-                  <div className="gap-dates">{gap.start.toLocaleDateString()} → {gap.end.toLocaleDateString()}</div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {showIdeaModal && (
-        <div className="modal-overlay" onClick={() => setShowIdeaModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>Add Content Idea</h2>
-              <button className="close-btn" onClick={() => setShowIdeaModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Title *</label>
-                <input type="text" value={ideaForm.title} onChange={(e) => setIdeaForm({...ideaForm, title: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea rows="3" value={ideaForm.description} onChange={(e) => setIdeaForm({...ideaForm, description: e.target.value})} />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Priority</label>
-                  <select value={ideaForm.priority} onChange={(e) => setIdeaForm({...ideaForm, priority: e.target.value})}>
-                    <option value="high">High</option>
-                    <option value="medium">Medium</option>
-                    <option value="low">Low</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Source</label>
-                  <input type="text" value={ideaForm.source} onChange={(e) => setIdeaForm({...ideaForm, source: e.target.value})} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Research Notes</label>
-                <textarea rows="4" value={ideaForm.notes} onChange={(e) => setIdeaForm({...ideaForm, notes: e.target.value})} />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button onClick={() => setShowIdeaModal(false)} className="cancel-btn">Cancel</button>
-              <button onClick={saveIdea} className="save-btn">Save Idea</button>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <style jsx>{`
-        .calendar-page {
-          min-height: 100vh;
-          background: #f8fafc;
-          padding: 2rem;
-        }
-        
-        :global(body.dark) .calendar-page {
-          background: #0f172a;
-        }
-        
-        .toast {
-          position: fixed;
-          bottom: 2rem;
-          right: 2rem;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1.25rem;
-          background: white;
-          border-radius: 12px;
-          z-index: 1100;
-          animation: slideIn 0.3s ease;
-        }
-        
-        .toast-error { border-left: 4px solid #ef4444; }
-        .toast-success { border-left: 4px solid #10b981; }
-        
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateX(100%); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .calendar-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-        
-        .calendar-header h1 {
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: #0f172a;
-        }
-        
-        :global(body.dark) .calendar-header h1 {
-          color: #f1f5f9;
-        }
-        
-        .calendar-header p {
-          color: #64748b;
-        }
-        
-        .idea-btn {
-          padding: 0.6rem 1.25rem;
-          background: #667eea;
-          color: white;
-          border: none;
-          border-radius: 10px;
-          cursor: pointer;
-        }
-        
-        .stats-overview {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 1rem;
-          margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-          background: white;
-          border-radius: 16px;
-          padding: 1rem;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-        
-        :global(body.dark) .stat-card {
-          background: #1e293b;
-        }
-        
-        .stat-icon { font-size: 2rem; }
-        .stat-value { font-size: 1.5rem; font-weight: 700; }
-        .stat-label { font-size: 0.75rem; color: #64748b; }
-        
-        .view-toggle {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 2rem;
-          flex-wrap: wrap;
-        }
-        
-        .view-toggle button {
-          padding: 0.5rem 1rem;
-          background: white;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-        
-        .view-toggle button.active {
-          background: #667eea;
-          border-color: #667eea;
-          color: white;
-        }
-        
-        .month-view {
-          background: white;
-          border-radius: 20px;
-          padding: 1rem;
-        }
-        
-        .month-nav {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1rem;
-        }
-        
-        .month-nav button {
-          padding: 0.5rem 1rem;
-          background: #f1f5f9;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-        
-        .calendar-grid {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          gap: 1px;
-          background: #e2e8f0;
-        }
-        
-        .calendar-weekday {
-          background: #f8fafc;
-          padding: 0.75rem;
-          text-align: center;
-          font-weight: 600;
-        }
-        
-        .calendar-day {
-          background: white;
-          min-height: 100px;
-          padding: 0.5rem;
-        }
-        
-        .calendar-day.empty { background: #f8fafc; }
-        .calendar-day.today { background: #eef2ff; }
-        
-        .day-number { font-weight: 600; margin-bottom: 0.5rem; }
-        
-        .day-post {
-          font-size: 0.7rem;
-          padding: 0.25rem;
-          margin-bottom: 0.25rem;
-          border-radius: 4px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        
-        .day-post.scheduled { background: #dbeafe; color: #1e40af; }
-        .day-post.published { background: #d1fae5; color: #065f46; }
-        
-        .week-view {
-          background: white;
-          border-radius: 20px;
-          padding: 1rem;
-        }
-        
-        .week-grid {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          gap: 1rem;
-        }
-        
-        .week-day {
-          background: #f8fafc;
-          border-radius: 12px;
-          padding: 0.75rem;
-        }
-        
-        .week-day.today {
-          background: #eef2ff;
-          border: 2px solid #667eea;
-        }
-        
-        .week-day-header {
-          text-align: center;
-          margin-bottom: 0.75rem;
-        }
-        
-        .week-day-name { font-weight: 600; }
-        .week-day-date { font-size: 1.25rem; font-weight: 700; }
-        
-        .week-post {
-          font-size: 0.7rem;
-          padding: 0.25rem;
-          margin-bottom: 0.25rem;
-          border-radius: 4px;
-        }
-        
-        .ideas-view {
-          background: white;
-          border-radius: 20px;
-          padding: 1.5rem;
-        }
-        
-        .priority-columns {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 1.5rem;
-        }
-        
-        .priority-column {
-          background: #f8fafc;
-          border-radius: 16px;
-          padding: 1rem;
-        }
-        
-        .column-header {
-          font-weight: 700;
-          padding-bottom: 0.75rem;
-          margin-bottom: 1rem;
-          border-bottom: 2px solid #e2e8f0;
-        }
-        
-        .idea-card {
-          background: white;
-          border-radius: 12px;
-          padding: 1rem;
-          margin-bottom: 1rem;
-        }
-        
-        .idea-title { font-weight: 600; margin-bottom: 0.5rem; }
-        .idea-description { font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem; }
-        
-        .idea-actions { display: flex; gap: 0.5rem; }
-        
-        .create-post-btn, .delete-idea-btn {
-          padding: 0.25rem 0.5rem;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.7rem;
-        }
-        
-        .create-post-btn { background: #10b981; color: white; }
-        .delete-idea-btn { background: #ef4444; color: white; }
-        
-        .empty-column { text-align: center; padding: 2rem; color: #64748b; }
-        
-        .gaps-view {
-          background: white;
-          border-radius: 20px;
-          padding: 1.5rem;
-        }
-        
-        .no-gaps { text-align: center; padding: 3rem; }
-        .no-gaps span { font-size: 3rem; display: block; margin-bottom: 1rem; }
-        
-        .gap-card {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          padding: 1rem;
-          background: #fef3c7;
-          border-radius: 12px;
-          margin-bottom: 1rem;
-        }
-        
-        .gap-icon { font-size: 1.5rem; }
-        .gap-message { font-weight: 600; }
-        .gap-dates { font-size: 0.7rem; color: #92400e; }
-        
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(4px);
-          z-index: 1000;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .modal-content {
-          background: white;
-          border-radius: 20px;
-          width: 90%;
-          max-width: 600px;
-          max-height: 90vh;
-          overflow: auto;
-        }
-        
-        :global(body.dark) .modal-content { background: #1e293b; }
-        
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1.5rem;
-          border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-        }
-        
-        .modal-body { padding: 1.5rem; }
-        
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
-        .form-group input, .form-group textarea, .form-group select {
-          width: 100%;
-          padding: 0.5rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-        }
-        
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        
-        .modal-footer {
-          display: flex;
-          justify-content: flex-end;
-          gap: 1rem;
-          padding: 1rem 1.5rem;
-          border-top: 1px solid #e2e8f0;
-        }
-        
-        .cancel-btn, .save-btn {
-          padding: 0.5rem 1rem;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-        
-        .cancel-btn { background: #ef4444; color: white; }
-        .save-btn { background: #10b981; color: white; }
-        
-        @media (max-width: 768px) {
-          .calendar-page { padding: 1rem; }
-          .priority-columns { grid-template-columns: 1fr; }
-          .week-grid { grid-template-columns: 1fr; }
-          .form-row { grid-template-columns: 1fr; }
-          .stats-overview { grid-template-columns: repeat(2, 1fr); }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
       `}</style>
-    </div>
+    </AdminNavigation>
   )
 }

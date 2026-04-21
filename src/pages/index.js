@@ -1,7 +1,7 @@
+// src/pages/index.js
 import { useState, useEffect } from 'react'
-import Layout from '@/components/Layout'
-import HeroSection from '@/components/HeroSection'
-import HorizontalScroll from '@/components/HorizontalScroll'
+import HeroSection from '@/components/frontend/HeroSection'
+import HorizontalScroll from '@/components/frontend/HorizontalScroll'
 import { supabase } from '@/lib/supabase'
 
 export default function Home() {
@@ -9,61 +9,67 @@ export default function Home() {
   const [popularPosts, setPopularPosts] = useState([])
   const [editorsPicks, setEditorsPicks] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchPosts()
   }, [])
 
   const fetchPosts = async () => {
+    setLoading(true)
+    setError(null)
+    
     try {
-      // Get current date info
       const today = new Date()
       const todayStr = today.toISOString().split('T')[0]
       
-      // Get current month and year for popular posts
       const currentYear = today.getFullYear()
       const currentMonth = today.getMonth() + 1
       const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
 
-      // 1. Fetch Editor's Picks (featured posts that are published)
-      const { data: editorPicksData } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('status', 'published')
-        .eq('is_featured', true)
-        .limit(6)
-
-      // 2. Fetch all published posts
-      const { data: posts } = await supabase
+      // Fetch all published posts
+      const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
+
+      if (postsError) {
+        console.error('Error fetching posts:', postsError)
+        setError('Failed to load posts')
+        setLoading(false)
+        return
+      }
 
       if (!posts || posts.length === 0) {
         setLoading(false)
         return
       }
 
-      // 3. Today's Posts (posts created today)
-      const todayFiltered = posts.filter(post => 
-        post.created_at?.split('T')[0] === todayStr
-      )
+      // Editor's picks (featured posts)
+      const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
+      setEditorsPicks(picks)
 
-      // 4. Most Popular Posts (current month only, by views, top 30)
+      // Today's posts
+      const todayFiltered = posts.filter(post => {
+        const publishDate = post.created_at?.split('T')[0]
+        return publishDate === todayStr
+      })
+      setTodayPosts(todayFiltered)
+
+      // Most popular this month
       const popularFiltered = posts
         .filter(post => {
-          const postDate = post.created_at?.split('T')[0] || ''
-          return postDate.startsWith(currentMonthStr)
+          const publishDate = post.created_at?.split('T')[0] || ''
+          return publishDate.startsWith(currentMonthStr)
         })
         .sort((a, b) => (b.views || 0) - (a.views || 0))
         .slice(0, 30)
-
-      setTodayPosts(todayFiltered)
       setPopularPosts(popularFiltered)
-      setEditorsPicks(editorPicksData || [])
+      
     } catch (error) {
       console.error('Error fetching posts:', error)
+      setError('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
@@ -73,10 +79,8 @@ export default function Home() {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-        </div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
         <style jsx>{`
           .loading-container {
             min-height: 60vh;
@@ -96,47 +100,91 @@ export default function Home() {
             to { transform: rotate(360deg); }
           }
         `}</style>
-      </Layout>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <>
+        <HeroSection />
+        <div className="error-container">
+          <div className="error-card">
+            <span className="error-icon">⚠️</span>
+            <h2>Something went wrong</h2>
+            <p>{error}</p>
+            <button onClick={fetchPosts} className="retry-btn">Try Again</button>
+          </div>
+        </div>
+        <style jsx>{`
+          .error-container {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+          }
+          .error-card {
+            text-align: center;
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+          }
+          :global(body.dark) .error-card {
+            background: #1e293b;
+            border-color: #334155;
+          }
+          .error-icon { font-size: 48px; display: block; margin-bottom: 16px; }
+          .error-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1e293b; }
+          :global(body.dark) .error-card h2 { color: #f1f5f9; }
+          .error-card p { color: #64748b; margin-bottom: 20px; }
+          .retry-btn { padding: 10px 24px; background: #667eea; color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; }
+        `}</style>
+      </>
+    )
+  }
+
+  const hasPosts = todayPosts.length > 0 || popularPosts.length > 0 || editorsPicks.length > 0
+
+  if (!hasPosts) {
+    return (
+      <>
+        <HeroSection />
+        <div className="empty-state">
+          <p>No posts yet. Check back soon!</p>
+        </div>
+        <style jsx>{`
+          .empty-state {
+            text-align: center;
+            padding: 4rem;
+            background: white;
+            border-radius: 16px;
+            margin: 2rem auto;
+            max-width: 600px;
+          }
+          :global(body.dark) .empty-state { background: #1e293b; }
+          .empty-state p { color: #64748b; }
+        `}</style>
+      </>
     )
   }
 
   return (
-    <Layout>
+    <>
       <HeroSection />
       
       <div className="home-container">
-        {/* Editor's Picks Section */}
         {editorsPicks.length > 0 && (
-          <HorizontalScroll 
-            title="⭐ Editor's Picks" 
-            posts={editorsPicks} 
-            showRank={false}
-          />
+          <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
         )}
 
-        {/* Today's Posts Section */}
         {todayPosts.length > 0 && (
-          <HorizontalScroll 
-            title="📰 Today's Fresh Posts" 
-            posts={todayPosts} 
-            showRank={false}
-          />
+          <HorizontalScroll title="📰 Today's Fresh Posts" posts={todayPosts} showRank={false} />
         )}
 
-        {/* Most Popular Section */}
         {popularPosts.length > 0 && (
-          <HorizontalScroll 
-            title={`🔥 Most Popular - ${currentMonthName}`} 
-            posts={popularPosts} 
-            showRank={true}
-          />
-        )}
-
-        {/* If no posts */}
-        {todayPosts.length === 0 && popularPosts.length === 0 && editorsPicks.length === 0 && (
-          <div className="empty-state">
-            <p>No posts yet. Check back soon!</p>
-          </div>
+          <HorizontalScroll title={`🔥 Most Popular - ${currentMonthName}`} posts={popularPosts} showRank={true} />
         )}
       </div>
 
@@ -144,27 +192,12 @@ export default function Home() {
         .home-container {
           max-width: 1400px;
           margin: 0 auto;
-          padding: 0 2rem;
+          padding: 0 2rem 4rem 2rem;
         }
-        
-        .empty-state {
-          text-align: center;
-          padding: 4rem;
-          background: white;
-          border-radius: 16px;
-          margin: 2rem 0;
-        }
-        
-        :global(body.dark) .empty-state {
-          background: #1e293b;
-        }
-        
         @media (max-width: 768px) {
-          .home-container {
-            padding: 0 1rem;
-          }
+          .home-container { padding: 0 1rem 3rem 1rem; }
         }
       `}</style>
-    </Layout>
+    </>
   )
 }

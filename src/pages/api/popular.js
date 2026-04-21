@@ -1,87 +1,89 @@
-import { supabase, isSupabaseAvailable } from '@/lib/supabase'
+// src/pages/api/popular.js (COMPLETE FIXED FILE)
+
+import { supabase } from '@/lib/supabase'
 
 export default async function handler(req, res) {
+  // ✅ FIXED: Only allow GET requests
   if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' })
+    res.setHeader('Allow', ['GET'])
+    return res.status(405).json({ 
+      success: false, 
+      error: `Method ${req.method} not allowed` 
+    })
   }
   
+  // ✅ FIXED: Add CORS headers for API access
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end()
+  }
+  
+  // ✅ FIXED: Add cache headers (1 hour for popular posts)
+  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=1800')
+  
+  // ✅ FIXED: Parse query parameters for pagination
+  const limit = Math.min(parseInt(req.query.limit) || 20, 50) // Max 50
+  const offset = parseInt(req.query.offset) || 0
+  const days = parseInt(req.query.days) || 30 // Popular in last N days
+  
   try {
-    // Try to get real data from Supabase
-    let posts = []
+    let query = supabase
+      .from('posts')
+      .select('id, title, slug, excerpt, featured_image, category, views, published_at, created_at', { count: 'exact' })
+      .eq('status', 'published')
+      .order('views', { ascending: false })
+      .range(offset, offset + limit - 1)
+      .limit(limit)
     
-    if (isSupabaseAvailable()) {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .order('id', { ascending: false })
-        .limit(20)
-      
-      if (!error && data) {
-        posts = data.map(post => ({
-          ...post,
-          view_count: Math.floor(Math.random() * 10000) + 1000 // Temp random views
-        }))
-      }
+    // ✅ FIXED: Optional date filter for trending posts
+    if (days && days < 365) {
+      const dateThreshold = new Date()
+      dateThreshold.setDate(dateThreshold.getDate() - days)
+      query = query.gte('published_at', dateThreshold.toISOString())
     }
     
-    // If no posts in DB, return sample data
-    if (posts.length === 0) {
-      posts = [
-        {
-          id: 1,
-          title: "10 Morning Habits That Transform Your Health",
-          slug: "morning-habits-transform-health",
-          category: "Health",
-          excerpt: "Discover the morning routines that can boost your energy.",
-          image: "/images/placeholder.jpg",
-          view_count: 28473
-        },
-        {
-          id: 2,
-          title: "Smart Investment Strategies for Beginners",
-          slug: "smart-investment-strategies-beginners",
-          category: "Wealth",
-          excerpt: "Learn the fundamentals of investing.",
-          image: "/images/placeholder.jpg",
-          view_count: 42156
-        },
-        {
-          id: 3,
-          title: "Latest Tech Gadgets That Will Change Your Life",
-          slug: "latest-tech-gadgets-change-life",
-          category: "Tech",
-          excerpt: "Explore innovations reshaping our daily lives.",
-          image: "/images/placeholder.jpg",
-          view_count: 56789
-        },
-        {
-          id: 4,
-          title: "Personal Growth: How to Achieve Your Goals",
-          slug: "personal-growth-achieve-goals",
-          category: "Growth",
-          excerpt: "Proven techniques to reach your full potential.",
-          image: "/images/placeholder.jpg",
-          view_count: 19342
-        },
-        {
-          id: 5,
-          title: "Top Streaming Services Ranked",
-          slug: "top-streaming-services-ranked",
-          category: "Entertainment",
-          excerpt: "Compare the best streaming platforms.",
-          image: "/images/placeholder.jpg",
-          view_count: 31267
-        }
-      ]
+    const { data: posts, error, count } = await query
+    
+    if (error) {
+      console.error('Supabase error:', error)
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Database error occurred' 
+      })
     }
+    
+    // ✅ FIXED: Return only necessary fields
+    const sanitizedPosts = posts?.map(post => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      featured_image: post.featured_image,
+      category: post.category,
+      views: post.views,
+      published_at: post.published_at
+    })) || []
     
     return res.status(200).json({
       success: true,
-      posts: posts
+      posts: sanitizedPosts,
+      pagination: {
+        limit,
+        offset,
+        total: count || sanitizedPosts.length,
+        hasMore: offset + limit < (count || sanitizedPosts.length)
+      }
     })
     
   } catch (error) {
     console.error('API error:', error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    })
   }
 }
