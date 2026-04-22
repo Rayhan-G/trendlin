@@ -8,26 +8,23 @@ export default async function handler(req, res) {
   }
   
   try {
-    const { to, categories, sourcePage, verificationLink } = req.body;
+    const { to, verificationLink } = req.body;
     
-    // Check if we can send real emails
-    const canSendRealEmails = process.env.RESEND_API_KEY && 
-                              process.env.RESEND_FROM_EMAIL && 
-                              process.env.NODE_ENV === 'production';
+    // Check if email can actually be sent
+    const canSendEmail = process.env.RESEND_API_KEY && 
+                         process.env.RESEND_FROM_EMAIL && 
+                         process.env.RESEND_API_KEY.startsWith('re_');
     
-    if (!canSendRealEmails) {
-      // Fallback mode - just log
-      console.log('📧 [FALLBACK] Would send email to:', to);
-      console.log('🔗 Verification link:', verificationLink);
-      
-      return res.status(200).json({ 
-        success: true, 
-        fallbackMode: true,
-        message: 'Subscription saved (email service pending)'
+    if (!canSendEmail) {
+      // Tell the truth - email not configured
+      console.error('Email not configured properly');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Email service not configured',
+        message: 'System configuration error. Please try again later.'
       });
     }
     
-    // Send real email
     const resend = new Resend(process.env.RESEND_API_KEY);
     
     const { data, error } = await resend.emails.send({
@@ -36,24 +33,34 @@ export default async function handler(req, res) {
       subject: 'Verify Your Newsletter Subscription',
       html: `
         <h1>Welcome to Trendlin!</h1>
-        <p>Thanks for subscribing! Please verify your email:</p>
-        <a href="${verificationLink}">Verify Email</a>
+        <p>Thanks for subscribing! Please click the link below to verify your email:</p>
+        <a href="${verificationLink}" style="background: #06b6d4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">Verify Email</a>
         <p>Or copy this link: ${verificationLink}</p>
+        <p>If you didn't request this, you can ignore this email.</p>
       `
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Resend error:', error);
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to send verification email',
+        message: 'Unable to send email. Please try again.'
+      });
+    }
     
-    console.log('✅ Email sent to:', to);
-    return res.status(200).json({ success: true, emailSent: true });
-    
-  } catch (error) {
-    console.error('Email error:', error);
-    // Still return success so user doesn't see error
+    console.log('✅ Verification email sent to:', to);
     return res.status(200).json({ 
       success: true, 
-      fallbackMode: true,
-      message: 'Subscription saved!'
+      message: 'Verification email sent! Please check your inbox.'
+    });
+    
+  } catch (error) {
+    console.error('API Error:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error',
+      message: 'Something went wrong. Please try again.'
     });
   }
 }

@@ -176,14 +176,20 @@ export default function NewsletterSubscribe({
 
     try {
       // Prepare subscriber data (only include columns that exist)
-      const subscriberData = {
-        email: email.toLowerCase().trim(),
-        categories: selectedCategories,
-        subscribed_at: new Date().toISOString(),
-        status: 'pending',
-        verification_token: generateVerificationToken(),
-        verification_sent_at: new Date().toISOString()
-      }
+     const subscriberData = {
+  email: email.toLowerCase().trim(),
+  categories: selectedCategories,
+  subscribed_at: new Date().toISOString(),
+  status: 'pending',
+  verification_token: generateVerificationToken(),
+  unsubscribe_token: generateVerificationToken(), // ← ADD THIS for one-click unsubscribe
+  verification_sent_at: new Date().toISOString(),
+  delivery_frequency: 'weekly', // ← ADD THIS (default)
+  max_posts_per_week: 3, // ← ADD THIS (default - 3 posts/week)
+  post_selection_method: 'latest', // ← ADD THIS (default)
+  preferred_post_length: 'medium', // ← ADD THIS (default)
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone // ← ADD THIS (auto-detect)
+}
       
       // Only add source_page if the column exists (optional)
       // subscriberData.source_page = currentPageCategory || 'home'
