@@ -1,6 +1,6 @@
 // src/components/frontend/NewsletterSubscribe.js
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 
@@ -31,12 +31,14 @@ export default function NewsletterSubscribe({
   
   // Modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [subscribedEmail, setSubscribedEmail] = useState('')
+  const [submittedEmail, setSubmittedEmail] = useState('')
   const [resendCooldown, setResendCooldown] = useState(false)
   
-  // Existing subscriber state
-  const [showManageForExisting, setShowManageForExisting] = useState(false)
-  const [existingSubscriberData, setExistingSubscriberData] = useState(null)
+  // 🔥 Subscription status state
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null) // null = unknown, 'subscribed', 'not_subscribed', 'pending'
+  const [subscriberData, setSubscriberData] = useState(null)
+  const [checkingStatus, setCheckingStatus] = useState(false)
+  const [emailChecked, setEmailChecked] = useState(false)
 
   // Detect localhost
   useEffect(() => {
@@ -44,29 +46,14 @@ export default function NewsletterSubscribe({
     setIsLocalhost(hostname === 'localhost' || hostname === '127.0.0.1')
   }, [])
 
-  // Disposable email domains
-  const disposableDomains = [
-    'tempmail.com', '10minutemail.com', 'guerrillamail.com',
-    'mailinator.com', 'yopmail.com', 'throwaway.com', 'temp-mail.org',
-    'fakeinbox.com', 'dispostable.com', 'getnada.com', 'mailnator.com',
-    'trashmail.com', 'spamgourmet.com', 'sogetthis.com', 'guerrillamail.net',
-    'guerrillamail.org', 'guerrillamail.biz', 'maildrop.cc', 'mailnesia.com',
-    'tempinbox.com', 'tempemail.net', 'tempinbox.co.uk', 'tempmailaddress.com',
-    'mytemp.email', 'tempail.com', 'tyldr.com', 'mailmetrash.com',
-    'sharklasers.com', 'grr.la', 'incognitomail.com', 'one-time.email',
-    'emailondeck.com', 'fake-mail.net', 'emailfake.com', 'temp-mail.io'
-  ]
-
-  const roleBasedDomains = ['admin', 'support', 'info', 'contact', 'webmaster', 'postmaster', 'noreply', 'no-reply']
-
   const categories = [
-    { id: 'health', name: 'Health & Wellness', icon: '🌿', color: '#10b981' },
-    { id: 'entertainment', name: 'Entertainment', icon: '🎬', color: '#ec4899' },
-    { id: 'growth', name: 'Personal Growth', icon: '🌱', color: '#10b981' },
-    { id: 'lifestyle', name: 'Lifestyle', icon: '✨', color: '#f97316' },
-    { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6' },
-    { id: 'wealth', name: 'Wealth', icon: '💰', color: '#f59e0b' },
-    { id: 'world', name: 'World News', icon: '🌍', color: '#06b6d4' }
+    { id: 'health', name: 'Health & Wellness', icon: '🌿' },
+    { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
+    { id: 'growth', name: 'Personal Growth', icon: '🌱' },
+    { id: 'lifestyle', name: 'Lifestyle', icon: '✨' },
+    { id: 'tech', name: 'Technology', icon: '⚡' },
+    { id: 'wealth', name: 'Wealth', icon: '💰' },
+    { id: 'world', name: 'World News', icon: '🌍' }
   ]
 
   // Auto-detect category from URL
@@ -101,18 +88,81 @@ export default function NewsletterSubscribe({
     detectCategory()
   }, [router.asPath, presetCategory])
 
-  const isDisposableEmail = (email) => {
-    const domain = email.split('@')[1]?.toLowerCase()
-    if (!domain) return false
-    return disposableDomains.some(disposable => 
-      domain === disposable || domain.endsWith(`.${disposable}`)
-    )
-  }
+  // 🔥 Check subscription status for an email
+  const checkSubscriptionStatus = useCallback(async (emailToCheck) => {
+    if (!emailToCheck || !emailToCheck.includes('@') || emailToCheck.length < 5) {
+      setSubscriptionStatus(null)
+      setSubscriberData(null)
+      return null
+    }
 
-  const isRoleBasedEmail = (email) => {
-    const localPart = email.split('@')[0]?.toLowerCase()
-    return roleBasedDomains.includes(localPart)
-  }
+    setCheckingStatus(true)
+    
+    try {
+      const { data, error } = await supabase
+        .from('newsletter_subscribers')
+        .select('email, status, categories, delivery_frequency, max_posts_per_week, post_format, unsubscribe_token')
+        .eq('email', emailToCheck.toLowerCase().trim())
+        .maybeSingle()
+
+      if (error) throw error
+
+      if (data) {
+        if (data.status === 'verified') {
+          setSubscriptionStatus('subscribed')
+          setSubscriberData(data)
+          // Save to localStorage for next visit
+          localStorage.setItem('subscribed_email', emailToCheck.toLowerCase().trim())
+          return 'subscribed'
+        } else if (data.status === 'pending') {
+          setSubscriptionStatus('pending')
+          setSubscriberData(data)
+          return 'pending'
+        }
+      }
+      
+      setSubscriptionStatus('not_subscribed')
+      setSubscriberData(null)
+      return 'not_subscribed'
+    } catch (err) {
+      console.error('Error checking subscription:', err)
+      setSubscriptionStatus(null)
+      return null
+    } finally {
+      setCheckingStatus(false)
+      setEmailChecked(true)
+    }
+  }, [])
+
+  // 🔥 Load saved email on page mount and check status
+  useEffect(() => {
+    const loadSavedSubscription = async () => {
+      const savedEmail = localStorage.getItem('subscribed_email')
+      if (savedEmail) {
+        setEmail(savedEmail)
+        await checkSubscriptionStatus(savedEmail)
+      } else {
+        setEmailChecked(true)
+      }
+    }
+    loadSavedSubscription()
+  }, [checkSubscriptionStatus])
+
+  // 🔥 Handle email input change (debounced)
+  useEffect(() => {
+    if (!emailChecked) return
+    
+    const timeout = setTimeout(() => {
+      if (email && email.includes('@') && email.length > 5) {
+        checkSubscriptionStatus(email)
+      } else if (email === '') {
+        setSubscriptionStatus(null)
+        setSubscriberData(null)
+      }
+    }, 500)
+
+    return () => clearTimeout(timeout)
+  }, [email, checkSubscriptionStatus, emailChecked])
 
   const generateToken = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -121,15 +171,15 @@ export default function NewsletterSubscribe({
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
   }
 
-  const sendVerificationEmail = async (email, token, categories, sourcePage) => {
-    const verificationLink = `${window.location.origin}/api/verify-newsletter?token=${token}&email=${encodeURIComponent(email)}`
+  const sendVerificationEmail = async (emailToSend, token, cats, sourcePage) => {
+    const verificationLink = `${window.location.origin}/api/verify-newsletter?token=${token}&email=${encodeURIComponent(emailToSend)}`
     
     const response = await fetch('/api/send-verification-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        to: email,
-        categories: categories,
+        to: emailToSend,
+        categories: cats,
         sourcePage: sourcePage,
         verificationLink: verificationLink
       })
@@ -162,16 +212,12 @@ export default function NewsletterSubscribe({
           verification_token: newToken,
           verification_sent_at: new Date().toISOString()
         })
-        .eq('email', subscribedEmail)
+        .eq('email', submittedEmail)
 
-      await sendVerificationEmail(subscribedEmail, newToken, selectedCategories, currentPageCategory || 'home')
+      await sendVerificationEmail(submittedEmail, newToken, selectedCategories, currentPageCategory || 'home')
       
-      setError('')
-      setTimeout(() => {
-        setError('✅ Verification email resent! Check your inbox.')
-        setTimeout(() => setError(''), 5000)
-      }, 100)
-      
+      setError('✅ Verification email resent! Check your inbox.')
+      setTimeout(() => setError(''), 5000)
       setTimeout(() => setResendCooldown(false), 30000)
     } catch (err) {
       setError('Failed to resend. Please try again.')
@@ -180,37 +226,7 @@ export default function NewsletterSubscribe({
     }
   }
 
-  const validateForm = () => {
-    if (!email) {
-      setError('Please enter your email address')
-      return false
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address')
-      return false
-    }
-    
-    if (isDisposableEmail(email)) {
-      setError('Please use a permanent email address. Temporary emails are not allowed.')
-      return false
-    }
-    
-    if (isRoleBasedEmail(email)) {
-      setError('⚠️ Using a role-based email may affect deliverability. Consider using a personal email.')
-      setTimeout(() => setError(''), 5000)
-    }
-    
-    if (selectedCategories.length === 0 && showCategorySelector) {
-      setError('Please select at least one category')
-      return false
-    }
-    
-    return true
-  }
-
-  const handleSubmit = async (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault()
     
     if (cooldown) {
@@ -218,13 +234,26 @@ export default function NewsletterSubscribe({
       return
     }
     
-    if (!validateForm()) return
+    if (!email || !email.includes('@')) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    if (selectedCategories.length === 0 && showCategorySelector) {
+      setError('Please select at least one category.')
+      return
+    }
+
+    // If already subscribed, don't submit
+    if (subscriptionStatus === 'subscribed') {
+      return
+    }
 
     setLoading(true)
     setError('')
 
     try {
-      const subscriberData = {
+      const subscriberDataObj = {
         email: email.toLowerCase().trim(),
         categories: selectedCategories,
         subscribed_at: new Date().toISOString(),
@@ -238,23 +267,11 @@ export default function NewsletterSubscribe({
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }
 
-      const { data: existing, error: fetchError } = await supabase
+      const { data: existing } = await supabase
         .from('newsletter_subscribers')
-        .select('email, status, categories')
+        .select('email, status')
         .eq('email', email.toLowerCase().trim())
         .maybeSingle()
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError
-      }
-
-      // Already verified - show manage UI
-      if (existing && existing.status === 'verified') {
-        setExistingSubscriberData(existing)
-        setShowManageForExisting(true)
-        setLoading(false)
-        return
-      }
 
       // Pending - resend verification
       if (existing && existing.status === 'pending') {
@@ -276,32 +293,28 @@ export default function NewsletterSubscribe({
           await sendVerificationEmail(email, newToken, selectedCategories, currentPageCategory || 'home')
         }
         
-        setSubscribedEmail(email)
+        setSubmittedEmail(email)
         setShowSuccessModal(true)
         setLoading(false)
         return
       }
 
       // New subscriber
-      const { error: insertError } = await supabase
-        .from('newsletter_subscribers')
-        .insert([subscriberData])
+      if (!existing) {
+        const { error: insertError } = await supabase
+          .from('newsletter_subscribers')
+          .insert([subscriberDataObj])
 
-      if (insertError) {
-        if (insertError.code === '23505') {
-          setError('This email is already subscribed. Please check your inbox.')
-        } else {
+        if (insertError) {
           throw insertError
         }
-        setLoading(false)
-        return
+
+        if (!isLocalhost) {
+          await sendVerificationEmail(email, subscriberDataObj.verification_token, selectedCategories, currentPageCategory || 'home')
+        }
       }
 
-      if (!isLocalhost) {
-        await sendVerificationEmail(email, subscriberData.verification_token, selectedCategories, currentPageCategory || 'home')
-      }
-
-      setSubscribedEmail(email)
+      setSubmittedEmail(email)
       setShowSuccessModal(true)
       
       setEmail('')
@@ -314,7 +327,11 @@ export default function NewsletterSubscribe({
 
     } catch (err) {
       console.error('Subscription error:', err)
-      setError(err.message || 'Something went wrong. Please try again.')
+      if (err.code === '23505') {
+        setError('This email is already subscribed. Please check your inbox.')
+      } else {
+        setError(err.message || 'Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -353,78 +370,13 @@ export default function NewsletterSubscribe({
   const getButtonText = () => {
     if (loading) return 'Sending...'
     if (cooldown) return 'Please wait...'
+    if (subscriptionStatus === 'subscribed') return '✓ Subscribed'
+    if (subscriptionStatus === 'pending') return 'Resend Verification'
     if (currentPageCategory) return `Subscribe to ${categoryName} →`
     return 'Subscribe →'
   }
 
-  // Already subscribed UI
-  if (showManageForExisting && existingSubscriberData) {
-    return (
-      <div className={`newsletter-wrapper ${className}`}>
-        <div className="already-subscribed-box">
-          <div className="as-icon">✅</div>
-          <h3 className="as-title">You're already subscribed!</h3>
-          <p className="as-email">{existingSubscriberData.email}</p>
-          <div className="as-actions">
-            <a href={`/newsletter/manage?email=${encodeURIComponent(existingSubscriberData.email)}`} className="as-manage-btn">
-              Manage Preferences →
-            </a>
-            <button onClick={() => {
-              setShowManageForExisting(false)
-              setEmail('')
-              setSelectedCategories([])
-              setExistingSubscriberData(null)
-            }} className="as-different-btn">
-              Use different email
-            </button>
-          </div>
-        </div>
-
-        <style jsx>{`
-          .newsletter-wrapper {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            border-radius: 24px;
-            padding: 2rem;
-          }
-          .already-subscribed-box {
-            text-align: center;
-            max-width: 400px;
-            margin: 0 auto;
-          }
-          .as-icon { font-size: 48px; margin-bottom: 16px; }
-          .as-title { color: white; margin-bottom: 8px; font-size: 1.25rem; }
-          .as-email {
-            background: rgba(255,255,255,0.1);
-            padding: 8px 12px;
-            border-radius: 12px;
-            font-size: 14px;
-            margin: 12px 0;
-            color: rgba(255,255,255,0.8);
-            word-break: break-all;
-          }
-          .as-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
-          .as-manage-btn {
-            display: block;
-            padding: 12px;
-            background: #06b6d4;
-            color: white;
-            text-decoration: none;
-            border-radius: 40px;
-            font-weight: 600;
-          }
-          .as-different-btn {
-            background: none;
-            border: none;
-            color: rgba(255,255,255,0.6);
-            cursor: pointer;
-            font-size: 13px;
-          }
-        `}</style>
-      </div>
-    )
-  }
-
-  // Success Modal
+  // 🔥 SUCCESS MODAL
   if (showSuccessModal) {
     return (
       <>
@@ -433,7 +385,7 @@ export default function NewsletterSubscribe({
             <div className="modal-icon">✉️</div>
             <h3>Check Your Inbox!</h3>
             <p>We sent a verification link to:</p>
-            <p className="modal-email"><strong>{subscribedEmail}</strong></p>
+            <p className="modal-email"><strong>{submittedEmail}</strong></p>
             <div className="modal-steps">
               <div className="step">1️⃣ Open your email inbox</div>
               <div className="step">2️⃣ Click the verification link</div>
@@ -515,7 +467,192 @@ export default function NewsletterSubscribe({
     )
   }
 
-  // Main form
+  // 🔥 SUBSCRIBED UI (When user is already subscribed)
+  if (subscriptionStatus === 'subscribed' && subscriberData && email) {
+    return (
+      <div className={`newsletter-wrapper ${className}`}>
+        <div className="subscribed-container">
+          <div className="subscribed-icon">✅</div>
+          <h3 className="subscribed-title">You're subscribed!</h3>
+          <p className="subscribed-email">{email}</p>
+          
+          <div className="subscribed-details">
+            <div className="detail-row">
+              <span className="detail-label">📌 Categories:</span>
+              <span className="detail-value">
+                {subscriberData.categories?.map(catId => 
+                  categories.find(c => c.id === catId)?.name
+                ).join(', ') || 'All categories'}
+              </span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">⏰ Frequency:</span>
+              <span className="detail-value">{subscriberData.delivery_frequency || 'Weekly'}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">📊 Posts/week:</span>
+              <span className="detail-value">{subscriberData.max_posts_per_week || 3}</span>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">📄 Format:</span>
+              <span className="detail-value">{subscriberData.post_format || 'Summary'}</span>
+            </div>
+          </div>
+
+          <div className="subscribed-actions">
+            <a href={`/newsletter/manage?email=${encodeURIComponent(email)}`} className="manage-btn">
+              ⚙️ Manage Preferences →
+            </a>
+            <a href={`/api/unsubscribe?email=${encodeURIComponent(email)}`} className="unsubscribe-btn">
+              🗑️ Unsubscribe
+            </a>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('subscribed_email')
+                setSubscriptionStatus(null)
+                setSubscriberData(null)
+                setEmail('')
+              }} 
+              className="different-email-btn"
+            >
+              Use different email
+            </button>
+          </div>
+        </div>
+
+        <style jsx>{`
+          .newsletter-wrapper {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            border-radius: 24px;
+            padding: 2rem;
+          }
+          .subscribed-container {
+            text-align: center;
+            max-width: 450px;
+            margin: 0 auto;
+          }
+          .subscribed-icon { font-size: 48px; margin-bottom: 16px; }
+          .subscribed-title { color: white; font-size: 1.5rem; margin-bottom: 8px; }
+          .subscribed-email { color: rgba(255,255,255,0.7); margin-bottom: 24px; word-break: break-all; }
+          .subscribed-details {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+          }
+          .detail-row:last-child { border-bottom: none; }
+          .detail-label { color: rgba(255,255,255,0.6); font-size: 0.8rem; }
+          .detail-value { color: white; font-size: 0.8rem; font-weight: 500; }
+          .subscribed-actions { display: flex; flex-direction: column; gap: 12px; }
+          .manage-btn {
+            display: block;
+            padding: 12px;
+            background: #06b6d4;
+            color: white;
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: 600;
+          }
+          .unsubscribe-btn {
+            display: block;
+            padding: 12px;
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: 600;
+            border: 1px solid rgba(239,68,68,0.3);
+          }
+          .different-email-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 8px;
+          }
+          .different-email-btn:hover { color: #06b6d4; }
+        `}</style>
+      </div>
+    )
+  }
+
+  // 🔥 PENDING UI (When user has pending verification)
+  if (subscriptionStatus === 'pending' && subscriberData && email) {
+    return (
+      <div className={`newsletter-wrapper ${className}`}>
+        <div className="pending-container">
+          <div className="pending-icon">⏳</div>
+          <h3 className="pending-title">Awaiting Verification</h3>
+          <p className="pending-email">{email}</p>
+          <p className="pending-message">
+            We sent a verification link to your email. Please check your inbox and click the link to complete your subscription.
+          </p>
+          <button onClick={() => {
+            setSubmittedEmail(email)
+            resendVerification()
+          }} className="resend-btn" disabled={resendCooldown}>
+            {resendCooldown ? 'Wait 30s' : 'Resend Verification Email →'}
+          </button>
+          <button 
+            onClick={() => {
+              setSubscriptionStatus(null)
+              setSubscriberData(null)
+              setEmail('')
+            }} 
+            className="different-email-btn"
+          >
+            Use different email
+          </button>
+        </div>
+
+        <style jsx>{`
+          .newsletter-wrapper {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            border-radius: 24px;
+            padding: 2rem;
+          }
+          .pending-container {
+            text-align: center;
+            max-width: 450px;
+            margin: 0 auto;
+          }
+          .pending-icon { font-size: 48px; margin-bottom: 16px; }
+          .pending-title { color: white; font-size: 1.5rem; margin-bottom: 8px; }
+          .pending-email { color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+          .pending-message { color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5; }
+          .resend-btn {
+            width: 100%;
+            padding: 12px;
+            background: #06b6d4;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+          }
+          .resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+          .different-email-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            font-size: 0.8rem;
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // 🔥 MAIN SUBSCRIBE FORM
   return (
     <div className={`newsletter-wrapper ${className}`}>
       <div className="newsletter-inner">
@@ -528,21 +665,28 @@ export default function NewsletterSubscribe({
         </div>
 
         <div className="newsletter-right">
-          <form onSubmit={handleSubmit} className="newsletter-form" noValidate>
+          <form onSubmit={handleSubscribe} className="newsletter-form" noValidate>
             <div className="form-row">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="newsletter-input"
-                disabled={loading || cooldown}
-                aria-label="Email address"
-              />
+              <div className="email-input-wrapper">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className={`newsletter-input ${checkingStatus ? 'checking' : ''}`}
+                  disabled={loading || cooldown}
+                  aria-label="Email address"
+                />
+                {checkingStatus && (
+                  <div className="email-status checking">
+                    <span className="spinner"></span>
+                  </div>
+                )}
+              </div>
               <button 
                 type="submit" 
                 className="newsletter-button" 
-                disabled={loading || cooldown}
+                disabled={loading || cooldown || subscriptionStatus === 'subscribed'}
               >
                 {getButtonText()}
               </button>
@@ -575,7 +719,6 @@ export default function NewsletterSubscribe({
               </div>
             )}
 
-            {/* Preferences Toggle */}
             <div className="preferences-toggle">
               <button type="button" onClick={() => setShowPreferences(!showPreferences)} className="toggle-btn">
                 {showPreferences ? '▼' : '▶'} Customize delivery preferences
@@ -584,7 +727,6 @@ export default function NewsletterSubscribe({
 
             {showPreferences && (
               <div className="preferences-section">
-                {/* Frequency */}
                 <div className="pref-group">
                   <label className="pref-label">⏰ How often?</label>
                   <div className="pref-options">
@@ -606,7 +748,6 @@ export default function NewsletterSubscribe({
                   </div>
                 </div>
 
-                {/* Post Volume */}
                 <div className="pref-group">
                   <label className="pref-label">📊 Max posts per week</label>
                   <div className="volume-slider">
@@ -621,7 +762,6 @@ export default function NewsletterSubscribe({
                   </p>
                 </div>
 
-                {/* Format */}
                 <div className="pref-group">
                   <label className="pref-label">📄 Email format</label>
                   <div className="pref-options">
@@ -674,19 +814,49 @@ export default function NewsletterSubscribe({
         .newsletter-description { font-size: 0.875rem; color: rgba(255,255,255,0.7); line-height: 1.5; }
         .newsletter-right { width: 100%; }
         .newsletter-form { width: 100%; }
+        
         .form-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
-        .newsletter-input {
+        
+        .email-input-wrapper {
           flex: 1;
+          position: relative;
+        }
+        
+        .newsletter-input {
+          width: 100%;
           padding: 0.875rem 1.25rem;
           background: rgba(255,255,255,0.1);
           border: 1px solid rgba(255,255,255,0.2);
           border-radius: 14px;
           color: white;
           font-size: 0.95rem;
+          transition: all 0.2s;
         }
+        
         .newsletter-input:focus { outline: none; border-color: #06b6d4; }
-        .newsletter-input::placeholder { color: rgba(255,255,255,0.5); }
-        .newsletter-input:disabled { opacity: 0.5; cursor: not-allowed; }
+        .newsletter-input.checking { padding-right: 50px; }
+        
+        .email-status {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+        }
+        
+        .spinner {
+          width: 20px;
+          height: 20px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #06b6d4;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+          display: inline-block;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
         .newsletter-button {
           padding: 0.875rem 1.75rem;
           background: linear-gradient(135deg, #06b6d4, #0891b2);
@@ -700,6 +870,7 @@ export default function NewsletterSubscribe({
         }
         .newsletter-button:hover:not(:disabled) { transform: translateY(-2px); opacity: 0.9; }
         .newsletter-button:disabled { opacity: 0.6; cursor: not-allowed; }
+        
         .category-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
         .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
         .category-label { font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.6); }
@@ -719,11 +890,11 @@ export default function NewsletterSubscribe({
           color: white;
         }
         .category-chip input:checked + .chip-content { background: rgba(6,182,212,0.3); border-color: #06b6d4; }
-        .chip-icon { font-size: 0.8rem; }
-        .chip-name { font-weight: 500; }
+        
         .preferences-toggle { margin: 1rem 0 0.5rem; text-align: center; }
         .toggle-btn { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 0.75rem; cursor: pointer; }
         .toggle-btn:hover { color: #06b6d4; }
+        
         .preferences-section { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1rem; margin: 0.75rem 0; }
         .pref-group { margin-bottom: 1.25rem; }
         .pref-group:last-child { margin-bottom: 0; }
@@ -745,14 +916,17 @@ export default function NewsletterSubscribe({
         .pref-info { flex: 1; }
         .pref-name { font-size: 0.8rem; font-weight: 500; color: white; }
         .pref-desc { font-size: 0.65rem; color: rgba(255,255,255,0.5); }
+        
         .volume-slider { display: flex; align-items: center; gap: 1rem; }
         .slider { flex: 1; height: 4px; -webkit-appearance: none; background: rgba(255,255,255,0.2); border-radius: 2px; }
         .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #06b6d4; border-radius: 50%; cursor: pointer; }
         .volume-value { min-width: 60px; text-align: center; color: white; font-size: 0.9rem; font-weight: 600; }
         .volume-unit { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-left: 4px; }
         .pref-hint { font-size: 0.6rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem; }
+        
         .error-msg { color: #ef4444; font-size: 0.75rem; margin-top: 0.5rem; text-align: center; }
         .newsletter-note { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 1rem; text-align: center; }
+        
         @media (max-width: 968px) {
           .newsletter-inner { grid-template-columns: 1fr; gap: 1.5rem; }
           .newsletter-left { text-align: center; flex-direction: column; align-items: center; }
