@@ -1,6 +1,6 @@
 // src/components/frontend/NewsletterSubscribe.js
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 
@@ -10,41 +10,31 @@ export default function NewsletterSubscribe({
 }) {
   const router = useRouter()
   
-  // Form state
   const [email, setEmail] = useState('')
   const [selectedCategories, setSelectedCategories] = useState([])
   const [showCategorySelector, setShowCategorySelector] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
-  // UI state
   const [currentPageCategory, setCurrentPageCategory] = useState(null)
   const [categoryName, setCategoryName] = useState('')
   const [isLocalhost, setIsLocalhost] = useState(false)
   const [cooldown, setCooldown] = useState(false)
   
-  // Preferences state
   const [showPreferences, setShowPreferences] = useState(false)
   const [deliveryFrequency, setDeliveryFrequency] = useState('weekly')
   const [maxPostsPerWeek, setMaxPostsPerWeek] = useState(3)
   const [postFormat, setPostFormat] = useState('summary')
   
-  // Modal state
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState('')
   const [resendCooldown, setResendCooldown] = useState(false)
   
-  // 🔥 Subscription status state
-  const [subscriptionStatus, setSubscriptionStatus] = useState(null) // null = unknown, 'subscribed', 'not_subscribed', 'pending'
+  // 🔥 SUBSCRIPTION STATE
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null) // 'subscribed', 'pending', 'expired', 'not_subscribed'
   const [subscriberData, setSubscriberData] = useState(null)
-  const [checkingStatus, setCheckingStatus] = useState(false)
-  const [emailChecked, setEmailChecked] = useState(false)
-
-  // Detect localhost
-  useEffect(() => {
-    const hostname = window.location.hostname
-    setIsLocalhost(hostname === 'localhost' || hostname === '127.0.0.1')
-  }, [])
+  const [loadingStatus, setLoadingStatus] = useState(true)
+  const [cookieExpiring, setCookieExpiring] = useState(false)
 
   const categories = [
     { id: 'health', name: 'Health & Wellness', icon: '🌿' },
@@ -55,6 +45,34 @@ export default function NewsletterSubscribe({
     { id: 'wealth', name: 'Wealth', icon: '💰' },
     { id: 'world', name: 'World News', icon: '🌍' }
   ]
+
+  // Helper: Get cookie
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`
+    const parts = value.split(`; ${name}=`)
+    if (parts.length === 2) return parts.pop().split(';').shift()
+    return null
+  }
+
+  // Helper: Set cookie
+  const setCookie = (name, value, days = 365) => {
+    const expires = new Date()
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax;Secure`
+  }
+
+  // Helper: Check if cookie is expiring soon (within 30 days)
+  const isCookieExpiringSoon = () => {
+    const subscribedAt = getCookie('subscribed_at')
+    if (!subscribedAt) return false
+    
+    const subscribedDate = new Date(parseInt(subscribedAt))
+    const now = new Date()
+    const daysSince = (now - subscribedDate) / (1000 * 60 * 60 * 24)
+    
+    // Cookie expires at 365 days, show warning at 335 days (30 days before)
+    return daysSince >= 335
+  }
 
   // Auto-detect category from URL
   useEffect(() => {
@@ -88,20 +106,59 @@ export default function NewsletterSubscribe({
     detectCategory()
   }, [router.asPath, presetCategory])
 
-  // 🔥 Check subscription status for an email
-  const checkSubscriptionStatus = useCallback(async (emailToCheck) => {
-    if (!emailToCheck || !emailToCheck.includes('@') || emailToCheck.length < 5) {
-      setSubscriptionStatus(null)
-      setSubscriberData(null)
-      return null
-    }
+  useEffect(() => {
+    const hostname = window.location.hostname
+    setIsLocalhost(hostname === 'localhost' || hostname === '127.0.0.1')
+  }, [])
 
-    setCheckingStatus(true)
+  // 🔥 CROSS-DEVICE DETECTION with Cookie + DB Verification
+  useEffect(() => {
+    const detectSubscription = async () => {
+      setLoadingStatus(true)
+      
+      // Check cookie expiry warning
+      setCookieExpiring(isCookieExpiringSoon())
+      
+      // Method 1: URL parameter (from email link)
+      const { email: urlEmail, token } = router.query
+      if (urlEmail && typeof urlEmail === 'string') {
+        const decodedEmail = decodeURIComponent(urlEmail)
+        setEmail(decodedEmail)
+        await checkAndSetStatus(decodedEmail)
+        setLoadingStatus(false)
+        return
+      }
+      
+      // Method 2: Cookie (cross-device)
+      const cookieEmail = getCookie('subscribed_email')
+      if (cookieEmail) {
+        setEmail(cookieEmail)
+        await checkAndSetStatus(cookieEmail)
+        setLoadingStatus(false)
+        return
+      }
+      
+      // Method 3: localStorage (fallback)
+      const savedEmail = localStorage.getItem('subscribed_email')
+      if (savedEmail) {
+        setEmail(savedEmail)
+        await checkAndSetStatus(savedEmail)
+        setLoadingStatus(false)
+        return
+      }
+      
+      setLoadingStatus(false)
+    }
     
+    detectSubscription()
+  }, [router.query])
+
+  // 🔥 Check database - SOURCE OF TRUTH
+  const checkAndSetStatus = async (emailToCheck) => {
     try {
       const { data, error } = await supabase
         .from('newsletter_subscribers')
-        .select('email, status, categories, delivery_frequency, max_posts_per_week, post_format, unsubscribe_token')
+        .select('email, status, categories, delivery_frequency, max_posts_per_week, post_format, unsubscribe_token, subscribed_at, verified_at')
         .eq('email', emailToCheck.toLowerCase().trim())
         .maybeSingle()
 
@@ -109,60 +166,85 @@ export default function NewsletterSubscribe({
 
       if (data) {
         if (data.status === 'verified') {
-          setSubscriptionStatus('subscribed')
-          setSubscriberData(data)
-          // Save to localStorage for next visit
-          localStorage.setItem('subscribed_email', emailToCheck.toLowerCase().trim())
-          return 'subscribed'
+          // Check if subscription is still valid (not expired)
+          const verifiedDate = new Date(data.verified_at)
+          const now = new Date()
+          const daysSinceVerified = (now - verifiedDate) / (1000 * 60 * 60 * 24)
+          
+          // If subscription is older than 365 days, mark as expired
+          if (daysSinceVerified >= 365) {
+            setSubscriptionStatus('expired')
+            setSubscriberData(data)
+            // Clear expired cookie
+            document.cookie = 'subscribed_email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+          } else {
+            setSubscriptionStatus('subscribed')
+            setSubscriberData(data)
+            // Refresh cookie
+            setCookie('subscribed_email', emailToCheck.toLowerCase().trim())
+            setCookie('subscribed_at', Date.now().toString())
+            localStorage.setItem('subscribed_email', emailToCheck.toLowerCase().trim())
+          }
         } else if (data.status === 'pending') {
           setSubscriptionStatus('pending')
           setSubscriberData(data)
-          return 'pending'
         }
-      }
-      
-      setSubscriptionStatus('not_subscribed')
-      setSubscriberData(null)
-      return 'not_subscribed'
-    } catch (err) {
-      console.error('Error checking subscription:', err)
-      setSubscriptionStatus(null)
-      return null
-    } finally {
-      setCheckingStatus(false)
-      setEmailChecked(true)
-    }
-  }, [])
-
-  // 🔥 Load saved email on page mount and check status
-  useEffect(() => {
-    const loadSavedSubscription = async () => {
-      const savedEmail = localStorage.getItem('subscribed_email')
-      if (savedEmail) {
-        setEmail(savedEmail)
-        await checkSubscriptionStatus(savedEmail)
       } else {
-        setEmailChecked(true)
-      }
-    }
-    loadSavedSubscription()
-  }, [checkSubscriptionStatus])
-
-  // 🔥 Handle email input change (debounced)
-  useEffect(() => {
-    if (!emailChecked) return
-    
-    const timeout = setTimeout(() => {
-      if (email && email.includes('@') && email.length > 5) {
-        checkSubscriptionStatus(email)
-      } else if (email === '') {
-        setSubscriptionStatus(null)
+        setSubscriptionStatus('not_subscribed')
         setSubscriberData(null)
+        // Clear invalid cookie
+        document.cookie = 'subscribed_email=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        localStorage.removeItem('subscribed_email')
       }
-    }, 500)
+    } catch (err) {
+      console.error('Error:', err)
+      setSubscriptionStatus('not_subscribed')
+    }
+  }
 
-    return () => clearTimeout(timeout)
-  }, [email, checkSubscriptionStatus, emailChecked])
+  // 🔥 RENEW SUBSCRIPTION - When expired
+  const handleRenew = async () => {
+    if (cooldown) {
+      setError('Please wait a moment before trying again.')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const newToken = generateToken()
+      
+      // Update existing subscriber with new verification token
+      const { error: updateError } = await supabase
+        .from('newsletter_subscribers')
+        .update({
+          status: 'pending',
+          verification_token: newToken,
+          verification_sent_at: new Date().toISOString(),
+          subscribed_at: new Date().toISOString(), // Reset subscription date
+        })
+        .eq('email', email.toLowerCase().trim())
+
+      if (updateError) throw updateError
+
+      if (!isLocalhost) {
+        await sendVerificationEmail(email, newToken, selectedCategories, currentPageCategory || 'home')
+      }
+
+      setSubmittedEmail(email)
+      setShowSuccessModal(true)
+      
+      setCooldown(true)
+      setTimeout(() => setCooldown(false), 30000)
+
+    } catch (err) {
+      console.error('Renew error:', err)
+      setError('Failed to renew. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const generateToken = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -244,7 +326,6 @@ export default function NewsletterSubscribe({
       return
     }
 
-    // If already subscribed, don't submit
     if (subscriptionStatus === 'subscribed') {
       return
     }
@@ -273,7 +354,6 @@ export default function NewsletterSubscribe({
         .eq('email', email.toLowerCase().trim())
         .maybeSingle()
 
-      // Pending - resend verification
       if (existing && existing.status === 'pending') {
         const newToken = generateToken()
         
@@ -299,7 +379,6 @@ export default function NewsletterSubscribe({
         return
       }
 
-      // New subscriber
       if (!existing) {
         const { error: insertError } = await supabase
           .from('newsletter_subscribers')
@@ -316,11 +395,6 @@ export default function NewsletterSubscribe({
 
       setSubmittedEmail(email)
       setShowSuccessModal(true)
-      
-      setEmail('')
-      if (!currentPageCategory) {
-        setSelectedCategories([])
-      }
       
       setCooldown(true)
       setTimeout(() => setCooldown(false), 30000)
@@ -371,12 +445,46 @@ export default function NewsletterSubscribe({
     if (loading) return 'Sending...'
     if (cooldown) return 'Please wait...'
     if (subscriptionStatus === 'subscribed') return '✓ Subscribed'
+    if (subscriptionStatus === 'expired') return '🔄 Renew Subscription'
     if (subscriptionStatus === 'pending') return 'Resend Verification'
     if (currentPageCategory) return `Subscribe to ${categoryName} →`
     return 'Subscribe →'
   }
 
-  // 🔥 SUCCESS MODAL
+  // Loading state
+  if (loadingStatus) {
+    return (
+      <div className={`newsletter-wrapper ${className}`}>
+        <div className="loading-container">
+          <div className="spinner-large"></div>
+          <p>Loading...</p>
+        </div>
+        <style jsx>{`
+          .newsletter-wrapper {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            border-radius: 24px;
+            padding: 2rem;
+            text-align: center;
+          }
+          .loading-container { padding: 40px; color: white; }
+          .spinner-large {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-top-color: #06b6d4;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin: 0 auto 16px;
+          }
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </div>
+    )
+  }
+
+  // ============================================
+  // SUCCESS MODAL
+  // ============================================
   if (showSuccessModal) {
     return (
       <>
@@ -467,16 +575,116 @@ export default function NewsletterSubscribe({
     )
   }
 
-  // 🔥 SUBSCRIBED UI (When user is already subscribed)
+  // ============================================
+  // EXPIRED UI - Show Renew Button
+  // ============================================
+  if (subscriptionStatus === 'expired' && subscriberData && email) {
+    return (
+      <div className={`newsletter-wrapper ${className}`}>
+        <div className="status-container expired">
+          <div className="status-icon">⚠️</div>
+          <h3 className="status-title">Subscription Expired</h3>
+          <p className="status-email">{email}</p>
+          <p className="status-message">
+            Your annual subscription has expired. Renew to continue receiving updates.
+          </p>
+          
+          <div className="status-details">
+            <div className="detail-row">
+              <span className="detail-label">Previously subscribed to:</span>
+              <span className="detail-value">
+                {subscriberData.categories?.map(catId => 
+                  categories.find(c => c.id === catId)?.name
+                ).join(', ') || 'All categories'}
+              </span>
+            </div>
+          </div>
+
+          <div className="status-actions">
+            <button onClick={handleRenew} className="action-btn renew" disabled={loading}>
+              {loading ? 'Sending...' : '🔄 Renew Subscription →'}
+            </button>
+            <a 
+              href={`/api/unsubscribe?token=${subscriberData.unsubscribe_token}`}
+              className="action-btn danger"
+              onClick={(e) => {
+                if (!confirm('Remove your data completely?')) {
+                  e.preventDefault()
+                }
+              }}
+            >
+              Remove Data
+            </a>
+          </div>
+        </div>
+
+        <style jsx>{`
+          .newsletter-wrapper {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            border-radius: 24px;
+            padding: 2rem;
+          }
+          .status-container { text-align: center; max-width: 450px; margin: 0 auto; }
+          .status-icon { font-size: 48px; margin-bottom: 16px; }
+          .status-title { color: white; font-size: 1.5rem; margin-bottom: 8px; }
+          .status-email { color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+          .status-message { color: rgba(255,255,255,0.6); margin-bottom: 24px; line-height: 1.5; }
+          .status-details {
+            background: rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+          }
+          .detail-label { color: rgba(255,255,255,0.6); font-size: 0.8rem; }
+          .detail-value { color: white; font-size: 0.8rem; font-weight: 500; }
+          .status-actions { display: flex; flex-direction: column; gap: 12px; }
+          .action-btn {
+            display: block;
+            padding: 12px;
+            border-radius: 40px;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            font-size: 0.9rem;
+          }
+          .action-btn.renew { background: #f59e0b; color: white; }
+          .action-btn.danger {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.3);
+            text-decoration: none;
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // ============================================
+  // SUBSCRIBED UI (Active)
+  // ============================================
   if (subscriptionStatus === 'subscribed' && subscriberData && email) {
     return (
       <div className={`newsletter-wrapper ${className}`}>
-        <div className="subscribed-container">
-          <div className="subscribed-icon">✅</div>
-          <h3 className="subscribed-title">You're subscribed!</h3>
-          <p className="subscribed-email">{email}</p>
+        <div className="status-container">
+          <div className="status-icon">✅</div>
+          <h3 className="status-title">You're subscribed!</h3>
+          <p className="status-email">{email}</p>
           
-          <div className="subscribed-details">
+          {cookieExpiring && (
+            <div className="warning-banner">
+              ⚠️ Your subscription will expire in 30 days. <button onClick={handleRenew} className="renew-link">Renew now</button> to continue uninterrupted.
+            </div>
+          )}
+          
+          <div className="status-details">
             <div className="detail-row">
               <span className="detail-label">📌 Categories:</span>
               <span className="detail-value">
@@ -499,24 +707,21 @@ export default function NewsletterSubscribe({
             </div>
           </div>
 
-          <div className="subscribed-actions">
-            <a href={`/newsletter/manage?email=${encodeURIComponent(email)}`} className="manage-btn">
+          <div className="status-actions">
+            <a href={`/newsletter/manage?email=${encodeURIComponent(email)}`} className="action-btn primary">
               ⚙️ Manage Preferences →
             </a>
-            <a href={`/api/unsubscribe?email=${encodeURIComponent(email)}`} className="unsubscribe-btn">
+            <a 
+              href={`/api/unsubscribe?token=${subscriberData.unsubscribe_token}`} 
+              className="action-btn danger"
+              onClick={(e) => {
+                if (!confirm('Are you sure you want to unsubscribe?')) {
+                  e.preventDefault()
+                }
+              }}
+            >
               🗑️ Unsubscribe
             </a>
-            <button 
-              onClick={() => {
-                localStorage.removeItem('subscribed_email')
-                setSubscriptionStatus(null)
-                setSubscriberData(null)
-                setEmail('')
-              }} 
-              className="different-email-btn"
-            >
-              Use different email
-            </button>
           </div>
         </div>
 
@@ -526,15 +731,27 @@ export default function NewsletterSubscribe({
             border-radius: 24px;
             padding: 2rem;
           }
-          .subscribed-container {
-            text-align: center;
-            max-width: 450px;
-            margin: 0 auto;
+          .status-container { text-align: center; max-width: 450px; margin: 0 auto; }
+          .status-icon { font-size: 48px; margin-bottom: 16px; }
+          .status-title { color: white; font-size: 1.5rem; margin-bottom: 8px; }
+          .status-email { color: rgba(255,255,255,0.7); margin-bottom: 24px; word-break: break-all; }
+          .warning-banner {
+            background: rgba(245,158,11,0.2);
+            border: 1px solid rgba(245,158,11,0.3);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.8rem;
+            color: #fbbf24;
           }
-          .subscribed-icon { font-size: 48px; margin-bottom: 16px; }
-          .subscribed-title { color: white; font-size: 1.5rem; margin-bottom: 8px; }
-          .subscribed-email { color: rgba(255,255,255,0.7); margin-bottom: 24px; word-break: break-all; }
-          .subscribed-details {
+          .renew-link {
+            background: none;
+            border: none;
+            color: #fbbf24;
+            text-decoration: underline;
+            cursor: pointer;
+          }
+          .status-details {
             background: rgba(255,255,255,0.1);
             border-radius: 16px;
             padding: 16px;
@@ -550,67 +767,59 @@ export default function NewsletterSubscribe({
           .detail-row:last-child { border-bottom: none; }
           .detail-label { color: rgba(255,255,255,0.6); font-size: 0.8rem; }
           .detail-value { color: white; font-size: 0.8rem; font-weight: 500; }
-          .subscribed-actions { display: flex; flex-direction: column; gap: 12px; }
-          .manage-btn {
+          .status-actions { display: flex; flex-direction: column; gap: 12px; }
+          .action-btn {
             display: block;
             padding: 12px;
-            background: #06b6d4;
-            color: white;
-            text-decoration: none;
             border-radius: 40px;
             font-weight: 600;
+            text-decoration: none;
+            text-align: center;
           }
-          .unsubscribe-btn {
-            display: block;
-            padding: 12px;
+          .action-btn.primary { background: #06b6d4; color: white; }
+          .action-btn.danger {
             background: rgba(239,68,68,0.2);
             color: #ef4444;
-            text-decoration: none;
-            border-radius: 40px;
-            font-weight: 600;
             border: 1px solid rgba(239,68,68,0.3);
           }
-          .different-email-btn {
-            background: none;
-            border: none;
-            color: rgba(255,255,255,0.5);
-            cursor: pointer;
-            font-size: 0.8rem;
-            padding: 8px;
-          }
-          .different-email-btn:hover { color: #06b6d4; }
         `}</style>
       </div>
     )
   }
 
-  // 🔥 PENDING UI (When user has pending verification)
+  // ============================================
+  // PENDING UI
+  // ============================================
   if (subscriptionStatus === 'pending' && subscriberData && email) {
     return (
       <div className={`newsletter-wrapper ${className}`}>
-        <div className="pending-container">
-          <div className="pending-icon">⏳</div>
-          <h3 className="pending-title">Awaiting Verification</h3>
-          <p className="pending-email">{email}</p>
-          <p className="pending-message">
+        <div className="status-container">
+          <div className="status-icon">⏳</div>
+          <h3 className="status-title">Awaiting Verification</h3>
+          <p className="status-email">{email}</p>
+          <p className="status-message">
             We sent a verification link to your email. Please check your inbox and click the link to complete your subscription.
           </p>
-          <button onClick={() => {
-            setSubmittedEmail(email)
-            resendVerification()
-          }} className="resend-btn" disabled={resendCooldown}>
-            {resendCooldown ? 'Wait 30s' : 'Resend Verification Email →'}
-          </button>
-          <button 
-            onClick={() => {
-              setSubscriptionStatus(null)
-              setSubscriberData(null)
-              setEmail('')
-            }} 
-            className="different-email-btn"
-          >
-            Use different email
-          </button>
+          
+          <div className="status-actions">
+            <button onClick={() => {
+              setSubmittedEmail(email)
+              resendVerification()
+            }} className="action-btn primary" disabled={resendCooldown}>
+              {resendCooldown ? 'Wait 30s' : 'Resend Verification Email →'}
+            </button>
+            <a 
+              href={`/api/unsubscribe?token=${subscriberData.unsubscribe_token}`}
+              className="action-btn danger"
+              onClick={(e) => {
+                if (!confirm('Cancel this subscription request?')) {
+                  e.preventDefault()
+                }
+              }}
+            >
+              Cancel Request
+            </a>
+          </div>
         </div>
 
         <style jsx>{`
@@ -619,40 +828,38 @@ export default function NewsletterSubscribe({
             border-radius: 24px;
             padding: 2rem;
           }
-          .pending-container {
-            text-align: center;
-            max-width: 450px;
-            margin: 0 auto;
-          }
-          .pending-icon { font-size: 48px; margin-bottom: 16px; }
-          .pending-title { color: white; font-size: 1.5rem; margin-bottom: 8px; }
-          .pending-email { color: rgba(255,255,255,0.7); margin-bottom: 16px; }
-          .pending-message { color: rgba(255,255,255,0.6); font-size: 0.9rem; margin-bottom: 24px; line-height: 1.5; }
-          .resend-btn {
-            width: 100%;
+          .status-container { text-align: center; max-width: 450px; margin: 0 auto; }
+          .status-icon { font-size: 48px; margin-bottom: 16px; }
+          .status-title { color: white; font-size: 1.5rem; margin-bottom: 8px; }
+          .status-email { color: rgba(255,255,255,0.7); margin-bottom: 16px; }
+          .status-message { color: rgba(255,255,255,0.6); margin-bottom: 24px; line-height: 1.5; }
+          .status-actions { display: flex; flex-direction: column; gap: 12px; }
+          .action-btn {
+            display: block;
             padding: 12px;
-            background: #06b6d4;
-            color: white;
-            border: none;
             border-radius: 40px;
             font-weight: 600;
+            text-decoration: none;
+            text-align: center;
             cursor: pointer;
-            margin-bottom: 12px;
-          }
-          .resend-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-          .different-email-btn {
-            background: none;
             border: none;
-            color: rgba(255,255,255,0.5);
-            cursor: pointer;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+          }
+          .action-btn.primary { background: #06b6d4; color: white; }
+          .action-btn.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+          .action-btn.danger {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.3);
           }
         `}</style>
       </div>
     )
   }
 
-  // 🔥 MAIN SUBSCRIBE FORM
+  // ============================================
+  // MAIN SUBSCRIBE FORM
+  // ============================================
   return (
     <div className={`newsletter-wrapper ${className}`}>
       <div className="newsletter-inner">
@@ -667,27 +874,15 @@ export default function NewsletterSubscribe({
         <div className="newsletter-right">
           <form onSubmit={handleSubscribe} className="newsletter-form" noValidate>
             <div className="form-row">
-              <div className="email-input-wrapper">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className={`newsletter-input ${checkingStatus ? 'checking' : ''}`}
-                  disabled={loading || cooldown}
-                  aria-label="Email address"
-                />
-                {checkingStatus && (
-                  <div className="email-status checking">
-                    <span className="spinner"></span>
-                  </div>
-                )}
-              </div>
-              <button 
-                type="submit" 
-                className="newsletter-button" 
-                disabled={loading || cooldown || subscriptionStatus === 'subscribed'}
-              >
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="newsletter-input"
+                disabled={loading || cooldown}
+              />
+              <button type="submit" className="newsletter-button" disabled={loading || cooldown}>
                 {getButtonText()}
               </button>
             </div>
@@ -696,7 +891,7 @@ export default function NewsletterSubscribe({
               <div className="category-section">
                 <div className="category-header">
                   <span className="category-label">I'm interested in:</span>
-                  <button type="button" onClick={handleSelectAll} className="select-all-btn" disabled={loading}>
+                  <button type="button" onClick={handleSelectAll} className="select-all-btn">
                     {selectedCategories.length === categories.length ? 'Deselect All' : 'Select All'}
                   </button>
                 </div>
@@ -707,7 +902,6 @@ export default function NewsletterSubscribe({
                         type="checkbox"
                         checked={selectedCategories.includes(category.id)}
                         onChange={() => handleCategoryToggle(category.id)}
-                        disabled={loading}
                       />
                       <span className="chip-content">
                         <span className="chip-icon">{category.icon}</span>
@@ -816,47 +1010,16 @@ export default function NewsletterSubscribe({
         .newsletter-form { width: 100%; }
         
         .form-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
-        
-        .email-input-wrapper {
-          flex: 1;
-          position: relative;
-        }
-        
         .newsletter-input {
-          width: 100%;
+          flex: 1;
           padding: 0.875rem 1.25rem;
           background: rgba(255,255,255,0.1);
           border: 1px solid rgba(255,255,255,0.2);
           border-radius: 14px;
           color: white;
           font-size: 0.95rem;
-          transition: all 0.2s;
         }
-        
         .newsletter-input:focus { outline: none; border-color: #06b6d4; }
-        .newsletter-input.checking { padding-right: 50px; }
-        
-        .email-status {
-          position: absolute;
-          right: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-        }
-        
-        .spinner {
-          width: 20px;
-          height: 20px;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-top-color: #06b6d4;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-          display: inline-block;
-        }
-        
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
         .newsletter-button {
           padding: 0.875rem 1.75rem;
           background: linear-gradient(135deg, #06b6d4, #0891b2);

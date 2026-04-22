@@ -8,46 +8,39 @@ export default async function handler(req, res) {
     return res.status(400).send(`
       <!DOCTYPE html>
       <html>
-      <head><title>Unsubscribe</title><meta name="viewport" content="width=device-width, initial-scale=1">
-      <style>
-        body { font-family: system-ui; text-align: center; padding: 50px; background: linear-gradient(135deg, #0f172a, #1e1b4b); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .card { background: white; border-radius: 24px; padding: 40px; max-width: 500px; }
-        h1 { color: #ef4444; }
-        .btn { display: inline-block; padding: 12px 24px; background: #06b6d4; color: white; text-decoration: none; border-radius: 40px; }
-      </style>
-      </head>
-      <body>
-        <div class="card"><h1>Invalid Link</h1><a href="/" class="btn">Home</a></div>
+      <head><title>Unsubscribe</title></head>
+      <body style="font-family: system-ui; text-align: center; padding: 50px;">
+        <h1>Invalid Link</h1>
+        <p>Missing unsubscribe token.</p>
+        <a href="/">Return to Home</a>
       </body>
       </html>
     `)
   }
 
   try {
-    const { data: subscriber } = await supabase
+    // Find subscriber by unsubscribe_token
+    const { data: subscriber, error } = await supabase
       .from('newsletter_subscribers')
       .select('*')
       .eq('unsubscribe_token', token)
       .single()
 
-    if (!subscriber) {
+    if (error || !subscriber) {
       return res.status(404).send(`
         <!DOCTYPE html>
         <html>
-        <head><title>Not Found</title><meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          body { font-family: system-ui; text-align: center; padding: 50px; background: linear-gradient(135deg, #0f172a, #1e1b4b); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-          .card { background: white; border-radius: 24px; padding: 40px; max-width: 500px; }
-          .btn { display: inline-block; padding: 12px 24px; background: #06b6d4; color: white; text-decoration: none; border-radius: 40px; }
-        </style>
-        </head>
-        <body>
-          <div class="card"><h1>Not Found</h1><a href="/" class="btn">Home</a></div>
+        <head><title>Not Found</title></head>
+        <body style="font-family: system-ui; text-align: center; padding: 50px;">
+          <h1>Not Found</h1>
+          <p>No subscription found with this token.</p>
+          <a href="/">Return to Home</a>
         </body>
         </html>
       `)
     }
 
+    // Update status to unsubscribed
     await supabase
       .from('newsletter_subscribers')
       .update({
@@ -56,6 +49,7 @@ export default async function handler(req, res) {
       })
       .eq('id', subscriber.id)
 
+    // Return success page
     res.setHeader('Content-Type', 'text/html')
     return res.send(`
       <!DOCTYPE html>
@@ -64,7 +58,6 @@ export default async function handler(req, res) {
         <title>Unsubscribed</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
           body {
             font-family: system-ui;
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
@@ -72,11 +65,12 @@ export default async function handler(req, res) {
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0;
             padding: 20px;
           }
           .card {
             background: white;
-            border-radius: 32px;
+            border-radius: 24px;
             padding: 48px 40px;
             max-width: 500px;
             text-align: center;
@@ -91,7 +85,6 @@ export default async function handler(req, res) {
             color: white;
             text-decoration: none;
             border-radius: 40px;
-            font-weight: 600;
           }
         </style>
       </head>
@@ -99,7 +92,7 @@ export default async function handler(req, res) {
         <div class="card">
           <div class="icon">🗑️</div>
           <h1>Successfully Unsubscribed</h1>
-          <p>You have been removed from our newsletter.</p>
+          <p>You have been removed from our newsletter. You won't receive any more emails from us.</p>
           <a href="/" class="btn">← Back to Home</a>
         </div>
       </body>
@@ -110,15 +103,11 @@ export default async function handler(req, res) {
     return res.status(500).send(`
       <!DOCTYPE html>
       <html>
-      <head><title>Error</title><meta name="viewport" content="width=device-width, initial-scale=1">
-      <style>
-        body { font-family: system-ui; text-align: center; padding: 50px; background: linear-gradient(135deg, #0f172a, #1e1b4b); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .card { background: white; border-radius: 24px; padding: 40px; max-width: 500px; }
-        .btn { display: inline-block; padding: 12px 24px; background: #06b6d4; color: white; text-decoration: none; border-radius: 40px; }
-      </style>
-      </head>
-      <body>
-        <div class="card"><h1>Error</h1><a href="/" class="btn">Home</a></div>
+      <head><title>Error</title></head>
+      <body style="font-family: system-ui; text-align: center; padding: 50px;">
+        <h1>Error</h1>
+        <p>Something went wrong. Please try again.</p>
+        <a href="/">Return to Home</a>
       </body>
       </html>
     `)
