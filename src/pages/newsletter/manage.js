@@ -1,21 +1,22 @@
 // pages/newsletter/manage.js
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
+import { useRouter } from 'next/router'
 
 export default function ManageSubscription() {
-  const router = useRouter();
-  const { token, email } = router.query;
+  const router = useRouter()
+  const { token, email } = router.query
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [subscriber, setSubscriber] = useState(null);
-  const [showAuthForm, setShowAuthForm] = useState(true);
-  const [authEmail, setAuthEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [frequency, setFrequency] = useState('weekly');
-  const [maxPosts, setMaxPosts] = useState(3);
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [subscriber, setSubscriber] = useState(null)
+  const [showAuthForm, setShowAuthForm] = useState(true)
+  const [authEmail, setAuthEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState([])
+  const [frequency, setFrequency] = useState('weekly')
+  const [maxPosts, setMaxPosts] = useState(3)
+  const [postFormat, setPostFormat] = useState('summary')
 
   const categories = [
     { id: 'health', name: 'Health & Wellness', icon: '🌿' },
@@ -25,94 +26,98 @@ export default function ManageSubscription() {
     { id: 'tech', name: 'Technology', icon: '⚡' },
     { id: 'wealth', name: 'Wealth', icon: '💰' },
     { id: 'world', name: 'World News', icon: '🌍' }
-  ];
+  ]
 
   const frequencyOptions = [
-    { value: 'daily', label: '📅 Daily' },
-    { value: 'weekly', label: '📆 Weekly' },
-    { value: 'biweekly', label: '📑 Bi-weekly' },
-    { value: 'monthly', label: '📘 Monthly' }
-  ];
+    { value: 'daily', label: '📅 Daily', desc: 'Once per day' },
+    { value: 'weekly', label: '📆 Weekly', desc: 'Every Sunday' },
+    { value: 'biweekly', label: '📑 Bi-weekly', desc: 'Twice a month' },
+    { value: 'monthly', label: '📘 Monthly', desc: 'Once a month' }
+  ]
 
-  // Verify magic link token
+  const formatOptions = [
+    { value: 'summary', label: '📝 Summary', desc: 'Key points + links' },
+    { value: 'digest', label: '📰 Digest', desc: 'Full post previews' },
+    { value: 'full', label: '📖 Full articles', desc: 'Complete posts in email' }
+  ]
+
   useEffect(() => {
     if (token && email) {
-      verifyToken();
+      verifyToken()
     }
-  }, [token, email]);
+  }, [token, email])
 
   const verifyToken = async () => {
-    setLoading(true);
+    setLoading(true)
 
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .select('*')
       .eq('email', decodeURIComponent(email))
       .eq('auth_token', token)
-      .single();
+      .single()
 
     if (error || !data) {
-      setMessage('Invalid or expired link. Please request a new one.');
-      setShowAuthForm(true);
-      setLoading(false);
-      return;
+      setMessage('Invalid or expired link. Please request a new one.')
+      setShowAuthForm(true)
+      setLoading(false)
+      return
     }
 
-    // Check expiry
-    const expiresAt = new Date(data.auth_token_expires_at);
+    const expiresAt = new Date(data.auth_token_expires_at)
     if (expiresAt < new Date()) {
-      setMessage('Link expired. Request a new magic link.');
-      setShowAuthForm(true);
-      setLoading(false);
-      return;
+      setMessage('Link expired. Request a new magic link.')
+      setShowAuthForm(true)
+      setLoading(false)
+      return
     }
 
-    // Clear token after use (one-time)
     await supabase
       .from('newsletter_subscribers')
       .update({ auth_token: null, auth_token_expires_at: null })
-      .eq('email', data.email);
+      .eq('email', data.email)
 
-    setSubscriber(data);
-    setSelectedCategories(data.categories || []);
-    setFrequency(data.delivery_frequency || 'weekly');
-    setMaxPosts(data.max_posts_per_week || 3);
-    setIsAuthenticated(true);
-    setShowAuthForm(false);
-    setLoading(false);
-  };
+    setSubscriber(data)
+    setSelectedCategories(data.categories || [])
+    setFrequency(data.delivery_frequency || 'weekly')
+    setMaxPosts(data.max_posts_per_week || 3)
+    setPostFormat(data.post_format || 'summary')
+    setIsAuthenticated(true)
+    setShowAuthForm(false)
+    setLoading(false)
+  }
 
   const sendMagicLink = async () => {
     if (!authEmail) {
-      setMessage('Enter your email address');
-      return;
+      setMessage('Enter your email address')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     const res = await fetch('/api/auth/magic-link', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: authEmail })
-    });
+    })
 
-    const data = await res.json();
+    const data = await res.json()
 
     if (res.ok) {
-      setMessage('✅ Magic link sent! Check your email.');
-      setTimeout(() => setMessage(''), 5000);
+      setMessage('✅ Magic link sent! Check your email.')
+      setTimeout(() => setMessage(''), 5000)
     } else {
-      setMessage(data.error || '❌ Failed to send. Is this email subscribed?');
+      setMessage(data.error || '❌ No subscription found for this email')
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const updatePreferences = async () => {
     if (selectedCategories.length === 0) {
-      setMessage('Please select at least one category.');
-      return;
+      setMessage('Please select at least one category.')
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
 
     const { error } = await supabase
       .from('newsletter_subscribers')
@@ -120,37 +125,38 @@ export default function ManageSubscription() {
         categories: selectedCategories,
         delivery_frequency: frequency,
         max_posts_per_week: maxPosts,
+        post_format: postFormat,
         updated_at: new Date().toISOString()
       })
-      .eq('email', subscriber.email);
+      .eq('email', subscriber.email)
 
     if (error) {
-      setMessage('Failed to update. Try again.');
+      setMessage('Failed to update. Try again.')
     } else {
-      setMessage('✅ Preferences updated!');
-      setTimeout(() => setMessage(''), 3000);
+      setMessage('✅ Preferences updated!')
+      setTimeout(() => setMessage(''), 3000)
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const unsubscribe = async () => {
-    if (!confirm('Unsubscribe from all emails? This cannot be undone.')) return;
+    if (!confirm('Unsubscribe from all emails? This cannot be undone.')) return
 
-    setLoading(true);
+    setLoading(true)
     await supabase
       .from('newsletter_subscribers')
       .update({
         status: 'unsubscribed',
         unsubscribed_at: new Date().toISOString()
       })
-      .eq('email', subscriber.email);
+      .eq('email', subscriber.email)
 
-    setMessage('✅ Unsubscribed. Redirecting...');
-    setTimeout(() => router.push('/'), 2000);
-    setLoading(false);
-  };
+    setMessage('✅ Unsubscribed. Redirecting...')
+    setTimeout(() => router.push('/'), 2000)
+    setLoading(false)
+  }
 
-  // Auth form (magic link request)
+  // Auth Form
   if (showAuthForm) {
     return (
       <div style={{ maxWidth: '500px', margin: '80px auto', padding: '40px', textAlign: 'center' }}>
@@ -204,10 +210,10 @@ export default function ManageSubscription() {
           We'll email you a one-time link. No password needed.
         </p>
       </div>
-    );
+    )
   }
 
-  // Authenticated preference manager
+  // Authenticated Preference Manager
   return (
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '0 20px' }}>
       <div style={{
@@ -246,9 +252,9 @@ export default function ManageSubscription() {
                   checked={selectedCategories.includes(cat.id)}
                   onChange={() => {
                     if (selectedCategories.includes(cat.id)) {
-                      setSelectedCategories(selectedCategories.filter(c => c !== cat.id));
+                      setSelectedCategories(selectedCategories.filter(c => c !== cat.id))
                     } else {
-                      setSelectedCategories([...selectedCategories, cat.id]);
+                      setSelectedCategories([...selectedCategories, cat.id])
                     }
                   }}
                   style={{ display: 'none' }}
@@ -263,16 +269,17 @@ export default function ManageSubscription() {
         {/* Frequency */}
         <div style={{ marginBottom: '32px' }}>
           <h3 style={{ marginBottom: '16px' }}>⏰ How often?</h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
             {frequencyOptions.map(opt => (
               <label
                 key={opt.value}
                 style={{
-                  padding: '10px 20px',
+                  padding: '12px',
                   background: frequency === opt.value ? '#06b6d4' : '#f1f5f9',
                   color: frequency === opt.value ? 'white' : '#334155',
-                  borderRadius: '40px',
-                  cursor: 'pointer'
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'center'
                 }}
               >
                 <input
@@ -283,7 +290,8 @@ export default function ManageSubscription() {
                   onChange={() => setFrequency(opt.value)}
                   style={{ display: 'none' }}
                 />
-                {opt.label}
+                <div style={{ fontSize: '20px', marginBottom: '4px' }}>{opt.label.split(' ')[0]}</div>
+                <div style={{ fontSize: '12px' }}>{opt.desc}</div>
               </label>
             ))}
           </div>
@@ -293,7 +301,7 @@ export default function ManageSubscription() {
         <div style={{ marginBottom: '32px' }}>
           <h3 style={{ marginBottom: '16px' }}>📊 Max posts per week</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-            {[1, 2, 3, 5, 7].map(num => (
+            {[1, 2, 3, 5, 7, 10].map(num => (
               <label
                 key={num}
                 style={{
@@ -320,8 +328,39 @@ export default function ManageSubscription() {
             ))}
           </div>
           <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
-            {maxPosts <= 2 ? '👍 Light reader' : maxPosts <= 4 ? '📖 Regular reader' : '📚 Heavy reader'}
+            {maxPosts <= 2 ? '👍 Light reader' : maxPosts <= 4 ? '📖 Regular reader' : maxPosts <= 7 ? '📚 Heavy reader' : '🔴 High volume'}
           </p>
+        </div>
+
+        {/* Format */}
+        <div style={{ marginBottom: '32px' }}>
+          <h3 style={{ marginBottom: '16px' }}>📄 Email format</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+            {formatOptions.map(opt => (
+              <label
+                key={opt.value}
+                style={{
+                  padding: '12px',
+                  background: postFormat === opt.value ? '#06b6d4' : '#f1f5f9',
+                  color: postFormat === opt.value ? 'white' : '#334155',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
+              >
+                <input
+                  type="radio"
+                  name="format"
+                  value={opt.value}
+                  checked={postFormat === opt.value}
+                  onChange={() => setPostFormat(opt.value)}
+                  style={{ display: 'none' }}
+                />
+                <div style={{ fontSize: '14px', fontWeight: '500' }}>{opt.label}</div>
+                <div style={{ fontSize: '10px', marginTop: '4px' }}>{opt.desc}</div>
+              </label>
+            ))}
+          </div>
         </div>
 
         {message && (
@@ -337,24 +376,24 @@ export default function ManageSubscription() {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-          <button
-            onClick={updatePreferences}
-            disabled={loading}
-            style={{
-              flex: 1,
-              padding: '14px',
-              background: '#10b981',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            {loading ? 'Saving...' : 'Save Preferences'}
-          </button>
-        </div>
+        <button
+          onClick={updatePreferences}
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '14px',
+            background: '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            fontWeight: '600',
+            fontSize: '16px',
+            cursor: 'pointer',
+            marginBottom: '24px'
+          }}
+        >
+          {loading ? 'Saving...' : 'Save Preferences'}
+        </button>
 
         <div style={{ textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '24px' }}>
           <button
@@ -372,5 +411,5 @@ export default function ManageSubscription() {
         </div>
       </div>
     </div>
-  );
+  )
 }
