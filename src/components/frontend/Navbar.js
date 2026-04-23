@@ -5,6 +5,7 @@ import AuthModal from './AuthModal'
 
 export default function Navbar() {
   const [show, setShow] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [authMode, setAuthMode] = useState('login')
@@ -13,6 +14,7 @@ export default function Navbar() {
   const [showAuthPopup, setShowAuthPopup] = useState(false)
   const dropdownRef = useRef(null)
   const userMenuRef = useRef(null)
+  const mobileMenuRef = useRef(null)
 
   const categories = [
     { name: "Health", icon: "🌿", href: "/category/health" },
@@ -49,6 +51,7 @@ export default function Navbar() {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShow(false)
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setShowUserMenu(false)
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) setShowMobileMenu(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -75,6 +78,16 @@ export default function Navbar() {
     }
   }, [showAuthPopup])
 
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (showMobileMenu) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => { document.body.style.overflow = 'unset' }
+  }, [showMobileMenu])
+
   const toggleTheme = () => {
     const newMode = !isDarkMode
     setIsDarkMode(newMode)
@@ -91,18 +104,21 @@ export default function Navbar() {
     await fetch('/api/auth/logout', { method: 'POST' })
     setUser(null)
     setShowUserMenu(false)
+    setShowMobileMenu(false)
   }
 
   const openLogin = () => {
     console.log('Opening login modal')
     setAuthMode('login')
     setShowAuthModal(true)
+    setShowMobileMenu(false)
   }
 
   const openSignup = () => {
     console.log('Opening signup modal')
     setAuthMode('signup')
     setShowAuthModal(true)
+    setShowMobileMenu(false)
   }
 
   // Handle bookmark click - if logged in, go to bookmarks page; if not, show popup
@@ -110,6 +126,7 @@ export default function Navbar() {
     if (!user) {
       e.preventDefault()
       setShowAuthPopup(true)
+      setShowMobileMenu(false)
     }
   }
 
@@ -120,11 +137,11 @@ export default function Navbar() {
 
   return (
     <>
-      <div style={{ 
+      <nav style={{ 
         position: 'sticky', top: 0, 
         background: 'var(--navbar-bg, white)', 
         borderBottom: '1px solid var(--navbar-border, #eee)',
-        padding: '0 32px', 
+        padding: '0 16px', 
         zIndex: 100, 
         transition: 'all 0.3s ease'
       }}>
@@ -134,15 +151,15 @@ export default function Navbar() {
             trendlin<span style={{ color: '#e11d48' }}>.</span>
           </Link>
 
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            
-            {/* Bookmark Icon - Shows popup if not logged in */}
+          {/* Desktop Navigation - Visible on tablets and up */}
+          <div className="desktop-nav">
+            {/* Bookmark Icon */}
             <Link 
               href={user ? "/bookmarks" : "#"} 
               style={{ textDecoration: 'none' }}
               onClick={handleBookmarkClick}
             >
-              <button style={{
+              <button className="nav-icon-btn" style={{
                 background: 'transparent', border: 'none', width: 36, height: 36, borderRadius: 8,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, color: 'var(--icon-color, #666)'
@@ -154,7 +171,7 @@ export default function Navbar() {
             </Link>
 
             {/* Dark Mode Toggle */}
-            <button onClick={toggleTheme} style={{
+            <button className="nav-icon-btn" onClick={toggleTheme} style={{
               background: 'var(--theme-btn-bg, #f5f5f5)', border: 'none', width: 36, height: 36,
               borderRadius: 8, cursor: 'pointer', fontSize: 16, color: 'var(--theme-btn-color, #666)'
             }}>{isDarkMode ? '☀️' : '🌙'}</button>
@@ -260,8 +277,213 @@ export default function Navbar() {
               </div>
             )}
           </div>
+
+          {/* Mobile Menu Button - Hidden on desktop */}
+          <button 
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            className="mobile-menu-btn"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              cursor: 'pointer',
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 20,
+              color: 'var(--icon-color, #666)'
+            }}
+          >
+            {showMobileMenu ? '✕' : '☰'}
+          </button>
         </div>
-      </div>
+      </nav>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <>
+          <div className="mobile-menu-overlay" onClick={() => setShowMobileMenu(false)}></div>
+          <div className="mobile-menu" ref={mobileMenuRef}>
+            <div className="mobile-menu-header">
+              <div style={{ fontWeight: 600, color: 'var(--logo-color, #111)' }}>Menu</div>
+              <button 
+                onClick={() => setShowMobileMenu(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: 20,
+                  cursor: 'pointer',
+                  color: 'var(--icon-color, #666)'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            {/* Bookmark in Mobile */}
+            <Link 
+              href={user ? "/bookmarks" : "#"} 
+              className="mobile-menu-item"
+              onClick={handleBookmarkClick}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+                textDecoration: 'none',
+                color: 'var(--menu-item-color, #444)',
+                fontSize: 15,
+                borderBottom: '1px solid var(--menu-border, #eaeaea)'
+              }}
+            >
+              <span style={{ fontSize: 20 }}>🔖</span>
+              <span>Bookmarks</span>
+            </Link>
+
+            {/* Dark Mode in Mobile */}
+            <button 
+              onClick={() => {
+                toggleTheme();
+                setShowMobileMenu(false);
+              }}
+              className="mobile-menu-item"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '12px 16px',
+                textDecoration: 'none',
+                color: 'var(--menu-item-color, #444)',
+                fontSize: 15,
+                borderBottom: '1px solid var(--menu-border, #eaeaea)',
+                background: 'transparent',
+                border: 'none',
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer'
+              }}
+            >
+              <span style={{ fontSize: 20 }}>{isDarkMode ? '☀️' : '🌙'}</span>
+              <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+
+            {/* Categories in Mobile */}
+            <div style={{ 
+              padding: '8px 0',
+              borderBottom: '1px solid var(--menu-border, #eaeaea)'
+            }}>
+              <div style={{ 
+                padding: '8px 16px', 
+                fontSize: 12, 
+                fontWeight: 600, 
+                color: 'var(--user-plan-color, #999)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                Explore Categories
+              </div>
+              {categories.map((cat) => (
+                <Link 
+                  key={cat.name} 
+                  href={cat.href} 
+                  onClick={() => setShowMobileMenu(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 16px',
+                    textDecoration: 'none',
+                    color: 'var(--menu-item-color, #444)',
+                    fontSize: 14
+                  }}
+                >
+                  <span style={{ fontSize: 18 }}>{cat.icon}</span>
+                  <span>{cat.name}</span>
+                </Link>
+              ))}
+            </div>
+
+            {/* Auth Section in Mobile */}
+            {!user ? (
+              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button onClick={openLogin} style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: 'transparent',
+                  border: '1px solid var(--auth-btn-border, #ddd)',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  color: 'var(--auth-btn-color, #666)',
+                  fontSize: 14,
+                  fontWeight: 500
+                }}>Sign In</button>
+                <button onClick={openSignup} style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#e11d48',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  color: 'white',
+                  fontSize: 14,
+                  fontWeight: 500
+                }}>Sign Up</button>
+              </div>
+            ) : (
+              <div style={{ padding: '16px' }}>
+                <div style={{ 
+                  padding: '12px', 
+                  background: 'var(--user-info-bg, #fafafa)',
+                  borderRadius: 8,
+                  marginBottom: 12
+                }}>
+                  <div style={{ fontWeight: 600, color: 'var(--user-email-color, #111)', fontSize: 13, wordBreak: 'break-all' }}>
+                    {user?.email}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--user-plan-color, #999)', marginTop: 4 }}>Free Account</div>
+                </div>
+                <Link href="/settings" onClick={() => setShowMobileMenu(false)} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px',
+                  textDecoration: 'none',
+                  color: 'var(--menu-item-color, #444)',
+                  fontSize: 14,
+                  borderRadius: 8
+                }}><span>⚙️</span><span>Settings</span></Link>
+                <Link href="/newsletter/manage" onClick={() => setShowMobileMenu(false)} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px',
+                  textDecoration: 'none',
+                  color: 'var(--menu-item-color, #444)',
+                  fontSize: 14,
+                  borderRadius: 8
+                }}><span>📬</span><span>Newsletter</span></Link>
+                <button onClick={handleLogout} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px',
+                  color: '#ef4444',
+                  fontSize: 14,
+                  background: 'transparent',
+                  border: 'none',
+                  width: '100%',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  borderRadius: 8,
+                  marginTop: 8
+                }}><span>🚪</span><span>Sign Out</span></button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Auth Popup for Navbar Bookmark */}
       {showAuthPopup && (
@@ -306,13 +528,111 @@ export default function Navbar() {
       )}
 
       <style jsx>{`
+        /* Desktop Navigation - Visible on tablets and desktop */
+        .desktop-nav {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+        
+        /* Mobile menu button - Hidden on desktop */
+        .mobile-menu-btn {
+          display: none !important;
+        }
+        
+        /* Mobile Menu Styles - Only for mobile */
+        @media (max-width: 768px) {
+          .desktop-nav {
+            display: none !important;
+          }
+          
+          .mobile-menu-btn {
+            display: flex !important;
+          }
+        }
+        
+        /* Mobile Menu Overlay */
+        .mobile-menu-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          z-index: 1000;
+          animation: fadeIn 0.2s ease;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        
+        .mobile-menu {
+          position: fixed;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          width: 80%;
+          max-width: 320px;
+          background: var(--navbar-bg, white);
+          box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+          animation: slideIn 0.3s ease;
+          overflow-y: auto;
+          z-index: 1001;
+        }
+        
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+        
+        .mobile-menu-header {
+          padding: 20px 16px;
+          border-bottom: 1px solid var(--menu-border, #eaeaea);
+          font-size: 18px;
+          font-weight: 600;
+          position: sticky;
+          top: 0;
+          background: var(--navbar-bg, white);
+          z-index: 10;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        
+        .mobile-menu-item {
+          transition: background 0.2s;
+        }
+        
+        .mobile-menu-item:active {
+          background: var(--dropdown-item-hover-bg, #f5f5f5);
+        }
+        
         /* Navbar Auth Popup Styles */
         .nav-auth-popup {
           position: fixed;
           top: 80px;
-          right: 24px;
+          right: 16px;
+          left: 16px;
           z-index: 10000;
           animation: slideDown 0.3s ease;
+        }
+        
+        @media (min-width: 640px) {
+          .nav-auth-popup {
+            left: auto;
+            right: 24px;
+          }
         }
         
         @keyframes slideDown {
@@ -330,10 +650,19 @@ export default function Navbar() {
           background: var(--popup-bg, white);
           border-radius: 20px;
           padding: 20px;
-          width: 320px;
+          width: 100%;
+          max-width: 320px;
+          margin: 0 auto;
           box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
           border: 1px solid var(--popup-border, #e2e8f0);
           position: relative;
+        }
+        
+        @media (min-width: 640px) {
+          .nav-auth-popup-content {
+            width: 320px;
+            margin: 0;
+          }
         }
         
         .nav-auth-popup-icon {
@@ -361,6 +690,13 @@ export default function Navbar() {
         .nav-auth-popup-buttons {
           display: flex;
           gap: 10px;
+          flex-direction: column;
+        }
+        
+        @media (min-width: 480px) {
+          .nav-auth-popup-buttons {
+            flex-direction: row;
+          }
         }
         
         .nav-auth-popup-btn-primary {
@@ -376,9 +712,8 @@ export default function Navbar() {
           transition: all 0.2s;
         }
         
-        .nav-auth-popup-btn-primary:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+        .nav-auth-popup-btn-primary:active {
+          transform: translateY(0);
         }
         
         .nav-auth-popup-btn-secondary {
@@ -394,19 +729,14 @@ export default function Navbar() {
           transition: all 0.2s;
         }
         
-        .nav-auth-popup-btn-secondary:hover {
-          background: var(--popup-btn-secondary-hover-bg, #e2e8f0);
-          color: var(--popup-btn-secondary-hover-color, #0f172a);
-        }
-        
         .nav-auth-popup-close {
           position: absolute;
           top: 12px;
           right: 12px;
           background: var(--popup-close-bg, #f1f5f9);
           border: none;
-          width: 24px;
-          height: 24px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           font-size: 11px;
           cursor: pointer;
@@ -415,11 +745,6 @@ export default function Navbar() {
           justify-content: center;
           color: var(--popup-close-color, #64748b);
           transition: all 0.2s;
-        }
-        
-        .nav-auth-popup-close:hover {
-          background: var(--popup-close-hover-bg, #e2e8f0);
-          color: var(--popup-close-hover-color, #0f172a);
         }
         
         /* CSS Variables for theming */
@@ -500,6 +825,28 @@ export default function Navbar() {
           --popup-close-color: #94a3b8;
           --popup-close-hover-bg: #475569;
           --popup-close-hover-color: #ffffff;
+        }
+        
+        /* Desktop hover effects */
+        @media (min-width: 769px) {
+          .nav-icon-btn:hover {
+            background: var(--icon-hover-bg, #f5f5f5) !important;
+          }
+          
+          .nav-auth-popup-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
+          }
+          
+          .nav-auth-popup-btn-secondary:hover {
+            background: var(--popup-btn-secondary-hover-bg, #e2e8f0);
+            color: var(--popup-btn-secondary-hover-color, #0f172a);
+          }
+          
+          .nav-auth-popup-close:hover {
+            background: var(--popup-close-hover-bg, #e2e8f0);
+            color: var(--popup-close-hover-color, #0f172a);
+          }
         }
       `}</style>
     </>
