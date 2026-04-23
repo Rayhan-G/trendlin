@@ -1,3 +1,5 @@
+// src/pages/blog/[slug].js
+
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useCallback } from 'react'
@@ -6,6 +8,7 @@ import RatingSection from '@/components/blog/RatingSection'
 import ShareButtons from '@/components/blog/ShareButtons'
 import RightBlock from '@/components/blog/RightBlock'
 import RelatedPosts from '@/components/blog/RelatedPosts'
+import BookmarkButton from '@/components/frontend/BookmarkButton'
 
 // Helper functions
 const getReadingTime = (content) => {
@@ -305,19 +308,29 @@ export default function BlogPost({ post, error }) {
           </div>
         </header>
 
-        {/* Featured Image */}
-        {post.image_url && (
-          <div className="featured-image">
-            <div className="image-wrapper">
-              <img 
-                src={post.image_url} 
-                alt={post.title}
-                loading="eager"
-                fetchpriority="high"
-              />
-            </div>
-          </div>
-        )}
+       {/* Featured Image with Bookmark Button */}
+{post.image_url && (
+  <div className="featured-image-container">
+    <div className="featured-image">
+      <div className="image-wrapper">
+        <img 
+          src={post.image_url} 
+          alt={post.title}
+          loading="eager"
+          fetchpriority="high"
+        />
+      </div>
+    </div>
+    <div className="bookmark-wrapper">
+      <BookmarkButton 
+        postId={post.id}
+        postTitle={post.title}
+        postSlug={post.slug}
+      />
+    </div>
+  </div>
+)}
+         
 
         {/* Content Grid */}
         <div className="content-grid">
@@ -514,22 +527,39 @@ export default function BlogPost({ post, error }) {
           border-radius: 50%;
         }
 
-        .featured-image {
-          margin: 2rem 0 3rem;
-          border-radius: 24px;
-          overflow: hidden;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-        .image-wrapper {
-          position: relative;
-          width: 100%;
-          background: #f0f0f0;
-        }
-        .featured-image img {
-          width: 100%;
-          height: auto;
-          display: block;
-        }
+        .featured-image-container {
+  position: relative;
+  margin: 2rem 0 3rem;
+  overflow: visible; /* ← ADD THIS - prevents clipping */
+}
+.featured-image {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+}
+.image-wrapper {
+  position: relative;
+  width: 100%;
+  background: #f0f0f0;
+}
+.featured-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Premium Bookmark - Clean & Simple */
+.bookmark-wrapper {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100; /* ← INCREASE from 10 to 100 */
+  transition: transform 0.2s ease;
+}
+.bookmark-wrapper:hover {
+  transform: scale(1.05);
+}
+        
 
         .content-grid {
           display: grid;
@@ -741,6 +771,10 @@ export default function BlogPost({ post, error }) {
             width: 40px;
             height: 40px;
           }
+          .bookmark-wrapper {
+            top: 12px;
+            right: 12px;
+          }
         }
 
         @media (max-width: 480px) {
@@ -767,6 +801,7 @@ export async function getStaticPaths() {
     const paths = posts?.map(post => ({ params: { slug: post.slug } })) || []
     return { paths, fallback: 'blocking' }
   } catch (error) {
+    console.error('Error in getStaticPaths:', error)
     return { paths: [], fallback: 'blocking' }
   }
 }
@@ -795,6 +830,7 @@ export async function getStaticProps({ params }) {
 
     return { props: { post, error: null }, revalidate: 3600 }
   } catch (error) {
+    console.error('Error in getStaticProps:', error)
     return { props: { error: 'Internal error', post: null }, revalidate: 60 }
   }
 }

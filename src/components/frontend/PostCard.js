@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import BookmarkButton from './BookmarkButton'
 
 export default function PostCard({ post, rank = null }) {
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -50,7 +51,6 @@ export default function PostCard({ post, rank = null }) {
     return num.toString()
   }
 
-  // Perfect fractional star rating using SVG
   const renderStars = (rating) => {
     if (!rating || rating === 0) return null
     
@@ -58,7 +58,6 @@ export default function PostCard({ post, rank = null }) {
     const fullStars = Math.floor(rating)
     const fractionalPart = rating - fullStars
     
-    // Add full stars
     for (let i = 0; i < fullStars; i++) {
       stars.push(
         <svg key={`full-${i}`} width="12" height="12" viewBox="0 0 24 24" style={{ marginRight: '2px' }}>
@@ -72,7 +71,6 @@ export default function PostCard({ post, rank = null }) {
       )
     }
     
-    // Add fractional star if needed
     if (fractionalPart > 0 && fullStars < 5) {
       stars.push(
         <svg key="fractional" width="12" height="12" viewBox="0 0 24 24" style={{ marginRight: '2px' }}>
@@ -81,14 +79,12 @@ export default function PostCard({ post, rank = null }) {
               <rect x="0" y="0" width={fractionalPart * 24} height="24" />
             </clipPath>
           </defs>
-          {/* Empty star background */}
           <polygon 
             points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21" 
             fill={isDarkMode ? '#4b5563' : '#d1d5db'}
             stroke={isDarkMode ? '#4b5563' : '#d1d5db'}
             strokeWidth="1"
           />
-          {/* Filled portion */}
           <polygon 
             points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21" 
             fill="#f59e0b"
@@ -100,7 +96,6 @@ export default function PostCard({ post, rank = null }) {
       )
     }
     
-    // Add empty stars
     const emptyStarsCount = 5 - stars.length
     for (let i = 0; i < emptyStarsCount; i++) {
       stars.push(
@@ -124,102 +119,140 @@ export default function PostCard({ post, rank = null }) {
   }
 
   return (
-    <Link href={`/blog/${post.slug}`} className="post-card-link">
-      <div className={`post-card ${isDarkMode ? 'dark' : 'light'}`}>
-        {rank && (
-          <div className="rank-badge">
-            <div className="rank-glow"></div>
-            <span className="rank-number">{rank}</span>
-          </div>
-        )}
-        
-        <div className="post-card-image">
-          <img 
-            src={getImageUrl()} 
-            alt={post.title || 'Post image'}
-            loading="lazy"
-            onError={() => setImageError(true)}
-          />
-        </div>
-        
-        <div className="post-card-content">
-          <div className="post-header">
-            <div 
-              className="post-category"
-              style={{ '--category-color': getCategoryColor(post.category) }}
-            >
-              <span className="category-dot"></span>
-              <span>{post.category || 'General'}</span>
-            </div>
-            {post.read_time && (
-              <div className="read-time">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/>
-                  <polyline points="12 6 12 12 16 14"/>
-                </svg>
-                <span>{post.read_time} min</span>
-              </div>
-            )}
-          </div>
-          
-          <h3 className="post-title">{post.title || 'Untitled Post'}</h3>
-          
-          <p className="post-excerpt">
-            {post.excerpt ? `${post.excerpt.substring(0, 100)}...` : 'No description available'}
-          </p>
-          
-          {/* Rating section with perfect fractional stars */}
-          {post.avg_rating > 0 && (
-            <div className="rating-wrapper">
-              <div className="stars-container" style={{ display: 'flex', alignItems: 'center' }}>
-                {renderStars(post.avg_rating)}
-              </div>
-              <span className="rating-number" style={{ color: '#f59e0b', fontSize: '0.7rem', fontWeight: 600 }}>
-                {post.avg_rating.toFixed(1)}
-              </span>
-              {post.total_ratings > 0 && (
-                <span className="rating-count" style={{ fontSize: '0.6rem', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
-                  ({formatNumber(post.total_ratings)})
-                </span>
-              )}
+    <div className="post-card-container">
+      <Link href={`/blog/${post.slug}`} className="post-card-link">
+        <div className={`post-card ${isDarkMode ? 'dark' : 'light'}`}>
+          {rank && (
+            <div className="rank-badge">
+              <div className="rank-glow"></div>
+              <span className="rank-number">{rank}</span>
             </div>
           )}
           
-          <div className="post-footer">
-            <div className="post-meta">
-              <div className="meta-item">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                  <line x1="16" y1="2" x2="16" y2="6"/>
-                  <line x1="8" y1="2" x2="8" y2="6"/>
-                  <line x1="3" y1="10" x2="21" y2="10"/>
-                </svg>
-                <span>
-                  {post.created_at 
-                    ? new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                    : 'Recent'}
-                </span>
+          <div className="post-card-image">
+            <img 
+              src={getImageUrl()} 
+              alt={post.title || 'Post image'}
+              loading="lazy"
+              onError={() => setImageError(true)}
+            />
+          </div>
+          
+          <div className="post-card-content">
+            <div className="post-header">
+              <div 
+                className="post-category"
+                style={{ '--category-color': getCategoryColor(post.category) }}
+              >
+                <span className="category-dot"></span>
+                <span>{post.category || 'General'}</span>
               </div>
-              <div className="meta-item">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
-                </svg>
-                <span>{formatNumber(post.views)}</span>
-              </div>
+              {post.read_time && (
+                <div className="read-time">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span>{post.read_time} min</span>
+                </div>
+              )}
             </div>
             
-            <div className="read-more">
-              <span>Read</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
-              </svg>
+            <h3 className="post-title">{post.title || 'Untitled Post'}</h3>
+            
+            <p className="post-excerpt">
+              {post.excerpt ? `${post.excerpt.substring(0, 100)}...` : 'No description available'}
+            </p>
+            
+            {post.avg_rating > 0 && (
+              <div className="rating-wrapper">
+                <div className="stars-container" style={{ display: 'flex', alignItems: 'center' }}>
+                  {renderStars(post.avg_rating)}
+                </div>
+                <span className="rating-number" style={{ color: '#f59e0b', fontSize: '0.7rem', fontWeight: 600 }}>
+                  {post.avg_rating.toFixed(1)}
+                </span>
+                {post.total_ratings > 0 && (
+                  <span className="rating-count" style={{ fontSize: '0.6rem', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                    ({formatNumber(post.total_ratings)})
+                  </span>
+                )}
+              </div>
+            )}
+            
+            <div className="post-footer">
+              <div className="post-meta">
+                <div className="meta-item">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  <span>
+                    {post.created_at 
+                      ? new Date(post.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'Recent'}
+                  </span>
+                </div>
+                <div className="meta-item">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <span>{formatNumber(post.views)}</span>
+                </div>
+              </div>
+              
+              <div className="read-more">
+                <span>Read</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </div>
             </div>
           </div>
         </div>
+      </Link>
+
+      {/* Bookmark Button */}
+      <div className="bookmark-wrapper">
+        <BookmarkButton 
+          postId={post.id}
+          postTitle={post.title}
+          postSlug={post.slug}
+        />
       </div>
 
       <style jsx>{`
+        .post-card-container {
+          position: relative;
+          overflow: visible;
+        }
+        
+        .bookmark-wrapper {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          z-index: 100;
+          opacity: 0;
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        
+        .post-card-container:hover .bookmark-wrapper {
+          opacity: 1;
+        }
+        
+        .bookmark-wrapper:hover {
+          transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+          .bookmark-wrapper {
+            opacity: 1;
+          }
+        }
+        
         .post-card-link {
           text-decoration: none;
           color: inherit;
@@ -235,7 +268,7 @@ export default function PostCard({ post, rank = null }) {
         
         .post-card {
           border-radius: 16px;
-          overflow: hidden;
+          overflow: visible;
           height: 100%;
           display: flex;
           flex-direction: column;
@@ -295,6 +328,7 @@ export default function PostCard({ post, rank = null }) {
           aspect-ratio: 4 / 3;
           overflow: hidden;
           background: #f3f4f6;
+          border-radius: 16px 16px 0 0;
         }
         
         .post-card-image img {
@@ -491,6 +525,6 @@ export default function PostCard({ post, rank = null }) {
           }
         }
       `}</style>
-    </Link>
+    </div>
   )
 }
