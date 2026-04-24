@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import AdminNavigation from '@/components/admin/AdminNavigation';
 import UnifiedAnalytics from '@/components/admin/UnifiedAnalytics';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
+
 
 // Helper function to format currency
 const formatCurrency = (amount) => {
