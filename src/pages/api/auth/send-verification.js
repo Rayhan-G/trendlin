@@ -1,5 +1,6 @@
 // pages/api/auth/send-verification.js
 import { Resend } from 'resend'
+import { randomBytes } from 'crypto'
 
 // Initialize Resend (only if API key exists)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
 
   // Generate 6-digit verification code
   const code = Math.floor(100000 + Math.random() * 900000).toString()
-  const verificationId = crypto.randomBytes(32).toString('hex') + Date.now()
+  const verificationId = randomBytes(32).toString('hex') + Date.now()
 
   // Store code with 10-minute expiry
   verificationStore.set(verificationId, {
