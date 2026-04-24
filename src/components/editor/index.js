@@ -17,7 +17,6 @@ import TaskItem from '@tiptap/extension-task-item';
 import Placeholder from '@tiptap/extension-placeholder';
 import { X } from 'lucide-react';
 import Toolbar from './Toolbar';
-import GrammarlyWrapper from './GrammarlyWrapper';
 import { ImageExtension } from './extensions/ImageExtension';
 import { GalleryExtension, GalleryItem } from './extensions/GalleryExtension';
 import { VideoExtension } from './extensions/VideoExtension';
