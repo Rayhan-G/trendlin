@@ -19,10 +19,7 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
         if (data.authenticated) {
           setUser(data.user)
           
-          // Check if bookmark exists - try multiple column names
-          let bookmarkExists = false
-          
-          // Try with post_id only (simple table)
+          // Check if bookmark exists
           const { data: bookmark, error } = await supabase
             .from('bookmarks')
             .select('id')
@@ -30,8 +27,11 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
             .eq('post_id', postId)
             .maybeSingle()
           
-          bookmarkExists = !!bookmark
-          setIsBookmarked(bookmarkExists)
+          if (error) {
+            console.error('Error checking bookmark:', error)
+          }
+          
+          setIsBookmarked(!!bookmark)
         }
       } catch (error) {
         console.error('Auth check failed:', error)
@@ -64,12 +64,12 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
 
   useEffect(() => {
     if (showTooltip) {
-      const timer = setTimeout(() => setShowTooltip(false), 2000)
+      const timer = setTimeout(() => setShowTooltip(false), 3000)
       return () => clearTimeout(timer)
     }
   }, [showTooltip])
 
-  const displayTooltip = (msg) => {
+  const displayTooltip = (msg, isError = false) => {
     setTooltipText(msg)
     setShowTooltip(true)
   }
@@ -83,42 +83,80 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
     setLoading(true)
     
     try {
+      console.log('Toggling bookmark for post:', postId)
+      console.log('User ID:', user.id)
+      
       if (isBookmarked) {
         // Remove bookmark
-        const { error } = await supabase
+        console.log('Attempting to remove bookmark...')
+        const { data, error } = await supabase
           .from('bookmarks')
           .delete()
           .eq('user_id', user.id)
           .eq('post_id', postId)
         
-        if (error) throw error
+        if (error) {
+          console.error('Delete error:', error)
+          throw error
+        }
         
+        console.log('Bookmark removed successfully')
         setIsBookmarked(false)
         displayTooltip('❌ Removed from bookmarks')
       } else {
-        // Add bookmark - try to save with available data
+        // Add bookmark
+        console.log('Attempting to add bookmark...')
+        
+        // First, check what columns exist in the table
         const bookmarkData = {
           user_id: user.id,
-          post_id: postId,
+          post_id: parseInt(postId),
           bookmarked_at: new Date().toISOString()
         }
         
-        // Add optional fields if they exist (table might have these columns)
+        // Try to add optional fields if provided
         if (postTitle) bookmarkData.post_title = postTitle
         if (postSlug) bookmarkData.post_slug = postSlug
         
-        const { error } = await supabase
+        console.log('Inserting data:', bookmarkData)
+        
+        const { data, error } = await supabase
           .from('bookmarks')
           .insert(bookmarkData)
+          .select()
         
-        if (error) throw error
+        if (error) {
+          console.error('Insert error details:', error)
+          
+          // If error is about missing columns, try without those columns
+          if (error.message.includes('post_title') || error.message.includes('post_slug')) {
+            console.log('Columns missing, trying with minimal data...')
+            const minimalData = {
+              user_id: user.id,
+              post_id: parseInt(postId),
+              bookmarked_at: new Date().toISOString()
+            }
+            
+            const { error: retryError } = await supabase
+              .from('bookmarks')
+              .insert(minimalData)
+            
+            if (retryError) {
+              console.error('Retry error:', retryError)
+              throw retryError
+            }
+          } else {
+            throw error
+          }
+        }
         
+        console.log('Bookmark added successfully')
         setIsBookmarked(true)
         displayTooltip('✅ Saved to bookmarks')
       }
     } catch (error) {
-      console.error('Bookmark error:', error)
-      displayTooltip('❌ Something went wrong')
+      console.error('Bookmark error FULL:', error)
+      displayTooltip(`❌ Error: ${error.message || 'Something went wrong'}`)
     } finally {
       setLoading(false)
     }
@@ -211,7 +249,6 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
           to { transform: rotate(360deg); }
         }
         
-        /* Tooltip Styles */
         .tooltip {
           position: fixed;
           bottom: 20px;
@@ -234,6 +271,8 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
           backdrop-filter: blur(8px);
           border: 1px solid rgba(255, 255, 255, 0.1);
+          max-width: 90vw;
+          word-break: break-word;
         }
         
         @keyframes slideUp {
@@ -260,6 +299,7 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
           .tooltip-content {
             padding: 6px 12px;
             font-size: 12px;
+            white-space: nowrap;
           }
           
           .tooltip::before {
@@ -280,6 +320,7 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
           .tooltip-content {
             white-space: normal;
             max-width: 280px;
+            font-size: 12px;
           }
         }
       `}</style>
