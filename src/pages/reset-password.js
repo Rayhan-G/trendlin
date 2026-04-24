@@ -39,11 +39,10 @@ export default function ResetPassword() {
       const data = await response.json()
 
       if (response.ok) {
-        setMessage('✅ Password reset successful! Redirecting to login...')
+        setMessage('Password reset successful! Redirecting...')
         
-        // Redirect to login page with success parameter
         setTimeout(() => {
-          router.push('/login?reset=true')
+          router.push('/?openAuth=login')
         }, 2000)
       } else {
         setError(data.error || 'Failed to reset password')
@@ -59,12 +58,9 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md text-center">
-          <div className="text-red-600 text-lg mb-4">❌ Invalid Reset Link</div>
-          <p className="text-gray-600 mb-6">
-            This password reset link is invalid or has expired.
-          </p>
+          <p className="text-red-600 mb-4">Invalid reset link</p>
           <Link href="/forgot-password" className="text-purple-600 hover:underline">
-            Request a new reset link →
+            Request new link
           </Link>
         </div>
       </div>
@@ -74,10 +70,7 @@ export default function ResetPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-2xl font-bold text-center mb-2">Create New Password</h1>
-        <p className="text-gray-600 text-center mb-6">
-          Enter your new password below
-        </p>
+        <h1 className="text-2xl font-bold text-center mb-6">Create New Password</h1>
 
         {message && (
           <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-center">
@@ -92,50 +85,34 @@ export default function ResetPassword() {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">
-              New Password
-            </label>
-            <input
-              type="password"
-              placeholder="Min 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-              disabled={loading}
-            />
-          </div>
+          <input
+            type="password"
+            placeholder="New password (min 8 chars)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+            disabled={loading}
+          />
 
-          <div className="mb-6">
-            <label className="block text-gray-700 font-medium mb-2">
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              placeholder="Confirm your new password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              required
-              disabled={loading}
-            />
-          </div>
+          <input
+            type="password"
+            placeholder="Confirm new password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+            disabled={loading}
+          />
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition"
+            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50"
           >
             {loading ? 'Resetting...' : 'Reset Password'}
           </button>
         </form>
-
-        <div className="text-center mt-4">
-          <Link href="/login" className="text-sm text-purple-600 hover:underline">
-            ← Back to Sign In
-          </Link>
-        </div>
       </div>
     </div>
   )
