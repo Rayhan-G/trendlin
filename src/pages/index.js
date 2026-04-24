@@ -1,8 +1,8 @@
 // src/pages/index.js
 import { useState, useEffect } from 'react'
-import HeroSection from '@/components/frontend/HeroSection'
-import HorizontalScroll from '@/components/frontend/HorizontalScroll'
-import { supabase } from '@/lib/supabase'
+import HeroSection from '../components/frontend/HeroSection'
+import HorizontalScroll from '../components/frontend/HorizontalScroll'
+import { supabase } from '../lib/supabase'
 
 export default function Home() {
   const [todayPosts, setTodayPosts] = useState([])

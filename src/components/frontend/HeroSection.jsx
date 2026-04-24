@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { formatNumber, formatRating } from '@/utils/formatters'
+import { supabase } from '../../lib/supabase'
+import { formatNumber, formatRating } from '../../utils/formatters'
 
 export default function UnifiedHero() {
   const [stats, setStats] = useState({
