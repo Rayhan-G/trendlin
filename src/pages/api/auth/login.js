@@ -1,6 +1,5 @@
-// pages/api/auth/login.js
 import bcrypt from 'bcrypt'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../../../lib/supabase'
 import { randomBytes } from 'crypto'
 
 export default async function handler(req, res) {
@@ -16,7 +15,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get user from database
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, email, password_hash, email_verified')
@@ -36,21 +34,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid email or password' })
     }
 
-    // Update last login
     await supabase
       .from('users')
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', user.id)
 
-    // Create session
     const sessionToken = randomBytes(64).toString('hex')
     const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
     const expiresAt = new Date(Date.now() + maxAge * 1000)
 
-    // Try to insert session with error logging
-    console.log('Attempting to create session for user:', user.id)
-    
-    const { data: sessionData, error: sessionError } = await supabase
+    const { error: sessionError } = await supabase
       .from('user_sessions')
       .insert({
         user_id: user.id,
@@ -60,32 +53,12 @@ export default async function handler(req, res) {
         ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null,
         created_at: new Date().toISOString()
       })
-      .select()
 
     if (sessionError) {
-      console.error('Session creation error:', {
-        message: sessionError.message,
-        code: sessionError.code,
-        details: sessionError.details,
-        hint: sessionError.hint
-      })
-      
-      // Check if table exists
-      if (sessionError.code === '42P01') {
-        return res.status(500).json({ error: 'Session table not found. Please contact support.' })
-      }
-      
-      // Check if RLS is blocking
-      if (sessionError.code === '42501') {
-        return res.status(500).json({ error: 'Session creation blocked. Please contact support.' })
-      }
-      
-      return res.status(500).json({ error: 'Failed to create session. Please try again.' })
+      console.error('Session creation error:', sessionError)
+      return res.status(500).json({ error: 'Failed to create session' })
     }
 
-    console.log('Session created successfully:', sessionData)
-
-    // Set secure cookie
     const isProduction = process.env.NODE_ENV === 'production'
     res.setHeader('Set-Cookie', [
       `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
@@ -94,14 +67,11 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      user: {
-        id: user.id,
-        email: user.email
-      }
+      user: { id: user.id, email: user.email }
     })
 
   } catch (error) {
     console.error('Login error:', error)
-    return res.status(500).json({ error: 'An internal server error occurred. Please try again.' })
+    return res.status(500).json({ error: 'An internal server error occurred' })
   }
 }
