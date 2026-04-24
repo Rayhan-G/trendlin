@@ -1,0 +1,11 @@
+# .vercelignore
+node_modules
+.next
+.git
+README.md
+.github
+.vscode
+*.ts
+*.tsx
+tsconfig.json
+jsconfig.json
