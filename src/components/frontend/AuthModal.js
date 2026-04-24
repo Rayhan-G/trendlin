@@ -279,7 +279,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       onClose()
       
       // If admin, redirect to admin dashboard
-      if (result.data.isAdmin || result.data.user?.is_admin) {
+      if (result.data.isAdmin === true || result.data.user?.is_admin === true) {
         window.location.href = '/admin/dashboard'
       }
     } else {

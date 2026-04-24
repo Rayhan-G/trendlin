@@ -2,8 +2,7 @@ import { supabase } from '../../../lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET'])
-    return res.status(405).json({ error: `Method ${req.method} not allowed` })
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   const sessionToken = req.cookies.session_token
@@ -14,9 +13,9 @@ export default async function handler(req, res) {
 
   try {
     // Check if it's an admin session
-    const isAdmin = req.cookies.is_admin === 'true'
+    const isAdminCookie = req.cookies.is_admin === 'true'
     
-    if (isAdmin) {
+    if (isAdminCookie) {
       const { data: adminSession, error: adminError } = await supabase
         .from('admin_sessions')
         .select('expires_at')

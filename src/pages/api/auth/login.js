@@ -14,55 +14,47 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Email and password are required' })
   }
 
-  // Admin check
+  // ============ ADMIN CHECK ============
   const adminEmail = process.env.ADMIN_EMAIL
-  if (email === adminEmail) {
-    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH
+  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH
+
+  if (email === adminEmail && adminPasswordHash) {
+    // Validate admin password
+    const isValid = await bcrypt.compare(password, adminPasswordHash)
     
-    if (adminPasswordHash) {
-      const isValid = await bcrypt.compare(password, adminPasswordHash)
+    if (isValid) {
+      // Create admin session token
+      const sessionToken = randomBytes(64).toString('hex')
+      const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
+      const expiresAt = new Date(Date.now() + maxAge * 1000)
       
-      if (isValid) {
-        const sessionToken = randomBytes(64).toString('hex')
-        const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
-        const expiresAt = new Date(Date.now() + maxAge * 1000)
-        
-        // Check if admin_sessions table exists, if not create it
-        const { data: existingSession, error: sessionError } = await supabase
-          .from('admin_sessions')
-          .select('token')
-          .eq('token', sessionToken)
-          .maybeSingle()
-        
-        if (!existingSession) {
-          await supabase.from('admin_sessions').insert({
-            token: sessionToken,
-            expires_at: expiresAt.toISOString(),
-            user_agent: req.headers['user-agent'] || null,
-            ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null,
-            created_at: new Date().toISOString()
-          })
-        }
-        
-        const isProduction = process.env.NODE_ENV === 'production'
-        res.setHeader('Set-Cookie', [
-          `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
-          `is_admin=true; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
-          `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''}`
-        ])
-        
-        return res.status(200).json({
-          success: true,
-          user: { id: 'admin', email: email, is_admin: true },
-          isAdmin: true
-        })
-      }
+      // Store admin session in database
+      await supabase.from('admin_sessions').insert({
+        token: sessionToken,
+        expires_at: expiresAt.toISOString(),
+        user_agent: req.headers['user-agent'] || null,
+        ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
+      })
+      
+      // Set cookies
+      const isProduction = process.env.NODE_ENV === 'production'
+      res.setHeader('Set-Cookie', [
+        `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
+        `is_admin=true; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
+        `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''}`
+      ])
+      
+      return res.status(200).json({
+        success: true,
+        user: { id: 'admin', email: email, is_admin: true },
+        isAdmin: true
+      })
     }
     
-    return res.status(401).json({ error: 'Invalid credentials' })
+    return res.status(401).json({ error: 'Invalid admin credentials' })
   }
 
-  // Regular user login
+  // ============ REGULAR USER LOGIN ============
   try {
     const { data: user, error: userError } = await supabase
       .from('users')
@@ -125,6 +117,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Login error:', error)
-    return res.status(500).json({ error: 'An internal server error occurred. Please try again.' })
+    return res.status(500).json({ error: 'An internal server error occurred' })
   }
 }

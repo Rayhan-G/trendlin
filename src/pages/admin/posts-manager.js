@@ -2,10 +2,57 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/router'
-import { supabase } from '@/lib/supabase'
-import AdminNavigation from '@/components/admin/AdminNavigation'
+import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
-import { formatNumber } from '@/utils/formatters'
+
+// Simple Admin Navigation Component (no external dependencies)
+const AdminNavigation = ({ children }) => {
+  const router = useRouter()
+  
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    router.push('/')
+  }
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex items-center gap-8">
+              <Link href="/admin/dashboard" className="text-xl font-bold text-purple-600">
+                Admin Panel
+              </Link>
+              <div className="hidden md:flex gap-4">
+                <Link href="/admin/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
+                  Dashboard
+                </Link>
+                <Link href="/admin/posts-manager" className="text-sm text-purple-600 font-medium">
+                  Posts
+                </Link>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+      <main>{children}</main>
+    </div>
+  )
+}
+
+// Format number helper
+const formatNumber = (num) => {
+  if (!num && num !== 0) return '0'
+  if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
+  return num.toString()
+}
 
 export default function PostsManager() {
   const router = useRouter()
@@ -61,9 +108,14 @@ export default function PostsManager() {
   }, [currentPage, itemsPerPage, statusFilter])
 
   const checkAuth = async () => {
-    const sessionToken = localStorage.getItem('admin_session_token')
-    if (!sessionToken) {
-      router.push('/admin/login')
+    try {
+      const res = await fetch('/api/auth/me')
+      const data = await res.json()
+      if (!data.authenticated || !data.user?.is_admin) {
+        router.push('/')
+      }
+    } catch (error) {
+      router.push('/')
     }
   }
 
@@ -460,7 +512,7 @@ export default function PostsManager() {
           </div>
         </div>
 
-        {/* Premium Filters */}
+        {/* Search and Filters */}
         <div style={{ marginBottom: '20px' }}>
           <input
             type="text"
@@ -471,7 +523,7 @@ export default function PostsManager() {
           />
           
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            {/* Premium Status Dropdown */}
+            {/* Status Dropdown */}
             <div className="dropdown-container" ref={statusDropdownRef} style={{ position: 'relative' }}>
               <button 
                 className={`dropdown-trigger ${statusFilter !== 'all' ? 'active' : ''}`}
@@ -546,7 +598,7 @@ export default function PostsManager() {
               )}
             </div>
 
-            {/* Premium Category Dropdown */}
+            {/* Category Dropdown */}
             <div className="dropdown-container" ref={categoryDropdownRef} style={{ position: 'relative' }}>
               <button 
                 className={`dropdown-trigger ${categoryFilter !== 'all' ? 'active' : ''}`}
@@ -665,7 +717,6 @@ export default function PostsManager() {
                       <input type="checkbox" checked={selectedPosts.has(post.id)} onChange={() => toggleSelectPost(post.id)} />
                     </td>
                     <td style={{ padding: '16px' }}>
-                      {/* UPDATED: Fixed link to point to the correct edit page path */}
                       <Link href={`/admin/posts/edit/${post.id}`} style={{ fontWeight: 500, color: '#000', textDecoration: 'none' }}>
                         {post.title || 'Untitled'}
                       </Link>
@@ -699,7 +750,6 @@ export default function PostsManager() {
                     <td style={{ padding: '16px', fontSize: '13px', color: '#666' }}>{formatRelativeDate(post.created_at)}</td>
                     <td style={{ padding: '16px' }}>
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                        {/* UPDATED: Fixed edit button link */}
                         <Link href={`/admin/posts/edit/${post.id}`}>
                           <button style={{ padding: '4px 10px', fontSize: '12px', background: '#f5f5f5', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Edit</button>
                         </Link>
