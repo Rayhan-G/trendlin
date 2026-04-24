@@ -1,22 +1,10 @@
 // pages/api/auth/send-verification.js
 import { Resend } from 'resend'
 import { randomBytes } from 'crypto'
+import { supabase } from '@/lib/supabase'
 
 // Initialize Resend (only if API key exists)
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-
-// In-memory store (in production, use Redis or database)
-const verificationStore = new Map()
-
-// Clean up expired codes every hour
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, value] of verificationStore.entries()) {
-    if (value.expiresAt < now) {
-      verificationStore.delete(key)
-    }
-  }
-}, 60 * 60 * 1000)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -39,13 +27,23 @@ export default async function handler(req, res) {
   // Generate 6-digit verification code
   const code = Math.floor(100000 + Math.random() * 900000).toString()
   const verificationId = randomBytes(32).toString('hex') + Date.now()
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
-  // Store code with 10-minute expiry
-  verificationStore.set(verificationId, {
-    email: email.toLowerCase(),
-    code,
-    expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
-  })
+  // Store code in Supabase
+  const { error: insertError } = await supabase
+    .from('verification_codes')
+    .insert({
+      verification_id: verificationId,
+      email: email.toLowerCase(),
+      code: code,
+      expires_at: expiresAt.toISOString(),
+      used: false
+    })
+
+  if (insertError) {
+    console.error('Failed to store verification code:', insertError)
+    return res.status(500).json({ error: 'Failed to send verification code' })
+  }
 
   const isDevelopment = process.env.NODE_ENV === 'development'
 
@@ -55,6 +53,7 @@ export default async function handler(req, res) {
     console.log(`🔐 VERIFICATION CODE`)
     console.log(`📧 Email: ${email}`)
     console.log(`🔢 Code: ${code}`)
+    console.log(`🆔 Verification ID: ${verificationId}`)
     console.log(`⏰ Expires in: 10 minutes`)
     console.log('='.repeat(50) + '\n')
 
@@ -109,7 +108,7 @@ export default async function handler(req, res) {
 
     if (error) {
       console.error('Resend error:', error)
-      verificationStore.delete(verificationId)
+      await supabase.from('verification_codes').delete().eq('verification_id', verificationId)
       return res.status(500).json({ error: 'Failed to send verification email' })
     }
 
@@ -121,7 +120,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Email sending error:', error)
-    verificationStore.delete(verificationId)
+    await supabase.from('verification_codes').delete().eq('verification_id', verificationId)
     return res.status(500).json({ error: 'Unable to send verification email. Please try again.' })
   }
 }
