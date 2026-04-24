@@ -1,4 +1,4 @@
-// src/pages/login.js
+// src/pages/login.js - REPLACE WITH THIS
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -38,10 +38,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Welcome back
           </h2>
           <div className="flex justify-center space-x-4 mt-2">
@@ -51,34 +51,35 @@ export default function LoginPage() {
         </div>
         
         {error && (
-          <div className="rounded-lg bg-red-50 p-3 border border-red-200">
-            <div className="text-sm text-red-600 text-center">{error}</div>
+          <div className="rounded-md bg-red-50 p-4">
+            <div className="text-sm text-red-700">{error}</div>
           </div>
         )}
         
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
-          <div>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Email address"
-              disabled={loading}
-            />
-          </div>
-          
-          <div>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="appearance-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Password"
-              disabled={loading}
-            />
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+                disabled={loading}
+              />
+            </div>
+            <div>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+                disabled={loading}
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between">
@@ -91,16 +92,16 @@ export default function LoginPage() {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                 Remember me
               </label>
             </div>
 
-            {/* FORGOT PASSWORD LINK - NOW CLEARLY VISIBLE */}
+            {/* FORGOT PASSWORD LINK - ADDED WITH HIGH VISIBILITY */}
             <div className="text-sm">
               <Link 
                 href="/forgot-password" 
-                className="text-purple-600 hover:text-purple-800 font-medium hover:underline"
+                className="text-purple-600 hover:text-purple-500 font-semibold"
               >
                 Forgot password?
               </Link>
@@ -111,7 +112,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>

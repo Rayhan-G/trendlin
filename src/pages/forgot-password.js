@@ -1,4 +1,3 @@
-
 // src/pages/forgot-password.js
 import { useState } from 'react'
 import Link from 'next/link'
@@ -28,7 +27,7 @@ export default function ForgotPasswordPage() {
         setMessage(data.message || 'Check your email for reset instructions')
         setEmail('')
       } else {
-        setError(data.error || 'Something went wrong. Please try again.')
+        setError(data.error || 'Something went wrong')
       }
     } catch (err) {
       setError('Network error. Please try again.')
@@ -38,60 +37,46 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Forgot your password?
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we'll send you a link to reset your password.
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-center mb-6">Forgot password?</h2>
+        <p className="text-gray-600 text-center mb-6">
+          Enter your email and we'll send you a reset link.
+        </p>
         
         {message && (
-          <div className="rounded-md bg-green-50 p-4 border border-green-200">
-            <div className="text-sm text-green-700">{message}</div>
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded text-center">
+            {message}
           </div>
         )}
         
         {error && (
-          <div className="rounded-md bg-red-50 p-4 border border-red-200">
-            <div className="text-sm text-red-700">{error}</div>
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-center">
+            {error}
           </div>
         )}
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-              placeholder="you@example.com"
-              disabled={loading}
-            />
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-            >
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </div>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email address"
+            className="w-full px-3 py-2 border rounded-md mb-4"
+            required
+            disabled={loading}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700"
+          >
+            {loading ? 'Sending...' : 'Send reset link'}
+          </button>
         </form>
         
-        <div className="text-center">
-          <Link href="/login" className="text-sm text-purple-600 hover:text-purple-500 hover:underline">
+        <div className="text-center mt-4">
+          <Link href="/login" className="text-purple-600 hover:underline">
             Back to sign in
           </Link>
         </div>
