@@ -9,19 +9,14 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  
-  // Password visibility states
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  
-  // Verification states
   const [showVerification, setShowVerification] = useState(false)
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', ''])
   const [verificationId, setVerificationId] = useState('')
   const [countdown, setCountdown] = useState(0)
   const [canResend, setCanResend] = useState(false)
 
-  // Create refs for verification code inputs
   const inputRefs = useRef([])
 
   useEffect(() => {
@@ -73,7 +68,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
 
   if (!isOpen) return null
 
-  // Professional email validation
   const validateEmail = (email) => {
     if (!email || email.trim() === '') {
       return { valid: false, message: 'Email address is required' }
@@ -81,10 +75,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
     
     const fakeDomains = [
       'tempmail.com', '10minutemail.com', 'throwaway.com', 'guerrillamail.com',
-      'mailinator.com', 'yopmail.com', 'tempinbox.com', 'fakeinbox.com',
-      'getairmail.com', 'mailnator.com', 'trashmail.com', 'dispostable.com',
-      'temp-mail.org', 'tempemail.net', 'fake-mail.net', 'spambox.us',
-      'mailtemp.net', 'tempinbox.co', 'tempmailaddress.com', 'throwawaymail.com'
+      'mailinator.com', 'yopmail.com', 'tempinbox.com', 'fakeinbox.com'
     ]
     
     const emailDomain = email.split('@')[1]
@@ -97,53 +88,67 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       return { valid: false, message: 'Enter a valid email address' }
     }
     
-    if (email.includes('..')) {
-      return { valid: false, message: 'Email cannot contain consecutive dots' }
-    }
-    
     return { valid: true, message: '' }
   }
 
-  const sendVerificationEmail = async (email) => {
+  // PROFESSIONAL API CALL - NEVER SHOWS RAW ERRORS
+  const callApi = async (endpoint, data) => {
     try {
-      const response = await fetch('/api/auth/send-verification', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
+        body: JSON.stringify(data)
       })
 
-      const data = await response.json()
-
+      // Check if response is valid
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send verification email')
+        // Return user-friendly message based on status code
+        if (response.status === 404) {
+          return { success: false, error: 'Service temporarily unavailable. Please try again later.' }
+        }
+        if (response.status === 500) {
+          return { success: false, error: 'Server error. Our team has been notified.' }
+        }
+        if (response.status === 429) {
+          return { success: false, error: 'Too many attempts. Please wait a moment.' }
+        }
+        return { success: false, error: 'Unable to process request. Please try again.' }
       }
 
-      return { success: true, verificationId: data.verificationId }
+      // Safely parse JSON
+      let result
+      try {
+        result = await response.json()
+      } catch (e) {
+        console.error('JSON parse error:', e)
+        return { success: false, error: 'Service error. Please try again later.' }
+      }
+      
+      return { success: true, data: result }
     } catch (error) {
-      console.error('Error sending email:', error)
-      return { success: false, error: error.message }
+      console.error('API call failed:', error)
+      // Network errors or connection issues
+      if (error.message === 'Failed to fetch') {
+        return { success: false, error: 'Network error. Please check your connection.' }
+      }
+      return { success: false, error: 'Something went wrong. Please try again.' }
     }
   }
 
-  const verifyCode = async (email, code, verificationId) => {
-    try {
-      const response = await fetch('/api/auth/verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code, verificationId })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Invalid verification code')
-      }
-
-      return { success: true }
-    } catch (error) {
-      console.error('Verification error:', error)
-      return { success: false, error: error.message }
+  const sendVerificationEmail = async (email) => {
+    const result = await callApi('/api/auth/send-verification', { email })
+    if (result.success) {
+      return { success: true, verificationId: result.data.verificationId }
     }
+    return { success: false, error: result.error }
+  }
+
+  const verifyCode = async (email, code, verificationId) => {
+    const result = await callApi('/api/auth/verify-code', { email, code, verificationId })
+    if (result.success) {
+      return { success: true }
+    }
+    return { success: false, error: result.error }
   }
 
   const handleSignup = async () => {
@@ -195,7 +200,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       setCanResend(false)
       setError('')
     } else {
-      setError(result.error || 'Failed to send verification email')
+      setError(result.error)
     }
     
     setLoading(false)
@@ -215,27 +220,20 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
     const result = await verifyCode(email, code, verificationId)
 
     if (result.success) {
-      try {
-        const res = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, emailVerified: true })
-        })
+      const signupResult = await callApi('/api/auth/signup', { 
+        email, 
+        password, 
+        emailVerified: true 
+      })
 
-        const data = await res.json()
-
-        if (res.ok) {
-          if (onLogin) onLogin(data.user)
-          onClose()
-        } else {
-          setError(data.error || 'Signup failed')
-        }
-      } catch (err) {
-        console.error('Network error:', err)
-        setError('Network error. Please check your connection.')
+      if (signupResult.success) {
+        if (onLogin) onLogin(signupResult.data.user)
+        onClose()
+      } else {
+        setError(signupResult.error)
       }
     } else {
-      setError(result.error || 'Invalid verification code')
+      setError(result.error)
     }
     
     setLoading(false)
@@ -272,7 +270,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       setError('New code sent!')
       setTimeout(() => setError(''), 3000)
     } else {
-      setError('Failed to resend code')
+      setError(result.error)
     }
     
     setLoading(false)
@@ -293,39 +291,16 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
     setLoading(true)
     setError('')
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, rememberMe })
-      })
+    const result = await callApi('/api/auth/login', { email, password, rememberMe })
 
-      const data = await res.json()
-
-      if (res.ok) {
-        if (onLogin) onLogin(data.user)
-        onClose()
-      } else {
-        if (data.error === 'Email not verified') {
-          const result = await sendVerificationEmail(email)
-          if (result.success) {
-            setVerificationId(result.verificationId)
-            setShowVerification(true)
-            setCountdown(60)
-            setError('Please verify your email. A code has been sent.')
-          } else {
-            setError('Failed to send verification code')
-          }
-        } else {
-          setError(data.error || 'Invalid email or password')
-        }
-      }
-    } catch (err) {
-      console.error('Network error:', err)
-      setError('Network error. Please check your connection.')
-    } finally {
-      setLoading(false)
+    if (result.success) {
+      if (onLogin) onLogin(result.data.user)
+      onClose()
+    } else {
+      setError(result.error)
     }
+    
+    setLoading(false)
   }
 
   const handleSubmit = async (e) => {
@@ -392,7 +367,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
                 autoComplete="email"
               />
               
-              {/* Password field with show/hide */}
               <div className="password-wrapper">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -679,7 +653,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           cursor: not-allowed;
         }
 
-        /* Password wrapper styles */
         .password-wrapper {
           position: relative;
           margin-bottom: 12px;
@@ -772,7 +745,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           line-height: 1.4;
         }
 
-        /* Verification Styles */
         .verification-container {
           text-align: center;
         }
@@ -864,7 +836,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           opacity: 0.7;
         }
 
-        /* Dark mode variables */
         :root {
           --modal-bg: #ffffff;
           --modal-border: none;

@@ -4,6 +4,7 @@ import { useRouter } from 'next/router'
 import FrontendLayout from '../components/frontend/Layout'
 import AdminLayout from '../components/admin/AdminLayout'
 import { useEffect, useState } from 'react'
+import ErrorBoundary from '../components/ErrorBoundary'
 
 export default function App({ Component, pageProps }) {
   const router = useRouter()
@@ -33,20 +34,28 @@ export default function App({ Component, pageProps }) {
   // Admin routes use AdminLayout, auth page uses no layout, frontend uses FrontendLayout
   if (isAdminRoute && !isAuthPage) {
     return (
-      <AdminLayout>
-        <Component {...pageProps} />
-      </AdminLayout>
+      <ErrorBoundary>
+        <AdminLayout>
+          <Component {...pageProps} />
+        </AdminLayout>
+      </ErrorBoundary>
     )
   }
   
   if (isAdminRoute && isAuthPage) {
-    return <Component {...pageProps} />
+    return (
+      <ErrorBoundary>
+        <Component {...pageProps} />
+      </ErrorBoundary>
+    )
   }
   
   // Frontend routes
   return (
-    <FrontendLayout>
-      <Component {...pageProps} />
-    </FrontendLayout>
+    <ErrorBoundary>
+      <FrontendLayout>
+        <Component {...pageProps} />
+      </FrontendLayout>
+    </ErrorBoundary>
   )
 }
