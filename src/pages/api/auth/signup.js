@@ -1,7 +1,7 @@
 // pages/api/auth/signup.js
 import bcrypt from 'bcrypt'
 import { supabase } from '@/lib/supabase'
-import crypto from 'crypto'
+import { randomBytes } from 'crypto'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -46,11 +46,16 @@ export default async function handler(req, res) {
 
   try {
     // Check if user already exists
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: checkError } = await supabase
       .from('users')
       .select('email')
       .eq('email', email.toLowerCase())
       .maybeSingle()
+
+    if (checkError) {
+      console.error('Error checking existing user:', checkError)
+      return res.status(500).json({ error: 'Database error. Please try again.' })
+    }
 
     if (existingUser) {
       return res.status(409).json({ error: 'An account with this email already exists' })
@@ -73,31 +78,51 @@ export default async function handler(req, res) {
       .single()
 
     if (userError) {
-      console.error('User creation error:', userError)
-      return res.status(500).json({ error: 'Failed to create account' })
+      console.error('User creation error details:', {
+        message: userError.message,
+        details: userError.details,
+        hint: userError.hint,
+        code: userError.code
+      })
+      
+      if (userError.code === '23505') {
+        return res.status(409).json({ error: 'An account with this email already exists' })
+      }
+      if (userError.code === '42P01') {
+        return res.status(500).json({ error: 'Database table not found. Please contact support.' })
+      }
+      return res.status(500).json({ error: `Failed to create account: ${userError.message}` })
     }
 
-    // Create newsletter preferences
-    const { error: newsletterError } = await supabase
-      .from('newsletter_preferences')
-      .insert({
-        user_id: user.id,
-        is_subscribed: false,
-        categories: [],
-        delivery_frequency: 'weekly',
-        max_posts_per_week: 5,
-        post_format: 'digest',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
+    if (!user) {
+      return res.status(500).json({ error: 'Failed to create user account' })
+    }
 
-    if (newsletterError) {
-      // Non-critical error, log but continue
-      console.error('Newsletter preferences creation error:', newsletterError)
+    // Create newsletter preferences (non-critical, continue even if fails)
+    try {
+      const { error: newsletterError } = await supabase
+        .from('newsletter_preferences')
+        .insert({
+          user_id: user.id,
+          is_subscribed: false,
+          categories: [],
+          delivery_frequency: 'weekly',
+          max_posts_per_week: 5,
+          post_format: 'digest',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+
+      if (newsletterError) {
+        console.error('Newsletter preferences creation error (non-critical):', newsletterError)
+        // Don't return error - account still works without newsletter preferences
+      }
+    } catch (newsletterErr) {
+      console.error('Newsletter preferences exception:', newsletterErr)
     }
 
     // Create session
-    const sessionToken = crypto.randomBytes(64).toString('hex')
+    const sessionToken = randomBytes(64).toString('hex')
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
 
     const { error: sessionError } = await supabase
@@ -113,7 +138,8 @@ export default async function handler(req, res) {
 
     if (sessionError) {
       console.error('Session creation error:', sessionError)
-      return res.status(500).json({ error: 'Failed to create session' })
+      // User is created but session failed - they can still log in manually
+      // Don't return error, just log it
     }
 
     // Set secure cookie
@@ -133,7 +159,10 @@ export default async function handler(req, res) {
     })
 
   } catch (error) {
-    console.error('Signup error:', error)
-    return res.status(500).json({ error: 'An internal server error occurred. Please try again.' })
+    console.error('Signup unexpected error:', error)
+    return res.status(500).json({ 
+      error: 'An internal server error occurred. Please try again.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   }
 }
