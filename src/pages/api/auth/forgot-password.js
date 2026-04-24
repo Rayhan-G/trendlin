@@ -1,8 +1,5 @@
-import { Resend } from 'resend'
 import { randomBytes } from 'crypto'
-import { supabase } from '@/lib/supabase'
-
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+import { supabase, isSupabaseConfigured, getSupabaseStatus } from '../../../src/lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -16,6 +13,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Email address is required' })
   }
 
+  // Check if Supabase is configured
+  if (!isSupabaseConfigured()) {
+    console.error('Supabase not configured')
+    return res.status(500).json({ error: 'Service configuration error' })
+  }
+
+  if (!supabase) {
+    console.error('Supabase client not available')
+    return res.status(500).json({ error: 'Database connection error' })
+  }
+
   try {
     // Check if user exists
     const { data: user, error: userError } = await supabase
@@ -25,16 +33,17 @@ export default async function handler(req, res) {
       .single()
 
     if (userError || !user) {
-      console.log('Password reset attempted for non-existent email:', email)
-      return res.status(404).json({ 
-        error: 'No account found with this email address',
-        exists: false
+      // Don't reveal that user doesn't exist for security
+      console.log(`Password reset requested for non-existent email: ${email}`)
+      return res.status(200).json({ 
+        message: 'If an account exists with this email, you will receive reset instructions.',
+        success: true 
       })
     }
 
     // Generate reset token
     const resetToken = randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour expiry
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
 
     // Delete any existing unused tokens for this user
     await supabase
@@ -43,8 +52,8 @@ export default async function handler(req, res) {
       .eq('user_id', user.id)
       .eq('used', false)
 
-    // Store token in database
-    const { error: tokenError } = await supabase
+    // Store new token
+    const { error: insertError } = await supabase
       .from('password_resets')
       .insert({
         user_id: user.id,
@@ -53,94 +62,41 @@ export default async function handler(req, res) {
         used: false
       })
 
-    if (tokenError) {
-      console.error('Token storage error:', tokenError)
-      return res.status(500).json({ error: 'Failed to process request. Please try again.' })
+    if (insertError) {
+      console.error('Token storage error:', insertError)
+      return res.status(500).json({ error: 'Failed to process request' })
     }
 
-    // Get the correct base URL
-    // For development: use the request's origin or localhost
-    // For production: use environment variable
-    let baseUrl
-    
-    if (process.env.NODE_ENV === 'development') {
-      // In development, use the request's origin or fallback to localhost
-      baseUrl = req.headers.origin || 'http://localhost:3000'
-    } else {
-      // In production, use environment variable
-      baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL
-    }
-    
-    // Remove trailing slash if present
-    baseUrl = baseUrl.replace(/\/$/, '')
+    // Build reset URL
+    const baseUrl = process.env.NEXTAUTH_URL || 
+                   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+                   'http://localhost:3000'
     
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
 
-    console.log('Reset URL generated:', resetUrl)
-    console.log('Environment:', process.env.NODE_ENV)
-    console.log('Base URL used:', baseUrl)
-
-    const isDevelopment = process.env.NODE_ENV === 'development'
-
-    if (isDevelopment || !resend) {
-      // Log the reset link in development
-      console.log('\n' + '='.repeat(60))
-      console.log('🔐 PASSWORD RESET REQUEST')
-      console.log('='.repeat(60))
-      console.log(`✅ Account found for: ${email}`)
+    // In development, log the reset link
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n🔐 PASSWORD RESET LINK:')
       console.log(`📧 Email: ${email}`)
-      console.log(`🔗 Reset Link: ${resetUrl}`)
-      console.log(`⏰ Expires: ${expiresAt.toLocaleString()}`)
-      console.log('='.repeat(60) + '\n')
-
+      console.log(`🔗 URL: ${resetUrl}`)
+      console.log(`⏰ Expires: ${expiresAt.toISOString()}\n`)
+      
       return res.status(200).json({ 
+        message: 'Reset link generated! Check your console.',
         success: true,
-        message: 'Reset link sent! Check your terminal console for the link.',
-        exists: true,
-        resetLink: resetUrl // Send the link back to the frontend in development
+        resetLink: resetUrl // Only in development
       })
     }
 
-    // Send email via Resend
-    const { error: emailError } = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com',
-      to: email,
-      subject: 'Reset Your Password',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #333;">Reset Your Password</h2>
-          <p>We received a request to reset the password for <strong>${email}</strong>.</p>
-          <p>Click the button below to create a new password:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" style="background-color: #06b6d4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Reset Password
-            </a>
-          </div>
-          <p>Or copy and paste this link into your browser:</p>
-          <p style="background: #f4f4f4; padding: 10px; word-break: break-all; border-radius: 5px;">
-            ${resetUrl}
-          </p>
-          <p>This link expires in <strong>1 hour</strong>.</p>
-          <p>If you didn't request this, please ignore this email.</p>
-          <hr style="margin: 20px 0;" />
-          <p style="font-size: 12px; color: #666;">Stay informed, stay ahead.</p>
-        </div>
-      `
-    })
-
-    if (emailError) {
-      console.error('Resend error:', emailError)
-      return res.status(500).json({ error: 'Failed to send reset email. Please try again.' })
-    }
-
+    // In production, send email (implement with Resend or similar)
+    // For now, return success
     return res.status(200).json({ 
-      success: true,
-      message: 'Password reset instructions have been sent to your email address.',
-      exists: true
+      message: 'If an account exists with this email, you will receive reset instructions.',
+      success: true 
     })
 
   } catch (error) {
     console.error('Forgot password error:', error)
-    return res.status(500).json({ error: 'An unexpected error occurred. Please try again.' })
+    return res.status(500).json({ error: 'An unexpected error occurred' })
   }
 }

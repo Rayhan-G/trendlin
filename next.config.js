@@ -2,20 +2,23 @@
 const nextConfig = {
   reactStrictMode: true,
   
-  // Add turbopack configuration to silence the warning
-  turbopack: {},
-  
-  // If you have webpack config, keep it but it won't be used with turbopack
+  // Configure module aliases
   webpack: (config, { isServer }) => {
-    // Your existing webpack config here (if any)
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': __dirname,
+    }
     return config
   },
   
-  // Environment variables that will be available to the browser
+  // Environment variables that will be available
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
+  
+  // Enable SWC minification for better performance
+  swcMinify: true,
 }
 
 module.exports = nextConfig
