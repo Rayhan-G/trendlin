@@ -3,37 +3,6 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { supabase } from '../../lib/supabase';
 
-// Simple admin auth hook (no external dependencies)
-const useAdminAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        
-        if (data.authenticated && data.user?.is_admin === true) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-          window.location.href = '/';
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-        window.location.href = '/';
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, []);
-
-  return { isAuthenticated, isLoading };
-};
-
 // Formatting helpers
 const formatNumber = (num) => {
   if (!num && num !== 0) return '0';
@@ -49,20 +18,6 @@ const formatCurrency = (amount) => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(amount || 0);
-};
-
-const formatTimeAgo = (date) => {
-  const now = new Date();
-  const diff = now - date;
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
 };
 
 // Simple Admin Navigation
@@ -167,11 +122,9 @@ const PostRow = ({ post }) => {
 };
 
 // ============================================================
-// MAIN DASHBOARD COMPONENT
+// MAIN DASHBOARD COMPONENT (NO AUTH CHECK)
 // ============================================================
 export default function AdminDashboard() {
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
-  
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -191,8 +144,6 @@ export default function AdminDashboard() {
 
   // Fetch all dashboard data
   const fetchDashboardData = useCallback(async () => {
-    if (!isAuthenticated) return;
-    
     setLoading(true);
     setError(null);
     
@@ -254,13 +205,11 @@ export default function AdminDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [isAuthenticated]);
+  }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchDashboardData();
-    }
-  }, [isAuthenticated, fetchDashboardData]);
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -268,7 +217,7 @@ export default function AdminDashboard() {
   };
 
   // Loading state
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <AdminNavigation>
         <div className="min-h-[60vh] flex items-center justify-center">
