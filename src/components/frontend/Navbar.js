@@ -1,4 +1,5 @@
 // src/components/frontend/Navbar.js
+
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
 import AuthModal from './AuthModal'
@@ -17,13 +18,13 @@ export default function Navbar() {
   const mobileMenuRef = useRef(null)
 
   const categories = [
-    { name: "Health", icon: "🌿", href: "/category/health" },
-    { name: "Wealth", icon: "💰", href: "/category/wealth" },
-    { name: "Tech", icon: "⚡", href: "/category/tech" },
-    { name: "Growth", icon: "🌱", href: "/category/growth" },
-    { name: "Entertainment", icon: "🎬", href: "/category/entertainment" },
-    { name: "World", icon: "🌍", href: "/category/world" },
-    { name: "Lifestyle", icon: "✨", href: "/category/lifestyle" }
+    { name: "Health", icon: "🌿", slug: "health" },
+    { name: "Wealth", icon: "💰", slug: "wealth" },
+    { name: "Tech", icon: "⚡", slug: "tech" },
+    { name: "Growth", icon: "🌱", slug: "growth" },
+    { name: "Entertainment", icon: "🎬", slug: "entertainment" },
+    { name: "World", icon: "🌍", slug: "world" },
+    { name: "Lifestyle", icon: "✨", slug: "lifestyle" }
   ]
 
   // Check auth on mount
@@ -176,7 +177,7 @@ export default function Navbar() {
               borderRadius: 8, cursor: 'pointer', fontSize: 16, color: 'var(--theme-btn-color, #666)'
             }}>{isDarkMode ? '☀️' : '🌙'}</button>
 
-            {/* Explore Dropdown */}
+            {/* Explore Dropdown - DESKTOP VERSION */}
             <div style={{ position: 'relative' }} ref={dropdownRef}>
               <button onClick={() => setShow(!show)} style={{
                 background: 'transparent', color: 'var(--explore-color, #666)', border: 'none',
@@ -205,12 +206,27 @@ export default function Navbar() {
                   overflow: 'hidden', zIndex: 200
                 }}>
                   {categories.map((cat) => (
-                    <Link key={cat.name} href={cat.href} onClick={() => setShow(false)} style={{
-                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
-                      textDecoration: 'none', color: 'var(--dropdown-item-color, #444)', fontSize: 13
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--dropdown-item-hover-bg, #f5f5f5)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                    <Link 
+                      key={cat.name} 
+                      href={`/category/${cat.slug}`}
+                      onClick={() => {
+                        console.log('Desktop: Clicked', cat.slug);
+                        setShow(false);
+                      }}
+                      style={{
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 10, 
+                        padding: '10px 16px',
+                        textDecoration: 'none', 
+                        color: 'var(--dropdown-item-color, #444)', 
+                        fontSize: 13,
+                        transition: 'background 0.2s',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--dropdown-item-hover-bg, #f5f5f5)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
                       <span style={{ fontSize: 16 }}>{cat.icon}</span>
                       <span>{cat.name}</span>
                     </Link>
@@ -278,30 +294,86 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Button - Hidden on desktop */}
-          <button 
-            onClick={() => setShowMobileMenu(!showMobileMenu)}
-            className="mobile-menu-btn"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              cursor: 'pointer',
-              display: 'none',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 20,
-              color: 'var(--icon-color, #666)'
-            }}
-          >
-            {showMobileMenu ? '✕' : '☰'}
-          </button>
+          {/* Mobile Navigation - Only Explore button + Hamburger */}
+          <div className="mobile-nav-buttons">
+            {/* Explore Button - MOBILE VERSION */}
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShow(!show)} style={{
+                background: 'transparent', color: 'var(--explore-color, #666)', border: 'none',
+                padding: '6px 10px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                </svg>
+                <span>Explore</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  style={{ transition: 'transform 0.15s', transform: show ? 'rotate(180deg)' : 'rotate(0)' }}>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {show && (
+                <div style={{
+                  position: 'absolute', top: 42, right: 0, minWidth: 180,
+                  background: 'var(--dropdown-bg, white)', borderRadius: 12,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1px solid var(--dropdown-border, #eaeaea)',
+                  overflow: 'hidden', zIndex: 200
+                }}>
+                  {categories.map((cat) => (
+                    <Link 
+                      key={cat.name} 
+                      href={`/category/${cat.slug}`}
+                      onClick={() => {
+                        console.log('Mobile: Clicked', cat.slug);
+                        setShow(false);
+                      }} 
+                      style={{
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 10, 
+                        padding: '10px 16px',
+                        textDecoration: 'none', 
+                        color: 'var(--dropdown-item-color, #444)', 
+                        fontSize: 13,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Hamburger Menu Button */}
+            <button 
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+              className="mobile-menu-btn"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 20,
+                color: 'var(--icon-color, #666)'
+              }}
+            >
+              {showMobileMenu ? '✕' : '☰'}
+            </button>
+          </div>
         </div>
       </nav>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu (Hamburger) */}
       {showMobileMenu && (
         <>
           <div className="mobile-menu-overlay" onClick={() => setShowMobileMenu(false)}></div>
@@ -387,7 +459,7 @@ export default function Navbar() {
               {categories.map((cat) => (
                 <Link 
                   key={cat.name} 
-                  href={cat.href} 
+                  href={`/category/${cat.slug}`}
                   onClick={() => setShowMobileMenu(false)}
                   style={{
                     display: 'flex',
@@ -396,7 +468,8 @@ export default function Navbar() {
                     padding: '10px 16px',
                     textDecoration: 'none',
                     color: 'var(--menu-item-color, #444)',
-                    fontSize: 14
+                    fontSize: 14,
+                    cursor: 'pointer'
                   }}
                 >
                   <span style={{ fontSize: 18 }}>{cat.icon}</span>
@@ -535,18 +608,20 @@ export default function Navbar() {
           align-items: center;
         }
         
-        /* Mobile menu button - Hidden on desktop */
-        .mobile-menu-btn {
-          display: none !important;
+        /* Mobile Navigation Buttons */
+        .mobile-nav-buttons {
+          display: none;
+          align-items: center;
+          gap: 8px;
         }
         
-        /* Mobile Menu Styles - Only for mobile */
+        /* Mobile Styles */
         @media (max-width: 768px) {
           .desktop-nav {
             display: none !important;
           }
           
-          .mobile-menu-btn {
+          .mobile-nav-buttons {
             display: flex !important;
           }
         }
@@ -625,7 +700,7 @@ export default function Navbar() {
           right: 16px;
           left: 16px;
           z-index: 10000;
-          animation: slideDown 0.3s ease;
+          animation: slideDownPopup 0.3s ease;
         }
         
         @media (min-width: 640px) {
@@ -635,7 +710,7 @@ export default function Navbar() {
           }
         }
         
-        @keyframes slideDown {
+        @keyframes slideDownPopup {
           from {
             opacity: 0;
             transform: translateY(-20px);
@@ -779,12 +854,8 @@ export default function Navbar() {
           --popup-text-color: #64748b;
           --popup-btn-secondary-bg: #f1f5f9;
           --popup-btn-secondary-color: #64748b;
-          --popup-btn-secondary-hover-bg: #e2e8f0;
-          --popup-btn-secondary-hover-color: #0f172a;
           --popup-close-bg: #f1f5f9;
           --popup-close-color: #64748b;
-          --popup-close-hover-bg: #e2e8f0;
-          --popup-close-hover-color: #0f172a;
         }
         
         /* Dark mode */
@@ -819,12 +890,8 @@ export default function Navbar() {
           --popup-text-color: #94a3b8;
           --popup-btn-secondary-bg: #334155;
           --popup-btn-secondary-color: #94a3b8;
-          --popup-btn-secondary-hover-bg: #475569;
-          --popup-btn-secondary-hover-color: #ffffff;
           --popup-close-bg: #334155;
           --popup-close-color: #94a3b8;
-          --popup-close-hover-bg: #475569;
-          --popup-close-hover-color: #ffffff;
         }
         
         /* Desktop hover effects */

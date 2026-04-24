@@ -5,23 +5,26 @@ import PostCard from './PostCard'
 export default function HorizontalScroll({ title, posts, showRank = false }) {
   if (!posts || posts.length === 0) return null
 
+  // Show ALL posts (no slicing)
+  const displayPosts = posts
+
   return (
-    <div className="horizontal-section">
+    <div className="vertical-section">
       <div className="section-header">
         <h2 className="section-title">{title}</h2>
         <div className="section-line"></div>
       </div>
       
-      <div className="horizontal-scroll">
-        {posts.map((post, index) => (
-          <div key={post.id} className="scroll-item">
+      <div className="vertical-grid">
+        {displayPosts.map((post, index) => (
+          <div key={post.id} className="grid-item">
             <PostCard post={post} rank={showRank ? index + 1 : null} />
           </div>
         ))}
       </div>
 
       <style jsx>{`
-        .horizontal-section {
+        .vertical-section {
           margin-bottom: 3rem;
         }
         
@@ -54,35 +57,101 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
           background: linear-gradient(90deg, #374151, transparent);
         }
         
-        .horizontal-scroll {
-          display: flex;
-          overflow-x: auto;
+        .vertical-grid {
+          display: grid;
           gap: 1.5rem;
-          padding-bottom: 1rem;
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-          -webkit-overflow-scrolling: touch;
+          max-height: 800px;
+          overflow-y: auto;
+          padding: 0.25rem 0.25rem 1rem 0.25rem;
         }
         
-        .horizontal-scroll::-webkit-scrollbar {
-          display: none;
+        /* Custom scrollbar styling */
+        .vertical-grid::-webkit-scrollbar {
+          width: 8px;
         }
         
-        .scroll-item {
-          flex-shrink: 0;
-          width: auto;
-          min-width: 240px;
-          max-width: 320px;
+        .vertical-grid::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
         }
         
+        .vertical-grid::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        
+        .vertical-grid::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+        
+        :global(html.dark) .vertical-grid::-webkit-scrollbar-track {
+          background: #1e293b;
+        }
+        
+        :global(html.dark) .vertical-grid::-webkit-scrollbar-thumb {
+          background: #475569;
+        }
+        
+        /* Mobile: 2 columns, unlimited rows */
+        .vertical-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        
+        /* Tablet: 3 columns */
+        @media (min-width: 768px) {
+          .vertical-grid {
+            grid-template-columns: repeat(3, 1fr);
+            max-height: 700px;
+          }
+        }
+        
+        /* Desktop: 4 columns */
+        @media (min-width: 1024px) {
+          .vertical-grid {
+            grid-template-columns: repeat(4, 1fr);
+            max-height: 650px;
+          }
+        }
+        
+        /* Large Desktop: 5 columns */
+        @media (min-width: 1280px) {
+          .vertical-grid {
+            grid-template-columns: repeat(5, 1fr);
+            max-height: 600px;
+          }
+        }
+        
+        /* Extra Large Desktop: 6 columns */
+        @media (min-width: 1536px) {
+          .vertical-grid {
+            grid-template-columns: repeat(6, 1fr);
+            max-height: 550px;
+          }
+        }
+        
+        .grid-item {
+          min-width: 0; /* Prevents overflow */
+          width: 100%;
+        }
+        
+        /* Ensure PostCard text doesn't get cut off */
+        .grid-item :global(.post-card),
+        .grid-item :global(.post-title),
+        .grid-item :global(h3),
+        .grid-item :global(p) {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          white-space: normal;
+        }
+        
+        /* Adjust gap for different screen sizes */
         @media (max-width: 768px) {
-          .horizontal-scroll {
-            gap: 1rem;
+          .vertical-section {
+            margin-bottom: 2rem;
           }
           
-          .scroll-item {
-            min-width: 220px;
-            max-width: 280px;
+          .vertical-grid {
+            gap: 1rem;
           }
           
           .section-title {
@@ -90,10 +159,15 @@ export default function HorizontalScroll({ title, posts, showRank = false }) {
           }
         }
         
-        @media (max-width: 640px) {
-          .scroll-item {
-            min-width: 200px;
-            max-width: 260px;
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .vertical-grid {
+            gap: 1.25rem;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .vertical-grid {
+            gap: 1.5rem;
           }
         }
       `}</style>
