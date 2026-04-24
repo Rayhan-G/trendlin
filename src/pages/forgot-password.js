@@ -6,16 +6,12 @@ export default function ForgotPasswordPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [emailExists, setEmailExists] = useState(null)
-  const [resetLink, setResetLink] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
     setMessage('')
-    setEmailExists(null)
-    setResetLink('')
 
     try {
       const response = await fetch('/api/auth/forgot-password', {
@@ -27,25 +23,12 @@ export default function ForgotPasswordPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setEmailExists(data.exists)
         setMessage(data.message)
-        
-        // In development, show the reset link directly
-        if (process.env.NODE_ENV === 'development' && data.resetLink) {
-          setResetLink(data.resetLink)
-        }
-        
-        if (data.exists) {
-          setEmail('')
-        }
-      } else if (response.status === 404) {
-        setEmailExists(false)
-        setError(data.error)
+        setEmail('') // Clear email after success
       } else {
-        setError(data.error || 'Something went wrong')
+        setError(data.error)
       }
     } catch (err) {
-      console.error('Network error:', err)
       setError('Network error. Please try again.')
     } finally {
       setLoading(false)
@@ -53,47 +36,28 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Reset your password
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we'll send you a link to reset your password.
-          </p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+      <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold text-center mb-2">Reset Your Password</h1>
+        <p className="text-gray-600 text-center mb-6">
+          Enter your email and we'll send you a reset link
+        </p>
         
         {message && (
-          <div className={`rounded-md p-4 ${emailExists === true ? 'bg-green-50' : 'bg-blue-50'}`}>
-            <div className={`text-sm ${emailExists === true ? 'text-green-700' : 'text-blue-700'}`}>
-              {message}
-            </div>
-          </div>
-        )}
-        
-        {resetLink && (
-          <div className="rounded-md bg-yellow-50 p-4 border border-yellow-200">
-            <div className="text-sm text-yellow-800 font-medium mb-2">
-              🔗 Development Mode - Click this link to reset your password:
-            </div>
-            <a 
-              href={resetLink} 
-              className="text-sm text-purple-600 hover:text-purple-700 break-all underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              {resetLink}
-            </a>
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700 font-medium">✅ {message}</p>
+            <p className="text-green-600 text-sm mt-1">
+              Didn't receive it? Check your spam folder or try again.
+            </p>
           </div>
         )}
         
         {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-700">{error}</div>
-            {error === 'No account found with this email address' && (
-              <div className="mt-2 text-sm">
-                <Link href="/signup" className="text-purple-600 hover:text-purple-500 font-medium">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">❌ {error}</p>
+            {error.includes('No account found') && (
+              <div className="mt-2">
+                <Link href="/signup" className="text-purple-600 hover:underline text-sm">
                   Create a new account →
                 </Link>
               </div>
@@ -101,50 +65,35 @@ export default function ForgotPasswordPage() {
           </div>
         )}
         
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email address
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block text-gray-700 font-medium mb-2">
+              Email Address
             </label>
             <input
-              id="email"
-              name="email"
               type="email"
-              required
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className={`mt-1 appearance-none rounded-md relative block w-full px-3 py-2 border ${
-                error && error.includes('No account found') 
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-              } placeholder-gray-500 text-gray-900 focus:outline-none focus:z-10 sm:text-sm`}
-              placeholder="you@example.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              required
               disabled={loading}
             />
           </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-            >
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
-          </div>
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition"
+          >
+            {loading ? 'Sending...' : 'Send Reset Link'}
+          </button>
         </form>
         
-        <div className="text-center space-y-2">
-          <div>
-            <Link href="/login" className="text-sm text-purple-600 hover:text-purple-500">
-              Back to sign in
-            </Link>
-          </div>
-          <div>
-            <Link href="/signup" className="text-xs text-gray-500 hover:text-gray-700">
-              Don't have an account? Sign up
-            </Link>
-          </div>
+        <div className="text-center mt-4">
+          <Link href="/login" className="text-sm text-purple-600 hover:underline">
+            ← Back to Sign In
+          </Link>
         </div>
       </div>
     </div>
