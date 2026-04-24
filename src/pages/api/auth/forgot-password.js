@@ -24,7 +24,6 @@ export default async function handler(req, res) {
       .eq('email', email.toLowerCase())
       .single()
 
-    // If user doesn't exist, tell them clearly
     if (userError || !user) {
       console.log('Password reset attempted for non-existent email:', email)
       return res.status(404).json({ 
@@ -33,7 +32,7 @@ export default async function handler(req, res) {
       })
     }
 
-    // User exists - generate reset token
+    // Generate reset token
     const resetToken = randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour expiry
 
@@ -59,9 +58,27 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to process request. Please try again.' })
     }
 
-    // Create reset URL
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Get the correct base URL
+    // For development: use the request's origin or localhost
+    // For production: use environment variable
+    let baseUrl
+    
+    if (process.env.NODE_ENV === 'development') {
+      // In development, use the request's origin or fallback to localhost
+      baseUrl = req.headers.origin || 'http://localhost:3000'
+    } else {
+      // In production, use environment variable
+      baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL
+    }
+    
+    // Remove trailing slash if present
+    baseUrl = baseUrl.replace(/\/$/, '')
+    
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`
+
+    console.log('Reset URL generated:', resetUrl)
+    console.log('Environment:', process.env.NODE_ENV)
+    console.log('Base URL used:', baseUrl)
 
     const isDevelopment = process.env.NODE_ENV === 'development'
 
@@ -78,10 +95,9 @@ export default async function handler(req, res) {
 
       return res.status(200).json({ 
         success: true,
-        message: 'Reset link sent! Check your email or terminal console.',
+        message: 'Reset link sent! Check your terminal console for the link.',
         exists: true,
-        // In development, include the link for easy access
-        resetLink: isDevelopment ? resetUrl : undefined
+        resetLink: resetUrl // Send the link back to the frontend in development
       })
     }
 

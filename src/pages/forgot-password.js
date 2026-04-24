@@ -7,6 +7,7 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [emailExists, setEmailExists] = useState(null)
+  const [resetLink, setResetLink] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -14,6 +15,7 @@ export default function ForgotPasswordPage() {
     setError('')
     setMessage('')
     setEmailExists(null)
+    setResetLink('')
 
     try {
       const response = await fetch('/api/auth/forgot-password', {
@@ -27,6 +29,12 @@ export default function ForgotPasswordPage() {
       if (response.ok) {
         setEmailExists(data.exists)
         setMessage(data.message)
+        
+        // In development, show the reset link directly
+        if (process.env.NODE_ENV === 'development' && data.resetLink) {
+          setResetLink(data.resetLink)
+        }
+        
         if (data.exists) {
           setEmail('')
         }
@@ -61,11 +69,22 @@ export default function ForgotPasswordPage() {
             <div className={`text-sm ${emailExists === true ? 'text-green-700' : 'text-blue-700'}`}>
               {message}
             </div>
-            {process.env.NODE_ENV === 'development' && emailExists === true && (
-              <div className="mt-2 text-xs text-gray-500 break-all">
-                Check your terminal console for the reset link
-              </div>
-            )}
+          </div>
+        )}
+        
+        {resetLink && (
+          <div className="rounded-md bg-yellow-50 p-4 border border-yellow-200">
+            <div className="text-sm text-yellow-800 font-medium mb-2">
+              🔗 Development Mode - Click this link to reset your password:
+            </div>
+            <a 
+              href={resetLink} 
+              className="text-sm text-purple-600 hover:text-purple-700 break-all underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {resetLink}
+            </a>
           </div>
         )}
         
