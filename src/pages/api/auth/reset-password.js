@@ -1,72 +1,142 @@
-import bcrypt from 'bcrypt'
-import { supabase } from '../../../lib/supabase'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST'])
-    return res.status(405).json({ error: `Method ${req.method} not allowed` })
-  }
+export default function ResetPassword() {
+  const router = useRouter()
+  const { token } = router.query
 
-  const { token, newPassword } = req.body
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  if (!token || !newPassword) {
-    return res.status(400).json({ error: 'Token and new password are required' })
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault()
 
-  if (newPassword.length < 8) {
-    return res.status(400).json({ error: 'Password must be at least 8 characters' })
-  }
-
-  try {
-    const { data: resetData, error: resetError } = await supabase
-      .from('password_resets')
-      .select('user_id, expires_at, used')
-      .eq('token', token)
-      .single()
-
-    if (resetError || !resetData) {
-      return res.status(400).json({ error: 'Invalid or expired reset token' })
+    if (password !== confirm) {
+      setError('Passwords do not match')
+      return
     }
 
-    if (resetData.used) {
-      return res.status(400).json({ error: 'This reset link has already been used' })
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
     }
 
-    if (new Date(resetData.expires_at) < new Date()) {
-      return res.status(400).json({ error: 'Reset link has expired' })
-    }
+    setLoading(true)
+    setError('')
+    setMessage('')
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        password_hash: hashedPassword,
-        updated_at: new Date().toISOString()
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, newPassword: password })
       })
-      .eq('id', resetData.user_id)
 
-    if (updateError) {
-      console.error('Password update error:', updateError)
-      return res.status(500).json({ error: 'Failed to update password' })
+      const data = await res.json()
+
+      if (res.ok) {
+        setMessage(data.message || 'Password reset successful!')
+        
+        // After 2 seconds, redirect to home and trigger auth modal
+        setTimeout(() => {
+          // Redirect to home page
+          router.push('/')
+          
+          // After redirect, trigger the auth modal to open (login mode)
+          setTimeout(() => {
+            // Dispatch event to open auth modal in login mode
+            window.dispatchEvent(new CustomEvent('openAuth', { detail: 'login' }))
+          }, 100)
+        }, 2000)
+      } else {
+        setError(data.error || 'Failed to reset password')
+      }
+    } catch (err) {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
     }
-
-    await supabase
-      .from('password_resets')
-      .update({ used: true })
-      .eq('token', token)
-
-    await supabase
-      .from('user_sessions')
-      .delete()
-      .eq('user_id', resetData.user_id)
-
-    return res.status(200).json({ 
-      message: 'Password reset successful! Please log in with your new password.' 
-    })
-
-  } catch (error) {
-    console.error('Reset password error:', error)
-    return res.status(500).json({ error: 'An unexpected error occurred' })
   }
+
+  // Auto-trigger modal after component mounts if coming from reset flow
+  useEffect(() => {
+    // If URL has reset=true param, trigger auth modal
+    if (router.query.reset === 'true') {
+      window.dispatchEvent(new CustomEvent('openAuth', { detail: 'login' }))
+    }
+  }, [router.query])
+
+  if (!token) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Invalid reset link</p>
+          <Link href="/forgot-password" className="text-purple-600 hover:underline">
+            Request new link
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <h1 className="text-2xl font-bold text-center mb-6">Create New Password</h1>
+
+        {message && (
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-center">
+            {message}
+            <p className="text-sm mt-1">Redirecting to login...</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            placeholder="New password (min 8 chars)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+            disabled={loading}
+          />
+
+          <input
+            type="password"
+            placeholder="Confirm new password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            required
+            disabled={loading}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition"
+          >
+            {loading ? 'Resetting...' : 'Reset Password'}
+          </button>
+        </form>
+
+        <div className="text-center mt-4">
+          <Link href="/login" className="text-sm text-purple-600 hover:underline">
+            Back to Sign In
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
 }

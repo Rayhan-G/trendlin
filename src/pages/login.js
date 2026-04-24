@@ -1,5 +1,4 @@
-// src/pages/login.js
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
@@ -10,11 +9,24 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+
+  // Check for reset success message
+  useEffect(() => {
+    if (router.query.reset === 'true') {
+      setSuccessMessage('Password reset successful! Please sign in with your new password.')
+      
+      // Clean up URL without reloading the page
+      const newUrl = window.location.pathname
+      window.history.replaceState({}, '', newUrl)
+    }
+  }, [router.query])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccessMessage('')
 
     try {
       const response = await fetch('/api/auth/login', {
@@ -26,6 +38,8 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
+        // Trigger auth complete event for navbar
+        window.dispatchEvent(new CustomEvent('authComplete', { detail: data.user }))
         router.push('/')
       } else {
         setError(data.error || 'Login failed')
@@ -45,6 +59,12 @@ export default function LoginPage() {
             Sign in to your account
           </h2>
         </div>
+        
+        {successMessage && (
+          <div className="rounded-md bg-green-50 p-4 border border-green-200">
+            <div className="text-sm text-green-700">{successMessage}</div>
+          </div>
+        )}
         
         {error && (
           <div className="rounded-md bg-red-50 p-4">
@@ -105,7 +125,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* FORGOT PASSWORD LINK - PLACED AS A SEPARATE SECTION */}
+          {/* FORGOT PASSWORD LINK */}
           <div className="text-center py-2">
             <Link 
               href="/forgot-password" 
