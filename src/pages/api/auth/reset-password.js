@@ -1,4 +1,3 @@
-
 import bcrypt from 'bcrypt'
 import { supabase } from '@/lib/supabase'
 
@@ -27,6 +26,7 @@ export default async function handler(req, res) {
       .single()
 
     if (resetError || !resetData) {
+      console.error('Token lookup error:', resetError)
       return res.status(400).json({ error: 'Invalid or expired reset token' })
     }
 
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
     // Check if token is expired
     if (new Date(resetData.expires_at) < new Date()) {
-      return res.status(400).json({ error: 'Reset link has expired' })
+      return res.status(400).json({ error: 'Reset link has expired. Please request a new one.' })
     }
 
     // Hash new password
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
       .update({ used: true })
       .eq('token', token)
 
-    // Optional: Delete all user sessions to force re-login
+    // Delete all user sessions to force re-login
     await supabase
       .from('user_sessions')
       .delete()
@@ -75,6 +75,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Reset password error:', error)
-    return res.status(500).json({ error: 'An unexpected error occurred' })
+    return res.status(500).json({ error: 'An unexpected error occurred. Please try again.' })
   }
 }
