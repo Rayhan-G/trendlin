@@ -39,44 +39,50 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center mb-6">Forgot password?</h2>
-        <p className="text-gray-600 text-center mb-6">
-          Enter your email and we'll send you a reset link.
-        </p>
-        
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Reset your password</h1>
+          <p className="mt-2 text-gray-600">
+            Enter your email address and we'll send you a link to reset your password.
+          </p>
+        </div>
+
         {message && (
-          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded text-center">
+          <div className="mt-4 p-3 bg-green-100 text-green-700 rounded-md text-center">
             {message}
           </div>
         )}
-        
+
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded text-center">
+          <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md text-center">
             {error}
           </div>
         )}
-        
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email address"
-            className="w-full px-3 py-2 border rounded-md mb-4"
-            required
-            disabled={loading}
-          />
+
+        <form className="mt-6" onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email address</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+              placeholder="you@example.com"
+              disabled={loading}
+            />
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700"
+            className="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
           >
             {loading ? 'Sending...' : 'Send reset link'}
           </button>
         </form>
-        
-        <div className="text-center mt-4">
-          <Link href="/login" className="text-purple-600 hover:underline">
+
+        <div className="mt-4 text-center">
+          <Link href="/login" className="text-sm text-purple-600 hover:text-purple-500">
             Back to sign in
           </Link>
         </div>
