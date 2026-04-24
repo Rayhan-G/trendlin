@@ -20,7 +20,39 @@ const formatCurrency = (amount) => {
   }).format(amount || 0);
 };
 
-// Simple Admin Navigation
+// Admin Auth Check Hook
+const useAdminAuth = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        
+        if (data.authenticated && data.user?.is_admin === true) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          router.push('/');
+        }
+      } catch (error) {
+        setIsAuthenticated(false);
+        router.push('/');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
+
+  return { isAuthenticated, isLoading };
+};
+
+// Admin Navigation Component
 const AdminNavigation = ({ children }) => {
   const router = useRouter();
   
@@ -42,7 +74,7 @@ const AdminNavigation = ({ children }) => {
                 <Link href="/admin/dashboard" className={`text-sm ${router.pathname === '/admin/dashboard' ? 'text-purple-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}>
                   Dashboard
                 </Link>
-                <Link href="/admin/posts" className={`text-sm ${router.pathname.includes('/admin/posts') ? 'text-purple-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}>
+                <Link href="/admin/posts-manager" className={`text-sm ${router.pathname.includes('/admin/posts') ? 'text-purple-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}>
                   Posts
                 </Link>
                 <Link href="/admin/analytics" className={`text-sm ${router.pathname.includes('/admin/analytics') ? 'text-purple-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}>
@@ -65,7 +97,7 @@ const AdminNavigation = ({ children }) => {
 };
 
 // Stats Card Component
-const StatCard = ({ icon: Icon, value, label, color = 'default' }) => {
+const StatCard = ({ icon, value, label, color = 'default' }) => {
   const colors = {
     default: { bg: 'bg-gray-50', iconBg: 'bg-white', text: 'text-gray-900' },
     green: { bg: 'bg-emerald-50', iconBg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -79,8 +111,8 @@ const StatCard = ({ icon: Icon, value, label, color = 'default' }) => {
   return (
     <div className={`${theme.bg} rounded-2xl p-5 transition-all duration-200 hover:shadow-md`}>
       <div className="flex items-start justify-between">
-        <div className={`${theme.iconBg} w-12 h-12 rounded-xl flex items-center justify-center`}>
-          {Icon && <Icon size={22} className={theme.text} />}
+        <div className={`${theme.iconBg} w-12 h-12 rounded-xl flex items-center justify-center text-2xl`}>
+          {icon}
         </div>
       </div>
       <div className="mt-4">
@@ -122,13 +154,13 @@ const PostRow = ({ post }) => {
 };
 
 // ============================================================
-// MAIN DASHBOARD COMPONENT (NO AUTH CHECK)
+// MAIN DASHBOARD COMPONENT
 // ============================================================
 export default function AdminDashboard() {
+  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  
   const [stats, setStats] = useState({
     totalPosts: 0,
     publishedPosts: 0,
@@ -138,17 +170,17 @@ export default function AdminDashboard() {
     totalRevenue: 0,
     affiliateClicks: 0,
   });
-  
   const [recentPosts, setRecentPosts] = useState([]);
   const [topPosts, setTopPosts] = useState([]);
 
   // Fetch all dashboard data
   const fetchDashboardData = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
     setLoading(true);
     setError(null);
     
     try {
-      // Fetch all posts
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
@@ -158,13 +190,11 @@ export default function AdminDashboard() {
       
       const safePosts = posts || [];
       
-      // Calculate basic stats
       const published = safePosts.filter(p => p.status === 'published');
       const drafts = safePosts.filter(p => p.status === 'draft');
       const scheduled = safePosts.filter(p => p.status === 'scheduled');
       const totalViews = safePosts.reduce((sum, p) => sum + (p.views || 0), 0);
       
-      // Fetch affiliate data
       let totalRevenue = 0;
       let affiliateClicks = 0;
       
@@ -188,10 +218,8 @@ export default function AdminDashboard() {
         affiliateClicks,
       });
       
-      // Recent posts
       setRecentPosts(safePosts.slice(0, 5));
       
-      // Top posts by views
       const top5 = [...safePosts]
         .filter(p => (p.views || 0) > 0)
         .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -205,19 +233,20 @@ export default function AdminDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
+    if (isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [isAuthenticated, fetchDashboardData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchDashboardData();
   };
 
-  // Loading state
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <AdminNavigation>
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -230,7 +259,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <AdminNavigation>
@@ -250,18 +278,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // Simple icon components
-  const FileIcon = () => <span className="text-xl">📄</span>;
-  const CheckIcon = () => <span className="text-xl">✅</span>;
-  const EditIcon = () => <span className="text-xl">✏️</span>;
-  const CalendarIcon = () => <span className="text-xl">📅</span>;
-  const EyeIcon = () => <span className="text-xl">👁️</span>;
-  const DollarIcon = () => <span className="text-xl">💰</span>;
-  const LinkIcon = () => <span className="text-xl">🔗</span>;
-  const TrendingIcon = () => <span className="text-xl">📈</span>;
-  const RefreshIcon = () => <span className="text-xl">🔄</span>;
-  const PlusIcon = () => <span className="text-xl">➕</span>;
-
   return (
     <AdminNavigation>
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -280,7 +296,7 @@ export default function AdminDashboard() {
               disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition disabled:opacity-50"
             >
-              <RefreshIcon />
+              <span>🔄</span>
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
             
@@ -288,7 +304,7 @@ export default function AdminDashboard() {
               href="/admin/posts/create"
               className="flex items-center gap-2 px-5 py-2.5 bg-black text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition"
             >
-              <PlusIcon />
+              <span>➕</span>
               New Post
             </Link>
           </div>
@@ -296,13 +312,13 @@ export default function AdminDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-          <StatCard icon={FileIcon} value={stats.totalPosts} label="Total Posts" />
-          <StatCard icon={CheckIcon} value={stats.publishedPosts} label="Published" color="green" />
-          <StatCard icon={EditIcon} value={stats.draftPosts} label="Drafts" color="amber" />
-          <StatCard icon={CalendarIcon} value={stats.scheduledPosts} label="Scheduled" color="purple" />
-          <StatCard icon={EyeIcon} value={formatNumber(stats.totalViews)} label="Views" color="blue" />
-          <StatCard icon={DollarIcon} value={formatCurrency(stats.totalRevenue)} label="Revenue" color="green" />
-          <StatCard icon={LinkIcon} value={formatNumber(stats.affiliateClicks)} label="Clicks" color="purple" />
+          <StatCard icon="📄" value={stats.totalPosts} label="Total Posts" />
+          <StatCard icon="✅" value={stats.publishedPosts} label="Published" color="green" />
+          <StatCard icon="✏️" value={stats.draftPosts} label="Drafts" color="amber" />
+          <StatCard icon="📅" value={stats.scheduledPosts} label="Scheduled" color="purple" />
+          <StatCard icon="👁️" value={formatNumber(stats.totalViews)} label="Views" color="blue" />
+          <StatCard icon="💰" value={formatCurrency(stats.totalRevenue)} label="Revenue" color="green" />
+          <StatCard icon="🔗" value={formatNumber(stats.affiliateClicks)} label="Clicks" color="purple" />
         </div>
 
         {/* Two Column Layout */}
@@ -314,7 +330,7 @@ export default function AdminDashboard() {
                 <span className="text-gray-400">📝</span>
                 <h3 className="font-semibold text-gray-900">Recent Posts</h3>
               </div>
-              <Link href="/admin/posts" className="text-sm text-gray-500 hover:text-black flex items-center gap-1">
+              <Link href="/admin/posts-manager" className="text-sm text-gray-500 hover:text-black flex items-center gap-1">
                 View all →
               </Link>
             </div>
@@ -331,7 +347,7 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <TrendingIcon />
+                <span className="text-gray-400">📈</span>
                 <h3 className="font-semibold text-gray-900">Top Performing</h3>
               </div>
               <Link href="/admin/analytics" className="text-sm text-gray-500 hover:text-black flex items-center gap-1">
@@ -362,7 +378,7 @@ export default function AdminDashboard() {
         <div className="mt-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link href="/admin/posts" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
+            <Link href="/admin/posts-manager" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xl">📝</div>
                 <div>
