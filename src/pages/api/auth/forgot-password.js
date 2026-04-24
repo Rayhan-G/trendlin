@@ -1,100 +1,110 @@
-// src/pages/forgot-password.js
-import { useState } from 'react'
-import Link from 'next/link'
+import { Resend } from 'resend'
+import { randomBytes } from 'crypto'
+import { supabase } from '@/lib/supabase'
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
-  const [message, setMessage] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setMessage('')
-
-    try {
-      const response = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        setMessage(data.message || 'Check your email for reset instructions')
-        setEmail('')
-      } else {
-        setError(data.error || 'Something went wrong')
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST'])
+    return res.status(405).json({ error: `Method ${req.method} not allowed` })
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Forgot your password?
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Enter your email address and we'll send you a link to reset your password.
-          </p>
-        </div>
-        
-        {message && (
-          <div className="rounded-md bg-green-50 p-4">
-            <div className="text-sm text-green-700">{message}</div>
-          </div>
-        )}
-        
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-700">{error}</div>
-          </div>
-        )}
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="email" className="sr-only">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-              placeholder="Email address"
-              disabled={loading}
-            />
-          </div>
+  const { email } = req.body
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-            >
-              {loading ? 'Sending...' : 'Send Reset Link'}
-            </button>
+  if (!email) {
+    return res.status(400).json({ error: 'Email address is required' })
+  }
+
+  try {
+    // Check if user exists
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('email', email.toLowerCase())
+      .single()
+
+    if (userError || !user) {
+      // For security, still return success even if user doesn't exist
+      return res.status(200).json({ 
+        message: 'If an account exists with this email, you will receive reset instructions.' 
+      })
+    }
+
+    // Generate reset token
+    const resetToken = randomBytes(32).toString('hex')
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour expiry
+
+    // Store token in database
+    const { error: tokenError } = await supabase
+      .from('password_resets')
+      .insert({
+        user_id: user.id,
+        token: resetToken,
+        expires_at: expiresAt.toISOString(),
+        used: false
+      })
+
+    if (tokenError) {
+      console.error('Token storage error:', tokenError)
+      return res.status(500).json({ error: 'Failed to process request' })
+    }
+
+    // Create reset URL
+    const resetUrl = `${process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
+
+    const isDevelopment = process.env.NODE_ENV === 'development'
+
+    if (isDevelopment || !resend) {
+      console.log('\n' + '='.repeat(50))
+      console.log(`🔐 PASSWORD RESET LINK`)
+      console.log(`📧 Email: ${email}`)
+      console.log(`🔗 Reset URL: ${resetUrl}`)
+      console.log(`⏰ Expires in: 1 hour`)
+      console.log('='.repeat(50) + '\n')
+
+      return res.status(200).json({
+        message: isDevelopment 
+          ? 'Password reset link sent (check console)' 
+          : 'If an account exists with this email, you will receive reset instructions.'
+      })
+    }
+
+    // Send email
+    const { error: emailError } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com',
+      to: email,
+      subject: 'Reset Your Password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Reset Your Password</h2>
+          <p>You requested to reset your password. Click the button below to proceed:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" style="background-color: #9333EA; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              Reset Password
+            </a>
           </div>
-        </form>
-        
-        <div className="text-center">
-          <Link href="/login" className="text-sm text-purple-600 hover:text-purple-500">
-            Back to sign in
-          </Link>
+          <p>Or copy and paste this link into your browser:</p>
+          <p style="background: #f0f0f0; padding: 10px; word-break: break-all;">${resetUrl}</p>
+          <p>This link expires in <strong>1 hour</strong>.</p>
+          <p>If you didn't request this, please ignore this email.</p>
+          <hr />
+          <p style="font-size: 12px; color: #666;">Stay informed, stay ahead.</p>
         </div>
-      </div>
-    </div>
-  )
+      `
+    })
+
+    if (emailError) {
+      console.error('Resend error:', emailError)
+      return res.status(500).json({ error: 'Failed to send reset email' })
+    }
+
+    return res.status(200).json({
+      message: 'If an account exists with this email, you will receive reset instructions.'
+    })
+
+  } catch (error) {
+    console.error('Forgot password error:', error)
+    return res.status(500).json({ error: 'An unexpected error occurred' })
+  }
 }
