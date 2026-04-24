@@ -1,10 +1,9 @@
 // pages/api/auth/login.js
 import bcrypt from 'bcrypt'
 import { supabase } from '@/lib/supabase'
-import crypto from 'crypto'
+import { randomBytes } from 'crypto'
 
 export default async function handler(req, res) {
-  // Only allow POST requests
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST'])
     return res.status(405).json({ error: `Method ${req.method} not allowed` })
@@ -12,7 +11,6 @@ export default async function handler(req, res) {
 
   const { email, password, rememberMe } = req.body
 
-  // Validate input
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' })
   }
@@ -29,12 +27,10 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid email or password' })
     }
 
-    // Check if email is verified
     if (!user.email_verified) {
       return res.status(401).json({ error: 'Email not verified' })
     }
 
-    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash)
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid email or password' })
@@ -47,11 +43,14 @@ export default async function handler(req, res) {
       .eq('id', user.id)
 
     // Create session
-    const sessionToken = crypto.randomBytes(64).toString('hex')
-    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60 // 30 days or 1 day
+    const sessionToken = randomBytes(64).toString('hex')
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
     const expiresAt = new Date(Date.now() + maxAge * 1000)
 
-    const { error: sessionError } = await supabase
+    // Try to insert session with error logging
+    console.log('Attempting to create session for user:', user.id)
+    
+    const { data: sessionData, error: sessionError } = await supabase
       .from('user_sessions')
       .insert({
         user_id: user.id,
@@ -61,11 +60,30 @@ export default async function handler(req, res) {
         ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null,
         created_at: new Date().toISOString()
       })
+      .select()
 
     if (sessionError) {
-      console.error('Session creation error:', sessionError)
-      return res.status(500).json({ error: 'Failed to create session' })
+      console.error('Session creation error:', {
+        message: sessionError.message,
+        code: sessionError.code,
+        details: sessionError.details,
+        hint: sessionError.hint
+      })
+      
+      // Check if table exists
+      if (sessionError.code === '42P01') {
+        return res.status(500).json({ error: 'Session table not found. Please contact support.' })
+      }
+      
+      // Check if RLS is blocking
+      if (sessionError.code === '42501') {
+        return res.status(500).json({ error: 'Session creation blocked. Please contact support.' })
+      }
+      
+      return res.status(500).json({ error: 'Failed to create session. Please try again.' })
     }
+
+    console.log('Session created successfully:', sessionData)
 
     // Set secure cookie
     const isProduction = process.env.NODE_ENV === 'production'
@@ -74,7 +92,6 @@ export default async function handler(req, res) {
       `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''}`
     ])
 
-    // Return user data (excluding sensitive info)
     return res.status(200).json({
       success: true,
       user: {
