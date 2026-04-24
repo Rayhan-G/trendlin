@@ -91,7 +91,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
     return { valid: true, message: '' }
   }
 
-  // PROFESSIONAL API CALL - NEVER SHOWS RAW ERRORS
   const callApi = async (endpoint, data) => {
     try {
       const response = await fetch(endpoint, {
@@ -100,38 +99,21 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
         body: JSON.stringify(data)
       })
 
-      // Check if response is valid
-      if (!response.ok) {
-        // Return user-friendly message based on status code
-        if (response.status === 404) {
-          return { success: false, error: 'Service temporarily unavailable. Please try again later.' }
-        }
-        if (response.status === 500) {
-          return { success: false, error: 'Server error. Our team has been notified.' }
-        }
-        if (response.status === 429) {
-          return { success: false, error: 'Too many attempts. Please wait a moment.' }
-        }
-        return { success: false, error: 'Unable to process request. Please try again.' }
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        return { success: false, error: 'Service unavailable. Please try again.' }
       }
 
-      // Safely parse JSON
-      let result
-      try {
-        result = await response.json()
-      } catch (e) {
-        console.error('JSON parse error:', e)
-        return { success: false, error: 'Service error. Please try again later.' }
+      const result = await response.json()
+      
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Request failed' }
       }
       
       return { success: true, data: result }
     } catch (error) {
-      console.error('API call failed:', error)
-      // Network errors or connection issues
-      if (error.message === 'Failed to fetch') {
-        return { success: false, error: 'Network error. Please check your connection.' }
-      }
-      return { success: false, error: 'Something went wrong. Please try again.' }
+      console.error('API Error:', error)
+      return { success: false, error: 'Unable to connect. Please check your network.' }
     }
   }
 
@@ -198,7 +180,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       setShowVerification(true)
       setCountdown(60)
       setCanResend(false)
-      setError('')
     } else {
       setError(result.error)
     }
@@ -270,7 +251,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       setError('New code sent!')
       setTimeout(() => setError(''), 3000)
     } else {
-      setError(result.error)
+      setError('Failed to resend code')
     }
     
     setLoading(false)
@@ -325,7 +306,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
               ? 'Verify email' 
               : mode === 'login' 
                 ? 'Welcome back' 
-                : 'Sign up'
+                : 'Create account'
             }
           </h2>
           {showVerification && (
@@ -565,8 +546,9 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           transition: all 0.2s;
         }
 
-        .close-btn:active {
-          transform: scale(0.95);
+        .close-btn:hover {
+          background: var(--close-btn-hover-bg, #e2e8f0);
+          transform: scale(1.05);
         }
 
         .modal-header {
@@ -683,10 +665,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           color: var(--input-focus, #06b6d4);
         }
 
-        .password-toggle:active {
-          transform: translateY(-50%) scale(0.95);
-        }
-
         .checkbox-label {
           display: flex;
           align-items: center;
@@ -727,8 +705,10 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           transition: all 0.2s;
         }
 
-        .submit-btn:active {
-          transform: scale(0.98);
+        .submit-btn:hover:not(:disabled) {
+          background: var(--submit-hover-bg, #0891b2);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
         }
 
         .submit-btn:disabled {
@@ -772,7 +752,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
             height: 46px;
             font-size: 18px;
           }
-          
           .code-inputs {
             gap: 6px;
           }
@@ -792,8 +771,9 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           margin-bottom: 12px;
         }
 
-        .verify-btn:active {
-          transform: scale(0.98);
+        .verify-btn:hover:not(:disabled) {
+          background: var(--submit-hover-bg, #0891b2);
+          transform: translateY(-1px);
         }
 
         .verify-btn:disabled {
@@ -814,8 +794,8 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           font-weight: 500;
         }
 
-        .resend-btn:active {
-          opacity: 0.7;
+        .resend-btn:hover {
+          text-decoration: underline;
         }
 
         .countdown-text {
@@ -832,8 +812,8 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           transition: color 0.2s;
         }
 
-        .back-btn:active {
-          opacity: 0.7;
+        .back-btn:hover {
+          color: var(--input-focus, #06b6d4);
         }
 
         :root {
@@ -841,6 +821,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           --modal-border: none;
           --close-btn-bg: #f1f5f9;
           --close-btn-color: #64748b;
+          --close-btn-hover-bg: #e2e8f0;
           --title-color: #0f172a;
           --toggle-bg: #f1f5f9;
           --toggle-btn-color: #64748b;
@@ -856,6 +837,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           --error-text: #ef4444;
           --submit-bg: #06b6d4;
           --submit-text: #ffffff;
+          --submit-hover-bg: #0891b2;
           --benefits-color: #94a3b8;
         }
 
@@ -865,6 +847,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
             --modal-border: 1px solid #334155;
             --close-btn-bg: #334155;
             --close-btn-color: #cbd5e1;
+            --close-btn-hover-bg: #475569;
             --title-color: #f1f5f9;
             --toggle-bg: #0f172a;
             --toggle-btn-color: #94a3b8;
@@ -880,6 +863,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
             --error-text: #f87171;
             --submit-bg: #06b6d4;
             --submit-text: #ffffff;
+            --submit-hover-bg: #0891b2;
             --benefits-color: #94a3b8;
           }
         }
@@ -889,6 +873,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           --modal-border: 1px solid #334155;
           --close-btn-bg: #334155;
           --close-btn-color: #cbd5e1;
+          --close-btn-hover-bg: #475569;
           --title-color: #f1f5f9;
           --toggle-bg: #0f172a;
           --toggle-btn-color: #94a3b8;
@@ -904,6 +889,7 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           --error-text: #f87171;
           --submit-bg: #06b6d4;
           --submit-text: #ffffff;
+          --submit-hover-bg: #0891b2;
           --benefits-color: #94a3b8;
         }
       `}</style>
