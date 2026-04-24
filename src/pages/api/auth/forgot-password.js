@@ -1,27 +1,15 @@
 import { randomBytes } from 'crypto'
-
-// Create supabase client directly (no import issues)
 import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables')
-}
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end()
-  }
-  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
@@ -33,8 +21,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Looking for user:', email)
-    
     // Find user
     const { data: user, error: userError } = await supabase
       .from('users')
@@ -42,87 +28,52 @@ export default async function handler(req, res) {
       .eq('email', email.toLowerCase())
       .single()
 
-    if (userError) {
-      console.log('User lookup error:', userError.message)
+    if (userError || !user) {
+      return res.status(404).json({ error: 'No account found with this email' })
     }
 
-    if (!user) {
-      console.log('User not found:', email)
-      return res.status(404).json({ 
-        error: `No account found with ${email}`
-      })
-    }
-
-    console.log('User found:', user.id)
-
-    // Generate reset token
+    // Generate token
     const token = randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
 
     // Delete old tokens
-    const { error: deleteError } = await supabase
-      .from('password_resets')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('used', false)
+    await supabase.from('password_resets').delete().eq('user_id', user.id).eq('used', false)
 
-    if (deleteError) {
-      console.log('Delete error (may be fine if table is new):', deleteError.message)
-    }
-
-    // Save new token - check if table exists
-    let insertError
-    try {
-      const { error } = await supabase
-        .from('password_resets')
-        .insert({
-          user_id: user.id,
-          token: token,
-          expires_at: expiresAt.toISOString(),
-          used: false
-        })
-      insertError = error
-    } catch (err) {
-      console.error('Insert exception:', err)
-      insertError = err
-    }
+    // Save token
+    const { error: insertError } = await supabase.from('password_resets').insert({
+      user_id: user.id,
+      token,
+      expires_at: expiresAt.toISOString(),
+      used: false,
+    })
 
     if (insertError) {
-      console.error('Insert error:', insertError)
-      
-      // Check if table doesn't exist
-      if (insertError.message && insertError.message.includes('relation') && insertError.message.includes('does not exist')) {
-        return res.status(500).json({ 
-          error: 'Password reset table not set up. Please run the SQL setup in Supabase.',
-          details: 'Missing password_resets table'
-        })
-      }
-      
-      return res.status(500).json({ error: 'Failed to generate reset link. Please try again.' })
+      throw new Error('Failed to save token')
     }
 
-    // Get base URL
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`
+    // Create reset URL
+    const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`
 
-    console.log('\n' + '='.repeat(60))
-    console.log('🔐 PASSWORD RESET LINK')
-    console.log('='.repeat(60))
-    console.log(`Email: ${email}`)
-    console.log(`Reset Link: ${resetUrl}`)
-    console.log('='.repeat(60) + '\n')
+    // Send email
+    await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL,
+      to: email,
+      subject: 'Reset your password',
+      html: `
+        <h1>Reset Your Password</h1>
+        <p>Click <a href="${resetUrl}">here</a> to reset your password.</p>
+        <p>This link expires in 1 hour.</p>
+        <p>If you didn't request this, ignore this email.</p>
+      `,
+    })
 
-    // Return success with the link for development
-    return res.status(200).json({
-      success: true,
-      message: `Reset link generated! Check your terminal/console.`,
-      resetUrl: resetUrl
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Reset link sent to your email' 
     })
 
   } catch (error) {
-    console.error('Fatal error:', error)
-    return res.status(500).json({ 
-      error: 'Server error: ' + error.message 
-    })
+    console.error('Error:', error)
+    return res.status(500).json({ error: 'Internal server error' })
   }
 }
