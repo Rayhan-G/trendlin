@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
-export default function BookmarkButton({ postId, postTitle, postSlug, className = '' }) {
+export default function BookmarkButton({ postId, postTitle = '', postSlug = '', className = '' }) {
   const [user, setUser] = useState(null)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -11,21 +11,36 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
   const [tooltipText, setTooltipText] = useState('')
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const res = await fetch('/api/auth/me')
-      const data = await res.json()
-      if (data.authenticated) {
-        setUser(data.user)
-        const { data: bookmark } = await supabase
-          .from('bookmarks')
-          .select('id')
-          .eq('user_id', data.user.id)
-          .eq('post_id', postId)
-          .maybeSingle()
-        setIsBookmarked(!!bookmark)
+    const checkAuthAndBookmark = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        
+        if (data.authenticated) {
+          setUser(data.user)
+          
+          // Check if bookmark exists - try multiple column names
+          let bookmarkExists = false
+          
+          // Try with post_id only (simple table)
+          const { data: bookmark, error } = await supabase
+            .from('bookmarks')
+            .select('id')
+            .eq('user_id', data.user.id)
+            .eq('post_id', postId)
+            .maybeSingle()
+          
+          bookmarkExists = !!bookmark
+          setIsBookmarked(bookmarkExists)
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error)
       }
     }
-    checkAuth()
+    
+    if (postId) {
+      checkAuthAndBookmark()
+    }
   }, [postId])
 
   useEffect(() => {
@@ -66,23 +81,43 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
     }
 
     setLoading(true)
+    
     try {
       if (isBookmarked) {
-        await supabase.from('bookmarks').delete().eq('user_id', user.id).eq('post_id', postId)
+        // Remove bookmark
+        const { error } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('post_id', postId)
+        
+        if (error) throw error
+        
         setIsBookmarked(false)
         displayTooltip('❌ Removed from bookmarks')
       } else {
-        await supabase.from('bookmarks').insert({
+        // Add bookmark - try to save with available data
+        const bookmarkData = {
           user_id: user.id,
           post_id: postId,
-          post_title: postTitle,
-          post_slug: postSlug,
           bookmarked_at: new Date().toISOString()
-        })
+        }
+        
+        // Add optional fields if they exist (table might have these columns)
+        if (postTitle) bookmarkData.post_title = postTitle
+        if (postSlug) bookmarkData.post_slug = postSlug
+        
+        const { error } = await supabase
+          .from('bookmarks')
+          .insert(bookmarkData)
+        
+        if (error) throw error
+        
         setIsBookmarked(true)
         displayTooltip('✅ Saved to bookmarks')
       }
     } catch (error) {
+      console.error('Bookmark error:', error)
       displayTooltip('❌ Something went wrong')
     } finally {
       setLoading(false)
@@ -97,15 +132,19 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
         className={`bookmark-btn ${isBookmarked ? 'active' : ''} ${className}`}
         aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.5">
+        <svg 
+          width="18" 
+          height="18" 
+          viewBox="0 0 24 24" 
+          fill={isBookmarked ? 'currentColor' : 'none'} 
+          stroke="currentColor" 
+          strokeWidth="1.5"
+        >
           <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
         </svg>
-        {loading && (
-          <span className="loading-spinner" />
-        )}
+        {loading && <span className="loading-spinner" />}
       </button>
 
-      {/* Optimized tooltip that won't overflow navbar */}
       {showTooltip && (
         <div className="tooltip" role="alert">
           <div className="tooltip-content">
@@ -172,13 +211,13 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
           to { transform: rotate(360deg); }
         }
         
-        /* Tooltip Styles - Lower z-index to stay below navbar */
+        /* Tooltip Styles */
         .tooltip {
           position: fixed;
           bottom: 20px;
           left: 50%;
           transform: translateX(-50%);
-          z-index: 999; /* Lower than navbar (which is 1000) */
+          z-index: 999;
           animation: slideUp 0.3s ease;
           pointer-events: none;
         }
@@ -197,16 +236,6 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .tooltip-text {
-          display: inline-block;
-        }
-        
-        /* Dark mode support for tooltip */
-        :global(html.dark) .tooltip-content {
-          background: #0f172a;
-          border-color: rgba(255, 255, 255, 0.05);
-        }
-        
         @keyframes slideUp {
           from {
             opacity: 0;
@@ -218,7 +247,6 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
           }
         }
         
-        /* Tablet and Desktop - Tooltip appears below button but contained */
         @media (min-width: 768px) {
           .tooltip {
             position: absolute;
@@ -227,14 +255,11 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
             left: 50%;
             transform: translateX(-50%);
             margin-top: 8px;
-            animation: fadeInUp 0.2s ease;
-            z-index: 10; /* Local stacking context */
           }
           
           .tooltip-content {
             padding: 6px 12px;
             font-size: 12px;
-            white-space: nowrap;
           }
           
           .tooltip::before {
@@ -249,57 +274,12 @@ export default function BookmarkButton({ postId, postTitle, postSlug, className 
             border-right: 6px solid transparent;
             border-bottom: 6px solid #1e293b;
           }
-          
-          :global(html.dark) .tooltip::before {
-            border-bottom-color: #0f172a;
-          }
-          
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateX(-50%) translateY(5px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(-50%) translateY(0);
-            }
-          }
         }
         
-        /* Large screens - keep same as tablet */
-        @media (min-width: 1024px) {
-          .tooltip-content {
-            font-size: 12px;
-          }
-        }
-        
-        /* Handle long tooltip text on small screens */
         @media (max-width: 480px) {
           .tooltip-content {
             white-space: normal;
             max-width: 280px;
-            padding: 8px 14px;
-            font-size: 13px;
-            line-height: 1.4;
-          }
-        }
-        
-        /* Landscape mode on mobile */
-        @media (max-width: 768px) and (orientation: landscape) {
-          .tooltip {
-            bottom: 10px;
-          }
-          
-          .tooltip-content {
-            padding: 6px 12px;
-            font-size: 12px;
-          }
-        }
-        
-        /* Touch device optimizations */
-        @media (hover: none) and (pointer: coarse) {
-          button:active {
-            transform: scale(0.92);
           }
         }
       `}</style>
