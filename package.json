@@ -51,8 +51,8 @@
     "yet-another-react-lightbox": "^3.31.0"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.31",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.10",
     "typescript": "6.0.3"
   }
 }
