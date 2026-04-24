@@ -1,21 +1,10 @@
 // src/components/frontend/Footer.js
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
 import NewsletterSubscribe from './NewsletterSubscribe'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    const sessionToken = localStorage.getItem('admin_session_token')
-    const sessionExpiry = localStorage.getItem('admin_session_expiry')
-    
-    if (sessionToken && sessionExpiry && Date.now() < parseInt(sessionExpiry)) {
-      setIsAdmin(true)
-    }
-  }, [])
 
   const legalLinks = [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -86,26 +75,9 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Copyright with hidden admin access */}
+        {/* Copyright */}
         <div className="footer-copyright">
           <p>© {currentYear} trendlin. All rights reserved.</p>
-          <div className="admin-icon-container">
-            {isAdmin ? (
-              <Link href="/admin/dashboard" className="admin-icon" title="Go to Admin Dashboard">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M8 7h8M8 12h6M8 17h4" />
-                </svg>
-              </Link>
-            ) : (
-              <Link href="/admin/login" className="admin-icon" title="Admin Login">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M5 20v-2a7 7 0 0 1 14 0v2" />
-                </svg>
-              </Link>
-            )}
-          </div>
         </div>
       </div>
 
@@ -315,7 +287,6 @@ export default function Footer() {
           text-align: center;
           padding-top: 2rem;
           border-top: 1px solid #e5e7eb;
-          position: relative;
         }
         
         :global(html.dark) .footer-copyright {
@@ -325,50 +296,6 @@ export default function Footer() {
         .footer-copyright p {
           font-size: 0.75rem;
           color: #9ca3af;
-        }
-        
-        /* Hidden Admin Access - Ultra subtle */
-        .admin-icon-container {
-          position: absolute;
-          bottom: 4px;
-          right: 8px;
-          opacity: 0.08;
-          transition: opacity 0.2s ease;
-        }
-        
-        .admin-icon-container:hover {
-          opacity: 0.4;
-        }
-        
-        .admin-icon {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 6px;
-          border-radius: 6px;
-          text-decoration: none;
-          color: #64748b;
-          transition: all 0.2s ease;
-        }
-        
-        .admin-icon:hover {
-          color: #8b5cf6;
-          background: rgba(139, 92, 246, 0.1);
-        }
-        
-        :global(html.dark) .admin-icon {
-          color: #475569;
-        }
-        
-        :global(html.dark) .admin-icon:hover {
-          color: #a78bfa;
-          background: rgba(139, 92, 246, 0.15);
-        }
-        
-        @media (max-width: 768px) {
-          .admin-icon-container {
-            opacity: 0.15;
-          }
         }
       `}</style>
     </footer>

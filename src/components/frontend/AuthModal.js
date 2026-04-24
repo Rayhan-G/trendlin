@@ -1,4 +1,3 @@
-// src/components/frontend/AuthModal.js
 import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
@@ -278,6 +277,11 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
     if (result.success) {
       if (onLogin) onLogin(result.data.user)
       onClose()
+      
+      // If admin, redirect to admin dashboard
+      if (result.data.isAdmin || result.data.user?.is_admin) {
+        window.location.href = '/admin/dashboard'
+      }
     } else {
       setError(result.error)
     }
@@ -429,7 +433,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
                     <span>Remember me</span>
                   </label>
                   
-                  {/* FORGOT PASSWORD LINK - ADDED HERE */}
                   <div className="forgot-password-container">
                     <button
                       type="button"
@@ -701,7 +704,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           cursor: pointer;
         }
 
-        /* FORGOT PASSWORD STYLES */
         .forgot-password-container {
           text-align: right;
           margin-bottom: 16px;

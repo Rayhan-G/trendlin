@@ -1,4 +1,3 @@
-// pages/api/auth/me.js
 import { supabase } from '../../../lib/supabase'
 
 export default async function handler(req, res) {
@@ -14,7 +13,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get session from database
+    // Check if it's an admin session
+    const isAdmin = req.cookies.is_admin === 'true'
+    
+    if (isAdmin) {
+      const { data: adminSession, error: adminError } = await supabase
+        .from('admin_sessions')
+        .select('expires_at')
+        .eq('token', sessionToken)
+        .single()
+      
+      if (!adminError && adminSession && new Date(adminSession.expires_at) > new Date()) {
+        return res.status(200).json({
+          authenticated: true,
+          user: {
+            id: 'admin',
+            email: process.env.ADMIN_EMAIL,
+            is_admin: true
+          },
+          newsletter: { is_subscribed: false, categories: [] }
+        })
+      }
+    }
+
+    // Regular user session
     const { data: session, error: sessionError } = await supabase
       .from('user_sessions')
       .select('user_id, expires_at')
@@ -25,14 +47,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ authenticated: false })
     }
 
-    // Check if session has expired
     if (new Date(session.expires_at) < new Date()) {
-      // Delete expired session
       await supabase.from('user_sessions').delete().eq('token', sessionToken)
       return res.status(200).json({ authenticated: false })
     }
 
-    // Get user data
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, email')
@@ -43,10 +62,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ authenticated: false })
     }
 
-    // ✅ ADD THIS: Get newsletter preferences
     const { data: newsletter } = await supabase
       .from('newsletter_preferences')
-      .select('is_subscribed, categories, max_posts_per_week, delivery_frequency')
+      .select('is_subscribed, categories')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -54,15 +72,10 @@ export default async function handler(req, res) {
       authenticated: true,
       user: {
         id: user.id,
-        email: user.email
+        email: user.email,
+        is_admin: false
       },
-      // ✅ ADD THIS: Include newsletter data
-      newsletter: newsletter || { 
-        is_subscribed: false, 
-        categories: [],
-        max_posts_per_week: 0,
-        delivery_frequency: 'weekly'
-      }
+      newsletter: newsletter || { is_subscribed: false, categories: [] }
     })
 
   } catch (error) {

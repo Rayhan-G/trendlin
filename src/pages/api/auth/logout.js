@@ -9,15 +9,15 @@ export default async function handler(req, res) {
   const sessionToken = req.cookies.session_token
 
   if (sessionToken) {
-    await supabase
-      .from('user_sessions')
-      .delete()
-      .eq('token', sessionToken)
+    // Delete from both user_sessions and admin_sessions
+    await supabase.from('user_sessions').delete().eq('token', sessionToken)
+    await supabase.from('admin_sessions').delete().eq('token', sessionToken)
   }
 
   res.setHeader('Set-Cookie', [
     'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly',
-    'session_expires=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    'session_expires=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+    'is_admin=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
   ])
 
   return res.status(200).json({ success: true })

@@ -166,14 +166,14 @@ export default function PostCard({ post, rank = null }) {
             
             {post.avg_rating > 0 && (
               <div className="rating-wrapper">
-                <div className="stars-container" style={{ display: 'flex', alignItems: 'center' }}>
+                <div className="stars-container">
                   {renderStars(post.avg_rating)}
                 </div>
-                <span className="rating-number" style={{ color: '#f59e0b', fontSize: '0.7rem', fontWeight: 600 }}>
+                <span className="rating-number">
                   {post.avg_rating.toFixed(1)}
                 </span>
                 {post.total_ratings > 0 && (
-                  <span className="rating-count" style={{ fontSize: '0.6rem', color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
+                  <span className="rating-count">
                     ({formatNumber(post.total_ratings)})
                   </span>
                 )}
@@ -228,6 +228,7 @@ export default function PostCard({ post, rank = null }) {
         .post-card-container {
           position: relative;
           overflow: visible;
+          width: 100%;
         }
         
         .bookmark-wrapper {
@@ -258,7 +259,6 @@ export default function PostCard({ post, rank = null }) {
           color: inherit;
           display: block;
           width: 100%;
-          min-width: 192px;
           transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
         
@@ -268,7 +268,7 @@ export default function PostCard({ post, rank = null }) {
         
         .post-card {
           border-radius: 16px;
-          overflow: visible;
+          overflow: hidden;
           height: 100%;
           display: flex;
           flex-direction: column;
@@ -325,10 +325,9 @@ export default function PostCard({ post, rank = null }) {
         .post-card-image {
           position: relative;
           width: 100%;
-          aspect-ratio: 4 / 3;
+          aspect-ratio: 16 / 9;
           overflow: hidden;
           background: #f3f4f6;
-          border-radius: 16px 16px 0 0;
         }
         
         .post-card-image img {
@@ -346,11 +345,11 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-card-content {
-          padding: 0.75rem;
+          padding: 1rem;
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.75rem;
         }
         
         .post-header {
@@ -365,13 +364,13 @@ export default function PostCard({ post, rank = null }) {
           display: inline-flex;
           align-items: center;
           gap: 0.3rem;
-          font-size: 0.6rem;
+          font-size: 0.7rem;
           font-weight: 600;
           text-transform: uppercase;
           letter-spacing: 0.5px;
           color: var(--category-color);
-          padding: 0.2rem 0.5rem;
-          border-radius: 16px;
+          padding: 0.25rem 0.6rem;
+          border-radius: 20px;
         }
         
         .post-card.light .post-category {
@@ -392,8 +391,8 @@ export default function PostCard({ post, rank = null }) {
         .read-time {
           display: flex;
           align-items: center;
-          gap: 0.2rem;
-          font-size: 0.55rem;
+          gap: 0.25rem;
+          font-size: 0.65rem;
         }
         
         .post-card.light .read-time {
@@ -405,9 +404,9 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-title {
-          font-size: 0.9rem;
-          font-weight: 600;
-          line-height: 1.4;
+          font-size: 1.1rem;
+          font-weight: 700;
+          line-height: 1.35;
           margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -424,8 +423,8 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-excerpt {
-          font-size: 0.7rem;
-          line-height: 1.4;
+          font-size: 0.8rem;
+          line-height: 1.5;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
@@ -446,15 +445,34 @@ export default function PostCard({ post, rank = null }) {
           align-items: center;
           gap: 0.5rem;
           flex-wrap: wrap;
-          margin: 0.25rem 0;
+        }
+        
+        .stars-container {
+          display: flex;
+          align-items: center;
+        }
+        
+        .rating-number {
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #f59e0b;
+        }
+        
+        .rating-count {
+          font-size: 0.65rem;
+          color: #6b7280;
+        }
+        
+        .post-card.dark .rating-count {
+          color: #9ca3af;
         }
         
         .post-footer {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-top: 0.25rem;
-          padding-top: 0.5rem;
+          margin-top: auto;
+          padding-top: 0.75rem;
           border-top: 1px solid;
         }
         
@@ -469,15 +487,15 @@ export default function PostCard({ post, rank = null }) {
         .post-meta {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.75rem;
           flex-wrap: wrap;
         }
         
         .meta-item {
           display: flex;
           align-items: center;
-          gap: 0.2rem;
-          font-size: 0.55rem;
+          gap: 0.25rem;
+          font-size: 0.65rem;
         }
         
         .post-card.light .meta-item {
@@ -491,8 +509,8 @@ export default function PostCard({ post, rank = null }) {
         .read-more {
           display: flex;
           align-items: center;
-          gap: 0.2rem;
-          font-size: 0.6rem;
+          gap: 0.25rem;
+          font-size: 0.7rem;
           font-weight: 600;
           transition: gap 0.3s ease;
         }
@@ -513,15 +531,95 @@ export default function PostCard({ post, rank = null }) {
           transform: translateX(3px);
         }
         
-        @media (max-width: 767px) {
-          .post-card-link {
-            min-width: 180px;
+        /* ========== IMPROVED MOBILE STYLES ========== */
+        @media (max-width: 768px) {
+          .post-card {
+            border-radius: 12px;
+          }
+          
+          .post-card-content {
+            padding: 0.875rem;
+            gap: 0.625rem;
+          }
+          
+          .post-title {
+            font-size: 1rem;
+            -webkit-line-clamp: 3;
+            line-height: 1.4;
           }
         }
         
         @media (max-width: 480px) {
-          .post-card-link {
-            min-width: 160px;
+          .post-card {
+            border-radius: 10px;
+          }
+          
+          .post-card-content {
+            padding: 0.75rem;
+            gap: 0.5rem;
+          }
+          
+          .post-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            -webkit-line-clamp: 3;
+            line-height: 1.4;
+          }
+          
+          .post-excerpt {
+            font-size: 0.75rem;
+            -webkit-line-clamp: 2;
+            line-height: 1.4;
+          }
+          
+          .post-category {
+            font-size: 0.6rem;
+            padding: 0.2rem 0.5rem;
+          }
+          
+          .read-time {
+            font-size: 0.6rem;
+          }
+          
+          .meta-item {
+            font-size: 0.6rem;
+          }
+          
+          .post-card-image {
+            aspect-ratio: 16 / 9;
+          }
+          
+          .rank-badge {
+            width: 26px;
+            height: 26px;
+            top: 6px;
+            left: 6px;
+          }
+          
+          .rank-number {
+            font-size: 0.75rem;
+          }
+        }
+        
+        /* Landscape mode on mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+          .post-card-image {
+            aspect-ratio: 16 / 9;
+          }
+          
+          .post-title {
+            font-size: 0.9rem;
+          }
+        }
+        
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+          .read-more {
+            gap: 0.5rem;
+          }
+          
+          .meta-item {
+            gap: 0.35rem;
           }
         }
       `}</style>
