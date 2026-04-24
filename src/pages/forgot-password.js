@@ -5,6 +5,7 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [resetLink, setResetLink] = useState('')
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -12,6 +13,7 @@ export default function ForgotPasswordPage() {
     setLoading(true)
     setError('')
     setMessage('')
+    setResetLink('')
 
     try {
       const response = await fetch('/api/auth/forgot-password', {
@@ -24,7 +26,10 @@ export default function ForgotPasswordPage() {
 
       if (response.ok) {
         setMessage(data.message)
-        setEmail('') // Clear email after success
+        if (data.resetUrl) {
+          setResetLink(data.resetUrl)
+        }
+        setEmail('')
       } else {
         setError(data.error)
       }
@@ -38,33 +43,39 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-center mb-2">Reset Your Password</h1>
+        <h1 className="text-2xl font-bold text-center mb-2">Reset Password</h1>
         <p className="text-gray-600 text-center mb-6">
-          Enter your email and we'll send you a reset link
+          Enter your email to receive a reset link
         </p>
-        
+
         {message && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-700 font-medium">✅ {message}</p>
-            <p className="text-green-600 text-sm mt-1">
-              Didn't receive it? Check your spam folder or try again.
-            </p>
+          <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg">
+            {message}
           </div>
         )}
-        
+
+        {resetLink && (
+          <div className="mb-4 p-3 bg-blue-100 text-blue-700 rounded-lg">
+            <p className="font-medium mb-2">Click this link to reset your password:</p>
+            <a href={resetLink} target="_blank" rel="noopener noreferrer" className="break-all text-blue-600 hover:underline">
+              {resetLink}
+            </a>
+          </div>
+        )}
+
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700">❌ {error}</p>
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            {error}
             {error.includes('No account found') && (
               <div className="mt-2">
-                <Link href="/signup" className="text-purple-600 hover:underline text-sm">
+                <Link href="/signup" className="text-purple-600 hover:underline">
                   Create a new account →
                 </Link>
               </div>
             )}
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-2">
@@ -80,7 +91,7 @@ export default function ForgotPasswordPage() {
               disabled={loading}
             />
           </div>
-          
+
           <button
             type="submit"
             disabled={loading}
@@ -89,7 +100,7 @@ export default function ForgotPasswordPage() {
             {loading ? 'Sending...' : 'Send Reset Link'}
           </button>
         </form>
-        
+
         <div className="text-center mt-4">
           <Link href="/login" className="text-sm text-purple-600 hover:underline">
             ← Back to Sign In

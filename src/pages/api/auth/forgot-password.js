@@ -1,5 +1,8 @@
 import { randomBytes } from 'crypto'
 import { supabase } from '../../../lib/supabase'
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -48,35 +51,69 @@ export default async function handler(req, res) {
       })
 
     if (insertError) {
+      console.error('Insert error:', insertError)
       throw new Error('Failed to save token')
     }
 
-    // ✅ CORRECT: Get the actual domain from request or environment
-    const protocol = req.headers['x-forwarded-proto'] || 'https'
-    const host = req.headers['host']
-    const baseUrl = process.env.NEXTAUTH_URL || `${protocol}://${host}`
-    
+    // Get base URL
+    const baseUrl = process.env.NEXTAUTH_URL || `https://${process.env.VERCEL_URL}` || 'http://localhost:3000'
     const resetUrl = `${baseUrl}/reset-password?token=${token}`
 
-    // For development, log the URL
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Reset URL:', resetUrl)
-      return res.status(200).json({
-        success: true,
-        message: `Reset link sent to ${email}`,
-        resetUrl: resetUrl  // Show link in development only
-      })
+    console.log('Reset URL:', resetUrl)
+
+    // Send email using Resend
+    const { data: emailData, error: emailError } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+      to: email,
+      subject: 'Reset Your Password',
+      html: `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Reset Your Password</title>
+            <style>
+              body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+              .button { display: inline-block; background: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+              .footer { font-size: 12px; color: #666; margin-top: 30px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h2>Reset Your Password</h2>
+              <p>We received a request to reset your password for <strong>${email}</strong>.</p>
+              <p>Click the button below to create a new password:</p>
+              <div style="text-align: center;">
+                <a href="${resetUrl}" class="button">Reset Password</a>
+              </div>
+              <p>Or copy and paste this link into your browser:</p>
+              <p style="background: #f4f4f4; padding: 10px; word-break: break-all;">${resetUrl}</p>
+              <p>This link will expire in <strong>1 hour</strong>.</p>
+              <p>If you didn't request this, please ignore this email.</p>
+              <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} YourApp. All rights reserved.</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `
+    })
+
+    if (emailError) {
+      console.error('Email error:', emailError)
+      return res.status(500).json({ error: 'Failed to send reset email. Please try again.' })
     }
 
-    // Production - send email (implement with Resend/SendGrid)
-    // For now, just return success
+    console.log('Email sent:', emailData)
+
     return res.status(200).json({
       success: true,
-      message: `Reset link sent to ${email}`
+      message: `✅ Reset link sent to ${email}. Check your inbox (and spam folder).`
     })
 
   } catch (error) {
     console.error('Error:', error)
-    return res.status(500).json({ error: 'Something went wrong' })
+    return res.status(500).json({ error: 'Something went wrong. Please try again.' })
   }
 }
