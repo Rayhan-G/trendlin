@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { email, password } = req.body
+  const { email, password, emailVerified } = req.body
 
   // Validation
   if (!email || !password) {
@@ -22,6 +22,15 @@ export default async function handler(req, res) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: 'Valid email address required' })
+  }
+
+  // Check if email is verified (for signup with verification flow)
+  if (emailVerified === undefined) {
+    return res.status(400).json({ error: 'Email verification required' })
+  }
+  
+  if (!emailVerified) {
+    return res.status(400).json({ error: 'Please verify your email before creating an account' })
   }
 
   try {
@@ -45,12 +54,17 @@ export default async function handler(req, res) {
       .insert({ 
         email: email.toLowerCase(), 
         password_hash,
+        email_verified: true,
+        email_verified_at: new Date().toISOString(),
         created_at: new Date().toISOString()
       })
       .select()
       .single()
     
-    if (userError) throw userError
+    if (userError) {
+      console.error('User creation error:', userError)
+      return res.status(500).json({ error: 'Failed to create user account' })
+    }
 
     // Create newsletter preferences
     const { error: newsletterError } = await supabase
@@ -81,24 +95,31 @@ export default async function handler(req, res) {
         user_id: user.id, 
         token: sessionToken, 
         expires_at: expiresAt.toISOString(),
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        user_agent: req.headers['user-agent'] || null,
+        ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
       })
     
-    if (sessionError) throw sessionError
+    if (sessionError) {
+      console.error('Session creation error:', sessionError)
+      return res.status(500).json({ error: 'Failed to create session' })
+    }
 
     // Set cookie
-    res.setHeader('Set-Cookie', `session_token=${sessionToken}; Path=/; Max-Age=2592000; SameSite=Lax; HttpOnly; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`)
+    const isProduction = process.env.NODE_ENV === 'production'
+    res.setHeader('Set-Cookie', `session_token=${sessionToken}; Path=/; Max-Age=2592000; SameSite=Lax; HttpOnly; ${isProduction ? 'Secure;' : ''}`)
     
     return res.status(201).json({ 
       success: true, 
       user: { 
         id: user.id, 
         email: user.email 
-      } 
+      },
+      message: 'Account created successfully'
     })
     
   } catch (error) {
     console.error('Signup error:', error)
-    return res.status(500).json({ error: 'Failed to create account' })
+    return res.status(500).json({ error: 'Failed to create account. Please try again.' })
   }
 }
