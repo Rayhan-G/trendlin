@@ -1,5 +1,6 @@
 // src/components/frontend/AuthModal.js
 import React, { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 
 export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) {
   const [mode, setMode] = useState(propMode || 'login')
@@ -294,6 +295,11 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
     }
   }
 
+  const handleForgotPassword = () => {
+    onClose()
+    window.location.href = '/forgot-password'
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
@@ -413,14 +419,27 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
               )}
 
               {mode === 'login' && (
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  <span>Remember me</span>
-                </label>
+                <>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    <span>Remember me</span>
+                  </label>
+                  
+                  {/* FORGOT PASSWORD LINK - ADDED HERE */}
+                  <div className="forgot-password-container">
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="forgot-password-btn"
+                    >
+                      Forgot your password?
+                    </button>
+                  </div>
+                </>
               )}
 
               {error && <div className="error-message">{error}</div>}
@@ -682,6 +701,28 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           cursor: pointer;
         }
 
+        /* FORGOT PASSWORD STYLES */
+        .forgot-password-container {
+          text-align: right;
+          margin-bottom: 16px;
+        }
+
+        .forgot-password-btn {
+          background: transparent;
+          border: none;
+          color: var(--forgot-password-color, #06b6d4);
+          font-size: 12px;
+          cursor: pointer;
+          padding: 0;
+          transition: all 0.2s;
+          font-weight: 500;
+        }
+
+        .forgot-password-btn:hover {
+          color: var(--forgot-password-hover, #0891b2);
+          text-decoration: underline;
+        }
+
         .error-message {
           background: var(--error-bg, #fef2f2);
           color: var(--error-text, #ef4444);
@@ -833,6 +874,8 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           --placeholder-color: #94a3b8;
           --input-focus: #06b6d4;
           --label-color: #64748b;
+          --forgot-password-color: #06b6d4;
+          --forgot-password-hover: #0891b2;
           --error-bg: #fef2f2;
           --error-text: #ef4444;
           --submit-bg: #06b6d4;
@@ -859,6 +902,8 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
             --placeholder-color: #64748b;
             --input-focus: #06b6d4;
             --label-color: #94a3b8;
+            --forgot-password-color: #06b6d4;
+            --forgot-password-hover: #0891b2;
             --error-bg: #450a0a;
             --error-text: #f87171;
             --submit-bg: #06b6d4;
@@ -885,6 +930,8 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
           --placeholder-color: #64748b;
           --input-focus: #06b6d4;
           --label-color: #94a3b8;
+          --forgot-password-color: #06b6d4;
+          --forgot-password-hover: #0891b2;
           --error-bg: #450a0a;
           --error-text: #f87171;
           --submit-bg: #06b6d4;
