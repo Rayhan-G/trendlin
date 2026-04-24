@@ -1,7 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  webpack: (config) => {
+  // Turbopack config (for Next.js 16+)
+  turbopack: {
+    resolveAlias: {
+      '@': './src',
+    },
+  },
+  // Webpack config (for fallback)
+  webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': require('path').resolve(__dirname, 'src'),

@@ -1,4 +1,11 @@
 {
+
+   "scripts": {
+    "vercel-build": "next build --webpack"
+  },
+
+
+
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
