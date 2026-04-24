@@ -273,15 +273,40 @@ export default function Navbar() {
                       <div style={{ fontWeight: 600, color: 'var(--user-email-color, #111)', fontSize: 13 }}>{user?.email}</div>
                       <div style={{ fontSize: 11, color: 'var(--user-plan-color, #999)', marginTop: 4 }}>Free Account</div>
                     </div>
+                    
+                    {/* ADDED: Admin Dashboard Link - Only shows if user is admin */}
+                    {user?.is_admin === true && (
+                      <Link 
+                        href="/admin/dashboard" 
+                        onClick={() => setShowUserMenu(false)} 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '10px 16px',
+                          textDecoration: 'none',
+                          color: '#8b5cf6',
+                          fontSize: 13,
+                          borderTop: '1px solid var(--menu-border, #eaeaea)',
+                          background: 'rgba(139, 92, 246, 0.05)'
+                        }}
+                      >
+                        <span>🛠️</span>
+                        <span style={{ fontWeight: 500 }}>Admin Dashboard</span>
+                      </Link>
+                    )}
+                    
                     <Link href="/settings" onClick={() => setShowUserMenu(false)} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
                       textDecoration: 'none', color: 'var(--menu-item-color, #444)', fontSize: 13
                     }}><span>⚙️</span><span>Settings</span></Link>
+                    
                     <Link href="/newsletter/manage" onClick={() => setShowUserMenu(false)} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
                       textDecoration: 'none', color: 'var(--menu-item-color, #444)', fontSize: 13,
                       borderTop: '1px solid var(--menu-border, #eaeaea)'
                     }}><span>📬</span><span>Newsletter</span></Link>
+                    
                     <button onClick={handleLogout} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
                       color: '#ef4444', fontSize: 13, background: 'transparent', border: 'none',
@@ -517,6 +542,30 @@ export default function Navbar() {
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--user-plan-color, #999)', marginTop: 4 }}>Free Account</div>
                 </div>
+                
+                {/* ADDED: Admin Dashboard Link for Mobile */}
+                {user?.is_admin === true && (
+                  <Link 
+                    href="/admin/dashboard" 
+                    onClick={() => setShowMobileMenu(false)} 
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '12px',
+                      textDecoration: 'none',
+                      color: '#8b5cf6',
+                      fontSize: 14,
+                      borderRadius: 8,
+                      background: 'rgba(139, 92, 246, 0.05)',
+                      marginBottom: 8
+                    }}
+                  >
+                    <span>🛠️</span>
+                    <span style={{ fontWeight: 500 }}>Admin Dashboard</span>
+                  </Link>
+                )}
+                
                 <Link href="/settings" onClick={() => setShowMobileMenu(false)} style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -601,7 +650,7 @@ export default function Navbar() {
       )}
 
       <style jsx>{`
-        /* Desktop Navigation - Visible on tablets and desktop */
+        /* Desktop Navigation - Visible on tablets and up */
         .desktop-nav {
           display: flex;
           gap: 12px;
