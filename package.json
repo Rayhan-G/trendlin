@@ -5,11 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "dev:turbo": "next dev --turbo",
-     "vercel-build": "next build --webpack",
+    "vercel-build": "next build --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "vercel-build": "npm install --legacy-peer-deps && next build"
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
