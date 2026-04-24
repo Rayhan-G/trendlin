@@ -19,6 +19,8 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
   const [newEmail, setNewEmail] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingSubscription, setPendingSubscription] = useState(null)
 
   const categories = [
     { id: 'health', name: 'Health & Wellness', icon: '🌿' },
@@ -31,6 +33,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
   ]
 
   const maxPostsPerWeek = selectedCategories.length
+  const deliveryDay = 'Sunday'
 
   // Function to detect current category from URL
   const detectCurrentCategory = () => {
@@ -43,19 +46,16 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
 
   // Reset selected categories based on current page and user subscription
   const resetCategoriesForPage = (currentCat, userSubscribed, existingPrefs = null) => {
-    // If user is already subscribed, use their saved preferences
     if (userSubscribed && existingPrefs) {
       setSelectedCategories(existingPrefs)
       setOriginalCategories(existingPrefs)
       return
     }
     
-    // If on a category page, preselect that category only (not subscribed yet)
     if (currentCat) {
       setSelectedCategories([currentCat])
       setOriginalCategories([currentCat])
     } else {
-      // On homepage, no categories preselected
       setSelectedCategories([])
       setOriginalCategories([])
     }
@@ -67,12 +67,9 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
       const newCategory = detectCurrentCategory()
       setCurrentPageCategory(newCategory)
       
-      // Reset categories based on new page
       if (subscriptionStatus === 'subscribed' && user) {
         // User is subscribed, keep their preferences
-        // Don't reset to page category
       } else {
-        // User not subscribed, reset based on page
         if (newCategory) {
           setSelectedCategories([newCategory])
           setOriginalCategories([newCategory])
@@ -84,8 +81,6 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     }
 
     handleUrlChange()
-
-    // Listen for navigation changes
     window.addEventListener('popstate', handleUrlChange)
     
     const originalPushState = history.pushState
@@ -124,7 +119,6 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             setSelectedCategories(data.newsletter.categories || [])
             setOriginalCategories(data.newsletter.categories || [])
           } else {
-            // Not subscribed - preset based on current page
             const currentCat = detectCurrentCategory()
             if (currentCat) {
               setSelectedCategories([currentCat])
@@ -132,7 +126,6 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             }
           }
         } else {
-          // Not logged in - preset based on current page
           const currentCat = detectCurrentCategory()
           if (currentCat) {
             setSelectedCategories([currentCat])
@@ -187,21 +180,27 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
       return
     }
     
-    if (cooldown) {
-      setError('Please wait a moment before trying again.')
-      return
-    }
-    
     if (selectedCategories.length === 0) {
       setError('Please select at least one category')
       return
     }
 
+    setPendingSubscription({
+      categories: [...selectedCategories],
+      email: user.email,
+      postCount: selectedCategories.length
+    })
+    setShowConfirmModal(true)
+  }
+
+  const confirmSubscription = async () => {
+    if (!pendingSubscription) return
+
     setLoading(true)
     setError('')
+    setShowConfirmModal(false)
 
     try {
-      // Check if user already has newsletter preferences
       const { data: existingPrefs } = await supabase
         .from('newsletter_preferences')
         .select('id')
@@ -210,29 +209,27 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
 
       let result
       if (existingPrefs) {
-        // Update existing
         result = await supabase
           .from('newsletter_preferences')
           .update({
             is_subscribed: true,
-            categories: selectedCategories,
+            categories: pendingSubscription.categories,
             delivery_frequency: 'weekly',
-            max_posts_per_week: maxPostsPerWeek,
+            max_posts_per_week: pendingSubscription.postCount,
             post_format: 'digest',
             subscribed_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
       } else {
-        // Insert new
         result = await supabase
           .from('newsletter_preferences')
           .insert({
             user_id: user.id,
             is_subscribed: true,
-            categories: selectedCategories,
+            categories: pendingSubscription.categories,
             delivery_frequency: 'weekly',
-            max_posts_per_week: maxPostsPerWeek,
+            max_posts_per_week: pendingSubscription.postCount,
             post_format: 'digest',
             subscribed_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -242,7 +239,8 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
       if (result.error) throw result.error
 
       setSubscriptionStatus('subscribed')
-      setOriginalCategories(selectedCategories)
+      setSelectedCategories(pendingSubscription.categories)
+      setOriginalCategories(pendingSubscription.categories)
       setShowSuccessModal(true)
       setCooldown(true)
       setTimeout(() => setCooldown(false), 30000)
@@ -251,6 +249,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
       setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
+      setPendingSubscription(null)
     }
   }
 
@@ -268,7 +267,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
         .from('newsletter_preferences')
         .update({
           categories: selectedCategories,
-          max_posts_per_week: maxPostsPerWeek,
+          max_posts_per_week: selectedCategories.length,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
@@ -367,9 +366,10 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
   }
 
   const getButtonText = () => {
-    if (loading) return 'Saving...'
+    if (loading) return 'Processing...'
     if (cooldown) return 'Please wait...'
-    return 'Subscribe →'
+    if (selectedCategories.length === 0) return 'Select categories first'
+    return 'Review Subscription →'
   }
 
   const openSignupFromPopup = () => {
@@ -381,7 +381,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     ? categories.find(c => c.id === currentPageCategory)?.name 
     : null
 
-  // Show loading while checking auth
+  // Loading state
   if (!authChecked) {
     return (
       <div className={`loading-placeholder ${className}`}>
@@ -412,26 +412,279 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     )
   }
 
-  // Show success modal
+  // Confirmation Modal
+  if (showConfirmModal && pendingSubscription) {
+    const categoriesList = categories.filter(c => pendingSubscription.categories.includes(c.id))
+    
+    return (
+      <div className="confirm-modal-overlay" onClick={() => setShowConfirmModal(false)}>
+        <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
+          <button className="confirm-modal-close" onClick={() => setShowConfirmModal(false)}>✕</button>
+          
+          <div className="confirm-modal-icon">📬</div>
+          <h3 className="confirm-modal-title">Confirm Your Subscription</h3>
+          
+          <div className="confirm-modal-summary">
+            <div className="summary-item">
+              <span className="summary-label">📧 Email</span>
+              <span className="summary-value">{pendingSubscription.email}</span>
+            </div>
+            
+            <div className="summary-item">
+              <span className="summary-label">📅 Delivery Day</span>
+              <span className="summary-value">Every {deliveryDay}</span>
+            </div>
+            
+            <div className="summary-item">
+              <span className="summary-label">📬 Posts per week</span>
+              <span className="summary-value">{pendingSubscription.postCount} {pendingSubscription.postCount === 1 ? 'post' : 'posts'}</span>
+            </div>
+          </div>
+          
+          <div className="confirm-modal-categories">
+            <div className="categories-label">Selected Categories:</div>
+            <div className="categories-list-confirm">
+              {categoriesList.map(cat => (
+                <span key={cat.id} className="category-confirm-pill">
+                  {cat.icon} {cat.name}
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          <div className="confirm-modal-actions">
+            <button 
+              onClick={confirmSubscription} 
+              className="confirm-btn"
+              disabled={loading}
+            >
+              {loading ? 'Subscribing...' : '✓ Confirm Subscription'}
+            </button>
+            <button 
+              onClick={() => setShowConfirmModal(false)} 
+              className="cancel-btn-modal"
+            >
+              Cancel
+            </button>
+          </div>
+          
+          <p className="confirm-modal-note">
+            You can unsubscribe or change preferences at any time.
+          </p>
+        </div>
+
+        <style jsx>{`
+          .confirm-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100000;
+            padding: 16px;
+          }
+          
+          .confirm-modal {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            border-radius: 32px;
+            max-width: 480px;
+            width: 100%;
+            padding: 2rem;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+          }
+          
+          .confirm-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: rgba(255,255,255,0.6);
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+          }
+          
+          .confirm-modal-close:hover {
+            background: rgba(255,255,255,0.2);
+            color: white;
+          }
+          
+          .confirm-modal-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 16px;
+          }
+          
+          .confirm-modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: white;
+            margin: 0 0 24px 0;
+          }
+          
+          .confirm-modal-summary {
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 1rem;
+            margin-bottom: 20px;
+          }
+          
+          .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+          }
+          
+          .summary-item:last-child {
+            border-bottom: none;
+          }
+          
+          .summary-label {
+            font-size: 0.875rem;
+            color: rgba(255,255,255,0.6);
+          }
+          
+          .summary-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+          }
+          
+          .confirm-modal-categories {
+            margin-bottom: 24px;
+          }
+          
+          .categories-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 12px;
+          }
+          
+          .categories-list-confirm {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+          }
+          
+          .category-confirm-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(6,182,212,0.15);
+            border: 1px solid rgba(6,182,212,0.3);
+            border-radius: 40px;
+            font-size: 0.8rem;
+            color: #06b6d4;
+          }
+          
+          .confirm-modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+          }
+          
+          .confirm-btn {
+            flex: 2;
+            padding: 12px;
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            border: none;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          
+          .confirm-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(6,182,212,0.3);
+          }
+          
+          .confirm-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          .cancel-btn-modal {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 40px;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          
+          .cancel-btn-modal:hover {
+            background: rgba(255,255,255,0.12);
+            color: white;
+          }
+          
+          .confirm-modal-note {
+            font-size: 0.7rem;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            margin: 20px 0 0 0;
+          }
+          
+          @media (max-width: 480px) {
+            .confirm-modal {
+              padding: 1.5rem;
+            }
+            .confirm-modal-title {
+              font-size: 1.25rem;
+            }
+            .confirm-modal-actions {
+              flex-direction: column;
+            }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // Success Modal
   if (showSuccessModal) {
     return (
       <div className="modal-overlay" onClick={() => setShowSuccessModal(false)}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div style={{ fontSize: '48px', textAlign: 'center', marginBottom: '16px' }}>✅</div>
-          <h3 style={{ textAlign: 'center', marginBottom: '12px' }}>Successfully Subscribed!</h3>
-          <p style={{ textAlign: 'center' }}>You'll now receive our weekly newsletter at:</p>
-          <p style={{ textAlign: 'center', fontWeight: 'bold' }}>{user?.email}</p>
+          <h3 style={{ textAlign: 'center', marginBottom: '12px', color: '#0f172a' }}>Successfully Subscribed!</h3>
+          <p style={{ textAlign: 'center', color: '#64748b' }}>You'll now receive our weekly newsletter at:</p>
+          <p style={{ textAlign: 'center', fontWeight: 'bold', color: '#06b6d4' }}>{user?.email}</p>
           <button
             onClick={() => setShowSuccessModal(false)}
             style={{
               width: '100%',
               padding: '12px',
-              background: '#06b6d4',
+              background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
               color: 'white',
               border: 'none',
               borderRadius: '40px',
               marginTop: '16px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontWeight: '600'
             }}
           >
             Got it, thanks →
@@ -445,6 +698,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             right: 0;
             bottom: 0;
             background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -457,65 +711,113 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             max-width: 400px;
             width: 90%;
           }
+          :global(.dark) .modal-content {
+            background: #1e293b;
+          }
+          :global(.dark) .modal-content h3 {
+            color: white;
+          }
+          :global(.dark) .modal-content p {
+            color: #94a3b8;
+          }
         `}</style>
       </div>
     )
   }
 
-  // Show MANAGE SUBSCRIPTION view (after subscribed)
+  // Manage Subscription View (subscribed)
   if (subscriptionStatus === 'subscribed' && user) {
     return (
       <div className={`manage-wrapper ${className}`}>
         <div className="manage-header">
-          <div className="manage-icon">📬</div>
-          <h3 className="manage-title">Your Newsletter Subscription</h3>
-          <p className="manage-email">{user.email}</p>
+          <div className="manage-header-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="manage-title">Newsletter Settings</h3>
+            <p className="manage-email">{user.email}</p>
+          </div>
+          <div className="manage-badge">
+            <span className="badge-active">Active</span>
+          </div>
         </div>
 
-        <div className="manage-section">
-          <div className="section-header">
-            <h4>📌 Selected Categories</h4>
+        <div className="manage-card">
+          <div className="card-header">
+            <div className="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              <h4>Your Categories</h4>
+            </div>
             {!isEditing && (
               <button onClick={() => { setIsEditing(true); setSelectedCategories(originalCategories); }} className="edit-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M17 3l4 4-7 7H10v-4l7-7z" />
+                  <path d="M4 20h16" />
+                </svg>
                 Edit
               </button>
             )}
           </div>
           
           {!isEditing ? (
-            <div className="categories-list">
+            <div className="categories-display">
               {originalCategories.length > 0 ? (
-                originalCategories.map(catId => {
-                  const cat = categories.find(c => c.id === catId)
-                  return (
-                    <span key={catId} className="category-tag">
-                      {cat?.icon} {cat?.name}
-                    </span>
-                  )
-                })
+                <>
+                  <div className="categories-list">
+                    {originalCategories.map(catId => {
+                      const cat = categories.find(c => c.id === catId)
+                      return (
+                        <span key={catId} className="category-pill">
+                          <span className="pill-icon">{cat?.icon}</span>
+                          <span>{cat?.name}</span>
+                        </span>
+                      )
+                    })}
+                  </div>
+                  <div className="delivery-info">
+                    <div className="info-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      <span>Weekly digest every {deliveryDay}</span>
+                    </div>
+                    <div className="info-item">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                        <polyline points="22,6 12,13 2,6" />
+                      </svg>
+                      <span>{originalCategories.length} {originalCategories.length === 1 ? 'article' : 'articles'} per week</span>
+                    </div>
+                  </div>
+                </>
               ) : (
-                <p className="no-categories">No categories selected</p>
+                <p className="empty-state">No categories selected</p>
               )}
-              <div className="posts-info-display">
-                📬 You receive {originalCategories.length} {originalCategories.length === 1 ? 'post' : 'posts'} per week
-              </div>
             </div>
           ) : (
-            <div className="edit-categories">
-              <div className="categories-grid">
+            <div className="edit-mode">
+              <div className="categories-grid-edit">
                 {categories.map((category) => (
                   <label 
                     key={category.id} 
-                    className={`category-option ${selectedCategories.includes(category.id) ? 'selected' : ''}`}
+                    className={`category-checkbox ${selectedCategories.includes(category.id) ? 'checked' : ''}`}
                   >
                     <input 
                       type="checkbox" 
                       checked={selectedCategories.includes(category.id)} 
                       onChange={() => handleCategoryToggle(category.id)} 
-                      style={{ display: 'none' }}
                     />
-                    <span>{category.icon}</span>
-                    <span>{category.name}</span>
+                    <span className="checkbox-icon">{category.icon}</span>
+                    <span className="checkbox-label">{category.name}</span>
                   </label>
                 ))}
               </div>
@@ -532,155 +834,334 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
           )}
         </div>
 
-        <div className="manage-section">
-          <h4>✉️ Email Address</h4>
-          <div className="email-edit">
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className="email-input"
-            />
-            <button onClick={handleUpdateEmail} disabled={emailLoading} className="update-email-btn">
-              {emailLoading ? 'Updating...' : 'Update Email'}
-            </button>
+        <div className="manage-card">
+          <div className="card-header">
+            <div className="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              <h4>Email Address</h4>
+            </div>
           </div>
-          {emailError && <p className="error-msg">{emailError}</p>}
+          <div className="email-section">
+            <div className="email-display">
+              <span className="email-value">{user.email}</span>
+            </div>
+            <div className="email-edit-form">
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="New email address"
+                className="email-input"
+              />
+              <button onClick={handleUpdateEmail} disabled={emailLoading} className="update-btn">
+                {emailLoading ? 'Updating...' : 'Change Email'}
+              </button>
+            </div>
+            {emailError && <p className="error-msg">{emailError}</p>}
+          </div>
         </div>
 
-        <div className="manage-section cancel-section">
-          <button onClick={handleCancelSubscription} disabled={loading} className="cancel-subscription-btn">
-            Cancel Subscription
+        <div className="danger-card">
+          <div className="card-header">
+            <div className="card-title">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="none" />
+              </svg>
+              <h4 style={{ color: '#ef4444' }}>Danger Zone</h4>
+            </div>
+          </div>
+          <p className="danger-description">
+            Unsubscribe from our newsletter. You will no longer receive weekly updates.
+          </p>
+          <button onClick={handleCancelSubscription} disabled={loading} className="unsubscribe-btn">
+            Unsubscribe
           </button>
-          <p className="cancel-note">You will no longer receive our newsletter.</p>
         </div>
 
         <style jsx>{`
           .manage-wrapper {
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            border-radius: 24px;
+            border-radius: 32px;
             padding: 2rem;
           }
           .manage-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
             border-bottom: 1px solid rgba(255,255,255,0.1);
           }
-          .manage-icon { font-size: 3rem; margin-bottom: 0.5rem; }
-          .manage-title { color: white; font-size: 1.5rem; margin-bottom: 0.5rem; }
-          .manage-email { color: rgba(255,255,255,0.6); font-size: 0.9rem; }
-          .manage-section {
-            background: rgba(255,255,255,0.05);
+          .manage-header-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(6,182,212,0.15);
             border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #06b6d4;
+          }
+          .manage-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: white;
+            margin: 0 0 4px 0;
+          }
+          .manage-email {
+            font-size: 0.875rem;
+            color: rgba(255,255,255,0.6);
+            margin: 0;
+          }
+          .manage-badge {
+            margin-left: auto;
+          }
+          .badge-active {
+            background: rgba(34,197,94,0.15);
+            color: #22c55e;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+          }
+          .manage-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
             padding: 1.25rem;
             margin-bottom: 1rem;
-            border: 1px solid rgba(255,255,255,0.1);
           }
-          .section-header {
+          .danger-card {
+            background: rgba(239,68,68,0.05);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 20px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+          }
+          .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
           }
-          .section-header h4 { color: white; margin: 0; }
-          .edit-btn {
-            background: rgba(6,182,212,0.2);
-            border: 1px solid #06b6d4;
-            color: #06b6d4;
-            padding: 4px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.75rem;
-          }
-          .edit-btn:hover { background: rgba(6,182,212,0.3); }
-          .categories-list { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-          .category-tag {
-            background: rgba(6,182,212,0.2);
-            border: 1px solid rgba(6,182,212,0.3);
-            padding: 0.3rem 0.8rem;
-            border-radius: 40px;
-            font-size: 0.8rem;
-            color: white;
-          }
-          .posts-info-display {
-            font-size: 0.7rem;
-            color: #06b6d4;
-            background: rgba(6,182,212,0.1);
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
-            margin-left: 0.5rem;
-          }
-          .no-categories { color: rgba(255,255,255,0.5); margin: 0; }
-          .edit-categories { margin-top: 0.5rem; }
-          .categories-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
-          .category-option {
+          .card-title {
             display: flex;
             align-items: center;
-            gap: 0.4rem;
-            padding: 0.4rem 1rem;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            gap: 0.5rem;
+          }
+          .card-title svg {
+            color: #06b6d4;
+          }
+          .card-title h4 {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .edit-btn {
+            background: transparent;
+            border: 1px solid rgba(6,182,212,0.3);
+            color: #06b6d4;
+            padding: 6px 14px;
             border-radius: 40px;
+            font-size: 0.75rem;
             cursor: pointer;
-            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+          }
+          .edit-btn:hover {
+            background: rgba(6,182,212,0.1);
+            border-color: #06b6d4;
+          }
+          .categories-display {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+          }
+          .categories-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+          }
+          .category-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 40px;
+            font-size: 0.875rem;
             color: white;
           }
-          .category-option.selected { background: rgba(6,182,212,0.3); border-color: #06b6d4; }
-          .edit-actions { display: flex; gap: 0.5rem; }
+          .pill-icon {
+            font-size: 1rem;
+          }
+          .delivery-info {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255,255,255,0.08);
+          }
+          .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+          }
+          .info-item svg {
+            color: #06b6d4;
+          }
+          .empty-state {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.875rem;
+            margin: 0;
+          }
+          .edit-mode {
+            margin-top: 0.5rem;
+          }
+          .categories-grid-edit {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+          }
+          .category-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .category-checkbox.checked {
+            background: rgba(6,182,212,0.2);
+            border-color: #06b6d4;
+          }
+          .category-checkbox input {
+            display: none;
+          }
+          .checkbox-icon {
+            font-size: 1rem;
+          }
+          .checkbox-label {
+            font-size: 0.875rem;
+            color: white;
+          }
+          .edit-actions {
+            display: flex;
+            gap: 0.75rem;
+          }
           .save-btn {
-            padding: 0.5rem 1.5rem;
+            padding: 8px 20px;
             background: #06b6d4;
             border: none;
             border-radius: 40px;
             color: white;
+            font-weight: 500;
+            font-size: 0.875rem;
             cursor: pointer;
+            transition: all 0.2s;
+          }
+          .save-btn:hover:not(:disabled) {
+            background: #0891b2;
+            transform: translateY(-1px);
           }
           .cancel-btn {
-            padding: 0.5rem 1.5rem;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 40px;
-            color: white;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.875rem;
             cursor: pointer;
           }
-          .email-edit { display: flex; gap: 0.5rem; }
+          .email-section {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+          }
+          .email-display {
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+          }
+          .email-value {
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: white;
+          }
+          .email-edit-form {
+            display: flex;
+            gap: 0.75rem;
+          }
           .email-input {
             flex: 1;
-            padding: 0.6rem 1rem;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 40px;
             color: white;
+            font-size: 0.875rem;
           }
-          .email-input:focus { outline: none; border-color: #06b6d4; }
-          .update-email-btn {
-            padding: 0.5rem 1.5rem;
-            background: rgba(6,182,212,0.2);
-            border: 1px solid #06b6d4;
+          .email-input:focus {
+            outline: none;
+            border-color: #06b6d4;
+          }
+          .update-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 40px;
-            color: #06b6d4;
+            color: white;
+            font-size: 0.875rem;
             cursor: pointer;
           }
-          .cancel-section { text-align: center; border-color: rgba(239,68,68,0.3); }
-          .cancel-subscription-btn {
-            padding: 0.6rem 1.5rem;
-            background: rgba(239,68,68,0.2);
-            border: 1px solid #ef4444;
+          .danger-description {
+            font-size: 0.75rem;
+            color: rgba(239,68,68,0.7);
+            margin: 0 0 1rem 0;
+          }
+          .unsubscribe-btn {
+            padding: 8px 20px;
+            background: rgba(239,68,68,0.15);
+            border: 1px solid rgba(239,68,68,0.3);
             border-radius: 40px;
             color: #ef4444;
+            font-size: 0.875rem;
             cursor: pointer;
-            font-size: 0.9rem;
           }
-          .cancel-subscription-btn:hover { background: rgba(239,68,68,0.3); }
-          .cancel-note { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 0.5rem; }
-          .error-msg { color: #ef4444; font-size: 0.75rem; margin-top: 0.5rem; text-align: center; }
+          .error-msg {
+            color: #ef4444;
+            font-size: 0.75rem;
+            margin-top: 0.75rem;
+          }
+          @media (max-width: 640px) {
+            .manage-wrapper { padding: 1.25rem; }
+            .manage-header { flex-wrap: wrap; }
+            .manage-badge { margin-left: 0; }
+            .email-edit-form { flex-direction: column; }
+            .delivery-info { flex-direction: column; gap: 0.5rem; }
+          }
         `}</style>
       </div>
     )
   }
 
-  // Main SUBSCRIBE form (not subscribed yet)
+  // Main Subscribe Form (not subscribed)
   return (
     <>
       <div className={`newsletter-wrapper ${className}`}>
@@ -694,7 +1175,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
                   : 'Subscribe to Weekly Newsletter'}
               </h3>
               <p className="newsletter-description">
-                Select your favorite categories below. You'll receive a weekly digest.
+                Select your favorite categories below. You'll receive a weekly digest every {deliveryDay}.
               </p>
               {!user && (
                 <div className="login-hint">
@@ -732,17 +1213,17 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
                 </div>
                 {selectedCategories.length > 0 && (
                   <div className="posts-info">
-                    📬 You'll receive {selectedCategories.length} {selectedCategories.length === 1 ? 'post' : 'posts'} per week
+                    📬 You'll receive {selectedCategories.length} {selectedCategories.length === 1 ? 'post' : 'posts'} every {deliveryDay}
                   </div>
                 )}
               </div>
 
               {error && <p className="error-msg">{error}</p>}
-              <button type="submit" className="subscribe-button" disabled={loading || cooldown}>
+              <button type="submit" className="subscribe-button" disabled={loading || cooldown || selectedCategories.length === 0}>
                 {getButtonText()}
               </button>
               <p className="footer-note">
-                Weekly digest • Unsubscribe anytime
+                Weekly digest on {deliveryDay}s • Unsubscribe anytime
                 {!user && " • Sign in to subscribe."}
               </p>
             </form>
@@ -818,9 +1299,10 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             font-weight: 700; 
             font-size: 1rem; 
             cursor: pointer; 
+            transition: all 0.2s;
           }
-          .subscribe-button:hover:not(:disabled) { transform: translateY(-2px); }
-          .subscribe-button:disabled { opacity: 0.5; cursor: not-allowed; }
+          .subscribe-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(6,182,212,0.3); }
+          .subscribe-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
           .error-msg { color: #ef4444; font-size: 0.75rem; margin: 0.75rem 0; text-align: center; }
           .footer-note { font-size: 0.7rem; color: rgba(255,255,255,0.4); margin-top: 1rem; text-align: center; }
           @media (max-width: 968px) { 
@@ -834,12 +1316,12 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
         <div className="auth-popup">
           <div className="auth-popup-content">
             <div style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '12px' }}>📬</div>
-            <h4 style={{ margin: '0 0 8px', textAlign: 'center' }}>Create a free account</h4>
+            <h4 style={{ margin: '0 0 8px', textAlign: 'center', color: '#0f172a' }}>Create a free account</h4>
             <p style={{ margin: '0 0 20px', textAlign: 'center', fontSize: '0.8rem', color: '#64748b' }}>
               Subscribe to our weekly newsletter
             </p>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={openSignupFromPopup} style={{ flex: 2, padding: '10px', background: '#06b6d4', color: 'white', border: 'none', borderRadius: '40px', cursor: 'pointer' }}>
+              <button onClick={openSignupFromPopup} style={{ flex: 2, padding: '10px', background: '#06b6d4', color: 'white', border: 'none', borderRadius: '40px', cursor: 'pointer', fontWeight: '500' }}>
                 Sign up free →
               </button>
               <button onClick={() => setShowAuthPopup(false)} style={{ flex: 1, padding: '10px', background: '#f1f5f9', border: 'none', borderRadius: '40px', cursor: 'pointer' }}>
