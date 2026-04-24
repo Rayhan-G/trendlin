@@ -24,15 +24,16 @@ export default async function handler(req, res) {
       .eq('email', email.toLowerCase())
       .single()
 
-    // For security, always return success even if user doesn't exist
+    // If user doesn't exist, tell them clearly
     if (userError || !user) {
-      console.log('User not found:', email)
-      return res.status(200).json({ 
-        message: 'If an account exists with this email, you will receive reset instructions.' 
+      console.log('Password reset attempted for non-existent email:', email)
+      return res.status(404).json({ 
+        error: 'No account found with this email address',
+        exists: false
       })
     }
 
-    // Generate reset token
+    // User exists - generate reset token
     const resetToken = randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour expiry
 
@@ -69,15 +70,18 @@ export default async function handler(req, res) {
       console.log('\n' + '='.repeat(60))
       console.log('🔐 PASSWORD RESET REQUEST')
       console.log('='.repeat(60))
+      console.log(`✅ Account found for: ${email}`)
       console.log(`📧 Email: ${email}`)
       console.log(`🔗 Reset Link: ${resetUrl}`)
       console.log(`⏰ Expires: ${expiresAt.toLocaleString()}`)
       console.log('='.repeat(60) + '\n')
 
       return res.status(200).json({ 
-        message: isDevelopment 
-          ? 'Reset link sent! Check your terminal/console for the link.' 
-          : 'If an account exists with this email, you will receive reset instructions.'
+        success: true,
+        message: 'Reset link sent! Check your email or terminal console.',
+        exists: true,
+        // In development, include the link for easy access
+        resetLink: isDevelopment ? resetUrl : undefined
       })
     }
 
@@ -89,7 +93,8 @@ export default async function handler(req, res) {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333;">Reset Your Password</h2>
-          <p>You requested to reset your password. Click the button below to proceed:</p>
+          <p>We received a request to reset the password for <strong>${email}</strong>.</p>
+          <p>Click the button below to create a new password:</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${resetUrl}" style="background-color: #06b6d4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
               Reset Password
@@ -113,7 +118,9 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ 
-      message: 'If an account exists with this email, you will receive reset instructions.'
+      success: true,
+      message: 'Password reset instructions have been sent to your email address.',
+      exists: true
     })
 
   } catch (error) {
