@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:turbo": "next dev --turbo",
+     "vercel-build": "next build --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
