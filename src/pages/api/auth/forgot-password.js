@@ -57,8 +57,15 @@ export default async function handler(req, res) {
       throw new Error('Failed to save token')
     }
 
-    // Production URL from environment variable
-    const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`
+    // ✅ FIXED: Get the correct URL (no undefined)
+    const baseUrl = process.env.NEXTAUTH_URL || 
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+                    process.env.NEXT_PUBLIC_APP_URL ||
+                    `https://${req.headers.host}`
+
+    const resetUrl = `${baseUrl}/reset-password?token=${token}`
+
+    console.log('Reset URL generated:', resetUrl) // Check your Vercel logs
 
     // Send email
     await resend.emails.send({
@@ -66,50 +73,16 @@ export default async function handler(req, res) {
       to: email,
       subject: 'Reset Your Password',
       html: `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Reset Your Password</title>
-            <style>
-              body { font-family: Arial, sans-serif; line-height: 1.6; }
-              .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-              .button { 
-                display: inline-block; 
-                background: #6366f1; 
-                color: white; 
-                padding: 12px 24px; 
-                text-decoration: none; 
-                border-radius: 5px; 
-                margin: 20px 0;
-              }
-              .footer { font-size: 12px; color: #666; margin-top: 30px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <h2>Reset Your Password</h2>
-              <p>We received a request to reset your password for <strong>${email}</strong>.</p>
-              <p>Click the button below to create a new password:</p>
-              <div style="text-align: center;">
-                <a href="${resetUrl}" class="button">Reset Password</a>
-              </div>
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="background: #f4f4f4; padding: 10px; word-break: break-all;">${resetUrl}</p>
-              <p>This link will expire in <strong>1 hour</strong>.</p>
-              <p>If you didn't request this, please ignore this email.</p>
-              <div class="footer">
-                <p>&copy; ${new Date().getFullYear()} Your Company. All rights reserved.</p>
-              </div>
-            </div>
-          </body>
-        </html>
+        <h2>Reset Your Password</h2>
+        <p>Click here to reset your password:</p>
+        <a href="${resetUrl}">${resetUrl}</a>
+        <p>This link expires in 1 hour.</p>
       `
     })
 
     return res.status(200).json({
       success: true,
-      message: `Reset link sent to ${email}. Check your inbox.`
+      message: `Reset link sent to ${email}`
     })
 
   } catch (error) {
