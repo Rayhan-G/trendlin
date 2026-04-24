@@ -30,22 +30,38 @@ export default async function handler(req, res) {
       .single()
 
     if (findError || !reset || reset.used || new Date(reset.expires_at) < new Date()) {
-      return res.status(400).json({ error: 'Invalid or expired token' })
+      return res.status(400).json({ error: 'Invalid or expired reset link' })
     }
 
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10)
 
     // Update user
-    await supabase.from('users').update({ password_hash: hashedPassword }).eq('id', reset.user_id)
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ password_hash: hashedPassword })
+      .eq('id', reset.user_id)
+
+    if (updateError) {
+      throw new Error('Failed to update password')
+    }
 
     // Mark token as used
-    await supabase.from('password_resets').update({ used: true }).eq('token', token)
+    await supabase
+      .from('password_resets')
+      .update({ used: true })
+      .eq('token', token)
 
-    // Clear all sessions
-    await supabase.from('user_sessions').delete().eq('user_id', reset.user_id)
+    // Clear all sessions (force re-login)
+    await supabase
+      .from('user_sessions')
+      .delete()
+      .eq('user_id', reset.user_id)
 
-    return res.status(200).json({ success: true, message: 'Password reset successful' })
+    return res.status(200).json({
+      success: true,
+      message: 'Password reset successful! Please login.'
+    })
 
   } catch (error) {
     console.error('Error:', error)
