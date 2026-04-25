@@ -12,7 +12,6 @@ import {
   ChevronUp, Settings, Loader2, FolderOpen
 } from 'lucide-react';
 
-// Import Supabase
 import { supabase } from '../../../lib/supabase';
 
 // ============================================================
@@ -64,7 +63,7 @@ const createUniqueSlug = async (title, currentId = null) => {
 };
 
 // ============================================================
-// YOUR CATEGORIES
+// CATEGORIES
 // ============================================================
 const categoryOptions = [
   'entertainment',
@@ -100,7 +99,7 @@ const Editor = dynamic(
 );
 
 const ImageModal = dynamic(
-  () => import('../../../components/media/Modals/ImageModal').catch(() => () => null),
+  () => import('../../../components/media/Modals/ImageModal').then(mod => mod.default).catch(() => () => null),
   { ssr: false }
 );
 
