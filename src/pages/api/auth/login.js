@@ -36,8 +36,11 @@ export default async function handler(req, res) {
       const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
       const expiresAt = new Date(Date.now() + maxAge * 1000)
 
+      console.log('Attempting to insert session with token:', sessionToken)
+      console.log('Expires at:', expiresAt.toISOString())
+
       // Try to insert into admin_sessions
-      const { error: insertError } = await supabase
+      const { data, error: insertError } = await supabase
         .from('admin_sessions')
         .insert({
           token: sessionToken,
@@ -45,14 +48,18 @@ export default async function handler(req, res) {
           user_agent: req.headers['user-agent'] || null,
           ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
         })
+        .select()
 
       if (insertError) {
-        console.error('Supabase insert error:', insertError)
+        console.error('Supabase insert error DETAILS:', JSON.stringify(insertError, null, 2))
         return res.status(500).json({ 
           error: 'Failed to create session', 
-          details: insertError.message 
+          details: insertError.message,
+          code: insertError.code
         })
       }
+
+      console.log('Session created successfully:', data)
 
       // Set cookies
       const isProduction = process.env.NODE_ENV === 'production'
