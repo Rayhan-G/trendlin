@@ -50,44 +50,6 @@ export default function Footer() {
           </div>
         )}
 
-        {/* Optional: Show a simple message for subscribed users instead */}
-        {!loading && isSubscribed && (
-          <div className="footer-newsletter-subscribed">
-            <div className="subscribed-message">
-              <span>✅</span>
-              <p>You're subscribed to our newsletter. <Link href="/newsletter/manage">Manage preferences →</Link></p>
-            </div>
-            <style jsx>{`
-              .footer-newsletter-subscribed {
-                margin-bottom: 3rem;
-                padding-bottom: 2rem;
-                border-bottom: 1px solid #e5e7eb;
-              }
-              :global(html.dark) .footer-newsletter-subscribed {
-                border-bottom-color: #1f1f2a;
-              }
-              .subscribed-message {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-                padding: 1rem;
-                background: rgba(6, 182, 212, 0.1);
-                border-radius: 12px;
-                color: #06b6d4;
-                font-size: 0.875rem;
-              }
-              .subscribed-message p {
-                margin: 0;
-              }
-              .subscribed-message a {
-                color: #06b6d4;
-                text-decoration: underline;
-              }
-            `}</style>
-          </div>
-        )}
-
         <div className="footer-grid">
           {/* About Section */}
           <div className="footer-about">
@@ -166,7 +128,6 @@ export default function Footer() {
           }
         }
         
-        /* Newsletter Section */
         .footer-newsletter {
           margin-bottom: 3rem;
           padding-bottom: 2rem;
