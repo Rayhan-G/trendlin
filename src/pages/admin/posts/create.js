@@ -8,7 +8,7 @@ import {
   ArrowLeft, Save, Calendar, Eye, Send, FileText, 
   AlertCircle, Clock, TrendingUp, LayoutDashboard, PlusCircle, 
   X, Image as ImageIcon, LinkIcon, 
-  RefreshCw, Copy, Check, ChevronDown,
+  RefreshCw, Copy, ChevronDown,
   ChevronUp, Settings, Loader2, FolderOpen
 } from 'lucide-react';
 
@@ -89,21 +89,18 @@ const EditorSkeleton = () => (
 );
 
 // ============================================================
-// DYNAMIC IMPORTS
+// DYNAMIC IMPORTS - FIXED
 // ============================================================
 const Editor = dynamic(
-  () => import('../../../components/editor').then(mod => mod.default).catch(err => {
-    console.error('Failed to load editor:', err);
-    return () => <div className="p-8 text-center text-red-600">Failed to load editor. Please check console.</div>;
-  }),
-  { ssr: false, loading: () => <EditorSkeleton /> }
+  () => import('../../../components/editor').then(mod => mod.default),
+  { 
+    ssr: false, 
+    loading: () => <EditorSkeleton />
+  }
 );
 
 const ImageModal = dynamic(
-  () => import('../../../components/media/Modals/ImageModal').catch(err => {
-    console.error('Failed to load ImageModal:', err);
-    return () => null;
-  }),
+  () => import('../../../components/media/Modals/ImageModal').catch(() => () => null),
   { ssr: false }
 );
 
@@ -148,7 +145,7 @@ const FloatingPreviewButton = ({ title, content, excerpt, featuredImage, tags, c
 };
 
 // ============================================================
-// MAIN COMPONENT - NO AUTH REQUIRED
+// MAIN COMPONENT
 // ============================================================
 function CreatePost() {
   const router = useRouter();
@@ -508,7 +505,7 @@ function CreatePost() {
   };
 
   // ============================================================
-  // MAIN RENDER - NO AUTH CHECK
+  // MAIN RENDER
   // ============================================================
   return (
     <>
