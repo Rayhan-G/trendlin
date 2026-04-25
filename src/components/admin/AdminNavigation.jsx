@@ -3,27 +3,63 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import {
   LayoutDashboard, FileText, Calendar, Link as LinkIcon,
-  DollarSign, BarChart3, Home, Sparkles, Tv, Plus, Menu, X
+  DollarSign, BarChart3, Home, Sparkles, Tv, Plus, Menu, X,
+  Settings, Users, Mail, Image, Shield, TrendingUp, Clock,
+  Tag, FolderOpen, Award, CreditCard, Activity, Bell, Database
 } from 'lucide-react';
 
 const AdminNavigation = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
+  // Complete navigation items with all your pages
   const navItems = [
-    { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard },
-    { path: '/admin/posts-manager', name: 'Posts', icon: FileText },
-    { path: '/admin/posts/create', name: 'New Post', icon: Plus },
-    { path: '/admin/content-calendar', name: 'Calendar', icon: Calendar },
-    { path: '/admin/post-analytics', name: 'Analytics', icon: BarChart3 },
-    { path: '/admin/affiliate', name: 'Affiliate', icon: LinkIcon },
-    { path: '/admin/revenue', name: 'Revenue', icon: DollarSign },
-    { path: '/admin/ads', name: 'Ads', icon: Tv },
+    // Main Section
+    { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard, section: 'main' },
+    { path: '/admin/posts-manager', name: 'All Posts', icon: FileText, section: 'main' },
+    { path: '/admin/posts/create', name: 'Create New Post', icon: Plus, section: 'main' },
+    
+    // Content Section
+    { path: '/admin/content-calendar', name: 'Content Calendar', icon: Calendar, section: 'content' },
+    { path: '/admin/post-analytics', name: 'Post Analytics', icon: BarChart3, section: 'content' },
+    { path: '/admin/categories', name: 'Categories', icon: FolderOpen, section: 'content' },
+    { path: '/admin/tags', name: 'Tags', icon: Tag, section: 'content' },
+    
+    // Media Section
+    { path: '/admin/media', name: 'Media Library', icon: Image, section: 'media' },
+    
+    // Monetization Section
+    { path: '/admin/affiliate', name: 'Affiliate Links', icon: LinkIcon, section: 'monetization' },
+    { path: '/admin/revenue', name: 'Revenue', icon: DollarSign, section: 'monetization' },
+    { path: '/admin/ads', name: 'Ad Manager', icon: Tv, section: 'monetization' },
+    
+    // Analytics Section
+    { path: '/admin/analytics', name: 'Analytics', icon: TrendingUp, section: 'analytics' },
+    { path: '/admin/seo', name: 'SEO Settings', icon: Award, section: 'analytics' },
+    
+    // Users & Settings
+    { path: '/admin/users', name: 'Users', icon: Users, section: 'settings' },
+    { path: '/admin/newsletter', name: 'Newsletter', icon: Mail, section: 'settings' },
+    { path: '/admin/settings', name: 'Settings', icon: Settings, section: 'settings' },
+    { path: '/admin/backup', name: 'Backup', icon: Database, section: 'settings' },
   ];
+
+  // Group navigation items by section
+  const sections = {
+    main: { title: 'Main', items: navItems.filter(item => item.section === 'main') },
+    content: { title: 'Content', items: navItems.filter(item => item.section === 'content') },
+    media: { title: 'Media', items: navItems.filter(item => item.section === 'media') },
+    monetization: { title: 'Monetization', items: navItems.filter(item => item.section === 'monetization') },
+    analytics: { title: 'Analytics', items: navItems.filter(item => item.section === 'analytics') },
+    settings: { title: 'Settings', items: navItems.filter(item => item.section === 'settings') },
+  };
 
   const isActive = (path) => {
     if (path === '/admin/posts/create') {
       return router.pathname === '/admin/posts/create';
+    }
+    if (path === '/admin/posts-manager') {
+      return router.pathname === '/admin/posts-manager' || router.pathname.startsWith('/admin/posts/edit/');
     }
     return router.pathname === path;
   };
@@ -54,22 +90,29 @@ const AdminNavigation = () => {
         </div>
 
         <div className="nav-section">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
-                onClick={() => setIsOpen(false)}
-              >
-                <span className="nav-icon">
-                  <Icon size={20} />
-                </span>
-                <span className="nav-text">{item.name}</span>
-              </Link>
-            );
-          })}
+          {Object.entries(sections).map(([key, section]) => (
+            section.items.length > 0 && (
+              <div key={key} className="nav-group">
+                <div className="nav-group-title">{section.title}</div>
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <span className="nav-icon">
+                        <Icon size={20} />
+                      </span>
+                      <span className="nav-text">{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )
+          ))}
         </div>
 
         <div className="footer-section">
@@ -93,7 +136,7 @@ const AdminNavigation = () => {
           width: 56px;
           height: 56px;
           border-radius: 50%;
-          background: #3b82f6;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
           color: white;
           border: none;
           cursor: pointer;
@@ -107,7 +150,6 @@ const AdminNavigation = () => {
 
         .menu-btn:hover {
           transform: scale(1.08);
-          background: #2563eb;
           box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
         }
 
@@ -144,11 +186,11 @@ const AdminNavigation = () => {
         }
 
         .logo-section {
-          padding: 40px 28px;
+          padding: 32px 24px;
           border-bottom: 1px solid #f0f0f0;
           display: flex;
           align-items: center;
-          gap: 14px;
+          gap: 12px;
         }
 
         :global(body.dark) .logo-section {
@@ -156,10 +198,10 @@ const AdminNavigation = () => {
         }
 
         .logo-icon {
-          width: 48px;
-          height: 48px;
+          width: 44px;
+          height: 44px;
           background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-          border-radius: 14px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -169,11 +211,11 @@ const AdminNavigation = () => {
         .logo-text {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 2px;
         }
 
         .logo-name {
-          font-size: 1.2rem;
+          font-size: 1.1rem;
           font-weight: 700;
           color: #1e293b;
         }
@@ -183,7 +225,7 @@ const AdminNavigation = () => {
         }
 
         .logo-role {
-          font-size: 0.7rem;
+          font-size: 0.65rem;
           color: #64748b;
           letter-spacing: 0.5px;
         }
@@ -194,21 +236,32 @@ const AdminNavigation = () => {
 
         .nav-section {
           flex: 1;
-          padding: 32px 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+          padding: 20px 16px;
+          overflow-y: auto;
+        }
+
+        .nav-group {
+          margin-bottom: 24px;
+        }
+
+        .nav-group-title {
+          font-size: 0.7rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: #94a3b8;
+          padding: 0 12px 8px 12px;
         }
 
         .nav-link {
           display: flex;
           align-items: center;
-          gap: 16px;
-          padding: 14px 20px;
-          border-radius: 14px;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 10px;
           text-decoration: none;
           color: #64748b;
-          font-size: 0.95rem;
+          font-size: 0.85rem;
           font-weight: 500;
           transition: all 0.2s ease;
           cursor: pointer;
@@ -244,7 +297,7 @@ const AdminNavigation = () => {
         }
 
         .nav-icon {
-          width: 24px;
+          width: 20px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -255,14 +308,18 @@ const AdminNavigation = () => {
         }
 
         .footer-section {
-          padding: 24px 20px 32px 20px;
-          margin-top: auto;
+          padding: 16px 16px 24px 16px;
+          border-top: 1px solid #f0f0f0;
+        }
+
+        :global(body.dark) .footer-section {
+          border-top-color: #334155;
         }
 
         .divider {
           height: 1px;
           background: #f0f0f0;
-          margin-bottom: 24px;
+          margin-bottom: 16px;
         }
 
         :global(body.dark) .divider {
@@ -304,34 +361,33 @@ const AdminNavigation = () => {
 
           .side-menu {
             width: 100%;
-            max-width: 300px;
+            max-width: 280px;
           }
 
           .logo-section {
-            padding: 32px 24px;
+            padding: 24px 20px;
           }
 
           .logo-icon {
-            width: 44px;
-            height: 44px;
+            width: 40px;
+            height: 40px;
           }
 
           .logo-name {
-            font-size: 1.1rem;
+            font-size: 1rem;
           }
 
           .nav-section {
-            padding: 28px 16px;
-            gap: 8px;
+            padding: 16px 12px;
           }
 
           .nav-link {
-            padding: 12px 16px;
-            gap: 14px;
+            padding: 8px 12px;
+            gap: 10px;
           }
 
           .footer-section {
-            padding: 20px 16px 28px 16px;
+            padding: 12px 16px 20px 16px;
           }
         }
 

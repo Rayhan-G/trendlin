@@ -1,4 +1,3 @@
-// src/pages/admin/posts/create.js - WITH YOUR CUSTOM CATEGORIES
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -149,12 +148,10 @@ const FloatingPreviewButton = ({ title, content, excerpt, featuredImage, tags, c
 };
 
 // ============================================================
-// MAIN COMPONENT
+// MAIN COMPONENT - NO AUTH REQUIRED
 // ============================================================
 function CreatePost() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
   // Form state
   const [title, setTitle] = useState('');
@@ -182,34 +179,7 @@ function CreatePost() {
   const [stats, setStats] = useState({ wordCount: 0, readingTime: 0, seoScore: 0 });
 
   // ============================================================
-  // AUTH CHECK
-  // ============================================================
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const sessionToken = localStorage.getItem('admin_session_token');
-        const sessionExpiry = localStorage.getItem('admin_session_expiry');
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (session || (sessionToken && sessionExpiry && Date.now() < parseInt(sessionExpiry))) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (err) {
-        console.error('Auth check error:', err);
-        setIsAuthenticated(false);
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-    
-    checkAuth();
-  }, []);
-
-  // ============================================================
-  // SEO SCORE CALCULATION (UI only, not saved to DB)
+  // SEO SCORE CALCULATION
   // ============================================================
   const calculateSEOScore = useCallback(() => {
     let score = 0;
@@ -290,11 +260,6 @@ function CreatePost() {
   // SAVE DRAFT
   // ============================================================
   const saveDraft = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error('Please login first');
-      return false;
-    }
-    
     if (!title && (!content || content === '<p></p>')) {
       toast.warning('Add a title or some content before saving');
       return false;
@@ -360,17 +325,12 @@ function CreatePost() {
     } finally {
       setIsSaving(false);
     }
-  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, postId, router, isAuthenticated]);
+  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, postId, router]);
 
   // ============================================================
   // PUBLISH POST
   // ============================================================
   const handlePublish = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error('Please login first');
-      return;
-    }
-    
     if (!title) { 
       toast.error('Please add a title before publishing'); 
       return; 
@@ -430,17 +390,12 @@ function CreatePost() {
     } finally {
       setIsSaving(false);
     }
-  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, postId, router, isAuthenticated]);
+  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, postId, router]);
 
   // ============================================================
   // SCHEDULE POST
   // ============================================================
   const handleSchedule = useCallback(async () => {
-    if (!isAuthenticated) {
-      toast.error('Please login first');
-      return;
-    }
-    
     if (!scheduledDate) {
       toast.error('Please select a date and time');
       return;
@@ -500,7 +455,7 @@ function CreatePost() {
       setIsScheduleModalOpen(false);
       setScheduledDate('');
     }
-  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, scheduledDate, postId, router, isAuthenticated]);
+  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, scheduledDate, postId, router]);
 
   // ============================================================
   // HANDLERS
@@ -553,39 +508,7 @@ function CreatePost() {
   };
 
   // ============================================================
-  // LOADING STATE
-  // ============================================================
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
-      </div>
-    );
-  }
-
-  // ============================================================
-  // NOT AUTHENTICATED
-  // ============================================================
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-lg max-w-md">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h1>
-          <p className="text-gray-600 mb-6">Please log in to access the post creator.</p>
-          <button 
-            onClick={() => router.push('/admin/login')}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
-          >
-            Go to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ============================================================
-  // MAIN RENDER
+  // MAIN RENDER - NO AUTH CHECK
   // ============================================================
   return (
     <>

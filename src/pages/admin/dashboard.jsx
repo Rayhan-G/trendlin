@@ -77,6 +77,9 @@ const AdminNavigation = ({ children, user, onLogout }) => {
                 <Link href="/admin/analytics" className={`text-sm ${router.pathname.includes('/admin/analytics') ? 'text-purple-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}>
                   Analytics
                 </Link>
+                <Link href="/admin/affiliate" className={`text-sm ${router.pathname.includes('/admin/affiliate') ? 'text-purple-600 font-medium' : 'text-gray-600 hover:text-gray-900'}`}>
+                  Affiliate
+                </Link>
               </div>
             </div>
             <button
@@ -362,7 +365,7 @@ export default function AdminDashboard() {
                 <span className="text-gray-400">📈</span>
                 <h3 className="font-semibold text-gray-900">Top Performing</h3>
               </div>
-              <Link href="/admin/analytics" className="text-sm text-gray-500 hover:text-black flex items-center gap-1">
+              <Link href="/admin/post-analytics" className="text-sm text-gray-500 hover:text-black flex items-center gap-1">
                 Analytics →
               </Link>
             </div>
@@ -386,36 +389,94 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions - All Pages Linked */}
         <div className="mt-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Create Post */}
+            <Link href="/admin/posts/create" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xl">✏️</div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Create Post</h3>
+                  <p className="text-sm text-gray-500 mt-1">Write new content</p>
+                </div>
+              </div>
+            </Link>
+            
+            {/* Posts Manager */}
             <Link href="/admin/posts-manager" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 text-xl">📝</div>
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-xl">📋</div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Post Manager</h3>
-                  <p className="text-sm text-gray-500 mt-1">Create and manage content</p>
+                  <h3 className="font-semibold text-gray-900">Posts Manager</h3>
+                  <p className="text-sm text-gray-500 mt-1">Manage all posts</p>
                 </div>
               </div>
             </Link>
             
-            <Link href="/admin/analytics" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
+            {/* Content Calendar */}
+            <Link href="/admin/content-calendar" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 text-xl">📊</div>
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 text-xl">📅</div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Analytics</h3>
-                  <p className="text-sm text-gray-500 mt-1">View performance insights</p>
+                  <h3 className="font-semibold text-gray-900">Content Calendar</h3>
+                  <p className="text-sm text-gray-500 mt-1">Schedule content</p>
                 </div>
               </div>
             </Link>
             
+            {/* Post Analytics */}
+            <Link href="/admin/post-analytics" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-yellow-100 flex items-center justify-center text-yellow-600 text-xl">📊</div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Post Analytics</h3>
+                  <p className="text-sm text-gray-500 mt-1">View performance</p>
+                </div>
+              </div>
+            </Link>
+            
+            {/* Media Library */}
+            <Link href="/admin/media" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-pink-100 flex items-center justify-center text-pink-600 text-xl">🖼️</div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Media Library</h3>
+                  <p className="text-sm text-gray-500 mt-1">Manage images</p>
+                </div>
+              </div>
+            </Link>
+            
+            {/* Affiliate Links */}
             <Link href="/admin/affiliate" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center text-green-600 text-xl">💰</div>
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl">🔗</div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Affiliate</h3>
-                  <p className="text-sm text-gray-500 mt-1">Track links and earnings</p>
+                  <p className="text-sm text-gray-500 mt-1">Track earnings</p>
+                </div>
+              </div>
+            </Link>
+            
+            {/* Revenue */}
+            <Link href="/admin/revenue" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 text-xl">💰</div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Revenue</h3>
+                  <p className="text-sm text-gray-500 mt-1">View earnings</p>
+                </div>
+              </div>
+            </Link>
+            
+            {/* Ad Manager */}
+            <Link href="/admin/ads" className="group block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-lg transition">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center text-red-600 text-xl">📺</div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Ad Manager</h3>
+                  <p className="text-sm text-gray-500 mt-1">Manage ads</p>
                 </div>
               </div>
             </Link>
