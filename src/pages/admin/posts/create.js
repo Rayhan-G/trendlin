@@ -88,14 +88,34 @@ const EditorSkeleton = () => (
 );
 
 // ============================================================
-// DYNAMIC IMPORTS - FIXED
+// DYNAMIC IMPORTS - WITH DEBUG
 // ============================================================
 const Editor = dynamic(
-  () => import('../../../components/editor').then(mod => mod.default),
-  { 
-    ssr: false, 
-    loading: () => <EditorSkeleton />
-  }
+  () => import('../../../components/editor').then(mod => {
+    console.log('✅ Editor module loaded:', mod);
+    console.log('✅ Available exports:', Object.keys(mod));
+    console.log('✅ Default export:', mod.default);
+    return mod.default;
+  }).catch(err => {
+    console.error('❌ Editor load error:', err);
+    console.error('❌ Error stack:', err.stack);
+    return () => (
+      <div className="p-8 bg-red-50 rounded-xl">
+        <h3 className="text-red-600 font-bold">Editor Failed to Load</h3>
+        <p className="text-sm text-gray-600 mt-2">Check the console (F12) for detailed error</p>
+        <pre className="text-xs mt-2 p-2 bg-red-100 rounded overflow-auto max-h-40">
+          {err.message}
+        </pre>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+        >
+          Reload Page
+        </button>
+      </div>
+    );
+  }),
+  { ssr: false, loading: () => <EditorSkeleton /> }
 );
 
 const ImageModal = dynamic(
