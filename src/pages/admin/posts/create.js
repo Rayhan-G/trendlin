@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import dynamic from 'next/dynamic';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { 
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { supabase } from '../../../lib/supabase';
+import Editor from '../../../components/editor';
 
 // ============================================================
 // UTILITY FUNCTIONS
@@ -76,52 +76,48 @@ const categoryOptions = [
 ];
 
 // ============================================================
-// EDITOR SKELETON
+// IMAGE MODAL (SIMPLE VERSION)
 // ============================================================
-const EditorSkeleton = () => (
-  <div className="h-96 flex items-center justify-center bg-gray-50 rounded-2xl border border-gray-200">
-    <div className="text-center">
-      <Loader2 className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-3" />
-      <p className="text-gray-500 text-sm">Loading editor...</p>
-    </div>
-  </div>
-);
+const ImageModal = ({ isOpen, onClose, onUpload }) => {
+  const [url, setUrl] = useState('');
+  const [alt, setAlt] = useState('');
 
-// ============================================================
-// DYNAMIC IMPORTS - WITH DEBUG
-// ============================================================
-const Editor = dynamic(
-  () => import('../../../components/editor').then(mod => {
-    console.log('✅ Editor module loaded:', mod);
-    console.log('✅ Available exports:', Object.keys(mod));
-    console.log('✅ Default export:', mod.default);
-    return mod.default;
-  }).catch(err => {
-    console.error('❌ Editor load error:', err);
-    console.error('❌ Error stack:', err.stack);
-    return () => (
-      <div className="p-8 bg-red-50 rounded-xl">
-        <h3 className="text-red-600 font-bold">Editor Failed to Load</h3>
-        <p className="text-sm text-gray-600 mt-2">Check the console (F12) for detailed error</p>
-        <pre className="text-xs mt-2 p-2 bg-red-100 rounded overflow-auto max-h-40">
-          {err.message}
-        </pre>
-        <button 
-          onClick={() => window.location.reload()}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-        >
-          Reload Page
-        </button>
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    if (url) {
+      onUpload({ src: url, alt });
+      setUrl('');
+      setAlt('');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-semibold mb-4">Add Featured Image</h3>
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Image URL"
+          className="w-full px-4 py-2 border rounded-lg mb-3"
+        />
+        <input
+          type="text"
+          value={alt}
+          onChange={(e) => setAlt(e.target.value)}
+          placeholder="Alt text (optional)"
+          className="w-full px-4 py-2 border rounded-lg mb-4"
+        />
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-lg">Cancel</button>
+          <button onClick={handleSubmit} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg">Add Image</button>
+        </div>
       </div>
-    );
-  }),
-  { ssr: false, loading: () => <EditorSkeleton /> }
-);
-
-const ImageModal = dynamic(
-  () => import('../../../components/media/Modals/ImageModal').then(mod => mod.default).catch(() => () => null),
-  { ssr: false }
-);
+    </div>
+  );
+};
 
 // ============================================================
 // FLOATING PREVIEW BUTTON
