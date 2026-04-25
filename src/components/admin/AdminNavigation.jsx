@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import {
@@ -9,40 +9,6 @@ import {
 const AdminNavigation = ({ children }) => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Check using your API instead of localStorage
-        const res = await fetch('/api/auth/me');
-        const data = await res.json();
-        
-        console.log('Navigation auth check:', data);
-        
-        if (data.authenticated && data.user?.is_admin === true) {
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-          // Only redirect if not on login page
-          if (router.pathname !== '/admin/login') {
-            router.push('/');
-          }
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-        setIsLoggedIn(false);
-        if (router.pathname !== '/admin/login') {
-          router.push('/');
-        }
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-    
-    checkAuth();
-  }, [router.pathname]);
 
   const navItems = [
     { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -62,17 +28,9 @@ const AdminNavigation = ({ children }) => {
     return router.pathname === path;
   };
 
-  const goToHomepage = () => window.location.href = '/';
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!isLoggedIn) return null;
+  const goToHomepage = () => {
+    window.location.href = '/';
+  };
 
   return (
     <>
