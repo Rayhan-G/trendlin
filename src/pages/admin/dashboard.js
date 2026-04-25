@@ -153,9 +153,7 @@ const PostRow = ({ post }) => {
   );
 };
 
-// ============================================================
 // MAIN DASHBOARD COMPONENT
-// ============================================================
 export default function AdminDashboard() {
   const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   const [loading, setLoading] = useState(true);

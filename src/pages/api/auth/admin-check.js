@@ -1,41 +1,76 @@
-import bcrypt from 'bcrypt'
+import { supabase } from '../../../lib/supabase'
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
+  // Allow both GET and POST
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    res.setHeader('Allow', ['GET', 'POST'])
+    return res.status(405).json({ 
+      success: false, 
+      error: `Method ${req.method} not allowed` 
+    })
   }
 
-  const { email, password } = req.body
+  try {
+    // Get session token from cookie
+    const sessionToken = req.cookies.session_token
+    
+    if (!sessionToken) {
+      return res.status(401).json({ 
+        authenticated: false,
+        isAdmin: false,
+        error: 'No session found'
+      })
+    }
 
-  const adminEmail = process.env.ADMIN_EMAIL
-  const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH
+    // Check if it's an admin session
+    const { data: session, error } = await supabase
+      .from('admin_sessions')
+      .select('*')
+      .eq('token', sessionToken)
+      .single()
 
-  if (!adminEmail || !adminPasswordHash) {
-    return res.status(500).json({ error: 'Admin not configured' })
+    if (error || !session) {
+      return res.status(401).json({ 
+        authenticated: false,
+        isAdmin: false,
+        error: 'Invalid session'
+      })
+    }
+
+    // Check if session is expired
+    if (new Date(session.expires_at) < new Date()) {
+      // Clean up expired session
+      await supabase
+        .from('admin_sessions')
+        .delete()
+        .eq('token', sessionToken)
+      
+      return res.status(401).json({ 
+        authenticated: false,
+        isAdmin: false,
+        error: 'Session expired'
+      })
+    }
+
+    // Get admin email from env
+    const adminEmail = process.env.ADMIN_EMAIL
+
+    return res.status(200).json({
+      authenticated: true,
+      isAdmin: true,
+      user: {
+        id: 'admin',
+        email: adminEmail,
+        is_admin: true
+      }
+    })
+
+  } catch (error) {
+    console.error('Admin check error:', error)
+    return res.status(500).json({ 
+      authenticated: false,
+      isAdmin: false,
+      error: 'Internal server error'
+    })
   }
-
-  // Check if email matches admin email
-  if (email !== adminEmail) {
-    return res.status(401).json({ error: 'Invalid credentials' })
-  }
-
-  // Verify password
-  const isValid = await bcrypt.compare(password, adminPasswordHash)
-  
-  if (!isValid) {
-    return res.status(401).json({ error: 'Invalid credentials' })
-  }
-
-  // Set admin session cookie
-  const adminToken = crypto.randomBytes(64).toString('hex')
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-
-  // Store in database or just set cookie
-  res.setHeader('Set-Cookie', `admin_token=${adminToken}; Path=/; Max-Age=86400; SameSite=Strict; HttpOnly`)
-
-  return res.status(200).json({ 
-    success: true, 
-    isAdmin: true,
-    redirectTo: '/admin/dashboard'
-  })
 }
