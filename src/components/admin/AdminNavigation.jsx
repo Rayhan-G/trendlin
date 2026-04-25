@@ -4,37 +4,37 @@ import Link from 'next/link';
 import {
   LayoutDashboard, FileText, Calendar, Link as LinkIcon,
   DollarSign, BarChart3, Home, Sparkles, Tv, Plus, Menu, X,
-  Settings, Users, Mail, Image, TrendingUp, Clock,
-  Tag, FolderOpen, Award, CreditCard, Activity, Bell, Database, Edit3
+  TrendingUp, FolderOpen, Award, Activity
 } from 'lucide-react';
 
-const AdminNavigation = () => {
+const AdminNavigation = ({ children }) => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
+    // Main Section
     { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard, section: 'main' },
     { path: '/admin/posts-manager', name: 'All Posts', icon: FileText, section: 'main' },
     { path: '/admin/posts/create', name: 'Create New Post', icon: Plus, section: 'main' },
+    
+    // Content Section
     { path: '/admin/content-calendar', name: 'Content Calendar', icon: Calendar, section: 'content' },
     { path: '/admin/post-analytics', name: 'Post Analytics', icon: TrendingUp, section: 'content' },
-    { path: '/admin/media', name: 'Media Library', icon: Image, section: 'media' },
+    
+    // Monetization Section
     { path: '/admin/affiliate', name: 'Affiliate Links', icon: LinkIcon, section: 'monetization' },
     { path: '/admin/revenue', name: 'Revenue', icon: DollarSign, section: 'monetization' },
     { path: '/admin/ads', name: 'Ad Manager', icon: Tv, section: 'monetization' },
+    
+    // Analytics Section
     { path: '/admin/analytics', name: 'Analytics', icon: Activity, section: 'analytics' },
-    { path: '/admin/users', name: 'Users', icon: Users, section: 'settings' },
-    { path: '/admin/newsletter', name: 'Newsletter', icon: Mail, section: 'settings' },
-    { path: '/admin/settings', name: 'Settings', icon: Settings, section: 'settings' },
   ];
 
   const sections = {
     main: { title: 'Main', items: navItems.filter(item => item.section === 'main') },
     content: { title: 'Content', items: navItems.filter(item => item.section === 'content') },
-    media: { title: 'Media', items: navItems.filter(item => item.section === 'media') },
     monetization: { title: 'Monetization', items: navItems.filter(item => item.section === 'monetization') },
     analytics: { title: 'Analytics', items: navItems.filter(item => item.section === 'analytics') },
-    settings: { title: 'Settings', items: navItems.filter(item => item.section === 'settings') },
   };
 
   const isActive = (path) => {
@@ -43,7 +43,10 @@ const AdminNavigation = () => {
     return router.pathname === path;
   };
 
-  const goToHomepage = () => { window.location.href = '/'; };
+  const goToHomepage = () => {
+    window.location.href = '/';
+  };
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/';
@@ -51,7 +54,11 @@ const AdminNavigation = () => {
 
   return (
     <>
-      <button className={`menu-btn ${isOpen ? 'open' : ''}`} onClick={() => setIsOpen(!isOpen)} aria-label="Toggle menu">
+      <button
+        className={`menu-btn ${isOpen ? 'open' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label="Toggle menu"
+      >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
@@ -71,7 +78,12 @@ const AdminNavigation = () => {
               {section.items.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={item.path} href={item.path} className={`nav-link ${isActive(item.path) ? 'active' : ''}`} onClick={() => setIsOpen(false)}>
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    className={`nav-link ${isActive(item.path) ? 'active' : ''}`}
+                    onClick={() => setIsOpen(false)}
+                  >
                     <span className="nav-icon"><Icon size={20} /></span>
                     <span className="nav-text">{item.name}</span>
                   </Link>
@@ -96,7 +108,9 @@ const AdminNavigation = () => {
 
       {isOpen && <div className="overlay" onClick={() => setIsOpen(false)} />}
 
-      <main className="main-content">{children}</main>
+      <div className="main-content">
+        {children}
+      </div>
 
       <style jsx>{`
         .menu-btn {
