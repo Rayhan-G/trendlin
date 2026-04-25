@@ -3,7 +3,6 @@ import crypto from 'crypto';
 import { supabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
-  // Only allow POST
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ success: false, error: 'Method not allowed' });
@@ -11,12 +10,10 @@ export default async function handler(req, res) {
 
   const { email, password, rememberMe = false } = req.body;
 
-  // Validate input
   if (!email || !password) {
     return res.status(400).json({ success: false, error: 'Email and password are required' });
   }
 
-  // Email format validation
   const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ success: false, error: 'Invalid email format' });
@@ -24,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     // ============================================================
-    // FIRST: CHECK FOR ADMIN LOGIN (Preserved - No changes)
+    // ADMIN LOGIN
     // ============================================================
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
@@ -33,12 +30,10 @@ export default async function handler(req, res) {
       const isValid = await bcrypt.compare(password, adminPasswordHash);
       
       if (isValid) {
-        // Admin login success
         const sessionToken = crypto.randomBytes(64).toString('hex');
         const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
         const isProduction = process.env.NODE_ENV === 'production';
         
-        // Store admin session in database (preserved)
         const { error: sessionError } = await supabase
           .from('admin_sessions')
           .insert({
@@ -53,7 +48,6 @@ export default async function handler(req, res) {
           return res.status(500).json({ success: false, error: 'Failed to create admin session' });
         }
         
-        // Set admin cookies
         res.setHeader('Set-Cookie', [
           `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
           `is_admin=true; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
@@ -75,19 +69,28 @@ export default async function handler(req, res) {
     }
 
     // ============================================================
-    // SECOND: CHECK FOR REGULAR USER LOGIN
+    // REGULAR USER LOGIN
     // ============================================================
+    console.log('Looking for user with email:', email.toLowerCase());
+    
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, email, password_hash, email_verified')
       .eq('email', email.toLowerCase())
       .single();
 
-    if (userError || !user) {
+    if (userError) {
+      console.error('User fetch error:', userError);
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
-    // Check if email is verified
+    if (!user) {
+      console.log('No user found with email:', email);
+      return res.status(401).json({ success: false, error: 'Invalid email or password' });
+    }
+
+    console.log('User found:', { id: user.id, email: user.email, verified: user.email_verified });
+
     if (!user.email_verified) {
       return res.status(401).json({ 
         success: false, 
@@ -95,42 +98,57 @@ export default async function handler(req, res) {
       });
     }
 
-    // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ success: false, error: 'Invalid email or password' });
     }
 
-    // Update last login time
+    // Update last login
     await supabase
       .from('users')
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', user.id);
 
-    // Create user session
+    // Create session
     const sessionToken = crypto.randomBytes(64).toString('hex');
     const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
     const expiresAt = new Date(Date.now() + maxAge * 1000).toISOString();
 
-    // Store session in user_sessions table (UUID handled automatically)
-    const { error: sessionError } = await supabase
+    console.log('Attempting to create session for user_id:', user.id);
+    console.log('Session token:', sessionToken);
+    console.log('Expires at:', expiresAt);
+
+    // Try to insert with detailed error logging
+    const { data: sessionData, error: sessionError } = await supabase
       .from('user_sessions')
       .insert({
-        user_id: user.id, // user.id is already UUID from Supabase
+        user_id: user.id,
         token: sessionToken,
         expires_at: expiresAt,
         user_agent: req.headers['user-agent'] || null,
         ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
-      });
+      })
+      .select();
 
     if (sessionError) {
-      console.error('User session error:', sessionError);
-      return res.status(500).json({ success: false, error: 'Failed to create session' });
+      console.error('Session insert error DETAILS:', {
+        code: sessionError.code,
+        message: sessionError.message,
+        details: sessionError.details,
+        hint: sessionError.hint
+      });
+      
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to create session: ' + sessionError.message,
+        debug: sessionError.message
+      });
     }
+
+    console.log('Session created successfully:', sessionData);
 
     const isProduction = process.env.NODE_ENV === 'production';
     
-    // Set regular user cookies
     res.setHeader('Set-Cookie', [
       `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
       `user_role=user; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
@@ -150,6 +168,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    return res.status(500).json({ success: false, error: 'Internal server error: ' + error.message });
   }
 }
