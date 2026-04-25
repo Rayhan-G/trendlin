@@ -1,4 +1,3 @@
-// src/components/admin/AdminLayout.jsx
 import AdminNavigation from './AdminNavigation'
 
 export default function AdminLayout({ children }) {
@@ -7,5 +6,5 @@ export default function AdminLayout({ children }) {
       <AdminNavigation />
       <main>{children}</main>
     </div>
-  )
+  );
 }

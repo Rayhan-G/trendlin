@@ -6,7 +6,7 @@ import {
   DollarSign, BarChart3, Home, Sparkles, Tv, Plus, Menu, X
 } from 'lucide-react';
 
-const AdminNavigation = ({ children }) => {
+const AdminNavigation = () => {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -84,10 +84,6 @@ const AdminNavigation = ({ children }) => {
       </div>
 
       {isOpen && <div className="overlay" onClick={() => setIsOpen(false)} />}
-
-      <main className="main-content">
-        {children}
-      </main>
 
       <style jsx>{`
         .menu-btn {
@@ -296,15 +292,6 @@ const AdminNavigation = ({ children }) => {
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
-        }
-
-        .main-content {
-          min-height: 100vh;
-          background: #f8fafc;
-        }
-
-        :global(body.dark) .main-content {
-          background: #0f172a;
         }
 
         @media (max-width: 768px) {
