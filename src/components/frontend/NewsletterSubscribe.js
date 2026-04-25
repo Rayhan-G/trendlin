@@ -1,5 +1,3 @@
-// src/components/frontend/NewsletterSubscribe.js
-
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
@@ -35,7 +33,6 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
   const maxPostsPerWeek = selectedCategories.length
   const deliveryDay = 'Sunday'
 
-  // Function to detect current category from URL
   const detectCurrentCategory = () => {
     const path = window.location.pathname
     const matchedCategory = categories.find(cat => 
@@ -44,32 +41,60 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     return matchedCategory ? matchedCategory.id : null
   }
 
-  // Reset selected categories based on current page and user subscription
-  const resetCategoriesForPage = (currentCat, userSubscribed, existingPrefs = null) => {
-    if (userSubscribed && existingPrefs) {
-      setSelectedCategories(existingPrefs)
-      setOriginalCategories(existingPrefs)
-      return
+  // ============================================================
+  // CHECK AUTHENTICATION AND SUBSCRIPTION STATUS
+  // ============================================================
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        
+        console.log('Auth check result:', data)
+        
+        if (data.authenticated) {
+          setUser(data.user)
+          setNewEmail(data.user.email)
+          
+          // Check if user is subscribed to newsletter
+          if (data.newsletter && data.newsletter.is_subscribed === true) {
+            setSubscriptionStatus('subscribed')
+            setSelectedCategories(data.newsletter.categories || [])
+            setOriginalCategories(data.newsletter.categories || [])
+          } else {
+            setSubscriptionStatus(null)
+            const currentCat = detectCurrentCategory()
+            if (currentCat) {
+              setSelectedCategories([currentCat])
+              setOriginalCategories([currentCat])
+            }
+          }
+        } else {
+          setUser(null)
+          setSubscriptionStatus(null)
+          const currentCat = detectCurrentCategory()
+          if (currentCat) {
+            setSelectedCategories([currentCat])
+            setOriginalCategories([currentCat])
+          }
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err)
+      } finally {
+        setAuthChecked(true)
+      }
     }
     
-    if (currentCat) {
-      setSelectedCategories([currentCat])
-      setOriginalCategories([currentCat])
-    } else {
-      setSelectedCategories([])
-      setOriginalCategories([])
-    }
-  }
+    checkAuth()
+  }, [])
 
-  // Detect current page category and reset selections when URL changes
+  // Detect current page category
   useEffect(() => {
     const handleUrlChange = () => {
       const newCategory = detectCurrentCategory()
       setCurrentPageCategory(newCategory)
       
-      if (subscriptionStatus === 'subscribed' && user) {
-        // User is subscribed, keep their preferences
-      } else {
+      if (subscriptionStatus !== 'subscribed' && !user) {
         if (newCategory) {
           setSelectedCategories([newCategory])
           setOriginalCategories([newCategory])
@@ -106,40 +131,6 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     }
   }, [user, subscriptionStatus])
 
-  // Check authentication status
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (data.authenticated) {
-          setUser(data.user)
-          setNewEmail(data.user.email)
-          if (data.newsletter && data.newsletter.is_subscribed) {
-            setSubscriptionStatus('subscribed')
-            setSelectedCategories(data.newsletter.categories || [])
-            setOriginalCategories(data.newsletter.categories || [])
-          } else {
-            const currentCat = detectCurrentCategory()
-            if (currentCat) {
-              setSelectedCategories([currentCat])
-              setOriginalCategories([currentCat])
-            }
-          }
-        } else {
-          const currentCat = detectCurrentCategory()
-          if (currentCat) {
-            setSelectedCategories([currentCat])
-            setOriginalCategories([currentCat])
-          }
-        }
-        setAuthChecked(true)
-      })
-      .catch(err => {
-        console.error('Auth check failed:', err)
-        setAuthChecked(true)
-      })
-  }, [])
-
   // Listen for auth complete event
   useEffect(() => {
     const handleAuthComplete = () => {
@@ -172,6 +163,9 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     }
   }, [showAuthPopup])
 
+  // ============================================================
+  // SUBSCRIPTION HANDLERS
+  // ============================================================
   const handleSubscribe = async (e) => {
     e.preventDefault()
     
@@ -253,6 +247,9 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     }
   }
 
+  // ============================================================
+  // PREFERENCE MANAGEMENT
+  // ============================================================
   const handleUpdatePreferences = async () => {
     if (selectedCategories.length === 0) {
       setError('Please select at least one category')
@@ -412,7 +409,9 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     )
   }
 
-  // Confirmation Modal
+  // ============================================================
+  // CONFIRMATION MODAL
+  // ============================================================
   if (showConfirmModal && pendingSubscription) {
     const categoriesList = categories.filter(c => pendingSubscription.categories.includes(c.id))
     
@@ -429,12 +428,10 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
               <span className="summary-label">📧 Email</span>
               <span className="summary-value">{pendingSubscription.email}</span>
             </div>
-            
             <div className="summary-item">
               <span className="summary-label">📅 Delivery Day</span>
               <span className="summary-value">Every {deliveryDay}</span>
             </div>
-            
             <div className="summary-item">
               <span className="summary-label">📬 Posts per week</span>
               <span className="summary-value">{pendingSubscription.postCount} {pendingSubscription.postCount === 1 ? 'post' : 'posts'}</span>
@@ -453,24 +450,14 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
           </div>
           
           <div className="confirm-modal-actions">
-            <button 
-              onClick={confirmSubscription} 
-              className="confirm-btn"
-              disabled={loading}
-            >
+            <button onClick={confirmSubscription} className="confirm-btn" disabled={loading}>
               {loading ? 'Subscribing...' : '✓ Confirm Subscription'}
             </button>
-            <button 
-              onClick={() => setShowConfirmModal(false)} 
-              className="cancel-btn-modal"
-            >
+            <button onClick={() => setShowConfirmModal(false)} className="cancel-btn-modal">
               Cancel
             </button>
           </div>
-          
-          <p className="confirm-modal-note">
-            You can unsubscribe or change preferences at any time.
-          </p>
+          <p className="confirm-modal-note">You can unsubscribe or change preferences at any time.</p>
         </div>
 
         <style jsx>{`
@@ -488,7 +475,6 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             z-index: 100000;
             padding: 16px;
           }
-          
           .confirm-modal {
             background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             border-radius: 32px;
@@ -499,7 +485,6 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
           }
-          
           .confirm-modal-close {
             position: absolute;
             top: 20px;
@@ -514,157 +499,34 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             font-size: 14px;
             transition: all 0.2s;
           }
-          
-          .confirm-modal-close:hover {
-            background: rgba(255,255,255,0.2);
-            color: white;
-          }
-          
-          .confirm-modal-icon {
-            font-size: 48px;
-            text-align: center;
-            margin-bottom: 16px;
-          }
-          
-          .confirm-modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-align: center;
-            color: white;
-            margin: 0 0 24px 0;
-          }
-          
-          .confirm-modal-summary {
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 1rem;
-            margin-bottom: 20px;
-          }
-          
-          .summary-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-          }
-          
-          .summary-item:last-child {
-            border-bottom: none;
-          }
-          
-          .summary-label {
-            font-size: 0.875rem;
-            color: rgba(255,255,255,0.6);
-          }
-          
-          .summary-value {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: white;
-          }
-          
-          .confirm-modal-categories {
-            margin-bottom: 24px;
-          }
-          
-          .categories-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: rgba(255,255,255,0.5);
-            margin-bottom: 12px;
-          }
-          
-          .categories-list-confirm {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-          }
-          
-          .category-confirm-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(6,182,212,0.15);
-            border: 1px solid rgba(6,182,212,0.3);
-            border-radius: 40px;
-            font-size: 0.8rem;
-            color: #06b6d4;
-          }
-          
-          .confirm-modal-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 8px;
-          }
-          
-          .confirm-btn {
-            flex: 2;
-            padding: 12px;
-            background: linear-gradient(135deg, #06b6d4, #0891b2);
-            border: none;
-            border-radius: 40px;
-            color: white;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-          
-          .confirm-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(6,182,212,0.3);
-          }
-          
-          .confirm-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-          }
-          
-          .cancel-btn-modal {
-            flex: 1;
-            padding: 12px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 40px;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-          
-          .cancel-btn-modal:hover {
-            background: rgba(255,255,255,0.12);
-            color: white;
-          }
-          
-          .confirm-modal-note {
-            font-size: 0.7rem;
-            text-align: center;
-            color: rgba(255,255,255,0.4);
-            margin: 20px 0 0 0;
-          }
-          
-          @media (max-width: 480px) {
-            .confirm-modal {
-              padding: 1.5rem;
-            }
-            .confirm-modal-title {
-              font-size: 1.25rem;
-            }
-            .confirm-modal-actions {
-              flex-direction: column;
-            }
-          }
+          .confirm-modal-close:hover { background: rgba(255,255,255,0.2); color: white; }
+          .confirm-modal-icon { font-size: 48px; text-align: center; margin-bottom: 16px; }
+          .confirm-modal-title { font-size: 1.5rem; font-weight: 700; text-align: center; color: white; margin: 0 0 24px 0; }
+          .confirm-modal-summary { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 1rem; margin-bottom: 20px; }
+          .summary-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+          .summary-item:last-child { border-bottom: none; }
+          .summary-label { font-size: 0.875rem; color: rgba(255,255,255,0.6); }
+          .summary-value { font-size: 0.875rem; font-weight: 600; color: white; }
+          .confirm-modal-categories { margin-bottom: 24px; }
+          .categories-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.5); margin-bottom: 12px; }
+          .categories-list-confirm { display: flex; flex-wrap: wrap; gap: 8px; }
+          .category-confirm-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); border-radius: 40px; font-size: 0.8rem; color: #06b6d4; }
+          .confirm-modal-actions { display: flex; gap: 12px; margin-top: 8px; }
+          .confirm-btn { flex: 2; padding: 12px; background: linear-gradient(135deg, #06b6d4, #0891b2); border: none; border-radius: 40px; color: white; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
+          .confirm-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(6,182,212,0.3); }
+          .confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+          .cancel-btn-modal { flex: 1; padding: 12px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 40px; color: rgba(255,255,255,0.7); font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
+          .cancel-btn-modal:hover { background: rgba(255,255,255,0.12); color: white; }
+          .confirm-modal-note { font-size: 0.7rem; text-align: center; color: rgba(255,255,255,0.4); margin: 20px 0 0 0; }
+          @media (max-width: 480px) { .confirm-modal { padding: 1.5rem; } .confirm-modal-title { font-size: 1.25rem; } .confirm-modal-actions { flex-direction: column; } }
         `}</style>
       </div>
     )
   }
 
-  // Success Modal
+  // ============================================================
+  // SUCCESS MODAL
+  // ============================================================
   if (showSuccessModal) {
     return (
       <div className="modal-overlay" onClick={() => setShowSuccessModal(false)}>
@@ -672,21 +534,8 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
           <div style={{ fontSize: '48px', textAlign: 'center', marginBottom: '16px' }}>✅</div>
           <h3 style={{ textAlign: 'center', marginBottom: '12px', color: '#0f172a' }}>Successfully Subscribed!</h3>
           <p style={{ textAlign: 'center', color: '#64748b' }}>You'll now receive our weekly newsletter at:</p>
-          <p style={{ textAlign: 'center', fontWeight: 'bold', color: '#06b6d4' }}>{user?.email}</p>
-          <button
-            onClick={() => setShowSuccessModal(false)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '40px',
-              marginTop: '16px',
-              cursor: 'pointer',
-              fontWeight: '600'
-            }}
-          >
+          <p style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: '#06b6d4' }}>{user?.email}</p>
+          <button onClick={() => setShowSuccessModal(false)} style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #06b6d4, #0891b2)', color: 'white', border: 'none', borderRadius: '40px', marginTop: '16px', cursor: 'pointer', fontWeight: '600' }}>
             Got it, thanks →
           </button>
         </div>
@@ -711,21 +560,17 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             max-width: 400px;
             width: 90%;
           }
-          :global(.dark) .modal-content {
-            background: #1e293b;
-          }
-          :global(.dark) .modal-content h3 {
-            color: white;
-          }
-          :global(.dark) .modal-content p {
-            color: #94a3b8;
-          }
+          :global(.dark) .modal-content { background: #1e293b; }
+          :global(.dark) .modal-content h3 { color: white; }
+          :global(.dark) .modal-content p { color: #94a3b8; }
         `}</style>
       </div>
     )
   }
 
-  // Manage Subscription View (subscribed)
+  // ============================================================
+  // MANAGEMENT VIEW (FOR SUBSCRIBED USERS)
+  // ============================================================
   if (subscriptionStatus === 'subscribed' && user) {
     return (
       <div className={`manage-wrapper ${className}`}>
@@ -741,7 +586,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             <p className="manage-email">{user.email}</p>
           </div>
           <div className="manage-badge">
-            <span className="badge-active">Active</span>
+            <span className="badge-active">Subscribed</span>
           </div>
         </div>
 
@@ -807,15 +652,8 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             <div className="edit-mode">
               <div className="categories-grid-edit">
                 {categories.map((category) => (
-                  <label 
-                    key={category.id} 
-                    className={`category-checkbox ${selectedCategories.includes(category.id) ? 'checked' : ''}`}
-                  >
-                    <input 
-                      type="checkbox" 
-                      checked={selectedCategories.includes(category.id)} 
-                      onChange={() => handleCategoryToggle(category.id)} 
-                    />
+                  <label key={category.id} className={`category-checkbox ${selectedCategories.includes(category.id) ? 'checked' : ''}`}>
+                    <input type="checkbox" checked={selectedCategories.includes(category.id)} onChange={() => handleCategoryToggle(category.id)} />
                     <span className="checkbox-icon">{category.icon}</span>
                     <span className="checkbox-label">{category.name}</span>
                   </label>
@@ -849,13 +687,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
               <span className="email-value">{user.email}</span>
             </div>
             <div className="email-edit-form">
-              <input
-                type="email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="New email address"
-                className="email-input"
-              />
+              <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="New email address" className="email-input" />
               <button onClick={handleUpdateEmail} disabled={emailLoading} className="update-btn">
                 {emailLoading ? 'Updating...' : 'Change Email'}
               </button>
@@ -872,7 +704,7 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="none" />
               </svg>
-              <h4 style={{ color: '#ef4444' }}>Danger Zone</h4>
+              <h4 style={{ color: '#ef4444' }}>Unsubscribe</h4>
             </div>
           </div>
           <p className="danger-description">
@@ -889,266 +721,48 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             border-radius: 32px;
             padding: 2rem;
           }
-          .manage-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding-bottom: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-          }
-          .manage-header-icon {
-            width: 48px;
-            height: 48px;
-            background: rgba(6,182,212,0.15);
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #06b6d4;
-          }
-          .manage-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: white;
-            margin: 0 0 4px 0;
-          }
-          .manage-email {
-            font-size: 0.875rem;
-            color: rgba(255,255,255,0.6);
-            margin: 0;
-          }
-          .manage-badge {
-            margin-left: auto;
-          }
-          .badge-active {
-            background: rgba(34,197,94,0.15);
-            color: #22c55e;
-            padding: 4px 12px;
-            border-radius: 40px;
-            font-size: 0.75rem;
-            font-weight: 500;
-          }
-          .manage-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 20px;
-            padding: 1.25rem;
-            margin-bottom: 1rem;
-          }
-          .danger-card {
-            background: rgba(239,68,68,0.05);
-            border: 1px solid rgba(239,68,68,0.2);
-            border-radius: 20px;
-            padding: 1.25rem;
-            margin-top: 1rem;
-          }
-          .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-          }
-          .card-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-          }
-          .card-title svg {
-            color: #06b6d4;
-          }
-          .card-title h4 {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: white;
-            margin: 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-          }
-          .edit-btn {
-            background: transparent;
-            border: 1px solid rgba(6,182,212,0.3);
-            color: #06b6d4;
-            padding: 6px 14px;
-            border-radius: 40px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s;
-          }
-          .edit-btn:hover {
-            background: rgba(6,182,212,0.1);
-            border-color: #06b6d4;
-          }
-          .categories-display {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-          }
-          .categories-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-          }
-          .category-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 14px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 40px;
-            font-size: 0.875rem;
-            color: white;
-          }
-          .pill-icon {
-            font-size: 1rem;
-          }
-          .delivery-info {
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            padding-top: 0.75rem;
-            border-top: 1px solid rgba(255,255,255,0.08);
-          }
-          .info-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.5);
-          }
-          .info-item svg {
-            color: #06b6d4;
-          }
-          .empty-state {
-            color: rgba(255,255,255,0.4);
-            font-size: 0.875rem;
-            margin: 0;
-          }
-          .edit-mode {
-            margin-top: 0.5rem;
-          }
-          .categories-grid-edit {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-            margin-bottom: 1.25rem;
-          }
-          .category-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 40px;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-          .category-checkbox.checked {
-            background: rgba(6,182,212,0.2);
-            border-color: #06b6d4;
-          }
-          .category-checkbox input {
-            display: none;
-          }
-          .checkbox-icon {
-            font-size: 1rem;
-          }
-          .checkbox-label {
-            font-size: 0.875rem;
-            color: white;
-          }
-          .edit-actions {
-            display: flex;
-            gap: 0.75rem;
-          }
-          .save-btn {
-            padding: 8px 20px;
-            background: #06b6d4;
-            border: none;
-            border-radius: 40px;
-            color: white;
-            font-weight: 500;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s;
-          }
-          .save-btn:hover:not(:disabled) {
-            background: #0891b2;
-            transform: translateY(-1px);
-          }
-          .cancel-btn {
-            padding: 8px 20px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 40px;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.875rem;
-            cursor: pointer;
-          }
-          .email-section {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-          }
-          .email-display {
-            padding: 0.75rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-          }
-          .email-value {
-            font-family: monospace;
-            font-size: 0.875rem;
-            color: white;
-          }
-          .email-edit-form {
-            display: flex;
-            gap: 0.75rem;
-          }
-          .email-input {
-            flex: 1;
-            padding: 10px 16px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 40px;
-            color: white;
-            font-size: 0.875rem;
-          }
-          .email-input:focus {
-            outline: none;
-            border-color: #06b6d4;
-          }
-          .update-btn {
-            padding: 10px 20px;
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 40px;
-            color: white;
-            font-size: 0.875rem;
-            cursor: pointer;
-          }
-          .danger-description {
-            font-size: 0.75rem;
-            color: rgba(239,68,68,0.7);
-            margin: 0 0 1rem 0;
-          }
-          .unsubscribe-btn {
-            padding: 8px 20px;
-            background: rgba(239,68,68,0.15);
-            border: 1px solid rgba(239,68,68,0.3);
-            border-radius: 40px;
-            color: #ef4444;
-            font-size: 0.875rem;
-            cursor: pointer;
-          }
-          .error-msg {
-            color: #ef4444;
-            font-size: 0.75rem;
-            margin-top: 0.75rem;
-          }
+          .manage-header { display: flex; align-items: center; gap: 1rem; padding-bottom: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+          .manage-header-icon { width: 48px; height: 48px; background: rgba(6,182,212,0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #06b6d4; }
+          .manage-title { font-size: 1.25rem; font-weight: 600; color: white; margin: 0 0 4px 0; }
+          .manage-email { font-size: 0.875rem; color: rgba(255,255,255,0.6); margin: 0; }
+          .manage-badge { margin-left: auto; }
+          .badge-active { background: rgba(34,197,94,0.15); color: #22c55e; padding: 4px 12px; border-radius: 40px; font-size: 0.75rem; font-weight: 500; }
+          .manage-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 1.25rem; margin-bottom: 1rem; }
+          .danger-card { background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); border-radius: 20px; padding: 1.25rem; margin-top: 1rem; }
+          .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+          .card-title { display: flex; align-items: center; gap: 0.5rem; }
+          .card-title svg { color: #06b6d4; }
+          .card-title h4 { font-size: 0.875rem; font-weight: 600; color: white; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
+          .edit-btn { background: transparent; border: 1px solid rgba(6,182,212,0.3); color: #06b6d4; padding: 6px 14px; border-radius: 40px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+          .edit-btn:hover { background: rgba(6,182,212,0.1); border-color: #06b6d4; }
+          .categories-display { display: flex; flex-direction: column; gap: 1rem; }
+          .categories-list { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+          .category-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; background: rgba(255,255,255,0.08); border-radius: 40px; font-size: 0.875rem; color: white; }
+          .delivery-info { display: flex; gap: 1.5rem; flex-wrap: wrap; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); }
+          .info-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: rgba(255,255,255,0.5); }
+          .info-item svg { color: #06b6d4; }
+          .empty-state { color: rgba(255,255,255,0.4); font-size: 0.875rem; margin: 0; }
+          .edit-mode { margin-top: 0.5rem; }
+          .categories-grid-edit { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem; }
+          .category-checkbox { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 40px; cursor: pointer; transition: all 0.2s; }
+          .category-checkbox.checked { background: rgba(6,182,212,0.2); border-color: #06b6d4; }
+          .category-checkbox input { display: none; }
+          .checkbox-icon { font-size: 1rem; }
+          .checkbox-label { font-size: 0.875rem; color: white; }
+          .edit-actions { display: flex; gap: 0.75rem; }
+          .save-btn { padding: 8px 20px; background: #06b6d4; border: none; border-radius: 40px; color: white; font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
+          .save-btn:hover:not(:disabled) { background: #0891b2; transform: translateY(-1px); }
+          .cancel-btn { padding: 8px 20px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 40px; color: rgba(255,255,255,0.7); font-size: 0.875rem; cursor: pointer; }
+          .email-section { display: flex; flex-direction: column; gap: 0.75rem; }
+          .email-display { padding: 0.75rem; background: rgba(255,255,255,0.05); border-radius: 12px; }
+          .email-value { font-family: monospace; font-size: 0.875rem; color: white; }
+          .email-edit-form { display: flex; gap: 0.75rem; }
+          .email-input { flex: 1; padding: 10px 16px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1); border-radius: 40px; color: white; font-size: 0.875rem; }
+          .email-input:focus { outline: none; border-color: #06b6d4; }
+          .update-btn { padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 40px; color: white; font-size: 0.875rem; cursor: pointer; }
+          .danger-description { font-size: 0.75rem; color: rgba(239,68,68,0.7); margin: 0 0 1rem 0; }
+          .unsubscribe-btn { padding: 8px 20px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 40px; color: #ef4444; font-size: 0.875rem; cursor: pointer; }
+          .error-msg { color: #ef4444; font-size: 0.75rem; margin-top: 0.75rem; }
           @media (max-width: 640px) {
             .manage-wrapper { padding: 1.25rem; }
             .manage-header { flex-wrap: wrap; }
@@ -1161,7 +775,9 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
     )
   }
 
-  // Main Subscribe Form (not subscribed)
+  // ============================================================
+  // SUBSCRIPTION FORM (FOR NON-SUBSCRIBED USERS)
+  // ============================================================
   return (
     <>
       <div className={`newsletter-wrapper ${className}`}>
@@ -1196,16 +812,8 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
                 </div>
                 <div className="categories-grid">
                   {categories.map((category) => (
-                    <label 
-                      key={category.id} 
-                      className={`category-option ${selectedCategories.includes(category.id) ? 'selected' : ''}`}
-                    >
-                      <input 
-                        type="checkbox" 
-                        checked={selectedCategories.includes(category.id)} 
-                        onChange={() => handleCategoryToggle(category.id)} 
-                        style={{ display: 'none' }}
-                      />
+                    <label key={category.id} className={`category-option ${selectedCategories.includes(category.id) ? 'selected' : ''}`}>
+                      <input type="checkbox" checked={selectedCategories.includes(category.id)} onChange={() => handleCategoryToggle(category.id)} style={{ display: 'none' }} />
                       <span>{category.icon}</span>
                       <span>{category.name}</span>
                     </label>
@@ -1236,71 +844,22 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             border-radius: 24px;
             padding: 2rem;
           }
-          .newsletter-inner {
-            max-width: 1280px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 2rem;
-            align-items: start;
-          }
+          .newsletter-inner { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; align-items: start; }
           .newsletter-left { display: flex; gap: 1rem; }
           .newsletter-icon { font-size: 2.5rem; }
           .newsletter-text { flex: 1; }
           .newsletter-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: white; }
           .newsletter-description { font-size: 0.875rem; color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; }
-          .login-hint {
-            display: inline-block;
-            background: rgba(6, 182, 212, 0.2);
-            padding: 0.3rem 0.8rem;
-            border-radius: 40px;
-            font-size: 0.7rem;
-            color: #06b6d4;
-          }
+          .login-hint { display: inline-block; background: rgba(6,182,212,0.2); padding: 0.3rem 0.8rem; border-radius: 40px; font-size: 0.7rem; color: #06b6d4; }
           .newsletter-right { width: 100%; }
-          .categories-section { 
-            margin-bottom: 1.25rem; 
-            padding: 1rem; 
-            background: rgba(255,255,255,0.05); 
-            border-radius: 16px; 
-            border: 1px solid rgba(255,255,255,0.1); 
-          }
+          .categories-section { margin-bottom: 1.25rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); }
           .section-title { font-size: 0.8rem; font-weight: 600; color: rgba(255,255,255,0.8); }
           .select-all { background: none; border: none; color: #06b6d4; font-size: 0.7rem; cursor: pointer; }
           .categories-grid { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-          .category-option { 
-            display: flex; 
-            align-items: center; 
-            gap: 0.4rem; 
-            padding: 0.4rem 1rem; 
-            background: rgba(255,255,255,0.1); 
-            border: 1px solid rgba(255,255,255,0.2); 
-            border-radius: 40px; 
-            cursor: pointer; 
-            font-size: 0.8rem; 
-            color: white; 
-          }
+          .category-option { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 40px; cursor: pointer; font-size: 0.8rem; color: white; }
           .category-option.selected { background: rgba(6,182,212,0.3); border-color: #06b6d4; }
-          .posts-info {
-            font-size: 0.7rem;
-            color: #06b6d4;
-            background: rgba(6,182,212,0.1);
-            padding: 0.5rem;
-            border-radius: 8px;
-            text-align: center;
-          }
-          .subscribe-button { 
-            width: 100%; 
-            padding: 0.875rem; 
-            background: linear-gradient(135deg, #06b6d4, #0891b2); 
-            border: none; 
-            border-radius: 40px; 
-            color: white; 
-            font-weight: 700; 
-            font-size: 1rem; 
-            cursor: pointer; 
-            transition: all 0.2s;
-          }
+          .posts-info { font-size: 0.7rem; color: #06b6d4; background: rgba(6,182,212,0.1); padding: 0.5rem; border-radius: 8px; text-align: center; }
+          .subscribe-button { width: 100%; padding: 0.875rem; background: linear-gradient(135deg, #06b6d4, #0891b2); border: none; border-radius: 40px; color: white; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
           .subscribe-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(6,182,212,0.3); }
           .subscribe-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
           .error-msg { color: #ef4444; font-size: 0.75rem; margin: 0.75rem 0; text-align: center; }
@@ -1333,34 +892,12 @@ export default function NewsletterSubscribe({ presetCategory = null, className =
             </button>
           </div>
           <style jsx>{`
-            .auth-popup {
-              position: fixed;
-              bottom: 24px;
-              right: 24px;
-              z-index: 10000;
-              animation: slideIn 0.3s ease;
-            }
-            .auth-popup-content {
-              background: white;
-              border-radius: 20px;
-              padding: 20px;
-              width: 280px;
-              position: relative;
-              box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2);
-            }
-            @keyframes slideIn {
-              from { opacity: 0; transform: translateX(100px); }
-              to { opacity: 1; transform: translateX(0); }
-            }
-            :global(.dark) .auth-popup-content {
-              background: #1e293b;
-            }
-            :global(.dark) .auth-popup-content h4 {
-              color: white;
-            }
-            :global(.dark) .auth-popup-content p {
-              color: #94a3b8;
-            }
+            .auth-popup { position: fixed; bottom: 24px; right: 24px; z-index: 10000; animation: slideIn 0.3s ease; }
+            .auth-popup-content { background: white; border-radius: 20px; padding: 20px; width: 280px; position: relative; box-shadow: 0 20px 35px -10px rgba(0,0,0,0.2); }
+            @keyframes slideIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+            :global(.dark) .auth-popup-content { background: #1e293b; }
+            :global(.dark) .auth-popup-content h4 { color: white; }
+            :global(.dark) .auth-popup-content p { color: #94a3b8; }
           `}</style>
         </div>
       )}

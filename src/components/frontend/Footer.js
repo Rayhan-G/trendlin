@@ -1,10 +1,31 @@
-// src/components/frontend/Footer.js
-
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import NewsletterSubscribe from './NewsletterSubscribe'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  // Check if user is subscribed to newsletter
+  useEffect(() => {
+    const checkSubscription = async () => {
+      try {
+        const res = await fetch('/api/auth/me')
+        const data = await res.json()
+        
+        if (data.authenticated && data.newsletter?.is_subscribed === true) {
+          setIsSubscribed(true)
+        }
+      } catch (error) {
+        console.error('Error checking subscription:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    checkSubscription()
+  }, [])
 
   const legalLinks = [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -22,10 +43,50 @@ export default function Footer() {
   return (
     <footer className="footer">
       <div className="footer-container">
-        {/* Newsletter Section - Full Width */}
-        <div className="footer-newsletter">
-          <NewsletterSubscribe variant="footer" />
-        </div>
+        {/* Newsletter Section - Only show if NOT subscribed */}
+        {!loading && !isSubscribed && (
+          <div className="footer-newsletter">
+            <NewsletterSubscribe variant="footer" />
+          </div>
+        )}
+
+        {/* Optional: Show a simple message for subscribed users instead */}
+        {!loading && isSubscribed && (
+          <div className="footer-newsletter-subscribed">
+            <div className="subscribed-message">
+              <span>✅</span>
+              <p>You're subscribed to our newsletter. <Link href="/newsletter/manage">Manage preferences →</Link></p>
+            </div>
+            <style jsx>{`
+              .footer-newsletter-subscribed {
+                margin-bottom: 3rem;
+                padding-bottom: 2rem;
+                border-bottom: 1px solid #e5e7eb;
+              }
+              :global(html.dark) .footer-newsletter-subscribed {
+                border-bottom-color: #1f1f2a;
+              }
+              .subscribed-message {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+                padding: 1rem;
+                background: rgba(6, 182, 212, 0.1);
+                border-radius: 12px;
+                color: #06b6d4;
+                font-size: 0.875rem;
+              }
+              .subscribed-message p {
+                margin: 0;
+              }
+              .subscribed-message a {
+                color: #06b6d4;
+                text-decoration: underline;
+              }
+            `}</style>
+          </div>
+        )}
 
         <div className="footer-grid">
           {/* About Section */}
