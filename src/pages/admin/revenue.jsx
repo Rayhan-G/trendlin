@@ -5,7 +5,7 @@ import AdminNavigation from '@/components/admin/AdminNavigation';
 import UnifiedAnalytics from '@/components/admin/UnifiedAnalytics';
 
 // Helper function to format currency
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -103,7 +103,7 @@ export default function RevenueTracker() {
     fetchRevenueEntries();
   }, [selectedMonth, selectedYear]);
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
   };
 
@@ -133,7 +133,7 @@ export default function RevenueTracker() {
     }
   };
 
-  const validateAmount = (amount: string) => {
+  const validateAmount = (amount) => {
     const num = parseFloat(amount);
     if (isNaN(num)) return false;
     if (num <= 0) return false;
@@ -186,7 +186,7 @@ export default function RevenueTracker() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this revenue entry?')) return;
     
     try {

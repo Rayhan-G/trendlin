@@ -6,7 +6,7 @@ import UnifiedAnalytics from '@/components/admin/UnifiedAnalytics';
 import { formatNumber } from '@/utils/formatters';
 
 // Helper function to format currency
-const formatCurrency = (amount: number) => {
+const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -76,8 +76,6 @@ const LOCATION_OPTIONS = [
 ];
 
 export default function AdManager() {
-  const router = useRouter();
-  
   const [loading, setLoading] = useState(true);
   const [slots, setSlots] = useState([]);
   const [codes, setCodes] = useState([]);
@@ -100,7 +98,7 @@ export default function AdManager() {
     name: '', description: '', code: '', is_active: true
   });
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
   };
 
@@ -248,7 +246,7 @@ export default function AdManager() {
     }
   };
 
-  const deleteSlot = async (id: string) => {
+  const deleteSlot = async (id) => {
     if (!confirm('Delete this ad slot?')) return;
     try {
       const { error } = await supabase.from('ad_slots').delete().eq('id', id);
@@ -260,7 +258,7 @@ export default function AdManager() {
     }
   };
 
-  const deleteCode = async (id: string) => {
+  const deleteCode = async (id) => {
     if (!confirm('Delete this ad code?')) return;
     try {
       const { error } = await supabase.from('ad_codes').delete().eq('id', id);
@@ -283,7 +281,6 @@ export default function AdManager() {
     { id: 'analytics', label: '📊 Analytics' },
   ];
 
-  // Show loading state
   if (loading) {
     return (
       <AdminNavigation>
@@ -294,7 +291,6 @@ export default function AdManager() {
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <AdminNavigation>
