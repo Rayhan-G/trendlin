@@ -71,6 +71,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ authenticated: false });
     }
 
+    // ============================================================
+    // GET NEWSLETTER PREFERENCES
+    // ============================================================
+    const { data: newsletter } = await supabase
+      .from('newsletter_preferences')
+      .select('is_subscribed, categories, delivery_frequency, max_posts_per_week, post_format')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     return res.status(200).json({
       authenticated: true,
       user: {
@@ -78,6 +87,13 @@ export default async function handler(req, res) {
         email: user.email,
         is_admin: false,
         role: 'user'
+      },
+      newsletter: newsletter || { 
+        is_subscribed: false, 
+        categories: [],
+        delivery_frequency: 'weekly',
+        max_posts_per_week: 3,
+        post_format: 'digest'
       }
     });
 
