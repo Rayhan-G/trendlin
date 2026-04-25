@@ -20,10 +20,11 @@ const formatCurrency = (amount) => {
   }).format(amount || 0);
 };
 
-// Admin Auth Check Hook - FIXED (no early redirect)
+// Admin Auth Hook
 const useAdminAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -34,9 +35,10 @@ const useAdminAuth = () => {
         
         if (data.authenticated && data.user?.is_admin === true) {
           setIsAuthenticated(true);
+          setUser(data.user);
         } else {
           setIsAuthenticated(false);
-          // NO REDIRECT HERE - let the component handle it
+          setUser(null);
         }
       } catch (error) {
         console.error('Auth check failed:', error);
@@ -47,19 +49,14 @@ const useAdminAuth = () => {
     };
     
     checkAuth();
-  }, [router]);
+  }, []);
 
-  return { isAuthenticated, isLoading };
+  return { isAuthenticated, isLoading, user };
 };
 
 // Admin Navigation Component
-const AdminNavigation = ({ children }) => {
+const AdminNavigation = ({ children, user, onLogout }) => {
   const router = useRouter();
-  
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/');
-  };
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -83,7 +80,7 @@ const AdminNavigation = ({ children }) => {
               </div>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={onLogout}
               className="px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
             >
               Logout
@@ -156,7 +153,7 @@ const PostRow = ({ post }) => {
 // MAIN DASHBOARD COMPONENT
 export default function AdminDashboard() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
@@ -172,6 +169,11 @@ export default function AdminDashboard() {
   const [recentPosts, setRecentPosts] = useState([]);
   const [topPosts, setTopPosts] = useState([]);
 
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/');
+  };
+
   // Fetch all dashboard data
   const fetchDashboardData = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -180,14 +182,20 @@ export default function AdminDashboard() {
     setError(null);
     
     try {
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (postsError) throw postsError;
-      
-      const safePosts = posts || [];
+      // Try to fetch posts, handle gracefully if table doesn't exist
+      let safePosts = [];
+      try {
+        const { data: posts, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (!postsError) {
+          safePosts = posts || [];
+        }
+      } catch (err) {
+        console.log('Posts table may not exist yet:', err.message);
+      }
       
       const published = safePosts.filter(p => p.status === 'published');
       const drafts = safePosts.filter(p => p.status === 'draft');
@@ -248,18 +256,16 @@ export default function AdminDashboard() {
   // Show loading state
   if (authLoading || loading) {
     return (
-      <AdminNavigation>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-12 h-12 border-2 border-gray-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-gray-500">Loading dashboard...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Loading dashboard...</p>
         </div>
-      </AdminNavigation>
+      </div>
     );
   }
 
-  // Redirect if not authenticated (after loading is complete)
+  // Redirect if not authenticated
   if (!authLoading && !loading && !isAuthenticated) {
     router.push('/');
     return null;
@@ -268,26 +274,24 @@ export default function AdminDashboard() {
   // Show error state
   if (error) {
     return (
-      <AdminNavigation>
-        <div className="min-h-[60vh] flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">⚠️</span>
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Unable to Load Dashboard</h2>
-            <p className="text-gray-500 mb-6">{error}</p>
-            <button onClick={fetchDashboardData} className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition">
-              🔄 Try Again
-            </button>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">⚠️</span>
           </div>
+          <h2 className="text-xl font-semibold mb-2">Unable to Load Dashboard</h2>
+          <p className="text-gray-500 mb-6">{error}</p>
+          <button onClick={fetchDashboardData} className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 transition">
+            🔄 Try Again
+          </button>
         </div>
-      </AdminNavigation>
+      </div>
     );
   }
 
   // Show dashboard
   return (
-    <AdminNavigation>
+    <AdminNavigation user={user} onLogout={handleLogout}>
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">

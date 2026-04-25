@@ -1,25 +1,24 @@
-import { supabase } from '../../../lib/supabase'
-
 export default async function handler(req, res) {
+  // Only allow POST
   if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST'])
-    return res.status(405).json({ error: `Method ${req.method} not allowed` })
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  const sessionToken = req.cookies.session_token
+  try {
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    // Clear all auth cookies
+    res.setHeader('Set-Cookie', [
+      `session_token=; Path=/; Max-Age=0; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
+      `is_admin=; Path=/; Max-Age=0; SameSite=Strict; ${isProduction ? 'Secure;' : ''}`,
+      `admin_email=; Path=/; Max-Age=0; SameSite=Strict; ${isProduction ? 'Secure;' : ''}`
+    ]);
 
-  if (sessionToken) {
-    // Delete from admin_sessions
-    await supabase.from('admin_sessions').delete().eq('token', sessionToken)
+    return res.status(200).json({ success: true, message: 'Logged out successfully' });
+
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
-
-  // Clear cookies
-  const isProduction = process.env.NODE_ENV === 'production'
-  res.setHeader('Set-Cookie', [
-    `session_token=; Path=/; Max-Age=0; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
-    `is_admin=; Path=/; Max-Age=0; SameSite=Strict`,
-    `session_expires=; Path=/; Max-Age=0; SameSite=Strict`
-  ])
-
-  return res.status(200).json({ success: true })
 }
