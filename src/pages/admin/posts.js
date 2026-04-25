@@ -1,5 +1,3 @@
-// src/pages/admin/posts.js (FIXED - without BlockNoteEditor)
-
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
@@ -11,8 +9,6 @@ import 'react-datepicker/dist/react-datepicker.css';
 import AdminNavigation from '@/components/admin/AdminNavigation';
 
 // Dynamic imports for client-side only components with error fallbacks
-// REMOVED: PremiumEditor import since we're using a simple textarea instead
-
 const MediaUploader = dynamic(
   () => import('@/components/shared/MediaUploader').catch(err => {
     console.error('Failed to load media uploader:', err);
@@ -90,13 +86,11 @@ export default function PostEditor() {
       if (error) {
         console.error('Fetch error:', error);
         toast.error('Failed to load post: ' + error.message);
-        router.push('/admin/dashboard');
         return;
       }
 
       if (!data) {
         toast.error('Post not found');
-        router.push('/admin/dashboard');
         return;
       }
 
@@ -131,7 +125,6 @@ export default function PostEditor() {
     } catch (error) {
       console.error('Unexpected error:', error);
       toast.error('An unexpected error occurred');
-      router.push('/admin/dashboard');
     } finally {
       setLoading(false);
     }
@@ -329,7 +322,8 @@ export default function PostEditor() {
       toast.success(successMessage);
       
       if (!isEditMode) {
-        router.push('/admin/dashboard');
+        // Optional: stay on page or redirect - your choice
+        // router.push('/admin/dashboard');
       } else {
         await fetchPost();
       }
@@ -523,7 +517,7 @@ export default function PostEditor() {
               video={featuredVideo}
             />
             
-            {/* REPLACED: PremiumEditor with a simple textarea */}
+            {/* Simple textarea editor */}
             <div className="editor-wrapper">
               <textarea
                 value={content}

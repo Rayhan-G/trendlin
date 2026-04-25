@@ -1,4 +1,3 @@
-// src/pages/admin/affiliate.js
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -84,7 +83,6 @@ const CATEGORY_OPTIONS = [
 
 export default function AffiliateManager() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   
   const [loading, setLoading] = useState(true);
   const [links, setLinks] = useState([]);
@@ -111,8 +109,6 @@ export default function AffiliateManager() {
   };
 
   const fetchLinks = async () => {
-    if (!isAuthenticated) return;
-    
     setLoading(true);
     setError(null);
     
@@ -141,10 +137,8 @@ export default function AffiliateManager() {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchLinks();
-    }
-  }, [isAuthenticated, selectedCategory]);
+    fetchLinks();
+  }, [selectedCategory]);
 
   const generateCloakedUrl = (name) => {
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -326,8 +320,8 @@ export default function AffiliateManager() {
     { id: 'analytics', label: '📊 Analytics', icon: '📊' },
   ];
 
-  // Show loading state while checking auth
-  if (authLoading || loading) {
+  // Show loading state
+  if (loading) {
     return (
       <AdminNavigation>
         <div className="flex justify-center items-center min-h-[400px]">
@@ -481,7 +475,7 @@ export default function AffiliateManager() {
                             >
                               {link.is_active ? 'Active' : 'Inactive'}
                             </button>
-                          </td>
+                           </td>
                           <td className="p-3 text-sm">
                             <div className="flex gap-2">
                               <button onClick={() => editLink(link)} className="text-blue-600 hover:underline text-xs">Edit</button>

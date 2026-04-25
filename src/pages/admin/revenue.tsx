@@ -1,4 +1,3 @@
-// src/pages/admin/revenue.tsx
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
@@ -83,7 +82,6 @@ const SOURCE_OPTIONS = [
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export default function RevenueTracker() {
-  const router = useRouter();
   const [revenueEntries, setRevenueEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -101,13 +99,7 @@ export default function RevenueTracker() {
     note: ''
   });
 
-  // Auth check
   useEffect(() => {
-    const sessionToken = localStorage.getItem('admin_session_token');
-    if (!sessionToken) {
-      router.push('/admin/login');
-      return;
-    }
     fetchRevenueEntries();
   }, [selectedMonth, selectedYear]);
 

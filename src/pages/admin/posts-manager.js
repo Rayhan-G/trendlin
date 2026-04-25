@@ -1,50 +1,8 @@
-// src/pages/admin/posts-manager.js
-
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
-
-// Simple Admin Navigation Component (no external dependencies)
-const AdminNavigation = ({ children }) => {
-  const router = useRouter()
-  
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/')
-  }
-  
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-8">
-              <Link href="/admin/dashboard" className="text-xl font-bold text-purple-600">
-                Admin Panel
-              </Link>
-              <div className="hidden md:flex gap-4">
-                <Link href="/admin/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
-                  Dashboard
-                </Link>
-                <Link href="/admin/posts-manager" className="text-sm text-purple-600 font-medium">
-                  Posts
-                </Link>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
-      <main>{children}</main>
-    </div>
-  )
-}
+import AdminNavigation from '@/components/admin/AdminNavigation'
 
 // Format number helper
 const formatNumber = (num) => {
@@ -103,21 +61,8 @@ export default function PostsManager() {
   }, [])
 
   useEffect(() => {
-    checkAuth()
     fetchPosts()
   }, [currentPage, itemsPerPage, statusFilter])
-
-  const checkAuth = async () => {
-    try {
-      const res = await fetch('/api/auth/me')
-      const data = await res.json()
-      if (!data.authenticated || !data.user?.is_admin) {
-        router.push('/')
-      }
-    } catch (error) {
-      router.push('/')
-    }
-  }
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type })

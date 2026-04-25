@@ -1,4 +1,3 @@
-// src/pages/admin/post-analytics.tsx
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '@/lib/supabase';
@@ -34,7 +33,6 @@ const StatCard = ({ label, value, color = 'default' }) => {
 };
 
 export default function PostAnalytics() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('30days');
   const [activeTab, setActiveTab] = useState('overview');
@@ -51,16 +49,6 @@ export default function PostAnalytics() {
   });
   const [categoryStats, setCategoryStats] = useState([]);
   const [topPosts, setTopPosts] = useState([]);
-
-  // Check auth on mount
-  useEffect(() => {
-    const sessionToken = localStorage.getItem('admin_session_token');
-    if (!sessionToken) {
-      router.push('/admin/login');
-      return;
-    }
-    fetchStats();
-  }, [router]);
 
   // Fetch stats when date range changes
   useEffect(() => {

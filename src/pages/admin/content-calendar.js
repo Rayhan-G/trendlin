@@ -1,5 +1,3 @@
-// src/pages/admin/content-calendar.js
-
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '@/lib/supabase'
@@ -26,11 +24,6 @@ export default function ContentCalendar() {
   })
 
   useEffect(() => {
-    const sessionToken = localStorage.getItem('admin_session_token')
-    if (!sessionToken) {
-      router.push('/admin/login')
-      return
-    }
     fetchAllData()
   }, [])
 

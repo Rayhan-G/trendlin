@@ -1,4 +1,3 @@
-// src/pages/admin/posts/edit/[id].js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -9,11 +8,10 @@ import {
   ArrowLeft, Save, Calendar, Eye, Send, FileText, 
   AlertCircle, Clock, TrendingUp, LayoutDashboard, Edit3,
   X, Image as ImageIcon, LinkIcon, 
-  RefreshCw, Copy, Check, ChevronDown,
+  RefreshCw, Copy, ChevronDown,
   ChevronUp, Settings, Loader2, FolderOpen
 } from 'lucide-react';
 
-// ✅ CORRECTED IMPORT PATHS (4 levels up from src/pages/admin/posts/edit/)
 import { supabase } from '../../../../lib/supabase';
 
 // ============================================================
@@ -90,7 +88,7 @@ const EditorSkeleton = () => (
 );
 
 // ============================================================
-// DYNAMIC IMPORTS WITH CORRECT PATHS
+// DYNAMIC IMPORTS
 // ============================================================
 const Editor = dynamic(
   () => import('../../../../components/editor').then(mod => mod.default).catch(err => {
@@ -191,14 +189,12 @@ const ScheduleModal = ({ isOpen, onClose, onSchedule, currentDate }) => {
 };
 
 // ============================================================
-// MAIN COMPONENT
+// MAIN COMPONENT - NO AUTH
 // ============================================================
 export default function EditPost() {
   const router = useRouter();
   const { id } = router.query;
   
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   
   // Form state
@@ -229,42 +225,13 @@ export default function EditPost() {
   const [stats, setStats] = useState({ wordCount: 0, readingTime: 0, seoScore: 0 });
 
   // ============================================================
-  // AUTH CHECK
-  // ============================================================
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const sessionToken = localStorage.getItem('admin_session_token');
-        const sessionExpiry = localStorage.getItem('admin_session_expiry');
-        
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (session || (sessionToken && sessionExpiry && Date.now() < parseInt(sessionExpiry))) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-          router.push('/admin/login');
-        }
-      } catch (err) {
-        console.error('Auth check error:', err);
-        setIsAuthenticated(false);
-        router.push('/admin/login');
-      } finally {
-        setIsCheckingAuth(false);
-      }
-    };
-    
-    checkAuth();
-  }, [router]);
-
-  // ============================================================
   // FETCH POST DATA
   // ============================================================
   useEffect(() => {
-    if (id && isAuthenticated) {
+    if (id) {
       fetchPost();
     }
-  }, [id, isAuthenticated]);
+  }, [id]);
 
   const fetchPost = async () => {
     setIsLoading(true);
@@ -508,16 +475,12 @@ export default function EditPost() {
   // ============================================================
   // LOADING STATE
   // ============================================================
-  if (isCheckingAuth || isLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
       </div>
     );
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   // ============================================================

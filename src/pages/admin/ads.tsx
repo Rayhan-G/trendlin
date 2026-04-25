@@ -1,11 +1,9 @@
-// src/pages/admin/ads.tsx - FIXED
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import AdminNavigation from '@/components/admin/AdminNavigation';
 import UnifiedAnalytics from '@/components/admin/UnifiedAnalytics';
 import { formatNumber } from '@/utils/formatters';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 // Helper function to format currency
 const formatCurrency = (amount: number) => {
@@ -79,7 +77,6 @@ const LOCATION_OPTIONS = [
 
 export default function AdManager() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAdminAuth();
   
   const [loading, setLoading] = useState(true);
   const [slots, setSlots] = useState([]);
@@ -117,8 +114,6 @@ export default function AdManager() {
   };
 
   const loadAllData = useCallback(async () => {
-    if (!isAuthenticated) return;
-    
     setLoading(true);
     setError(null);
     
@@ -164,13 +159,11 @@ export default function AdManager() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, dateRange]);
+  }, [dateRange]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadAllData();
-    }
-  }, [isAuthenticated, loadAllData]);
+    loadAllData();
+  }, [loadAllData]);
 
   const saveSlot = async () => {
     if (!slotForm.name.trim()) {
@@ -290,8 +283,8 @@ export default function AdManager() {
     { id: 'analytics', label: '📊 Analytics' },
   ];
 
-  // Show loading state while checking auth
-  if (authLoading || loading) {
+  // Show loading state
+  if (loading) {
     return (
       <AdminNavigation>
         <div className="flex justify-center items-center min-h-[400px]">
