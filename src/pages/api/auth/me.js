@@ -13,9 +13,9 @@ export default async function handler(req, res) {
 
   try {
     // Check if it's an admin session
-    const isAdminCookie = req.cookies.is_admin === 'true'
+    const userRole = req.cookies.user_role
     
-    if (isAdminCookie) {
+    if (userRole === 'admin') {
       const { data: adminSession, error: adminError } = await supabase
         .from('admin_sessions')
         .select('expires_at')
@@ -28,9 +28,9 @@ export default async function handler(req, res) {
           user: {
             id: 'admin',
             email: process.env.ADMIN_EMAIL,
+            role: 'admin',
             is_admin: true
-          },
-          newsletter: { is_subscribed: false, categories: [] }
+          }
         })
       }
     }
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, email')
+      .select('id, email, role')
       .eq('id', session.user_id)
       .single()
 
@@ -61,20 +61,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ authenticated: false })
     }
 
-    const { data: newsletter } = await supabase
-      .from('newsletter_preferences')
-      .select('is_subscribed, categories')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
     return res.status(200).json({
       authenticated: true,
       user: {
         id: user.id,
         email: user.email,
+        role: user.role || 'user',
         is_admin: false
-      },
-      newsletter: newsletter || { is_subscribed: false, categories: [] }
+      }
     })
 
   } catch (error) {
