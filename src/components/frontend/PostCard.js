@@ -1,5 +1,3 @@
-// src/components/frontend/PostCard.js
-
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import BookmarkButton from './BookmarkButton'
@@ -49,68 +47,6 @@ export default function PostCard({ post, rank = null }) {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
     return num.toString()
-  }
-
-  const renderStars = (rating) => {
-    if (!rating || rating === 0) return null
-    
-    const stars = []
-    const fullStars = Math.floor(rating)
-    const fractionalPart = rating - fullStars
-    
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <svg key={`full-${i}`} width="12" height="12" viewBox="0 0 24 24" style={{ marginRight: '2px' }}>
-          <polygon 
-            points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21" 
-            fill="#f59e0b"
-            stroke="#f59e0b"
-            strokeWidth="1"
-          />
-        </svg>
-      )
-    }
-    
-    if (fractionalPart > 0 && fullStars < 5) {
-      stars.push(
-        <svg key="fractional" width="12" height="12" viewBox="0 0 24 24" style={{ marginRight: '2px' }}>
-          <defs>
-            <clipPath id={`clip-${post.id || Math.random()}`}>
-              <rect x="0" y="0" width={fractionalPart * 24} height="24" />
-            </clipPath>
-          </defs>
-          <polygon 
-            points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21" 
-            fill={isDarkMode ? '#4b5563' : '#d1d5db'}
-            stroke={isDarkMode ? '#4b5563' : '#d1d5db'}
-            strokeWidth="1"
-          />
-          <polygon 
-            points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21" 
-            fill="#f59e0b"
-            stroke="#f59e0b"
-            strokeWidth="1"
-            clipPath={`url(#clip-${post.id || Math.random()})`}
-          />
-        </svg>
-      )
-    }
-    
-    const emptyStarsCount = 5 - stars.length
-    for (let i = 0; i < emptyStarsCount; i++) {
-      stars.push(
-        <svg key={`empty-${i}`} width="12" height="12" viewBox="0 0 24 24" style={{ marginRight: '2px' }}>
-          <polygon 
-            points="12 17.27 18.18 21 16.54 13.97 22 9.24 14.81 8.63 12 2 9.19 8.63 2 9.24 7.46 13.97 5.82 21" 
-            fill={isDarkMode ? '#4b5563' : '#d1d5db'}
-            stroke={isDarkMode ? '#4b5563' : '#d1d5db'}
-            strokeWidth="1"
-          />
-        </svg>
-      )
-    }
-    
-    return stars
   }
 
   const getImageUrl = () => {
@@ -163,22 +99,6 @@ export default function PostCard({ post, rank = null }) {
             <p className="post-excerpt">
               {post.excerpt ? `${post.excerpt.substring(0, 100)}...` : 'No description available'}
             </p>
-            
-            {post.avg_rating > 0 && (
-              <div className="rating-wrapper">
-                <div className="stars-container">
-                  {renderStars(post.avg_rating)}
-                </div>
-                <span className="rating-number">
-                  {post.avg_rating.toFixed(1)}
-                </span>
-                {post.total_ratings > 0 && (
-                  <span className="rating-count">
-                    ({formatNumber(post.total_ratings)})
-                  </span>
-                )}
-              </div>
-            )}
             
             <div className="post-footer">
               <div className="post-meta">
@@ -437,33 +357,6 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-card.dark .post-excerpt {
-          color: #9ca3af;
-        }
-        
-        .rating-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-        
-        .stars-container {
-          display: flex;
-          align-items: center;
-        }
-        
-        .rating-number {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #f59e0b;
-        }
-        
-        .rating-count {
-          font-size: 0.65rem;
-          color: #6b7280;
-        }
-        
-        .post-card.dark .rating-count {
           color: #9ca3af;
         }
         

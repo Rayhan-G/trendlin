@@ -1,18 +1,12 @@
 // src/components/category/tech/TechHero.js
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { formatNumber, formatRating } from '@/utils/formatters'
+// Removed: import { supabase } from '@/lib/supabase'
+// Removed: import { formatNumber, formatRating } from '@/utils/formatters'
 
 export default function TechHero() {
-  const [stats, setStats] = useState({
-    totalPosts: 0,
-    totalSubscribers: 0,
-    averageRating: 0,
-    totalRatings: 0
-  })
-  const [loading, setLoading] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  // Removed: stats and loading state entirely
 
   // Tech categories
   const techPillars = [
@@ -33,7 +27,7 @@ export default function TechHero() {
     { name: "Innovations", icon: '💡' }
   ]
 
-  // Detect dark mode
+  // Detect dark mode only
   useEffect(() => {
     const checkDarkMode = () => {
       const isDark = document.documentElement.classList.contains('dark') || 
@@ -54,86 +48,7 @@ export default function TechHero() {
     }
   }, [])
 
-  // Fetch stats
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true)
-        
-        // Get category stats from category_stats_table
-        const { data, error } = await supabase
-          .from('category_stats_table')
-          .select('total_posts, total_subscribers, average_rating, total_ratings')
-          .eq('category', 'tech')
-          .maybeSingle()
-
-        // Get ONLY verified subscribers
-        const { count: verifiedSubscribersCount } = await supabase
-          .from('newsletter_subscribers')
-          .select('*', { count: 'exact', head: true })
-          .contains('categories', ['tech'])
-          .not('verified_at', 'is', null)
-          .is('unsubscribed_at', null)
-
-        if (error || !data) {
-          // Fallback: Calculate from posts table
-          const { data: posts, error: postsError } = await supabase
-            .from('posts')
-            .select('average_rating, total_ratings')
-            .eq('category', 'tech')
-            .eq('status', 'published')
-
-          if (!postsError && posts && posts.length > 0) {
-            let totalWeightedRating = 0
-            let totalRatingsCount = 0
-            
-            posts.forEach(post => {
-              if (post.total_ratings && post.total_ratings > 0) {
-                totalWeightedRating += (post.average_rating || 0) * post.total_ratings
-                totalRatingsCount += post.total_ratings
-              }
-            })
-            
-            const averageRating = totalRatingsCount > 0 ? totalWeightedRating / totalRatingsCount : 0
-
-            setStats({
-              totalPosts: posts.length,
-              totalSubscribers: verifiedSubscribersCount || 0,
-              averageRating: parseFloat(averageRating.toFixed(1)),
-              totalRatings: totalRatingsCount
-            })
-          } else {
-            setStats({
-              totalPosts: data?.total_posts || 0,
-              totalSubscribers: verifiedSubscribersCount || 0,
-              averageRating: data?.average_rating || 0,
-              totalRatings: data?.total_ratings || 0
-            })
-          }
-        } else {
-          setStats({
-            totalPosts: data.total_posts || 0,
-            totalSubscribers: verifiedSubscribersCount || 0,
-            averageRating: data.average_rating || 0,
-            totalRatings: data.total_ratings || 0
-          })
-        }
-        
-      } catch (error) {
-        console.error('Error fetching tech stats:', error)
-        setStats({
-          totalPosts: 0,
-          totalSubscribers: 0,
-          averageRating: 0,
-          totalRatings: 0
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchStats()
-  }, [])
+  // Removed: fetchStats useEffect entirely
 
   return (
     <div className={`tech-hero ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
@@ -170,29 +85,7 @@ export default function TechHero() {
             Everything you need for AI, software, gadgets, programming, cybersecurity, and future tech insights.
           </p>
 
-          {/* Category-Specific STATS */}
-          <div className="stats-wrapper">
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatNumber(stats.totalPosts)}</div>
-              <div className="stat-label">Tech posts</div>
-            </div>
-
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatNumber(stats.totalSubscribers)}</div>
-              <div className="stat-label">Verified subscribers</div>
-              {stats.totalSubscribers === 0 && !loading && (
-                <div className="stat-note">Be the first to subscribe!</div>
-              )}
-            </div>
-
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatRating(stats.averageRating)}</div>
-              <div className="stat-label">Tech rating</div>
-              {stats.totalRatings > 0 && (
-                <div className="stat-note">from {formatNumber(stats.totalRatings)} reviews</div>
-              )}
-            </div>
-          </div>
+          {/* Stats Wrapper - COMPLETELY REMOVED */}
         </div>
 
         {/* Right Side - Categories */}
@@ -452,45 +345,7 @@ export default function TechHero() {
           margin-bottom: 2rem;
         }
 
-        /* Stats Wrapper */
-        .stats-wrapper {
-          display: flex;
-          gap: 2rem;
-          padding: 1.5rem 0;
-          border-top: 1px solid var(--border-color);
-          border-bottom: 1px solid var(--border-color);
-          flex-wrap: wrap;
-        }
-
-        .stat-block {
-          text-align: left;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .stat-number {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #3b82f6;
-          line-height: 1;
-          margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: var(--text-secondary);
-          margin-bottom: 0.25rem;
-        }
-
-        .stat-note {
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        /* Stats Wrapper - REMOVED */
 
         /* Hero Right */
         .hero-right {
@@ -698,13 +553,6 @@ export default function TechHero() {
             margin: 0 auto 2rem;
           }
 
-          .stats-wrapper {
-            justify-content: center;
-            max-width: 100%;
-            margin: 0 auto;
-            gap: 1.5rem;
-          }
-
           .hero-right {
             position: static;
           }
@@ -715,16 +563,8 @@ export default function TechHero() {
         }
 
         @media (max-width: 768px) {
-          .stats-wrapper {
-            gap: 1rem;
-          }
-          
-          .stat-number {
-            font-size: 1.5rem;
-          }
-          
-          .stat-label {
-            font-size: 0.6rem;
+          .pillars-grid {
+            grid-template-columns: 1fr;
           }
         }
 
@@ -746,35 +586,8 @@ export default function TechHero() {
             font-size: 0.85rem;
           }
 
-          .stats-wrapper {
-            gap: 0.75rem;
-            padding: 1rem 0;
-          }
-          
-          .stat-number {
-            font-size: 1.25rem;
-          }
-          
-          .stat-label {
-            font-size: 0.55rem;
-          }
-
           .pillars-grid {
             grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .stats-wrapper {
-            gap: 0.5rem;
-          }
-          
-          .stat-number {
-            font-size: 1rem;
-          }
-          
-          .stat-label {
-            font-size: 0.5rem;
           }
         }
       `}</style>

@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
-import { formatNumber, formatRating } from '../../utils/formatters'
+// Removed: import { supabase } from '../../lib/supabase'
+// Removed: import { formatNumber } from '../../utils/formatters'
 
 export default function UnifiedHero() {
-  const [stats, setStats] = useState({
-    totalPosts: 0,
-    totalSubscribers: 0,
-    averageRating: 0,
-    totalRatings: 0
-  })
-  const [loading, setLoading] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  // Removed: stats and loading state
 
-  // Detect dark mode
+  // Detect dark mode only
   useEffect(() => {
     const checkDarkMode = () => {
       const isDark = document.documentElement.classList.contains('dark') || 
@@ -33,102 +27,7 @@ export default function UnifiedHero() {
     }
   }, [])
 
-  // Fetch global stats from the view
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true)
-        
-        let totalPosts = 0
-        let totalSubscribers = 0
-        let totalRatings = 0
-        let weightedRatingSum = 0
-        
-        // First, try to get from category_stats_table directly (more reliable)
-        const { data: categoryData, error: categoryError } = await supabase
-          .from('category_stats_table')
-          .select('total_posts, total_subscribers, average_rating, total_ratings')
-
-        if (!categoryError && categoryData && categoryData.length > 0) {
-          // Calculate totals from category_stats_table
-          totalPosts = categoryData.reduce((sum, cat) => sum + (cat.total_posts || 0), 0)
-          totalSubscribers = categoryData.reduce((sum, cat) => sum + (cat.total_subscribers || 0), 0)
-          totalRatings = categoryData.reduce((sum, cat) => sum + (cat.total_ratings || 0), 0)
-          
-          categoryData.forEach(cat => {
-            if (cat.average_rating && cat.total_ratings) {
-              weightedRatingSum += cat.average_rating * cat.total_ratings
-            }
-          })
-        } else {
-          // Fallback: Calculate directly from posts table
-          const { data: posts, error: postsError } = await supabase
-            .from('posts')
-            .select('category, average_rating, total_ratings')
-            .eq('status', 'published')
-
-          if (!postsError && posts && posts.length > 0) {
-            // Group by category to avoid double counting
-            const categoryMap = new Map()
-            
-            posts.forEach(post => {
-              const cat = post.category
-              if (!categoryMap.has(cat)) {
-                categoryMap.set(cat, {
-                  total_posts: 0,
-                  total_ratings: 0,
-                  weighted_rating: 0
-                })
-              }
-              
-              const stats = categoryMap.get(cat)
-              stats.total_posts++
-              if (post.total_ratings && post.total_ratings > 0) {
-                stats.total_ratings += post.total_ratings
-                stats.weighted_rating += (post.average_rating || 0) * post.total_ratings
-              }
-            })
-            
-            // Calculate totals
-            totalPosts = posts.length
-            totalRatings = Array.from(categoryMap.values()).reduce((sum, cat) => sum + cat.total_ratings, 0)
-            weightedRatingSum = Array.from(categoryMap.values()).reduce((sum, cat) => sum + cat.weighted_rating, 0)
-            
-            // Get subscriber count from newsletter_subscribers (only verified)
-            const { count: subscribersCount } = await supabase
-              .from('newsletter_subscribers')
-              .select('*', { count: 'exact', head: true })
-              .not('verified_at', 'is', null)
-              .is('unsubscribed_at', null)
-            
-            totalSubscribers = subscribersCount || 0
-          }
-        }
-        
-        const averageRating = totalRatings > 0 ? weightedRatingSum / totalRatings : 0
-
-        setStats({
-          totalPosts: totalPosts,
-          totalSubscribers: totalSubscribers,
-          averageRating: parseFloat(averageRating.toFixed(1)),
-          totalRatings: totalRatings
-        })
-        
-      } catch (error) {
-        console.error('Error fetching global stats:', error)
-        setStats({
-          totalPosts: 0,
-          totalSubscribers: 0,
-          averageRating: 0,
-          totalRatings: 0
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchStats()
-  }, [])
+  // Removed: fetchStats useEffect entirely
 
   // All 7 category icons with click handlers
   const icons = [
@@ -171,25 +70,7 @@ export default function UnifiedHero() {
               so you stay ahead of what's next.
             </p>
 
-            <div className="stat-group">
-              <div className="stat-item">
-                <div className="stat-number">{loading ? '...' : formatNumber(stats.totalPosts)}</div>
-                <div className="stat-label">Articles</div>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <div className="stat-number">{loading ? '...' : formatNumber(stats.totalSubscribers)}</div>
-                <div className="stat-label">Subscribers</div>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <div className="stat-number">{loading ? '...' : formatRating(stats.averageRating)}</div>
-                <div className="stat-label">Rating</div>
-                {stats.totalRatings > 0 && (
-                  <div className="stat-note">from {formatNumber(stats.totalRatings)} reviews</div>
-                )}
-              </div>
-            </div>
+            {/* Stats group completely removed */}
           </div>
 
           <div className="right">
@@ -427,71 +308,6 @@ export default function UnifiedHero() {
           color: rgba(0,0,0,0.6);
         }
 
-        .stat-group {
-          display: flex;
-          align-items: center;
-          gap: 2rem;
-          margin-bottom: 2rem;
-        }
-
-        .stat-item {
-          text-align: left;
-        }
-
-        .stat-number {
-          font-size: 1.5rem;
-          font-weight: 700;
-          line-height: 1.2;
-        }
-
-        .hero.dark .stat-number {
-          color: white;
-        }
-
-        .hero.light .stat-number {
-          color: #111827;
-        }
-
-        .stat-label {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .hero.dark .stat-label {
-          color: rgba(255,255,255,0.5);
-        }
-
-        .hero.light .stat-label {
-          color: rgba(0,0,0,0.5);
-        }
-
-        .stat-note {
-          font-size: 0.65rem;
-          margin-top: 0.25rem;
-        }
-
-        .hero.dark .stat-note {
-          color: rgba(255,255,255,0.3);
-        }
-
-        .hero.light .stat-note {
-          color: rgba(0,0,0,0.3);
-        }
-
-        .stat-divider {
-          width: 1px;
-          height: 30px;
-        }
-
-        .hero.dark .stat-divider {
-          background: rgba(255,255,255,0.1);
-        }
-
-        .hero.light .stat-divider {
-          background: rgba(0,0,0,0.1);
-        }
-
         .right {
           position: relative;
           display: flex;
@@ -656,14 +472,6 @@ export default function UnifiedHero() {
             margin-right: auto;
           }
 
-          .stat-group {
-            justify-content: center;
-          }
-
-          .stat-item {
-            text-align: center;
-          }
-
           .right {
             display: none;
           }
@@ -672,14 +480,6 @@ export default function UnifiedHero() {
         @media (max-width: 640px) {
           h1 {
             font-size: 2.5rem;
-          }
-
-          .stat-group {
-            gap: 1rem;
-          }
-
-          .stat-number {
-            font-size: 1.2rem;
           }
         }
       `}</style>

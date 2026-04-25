@@ -1,18 +1,12 @@
 // src/components/category/entertainment/EntertainmentHero.js
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { formatNumber, formatRating } from '@/utils/formatters'
+// Removed: import { supabase } from '@/lib/supabase'
+// Removed: import { formatNumber, formatRating } from '@/utils/formatters'
 
 export default function EntertainmentHero() {
-  const [stats, setStats] = useState({
-    totalPosts: 0,
-    totalSubscribers: 0,
-    averageRating: 0,
-    totalRatings: 0
-  })
-  const [loading, setLoading] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  // Removed: stats and loading state entirely
 
   // Entertainment categories
   const entertainmentPillars = [
@@ -33,7 +27,7 @@ export default function EntertainmentHero() {
     { name: "Trailers", icon: '🎬' }
   ]
 
-  // Detect dark mode
+  // Detect dark mode only
   useEffect(() => {
     const checkDarkMode = () => {
       const isDark = document.documentElement.classList.contains('dark') || 
@@ -54,79 +48,7 @@ export default function EntertainmentHero() {
     }
   }, [])
 
-  // Fetch stats
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true)
-        
-        // Get category stats from category_stats_table
-        const { data, error } = await supabase
-          .from('category_stats_table')
-          .select('total_posts, total_subscribers, average_rating, total_ratings')
-          .eq('category', 'entertainment')
-          .maybeSingle()
-
-        if (error || !data) {
-          // Fallback: Calculate from posts table
-          const { data: posts, error: postsError } = await supabase
-            .from('posts')
-            .select('average_rating, total_ratings')
-            .eq('category', 'entertainment')
-            .eq('status', 'published')
-
-          if (!postsError && posts) {
-            let totalWeightedRating = 0
-            let totalRatingsCount = 0
-            
-            posts.forEach(post => {
-              if (post.total_ratings && post.total_ratings > 0) {
-                totalWeightedRating += (post.average_rating || 0) * post.total_ratings
-                totalRatingsCount += post.total_ratings
-              }
-            })
-            
-            const averageRating = totalRatingsCount > 0 ? totalWeightedRating / totalRatingsCount : 0
-
-            // Get ONLY verified subscribers
-            const { count: subscribersCount } = await supabase
-              .from('newsletter_subscribers')
-              .select('*', { count: 'exact', head: true })
-              .contains('categories', ['entertainment'])
-              .not('verified_at', 'is', null)
-              .is('unsubscribed_at', null)
-
-            setStats({
-              totalPosts: posts.length,
-              totalSubscribers: subscribersCount || 0,
-              averageRating: parseFloat(averageRating.toFixed(1)),
-              totalRatings: totalRatingsCount
-            })
-          }
-        } else {
-          setStats({
-            totalPosts: data.total_posts || 0,
-            totalSubscribers: data.total_subscribers || 0,
-            averageRating: data.average_rating || 0,
-            totalRatings: data.total_ratings || 0
-          })
-        }
-        
-      } catch (error) {
-        console.error('Error fetching entertainment stats:', error)
-        setStats({
-          totalPosts: 10,
-          totalSubscribers: 0,
-          averageRating: 0,
-          totalRatings: 0
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchStats()
-  }, [])
+  // Removed: fetchStats useEffect entirely
 
   return (
     <div className={`entertainment-hero ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
@@ -163,29 +85,7 @@ export default function EntertainmentHero() {
             Everything you need for movies, gaming, music, celebrity news, and internet culture — all in one place.
           </p>
 
-          {/* Category-Specific STATS */}
-          <div className="stats-wrapper">
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatNumber(stats.totalPosts)}</div>
-              <div className="stat-label">Entertainment posts</div>
-            </div>
-
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatNumber(stats.totalSubscribers)}</div>
-              <div className="stat-label">Entertainment subscribers</div>
-              {stats.totalSubscribers === 0 && !loading && (
-                <div className="stat-note">Subscribe to get updates</div>
-              )}
-            </div>
-
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatRating(stats.averageRating)}</div>
-              <div className="stat-label">Entertainment rating</div>
-              {stats.totalRatings > 0 && (
-                <div className="stat-note">from {formatNumber(stats.totalRatings)} reviews</div>
-              )}
-            </div>
-          </div>
+          {/* Stats Wrapper - COMPLETELY REMOVED */}
         </div>
 
         {/* Right Side - Categories */}
@@ -429,45 +329,7 @@ export default function EntertainmentHero() {
           margin-bottom: 2rem;
         }
 
-        /* Stats Wrapper */
-        .stats-wrapper {
-          display: flex;
-          gap: 2rem;
-          padding: 1.5rem 0;
-          border-top: 1px solid var(--border-color);
-          border-bottom: 1px solid var(--border-color);
-          flex-wrap: wrap;
-        }
-
-        .stat-block {
-          text-align: left;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .stat-number {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #ec4899;
-          line-height: 1;
-          margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: var(--text-secondary);
-          margin-bottom: 0.25rem;
-        }
-
-        .stat-note {
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        /* Stats Wrapper - REMOVED */
 
         /* Hero Right */
         .hero-right {
@@ -665,13 +527,6 @@ export default function EntertainmentHero() {
             margin: 0 auto 2rem;
           }
 
-          .stats-wrapper {
-            justify-content: center;
-            max-width: 100%;
-            margin: 0 auto;
-            gap: 1.5rem;
-          }
-
           .hero-right {
             position: static;
           }
@@ -682,16 +537,8 @@ export default function EntertainmentHero() {
         }
 
         @media (max-width: 768px) {
-          .stats-wrapper {
-            gap: 1rem;
-          }
-          
-          .stat-number {
-            font-size: 1.5rem;
-          }
-          
-          .stat-label {
-            font-size: 0.6rem;
+          .pillars-grid {
+            grid-template-columns: 1fr;
           }
         }
 
@@ -711,37 +558,6 @@ export default function EntertainmentHero() {
 
           .hero-description {
             font-size: 0.85rem;
-          }
-
-          .stats-wrapper {
-            gap: 0.75rem;
-            padding: 1rem 0;
-          }
-          
-          .stat-number {
-            font-size: 1.25rem;
-          }
-          
-          .stat-label {
-            font-size: 0.55rem;
-          }
-
-          .pillars-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .stats-wrapper {
-            gap: 0.5rem;
-          }
-          
-          .stat-number {
-            font-size: 1rem;
-          }
-          
-          .stat-label {
-            font-size: 0.5rem;
           }
         }
       `}</style>

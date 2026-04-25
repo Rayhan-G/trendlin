@@ -1,18 +1,12 @@
 // src/components/category/health/HealthHero.js
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { formatNumber, formatRating } from '@/utils/formatters'
+// Removed: import { supabase } from '@/lib/supabase'
+// Removed: import { formatNumber, formatRating } from '@/utils/formatters'
 
 export default function HealthHero() {
-  const [stats, setStats] = useState({
-    totalPosts: 0,
-    totalSubscribers: 0,
-    averageRating: 0,
-    totalRatings: 0
-  })
-  const [loading, setLoading] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  // Removed: stats and loading state entirely
 
   const healthPillars = [
     { name: 'Fitness', icon: '💪', description: 'Workouts & strength training', gradient: 'linear-gradient(135deg, #ef4444, #dc2626)' },
@@ -32,7 +26,7 @@ export default function HealthHero() {
     { name: "Prevention", icon: '🛡️' }
   ]
 
-  // Detect dark mode
+  // Detect dark mode only
   useEffect(() => {
     const checkDarkMode = () => {
       const isDark = document.documentElement.classList.contains('dark') || 
@@ -53,91 +47,7 @@ export default function HealthHero() {
     }
   }, [])
 
-  // Fetch stats
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        setLoading(true)
-        
-        // Get category stats from category_stats_table
-        let { data, error } = await supabase
-          .from('category_stats_table')
-          .select('total_posts, total_subscribers, average_rating, total_ratings')
-          .eq('category', 'health')
-          .maybeSingle()
-
-        // Get ONLY VERIFIED subscribers (not pending)
-        // Using verified_at column - only count if NOT NULL (verified)
-        const { count: verifiedSubscribersCount, error: subError } = await supabase
-          .from('newsletter_subscribers')
-          .select('*', { count: 'exact', head: true })
-          .contains('categories', ['health'])
-          .not('verified_at', 'is', null)  // ONLY verified (excludes pending)
-          .is('unsubscribed_at', null);     // Not unsubscribed
-
-        if (subError) {
-          console.error('Error fetching subscribers:', subError);
-        }
-
-        // If no data in stats table, calculate from posts
-        if (error || !data || data.total_posts === 0) {
-          const { data: posts, error: postsError } = await supabase
-            .from('posts')
-            .select('average_rating, total_ratings')
-            .eq('category', 'health')
-            .eq('status', 'published')
-
-          if (!postsError && posts && posts.length > 0) {
-            let totalWeightedRating = 0
-            let totalRatingsCount = 0
-            
-            posts.forEach(post => {
-              if (post.total_ratings && post.total_ratings > 0) {
-                totalWeightedRating += (post.average_rating || 0) * post.total_ratings
-                totalRatingsCount += post.total_ratings
-              }
-            })
-            
-            const avgRating = totalRatingsCount > 0 ? totalWeightedRating / totalRatingsCount : 0
-
-            setStats({
-              totalPosts: posts.length,
-              totalSubscribers: verifiedSubscribersCount || 0,
-              averageRating: parseFloat(avgRating.toFixed(1)),
-              totalRatings: totalRatingsCount
-            })
-          } else {
-            setStats({
-              totalPosts: data?.total_posts || 0,
-              totalSubscribers: verifiedSubscribersCount || 0,
-              averageRating: data?.average_rating || 0,
-              totalRatings: data?.total_ratings || 0
-            })
-          }
-        } else {
-          setStats({
-            totalPosts: data.total_posts || 0,
-            totalSubscribers: verifiedSubscribersCount || 0,  // Use verified count from subscribers table
-            averageRating: data.average_rating || 0,
-            totalRatings: data.total_ratings || 0
-          })
-        }
-        
-      } catch (error) {
-        console.error('Error fetching health stats:', error)
-        setStats({
-          totalPosts: 0,
-          totalSubscribers: 0,
-          averageRating: 0,
-          totalRatings: 0
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchStats()
-  }, [])
+  // Removed: fetchStats useEffect entirely
 
   return (
     <div className={`health-hero ${isDarkMode ? 'dark-mode' : 'light-mode'}`}>
@@ -168,28 +78,7 @@ export default function HealthHero() {
             Everything you need for a healthier life — from fitness and nutrition to mental wellness and medical care.
           </p>
 
-          <div className="stats-wrapper">
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatNumber(stats.totalPosts)}</div>
-              <div className="stat-label">Health posts</div>
-            </div>
-
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatNumber(stats.totalSubscribers)}</div>
-              <div className="stat-label">Verified subscribers</div>
-              {stats.totalSubscribers === 0 && !loading && (
-                <div className="stat-note">Be the first to subscribe!</div>
-              )}
-            </div>
-
-            <div className="stat-block">
-              <div className="stat-number">{loading ? '...' : formatRating(stats.averageRating)}</div>
-              <div className="stat-label">Health rating</div>
-              {stats.totalRatings > 0 && (
-                <div className="stat-note">from {formatNumber(stats.totalRatings)} reviews</div>
-              )}
-            </div>
-          </div>
+          {/* Stats Wrapper - COMPLETELY REMOVED */}
         </div>
 
         <div className="hero-right">
@@ -426,44 +315,7 @@ export default function HealthHero() {
           margin-bottom: 2rem;
         }
 
-        .stats-wrapper {
-          display: flex;
-          gap: 2rem;
-          padding: 1.5rem 0;
-          border-top: 1px solid var(--border-color);
-          border-bottom: 1px solid var(--border-color);
-          flex-wrap: wrap;
-        }
-
-        .stat-block {
-          text-align: left;
-          flex: 1;
-          min-width: 0;
-        }
-
-        .stat-number {
-          font-size: 2rem;
-          font-weight: 700;
-          color: #10b981;
-          line-height: 1;
-          margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: var(--text-secondary);
-          margin-bottom: 0.25rem;
-        }
-
-        .stat-note {
-          font-size: 0.65rem;
-          color: var(--text-muted);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        /* Stats Wrapper - REMOVED */
 
         .hero-right {
           position: sticky;
@@ -647,15 +499,12 @@ export default function HealthHero() {
           .hero-title { font-size: 2.5rem; text-align: center; }
           .hero-description { text-align: center; }
           .hero-badge { margin: 0 auto 2rem; }
-          .stats-wrapper { justify-content: center; max-width: 100%; margin: 0 auto; gap: 1.5rem; }
           .hero-right { position: static; }
           .pillars-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         @media (max-width: 768px) {
-          .stats-wrapper { gap: 1rem; }
-          .stat-number { font-size: 1.5rem; }
-          .stat-label { font-size: 0.6rem; }
+          .pillars-grid { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 640px) {
@@ -663,16 +512,7 @@ export default function HealthHero() {
           .hero-container { padding: 1.5rem 1rem; }
           .hero-title { font-size: 1.75rem; }
           .hero-description { font-size: 0.85rem; }
-          .stats-wrapper { gap: 0.75rem; padding: 1rem 0; }
-          .stat-number { font-size: 1.25rem; }
-          .stat-label { font-size: 0.55rem; }
           .pillars-grid { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 480px) {
-          .stats-wrapper { gap: 0.5rem; }
-          .stat-number { font-size: 1rem; }
-          .stat-label { font-size: 0.5rem; }
         }
       `}</style>
     </div>

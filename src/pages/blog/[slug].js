@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
-import RatingSection from '@/components/blog/RatingSection'
+// Removed: import RatingSection from '@/components/blog/RatingSection'
 import ShareButtons from '@/components/blog/ShareButtons'
 import RightBlock from '@/components/blog/RightBlock'
 import RelatedPosts from '@/components/blog/RelatedPosts'
@@ -361,8 +361,7 @@ export default function BlogPost({ post, error }) {
           </aside>
         </div>
 
-        {/* Rating Section */}
-        <RatingSection postSlug={post.slug} postTitle={post.title} />
+        {/* Rating Section - REMOVED */}
 
         {/* Related Posts */}
         <RelatedPosts 
