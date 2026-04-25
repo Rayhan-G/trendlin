@@ -1,4 +1,3 @@
-// src/components/admin/AdminNavigation.jsx - FIXED VERSION
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -14,36 +13,36 @@ const AdminNavigation = ({ children }) => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const sessionToken = localStorage.getItem('admin_session_token');
-      const sessionExpiry = localStorage.getItem('admin_session_expiry');
-      
-      console.log('Current path:', router.pathname); // Debug log
-      console.log('Session token exists:', !!sessionToken); // Debug log
-      
-      if (sessionToken && sessionExpiry) {
-        const now = Date.now();
-        if (now < parseInt(sessionExpiry)) {
+    const checkAuth = async () => {
+      try {
+        // Check using your API instead of localStorage
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        
+        console.log('Navigation auth check:', data);
+        
+        if (data.authenticated && data.user?.is_admin === true) {
           setIsLoggedIn(true);
-          setIsCheckingAuth(false);
-          return;
         } else {
-          localStorage.removeItem('admin_session_token');
-          localStorage.removeItem('admin_session_expiry');
+          setIsLoggedIn(false);
+          // Only redirect if not on login page
+          if (router.pathname !== '/admin/login') {
+            router.push('/');
+          }
         }
-      }
-      
-      // ONLY redirect if NOT on login page
-      if (router.pathname !== '/admin/login') {
-        console.log('Redirecting to login from:', router.pathname);
-        router.push('/admin/login');
-      } else {
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setIsLoggedIn(false);
+        if (router.pathname !== '/admin/login') {
+          router.push('/');
+        }
+      } finally {
         setIsCheckingAuth(false);
       }
     };
     
     checkAuth();
-  }, [router.pathname]); // Only re-run when pathname changes
+  }, [router.pathname]);
 
   const navItems = [
     { path: '/admin/dashboard', name: 'Dashboard', icon: LayoutDashboard },
@@ -57,7 +56,6 @@ const AdminNavigation = ({ children }) => {
   ];
 
   const isActive = (path) => {
-    // Exact match for most routes
     if (path === '/admin/posts/create') {
       return router.pathname === '/admin/posts/create';
     }
@@ -66,7 +64,6 @@ const AdminNavigation = ({ children }) => {
 
   const goToHomepage = () => window.location.href = '/';
 
-  // Show nothing while checking auth
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -79,7 +76,6 @@ const AdminNavigation = ({ children }) => {
 
   return (
     <>
-      {/* Floating Menu Button */}
       <button
         className={`menu-btn ${isOpen ? 'open' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -88,9 +84,7 @@ const AdminNavigation = ({ children }) => {
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Side Menu */}
       <div className={`side-menu ${isOpen ? 'open' : ''}`}>
-        {/* Logo Section */}
         <div className="logo-section">
           <div className="logo-icon">
             <Sparkles size={28} />
@@ -101,7 +95,6 @@ const AdminNavigation = ({ children }) => {
           </div>
         </div>
 
-        {/* Navigation Links */}
         <div className="nav-section">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -121,7 +114,6 @@ const AdminNavigation = ({ children }) => {
           })}
         </div>
 
-        {/* Footer Section */}
         <div className="footer-section">
           <div className="divider"></div>
           <button onClick={goToHomepage} className="nav-link site-link">
@@ -133,16 +125,13 @@ const AdminNavigation = ({ children }) => {
         </div>
       </div>
 
-      {/* Overlay */}
       {isOpen && <div className="overlay" onClick={() => setIsOpen(false)} />}
 
-      {/* Main Content */}
       <main className="main-content">
         {children}
       </main>
 
       <style jsx>{`
-        /* Floating Menu Button */
         .menu-btn {
           position: fixed;
           bottom: 30px;
@@ -177,7 +166,6 @@ const AdminNavigation = ({ children }) => {
           background: #dc2626;
         }
 
-        /* Side Menu */
         .side-menu {
           position: fixed;
           top: 0;
@@ -201,7 +189,6 @@ const AdminNavigation = ({ children }) => {
           transform: translateX(0);
         }
 
-        /* Logo Section */
         .logo-section {
           padding: 40px 28px;
           border-bottom: 1px solid #f0f0f0;
@@ -251,7 +238,6 @@ const AdminNavigation = ({ children }) => {
           color: #94a3b8;
         }
 
-        /* Navigation Section */
         .nav-section {
           flex: 1;
           padding: 32px 20px;
@@ -260,7 +246,6 @@ const AdminNavigation = ({ children }) => {
           gap: 12px;
         }
 
-        /* Navigation Links */
         .nav-link {
           display: flex;
           align-items: center;
@@ -315,7 +300,6 @@ const AdminNavigation = ({ children }) => {
           flex: 1;
         }
 
-        /* Footer Section */
         .footer-section {
           padding: 24px 20px 32px 20px;
           margin-top: auto;
@@ -340,7 +324,6 @@ const AdminNavigation = ({ children }) => {
           color: #3b82f6;
         }
 
-        /* Overlay */
         .overlay {
           position: fixed;
           top: 0;
@@ -357,7 +340,6 @@ const AdminNavigation = ({ children }) => {
           to { opacity: 1; }
         }
 
-        /* Main Content */
         .main-content {
           min-height: 100vh;
           background: #f8fafc;
@@ -367,7 +349,6 @@ const AdminNavigation = ({ children }) => {
           background: #0f172a;
         }
 
-        /* Responsive Design */
         @media (max-width: 768px) {
           .menu-btn {
             bottom: 20px;
@@ -409,7 +390,6 @@ const AdminNavigation = ({ children }) => {
           }
         }
 
-        /* Smooth Scroll */
         .side-menu {
           overflow-y: auto;
         }
