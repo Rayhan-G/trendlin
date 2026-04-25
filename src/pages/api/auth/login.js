@@ -15,115 +15,72 @@ export default async function handler(req, res) {
   }
 
   try {
-    // CHECK FOR ADMIN LOGIN FIRST
     const adminEmail = process.env.ADMIN_EMAIL
     const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH
 
-    if (adminEmail && adminPasswordHash && email.toLowerCase() === adminEmail.toLowerCase()) {
+    if (!adminEmail || !adminPasswordHash) {
+      console.error('Admin credentials not configured')
+      return res.status(500).json({ error: 'Admin not configured' })
+    }
+
+    // Check admin credentials
+    if (email.toLowerCase() === adminEmail.toLowerCase()) {
       const isValid = await bcrypt.compare(password, adminPasswordHash)
       
-      if (isValid) {
-        // Admin login success
-        const sessionToken = crypto.randomBytes(64).toString('hex')
-        const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
-        const expiresAt = new Date(Date.now() + maxAge * 1000)
+      if (!isValid) {
+        return res.status(401).json({ error: 'Invalid credentials' })
+      }
 
-        // Store admin session
-        const { error: sessionError } = await supabase
-          .from('admin_sessions')
-          .insert({
-            token: sessionToken,
-            expires_at: expiresAt.toISOString(),
-            user_agent: req.headers['user-agent'] || null,
-            ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
-          })
+      // Generate session token
+      const sessionToken = crypto.randomBytes(64).toString('hex')
+      const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
+      const expiresAt = new Date(Date.now() + maxAge * 1000)
 
-        if (sessionError) {
-          console.error('Session error:', sessionError)
-          return res.status(500).json({ error: 'Failed to create session' })
-        }
+      // Try to insert into admin_sessions
+      const { error: insertError } = await supabase
+        .from('admin_sessions')
+        .insert({
+          token: sessionToken,
+          expires_at: expiresAt.toISOString(),
+          user_agent: req.headers['user-agent'] || null,
+          ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
+        })
 
-        // Set cookies
-        const isProduction = process.env.NODE_ENV === 'production'
-        res.setHeader('Set-Cookie', [
-          `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
-          `user_role=admin; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
-          `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict`
-        ])
-
-        // Return with is_admin flag for navbar
-        return res.status(200).json({
-          success: true,
-          user: {
-            id: 'admin',
-            email: adminEmail,
-            is_admin: true,
-            role: 'admin'
-          },
-          isAdmin: true
+      if (insertError) {
+        console.error('Supabase insert error:', insertError)
+        return res.status(500).json({ 
+          error: 'Failed to create session', 
+          details: insertError.message 
         })
       }
+
+      // Set cookies
+      const isProduction = process.env.NODE_ENV === 'production'
+      res.setHeader('Set-Cookie', [
+        `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
+        `is_admin=true; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
+        `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict`
+      ])
+
+      return res.status(200).json({
+        success: true,
+        user: {
+          id: 'admin',
+          email: adminEmail,
+          is_admin: true,
+          role: 'admin'
+        },
+        isAdmin: true
+      })
     }
 
-    // CHECK FOR REGULAR USER LOGIN
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, email, password_hash, email_verified, role')
-      .eq('email', email.toLowerCase())
-      .single()
-
-    if (userError || !user) {
-      return res.status(401).json({ error: 'Invalid email or password' })
-    }
-
-    if (!user.email_verified) {
-      return res.status(401).json({ error: 'Please verify your email first' })
-    }
-
-    const isValidPassword = await bcrypt.compare(password, user.password_hash)
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid email or password' })
-    }
-
-    // Update last login
-    await supabase
-      .from('users')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('id', user.id)
-
-    // Create user session
-    const sessionToken = crypto.randomBytes(64).toString('hex')
-    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60
-    const expiresAt = new Date(Date.now() + maxAge * 1000)
-
-    await supabase.from('user_sessions').insert({
-      user_id: user.id,
-      token: sessionToken,
-      expires_at: expiresAt.toISOString(),
-      user_agent: req.headers['user-agent'] || null,
-      ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
-    })
-
-    const isProduction = process.env.NODE_ENV === 'production'
-    res.setHeader('Set-Cookie', [
-      `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
-      `user_role=${user.role || 'user'}; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
-      `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict`
-    ])
-
-    // Return regular user without is_admin flag
-    return res.status(200).json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        is_admin: false,
-        role: user.role || 'user'
-      }
-    })
+    return res.status(401).json({ error: 'Invalid credentials' })
 
   } catch (error) {
     console.error('Login error:', error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return res.status(500).json({ 
+      error: 'Internal server error', 
+      details: error.message 
+    })
   }
 }

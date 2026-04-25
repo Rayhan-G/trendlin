@@ -12,17 +12,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Check if it's an admin session
-    const userRole = req.cookies.user_role
-    
-    if (userRole === 'admin') {
-      const { data: adminSession, error: adminError } = await supabase
-        .from('admin_sessions')
-        .select('expires_at')
-        .eq('token', sessionToken)
-        .single()
-      
-      if (!adminError && adminSession && new Date(adminSession.expires_at) > new Date()) {
+    // Check admin session in database
+    const { data: adminSession, error: adminError } = await supabase
+      .from('admin_sessions')
+      .select('expires_at')
+      .eq('token', sessionToken)
+      .single()
+
+    // If found and not expired, return admin user
+    if (!adminError && adminSession) {
+      if (new Date(adminSession.expires_at) > new Date()) {
         return res.status(200).json({
           authenticated: true,
           user: {
@@ -32,44 +31,13 @@ export default async function handler(req, res) {
             role: 'admin'
           }
         })
+      } else {
+        // Session expired, delete it
+        await supabase.from('admin_sessions').delete().eq('token', sessionToken)
       }
     }
 
-    // Regular user session
-    const { data: session, error: sessionError } = await supabase
-      .from('user_sessions')
-      .select('user_id, expires_at')
-      .eq('token', sessionToken)
-      .single()
-
-    if (sessionError || !session) {
-      return res.status(200).json({ authenticated: false })
-    }
-
-    if (new Date(session.expires_at) < new Date()) {
-      await supabase.from('user_sessions').delete().eq('token', sessionToken)
-      return res.status(200).json({ authenticated: false })
-    }
-
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, email, role')
-      .eq('id', session.user_id)
-      .single()
-
-    if (userError || !user) {
-      return res.status(200).json({ authenticated: false })
-    }
-
-    return res.status(200).json({
-      authenticated: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        is_admin: false,
-        role: user.role || 'user'
-      }
-    })
+    return res.status(200).json({ authenticated: false })
 
   } catch (error) {
     console.error('Auth check error:', error)

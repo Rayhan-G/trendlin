@@ -9,8 +9,7 @@ export default async function handler(req, res) {
   const sessionToken = req.cookies.session_token
 
   if (sessionToken) {
-    // Delete from both user_sessions and admin_sessions
-    await supabase.from('user_sessions').delete().eq('token', sessionToken)
+    // Delete from admin_sessions
     await supabase.from('admin_sessions').delete().eq('token', sessionToken)
   }
 
@@ -18,7 +17,7 @@ export default async function handler(req, res) {
   const isProduction = process.env.NODE_ENV === 'production'
   res.setHeader('Set-Cookie', [
     `session_token=; Path=/; Max-Age=0; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
-    `user_role=; Path=/; Max-Age=0; SameSite=Strict`,
+    `is_admin=; Path=/; Max-Age=0; SameSite=Strict`,
     `session_expires=; Path=/; Max-Age=0; SameSite=Strict`
   ])
 
