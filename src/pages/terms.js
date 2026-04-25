@@ -63,7 +63,7 @@ export default function TermsConditions() {
             The views and advice shared by these experts belong to them — we simply help 
             surface their insights to our audience.
           </p>
-        </paragraph>
+        </section>
 
         <section>
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">No endorsement or replacement</h2>
