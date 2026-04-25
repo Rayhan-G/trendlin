@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   try {
     // ============================================================
-    // FIRST: CHECK FOR ADMIN LOGIN
+    // FIRST: CHECK FOR ADMIN LOGIN (Preserved - No changes)
     // ============================================================
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
@@ -37,6 +37,21 @@ export default async function handler(req, res) {
         const sessionToken = crypto.randomBytes(64).toString('hex');
         const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
         const isProduction = process.env.NODE_ENV === 'production';
+        
+        // Store admin session in database (preserved)
+        const { error: sessionError } = await supabase
+          .from('admin_sessions')
+          .insert({
+            token: sessionToken,
+            expires_at: new Date(Date.now() + maxAge * 1000).toISOString(),
+            user_agent: req.headers['user-agent'] || null,
+            ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
+          });
+
+        if (sessionError) {
+          console.error('Admin session error:', sessionError);
+          return res.status(500).json({ success: false, error: 'Failed to create admin session' });
+        }
         
         // Set admin cookies
         res.setHeader('Set-Cookie', [
@@ -76,7 +91,7 @@ export default async function handler(req, res) {
     if (!user.email_verified) {
       return res.status(401).json({ 
         success: false, 
-        error: 'Please verify your email address before logging in. Check your inbox for the verification link.' 
+        error: 'Please verify your email address before logging in.' 
       });
     }
 
@@ -97,11 +112,11 @@ export default async function handler(req, res) {
     const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
     const expiresAt = new Date(Date.now() + maxAge * 1000).toISOString();
 
-    // Store session in user_sessions table
+    // Store session in user_sessions table (UUID handled automatically)
     const { error: sessionError } = await supabase
       .from('user_sessions')
       .insert({
-        user_id: user.id,
+        user_id: user.id, // user.id is already UUID from Supabase
         token: sessionToken,
         expires_at: expiresAt,
         user_agent: req.headers['user-agent'] || null,
@@ -109,7 +124,7 @@ export default async function handler(req, res) {
       });
 
     if (sessionError) {
-      console.error('Session creation error:', sessionError);
+      console.error('User session error:', sessionError);
       return res.status(500).json({ success: false, error: 'Failed to create session' });
     }
 
@@ -135,6 +150,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error. Please try again later.' });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 }

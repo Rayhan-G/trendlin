@@ -1,7 +1,6 @@
 import { supabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
-  // Only allow GET
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).json({ success: false, error: 'Method not allowed' });
@@ -11,7 +10,6 @@ export default async function handler(req, res) {
     const sessionToken = req.cookies.session_token;
     const isAdminCookie = req.cookies.is_admin === 'true';
     const adminEmail = req.cookies.admin_email ? decodeURIComponent(req.cookies.admin_email) : null;
-    const userRole = req.cookies.user_role;
 
     // No session token
     if (!sessionToken) {
@@ -19,24 +17,32 @@ export default async function handler(req, res) {
     }
 
     // ============================================================
-    // CHECK FOR ADMIN USER (Cookie-based)
+    // CHECK FOR ADMIN USER (Database session)
     // ============================================================
     if (isAdminCookie && adminEmail) {
-      return res.status(200).json({
-        authenticated: true,
-        user: {
-          id: 'admin',
-          email: adminEmail,
-          is_admin: true,
-          role: 'admin'
-        }
-      });
+      // Verify admin session in database
+      const { data: adminSession, error: adminError } = await supabase
+        .from('admin_sessions')
+        .select('expires_at')
+        .eq('token', sessionToken)
+        .single();
+
+      if (!adminError && adminSession && new Date(adminSession.expires_at) > new Date()) {
+        return res.status(200).json({
+          authenticated: true,
+          user: {
+            id: 'admin',
+            email: adminEmail,
+            is_admin: true,
+            role: 'admin'
+          }
+        });
+      }
     }
 
     // ============================================================
     // CHECK FOR REGULAR USER (Database session)
     // ============================================================
-    // Check if session exists in user_sessions table
     const { data: session, error: sessionError } = await supabase
       .from('user_sessions')
       .select('user_id, expires_at')
@@ -44,7 +50,6 @@ export default async function handler(req, res) {
       .single();
 
     if (sessionError || !session) {
-      // Not a valid user session
       return res.status(200).json({ authenticated: false });
     }
 
@@ -66,7 +71,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ authenticated: false });
     }
 
-    // Return regular user
     return res.status(200).json({
       authenticated: true,
       user: {
