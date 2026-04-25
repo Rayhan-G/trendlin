@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Check for admin login FIRST
+    // CHECK FOR ADMIN LOGIN FIRST
     const adminEmail = process.env.ADMIN_EMAIL
     const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH
 
@@ -51,20 +51,21 @@ export default async function handler(req, res) {
           `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict`
         ])
 
+        // Return with is_admin flag for navbar
         return res.status(200).json({
           success: true,
           user: {
             id: 'admin',
             email: adminEmail,
+            is_admin: true,
             role: 'admin'
           },
-          isAdmin: true,
-          role: 'admin'
+          isAdmin: true
         })
       }
     }
 
-    // Check for regular user login
+    // CHECK FOR REGULAR USER LOGIN
     const { data: user, error: userError } = await supabase
       .from('users')
       .select('id, email, password_hash, email_verified, role')
@@ -110,14 +111,15 @@ export default async function handler(req, res) {
       `session_expires=${expiresAt.toISOString()}; Path=/; Max-Age=${maxAge}; SameSite=Strict`
     ])
 
+    // Return regular user without is_admin flag
     return res.status(200).json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
+        is_admin: false,
         role: user.role || 'user'
-      },
-      role: user.role || 'user'
+      }
     })
 
   } catch (error) {

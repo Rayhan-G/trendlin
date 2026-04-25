@@ -19,8 +19,8 @@ export default function UserMenu({ user, onLogout }) {
 
   if (!user) return null
 
-  // Check if user is admin (supports both role and is_admin flags)
-  const isAdmin = user.role === 'admin' || user.is_admin === true
+  // Check if admin (supports both formats)
+  const isAdmin = user.is_admin === true || user.role === 'admin'
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -51,7 +51,7 @@ export default function UserMenu({ user, onLogout }) {
         <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border py-1 z-50">
           <div className="px-4 py-3 border-b">
             <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
-            <p className="text-xs text-gray-500 mt-1 capitalize">
+            <p className="text-xs text-gray-500 mt-1">
               {isAdmin ? 'Administrator' : 'Member'}
             </p>
           </div>
@@ -65,7 +65,7 @@ export default function UserMenu({ user, onLogout }) {
               👤 Your Profile
             </Link>
             
-            {/* ONLY SHOW FOR ADMIN USERS */}
+            {/* ONLY SHOW DASHBOARD FOR ADMIN USERS */}
             {isAdmin && (
               <Link
                 href="/admin/dashboard"

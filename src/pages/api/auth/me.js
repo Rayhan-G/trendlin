@@ -28,8 +28,8 @@ export default async function handler(req, res) {
           user: {
             id: 'admin',
             email: process.env.ADMIN_EMAIL,
-            role: 'admin',
-            is_admin: true
+            is_admin: true,
+            role: 'admin'
           }
         })
       }
@@ -66,8 +66,8 @@ export default async function handler(req, res) {
       user: {
         id: user.id,
         email: user.email,
-        role: user.role || 'user',
-        is_admin: false
+        is_admin: false,
+        role: user.role || 'user'
       }
     })
 

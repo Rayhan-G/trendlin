@@ -14,10 +14,12 @@ export default async function handler(req, res) {
     await supabase.from('admin_sessions').delete().eq('token', sessionToken)
   }
 
+  // Clear cookies
+  const isProduction = process.env.NODE_ENV === 'production'
   res.setHeader('Set-Cookie', [
-    'session_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly',
-    'session_expires=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
-    'is_admin=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+    `session_token=; Path=/; Max-Age=0; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
+    `user_role=; Path=/; Max-Age=0; SameSite=Strict`,
+    `session_expires=; Path=/; Max-Age=0; SameSite=Strict`
   ])
 
   return res.status(200).json({ success: true })
