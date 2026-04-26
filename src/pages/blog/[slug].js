@@ -31,7 +31,7 @@ export default function BlogPost({ post, error }) {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
-  const [isMounted, setIsMounted] = useState(false)
+  const [imageError, setImageError] = useState(false)
 
   const handleScroll = useCallback(() => {
     const scrolled = window.scrollY > 100
@@ -44,7 +44,6 @@ export default function BlogPost({ post, error }) {
   }, [])
 
   useEffect(() => {
-    setIsMounted(true)
     if (post?.content) setReadingTime(getReadingTime(post.content))
     
     const checkDarkMode = () => {
@@ -63,11 +62,11 @@ export default function BlogPost({ post, error }) {
     }
   }, [post?.content, handleScroll])
 
-  if (router.isFallback || !isMounted) {
+  // Handle loading state
+  if (router.isFallback) {
     return (
       <div className="loading-screen">
         <div className="loading-content">
-          <div className="loading-logo">T</div>
           <div className="loading-spinner"></div>
           <p>Loading article...</p>
         </div>
@@ -81,18 +80,6 @@ export default function BlogPost({ post, error }) {
             justify-content: center;
             z-index: 9999;
           }
-          .loading-content {
-            text-align: center;
-          }
-          .loading-logo {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #0056b3, #00a6ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 1rem;
-          }
           .loading-spinner {
             width: 40px;
             height: 40px;
@@ -102,10 +89,6 @@ export default function BlogPost({ post, error }) {
             animation: spin 0.6s linear infinite;
             margin: 1rem auto;
           }
-          .loading-content p {
-            color: #6c757d;
-            font-size: 0.875rem;
-          }
           @keyframes spin {
             to { transform: rotate(360deg); }
           }
@@ -114,6 +97,7 @@ export default function BlogPost({ post, error }) {
     )
   }
 
+  // Handle error state
   if (error || !post) {
     return (
       <div className="error-page">
@@ -151,23 +135,13 @@ export default function BlogPost({ post, error }) {
             font-size: 2rem;
             margin-bottom: 1rem;
           }
-          p {
-            opacity: 0.9;
-            margin-bottom: 2rem;
-          }
-          .error-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-          }
           .btn-primary, .btn-secondary {
             display: inline-block;
             padding: 0.75rem 1.5rem;
             border-radius: 40px;
             text-decoration: none;
             font-weight: 600;
-            transition: all 0.2s;
+            margin: 0.5rem;
           }
           .btn-primary {
             background: white;
@@ -176,206 +150,103 @@ export default function BlogPost({ post, error }) {
           .btn-secondary {
             background: rgba(255,255,255,0.2);
             color: white;
-            backdrop-filter: blur(10px);
-          }
-          .btn-primary:hover, .btn-secondary:hover {
-            transform: translateY(-2px);
           }
         `}</style>
       </div>
     )
   }
 
-  // Get the featured image URL - prioritize featured_image over image_url
+  // Get featured image URL - check all possible fields
   const featuredImageUrl = post.featured_image || post.image_url || null
   const featuredImageAlt = post.featured_image_alt || post.title
   const featuredImageCaption = post.featured_image_caption || ''
-  const featuredImageAlignment = post.featured_image_alignment || 'center'
-  const featuredImageWidth = post.featured_image_width || '100%'
   
-  // Build image style based on alignment and width
-  const imageStyle = {
-    textAlign: featuredImageAlignment,
-    maxWidth: featuredImageWidth,
-    margin: featuredImageAlignment === 'center' ? '0 auto' : 
-            featuredImageAlignment === 'left' ? '0 auto 0 0' : 
-            '0 0 0 auto'
-  }
-
-  const imageContainerStyle = {
-    display: 'block',
-    margin: featuredImageAlignment === 'center' ? '0 auto' : 
-            featuredImageAlignment === 'left' ? '0 auto 0 0' : 
-            '0 0 0 auto',
-    maxWidth: '100%'
-  }
-
   const postUrl = `https://trendlin.com/blog/${post.slug}`
   const publishedDate = post.published_at || post.created_at
   const postCategory = post.category?.toLowerCase() || 'general'
-  
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": post.title,
-    "description": post.excerpt,
-    "image": featuredImageUrl,
-    "datePublished": publishedDate,
-    "dateModified": post.updated_at,
-    "author": {
-      "@type": "Person",
-      "name": post.author || "Trendlin Team"
-    },
-    "publisher": {
-      "@type": "Organization",
-      "name": "Trendlin",
-      "logo": {
-        "@type": "ImageObject",
-        "url": "https://trendlin.com/logo.png"
-      }
-    },
-    "mainEntityOfPage": {
-      "@type": "WebPage",
-      "@id": postUrl
-    }
-  }
 
   return (
-    <div className={`blog-post ${isDarkMode ? 'dark' : 'light'}`}>
+    <>
       <Head>
         <title>{post.seo_title || post.meta_title || `${post.title} | Trendlin`}</title>
         <meta name="description" content={post.seo_description || post.meta_description || post.excerpt || `Read ${post.title} on Trendlin`} />
-        <meta name="keywords" content={post.keywords || post.tags?.join(', ') || post.category} />
-        <meta name="author" content={post.author || "Trendlin Team"} />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-        
-        {/* Open Graph tags */}
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt || `Read ${post.title} on Trendlin`} />
         <meta property="og:image" content={featuredImageUrl} />
         <meta property="og:image:alt" content={featuredImageAlt} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
         <meta property="og:url" content={postUrl} />
         <meta property="og:type" content="article" />
         <meta property="og:site_name" content="Trendlin" />
-        
-        {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.title} />
-        <meta name="twitter:description" content={post.excerpt || `Read ${post.title} on Trendlin`} />
         <meta name="twitter:image" content={featuredImageUrl} />
-        <meta name="twitter:image:alt" content={featuredImageAlt} />
-        
         <link rel="canonical" href={postUrl} />
-        
-        {/* Additional SEO */}
-        {featuredImageCaption && (
-          <meta name="image:caption" content={featuredImageCaption} />
-        )}
-        
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
-      {/* Progress Bar */}
-      <div className="progress-bar">
-        <div className="progress-fill" style={{ width: `${scrollProgress}%` }}></div>
-      </div>
+      <div className={`blog-post ${isDarkMode ? 'dark' : 'light'}`}>
+        {/* Progress Bar */}
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width: `${scrollProgress}%` }}></div>
+        </div>
 
-      <div className="container">
-        {/* Header Section */}
-        <header className="header">
-          <nav className="breadcrumb" aria-label="Breadcrumb">
-            <a href="/">Home</a>
-            <span className="separator">/</span>
-            <a href={`/category/${encodeURIComponent(postCategory)}`}>{post.category}</a>
-            <span className="separator">/</span>
-            <span className="current" aria-current="page">{post.title}</span>
-          </nav>
-          
-          <div className="category-tag">
-            <a href={`/category/${encodeURIComponent(postCategory)}`} className="category-link">
-              {post.category}
-            </a>
-          </div>
-          
-          <h1 className="post-title">{post.title}</h1>
-          
-          {post.excerpt && (
-            <p className="post-excerpt">{post.excerpt}</p>
-          )}
-          
-          <div className="post-meta">
-            <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
-              </svg>
-              <time dateTime={publishedDate}>{formatDate(publishedDate)}</time>
+        <div className="container">
+          {/* Header */}
+          <header className="header">
+            <div className="category-tag">
+              <a href={`/category/${encodeURIComponent(postCategory)}`} className="category-link">
+                {post.category}
+              </a>
             </div>
-            <div className="meta-divider"></div>
-            <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 12v8H4v-8M12 2v8m0 0-3-3m3 3 3-3"/>
-              </svg>
-              <span>{readingTime} min read</span>
-            </div>
-            <div className="meta-divider"></div>
-            <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-              <span>{post.views?.toLocaleString() || 0} views</span>
-            </div>
-            {post.author && (
-              <>
-                <div className="meta-divider"></div>
-                <div className="meta-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  <span>{post.author}</span>
-                </div>
-              </>
+            
+            <h1 className="post-title">{post.title}</h1>
+            
+            {post.excerpt && (
+              <p className="post-excerpt">{post.excerpt}</p>
             )}
-          </div>
-        </header>
+            
+            <div className="post-meta">
+              <span className="meta-item">📅 {formatDate(publishedDate)}</span>
+              <span className="meta-divider">•</span>
+              <span className="meta-item">📖 {readingTime} min read</span>
+              <span className="meta-divider">•</span>
+              <span className="meta-item">👁️ {post.views?.toLocaleString() || 0} views</span>
+              {post.author && (
+                <>
+                  <span className="meta-divider">•</span>
+                  <span className="meta-item">✍️ {post.author}</span>
+                </>
+              )}
+            </div>
+          </header>
 
-        {/* Featured Image - Fixed to use featured_image column */}
-        {featuredImageUrl && (
-          <div className="featured-image-container" style={imageStyle}>
-            <div className="featured-image">
-              <div className="image-wrapper" style={imageContainerStyle}>
+          {/* Featured Image - Fixed Version */}
+          {featuredImageUrl && !imageError && (
+            <div className="featured-image-container">
+              <div className="featured-image">
                 <img 
                   src={featuredImageUrl} 
                   alt={featuredImageAlt}
                   title={post.featured_image_title || post.title}
+                  className="featured-img"
+                  onError={() => setImageError(true)}
                   loading="eager"
-                  fetchpriority="high"
                 />
                 {featuredImageCaption && (
-                  <figcaption className="image-caption">{featuredImageCaption}</figcaption>
+                  <div className="image-caption">{featuredImageCaption}</div>
                 )}
               </div>
             </div>
-          </div>
-        )}
-         
-        {/* Content Grid */}
-        <div className="content-grid">
-          {/* Main Content */}
-          <article className="main-content">
-            <div className="content-wrapper">
+          )}
+          
+          {/* Content Grid */}
+          <div className="content-grid">
+            <article className="main-content">
               <div 
                 className="article-content"
                 dangerouslySetInnerHTML={{ __html: post.content || '<p>No content available.</p>' }}
               />
               
-              {/* Post Footer */}
-              <footer className="post-footer">
-                {post.tags && post.tags.length > 0 && (
+              {post.tags && post.tags.length > 0 && (
+                <footer className="post-footer">
                   <div className="post-tags">
                     <span className="tags-label">Tags:</span>
                     <div className="tags-list">
@@ -386,37 +257,33 @@ export default function BlogPost({ post, error }) {
                       ))}
                     </div>
                   </div>
-                )}
-              </footer>
-            </div>
-          </article>
+                </footer>
+              )}
+            </article>
 
-          {/* Sidebar */}
-          <aside className="sidebar">
-            <div className="sticky-sidebar">
-              <ShareButtons url={postUrl} title={post.title} imageUrl={featuredImageUrl || postUrl} />
-              <RightBlock postSlug={post.slug} />
-            </div>
-          </aside>
+            <aside className="sidebar">
+              <div className="sticky-sidebar">
+                <ShareButtons url={postUrl} title={post.title} imageUrl={featuredImageUrl || postUrl} />
+                <RightBlock postSlug={post.slug} />
+              </div>
+            </aside>
+          </div>
+
+          <RelatedPosts 
+            currentPostId={post.id} 
+            currentCategory={post.category}
+          />
         </div>
 
-        {/* Related Posts */}
-        <RelatedPosts 
-          currentPostId={post.id} 
-          currentCategory={post.category}
-        />
+        {/* Scroll to Top Button */}
+        <button 
+          className={`scroll-top ${isScrolled ? 'visible' : ''}`}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Scroll to top"
+        >
+          ↑
+        </button>
       </div>
-
-      {/* Scroll to Top Button */}
-      <button 
-        className={`scroll-top ${isScrolled ? 'visible' : ''}`}
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        aria-label="Scroll to top"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="18 15 12 9 6 15"/>
-        </svg>
-      </button>
 
       <style jsx>{`
         .blog-post {
@@ -437,9 +304,6 @@ export default function BlogPost({ post, error }) {
           background: rgba(0,0,0,0.05);
           z-index: 1001;
         }
-        .blog-post.dark .progress-bar {
-          background: rgba(255,255,255,0.05);
-        }
         .progress-fill {
           height: 100%;
           background: linear-gradient(90deg, #0056b3, #00a6ff);
@@ -448,45 +312,11 @@ export default function BlogPost({ post, error }) {
         }
 
         .container {
-          max-width: 1400px;
+          max-width: 1200px;
           margin: 0 auto;
           padding: 3rem 2rem;
         }
 
-        .header {
-          text-align: left;
-          margin-bottom: 3rem;
-        }
-
-        .breadcrumb {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.85rem;
-          margin-bottom: 1.5rem;
-          flex-wrap: wrap;
-        }
-        .breadcrumb a {
-          color: #0056b3;
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-        .blog-post.dark .breadcrumb a {
-          color: #66b0ff;
-        }
-        .breadcrumb a:hover {
-          text-decoration: underline;
-        }
-        .breadcrumb .separator {
-          color: #6c757d;
-        }
-        .breadcrumb .current {
-          color: #6c757d;
-        }
-
-        .category-tag {
-          margin-bottom: 1rem;
-        }
         .category-link {
           display: inline-block;
           padding: 0.25rem 0.75rem;
@@ -497,25 +327,17 @@ export default function BlogPost({ post, error }) {
           font-size: 0.75rem;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-          transition: all 0.2s;
         }
         .blog-post.dark .category-link {
           background: rgba(102, 176, 255, 0.15);
           color: #66b0ff;
         }
-        .category-link:hover {
-          background: rgba(0, 86, 179, 0.2);
-          transform: translateY(-1px);
-        }
 
         .post-title {
-          font-size: clamp(2.5rem, 5vw, 3.8rem);
+          font-size: clamp(2rem, 5vw, 3.5rem);
           font-weight: 800;
-          margin-bottom: 1rem;
+          margin: 1rem 0;
           color: #1a1a2e;
-          line-height: 1.2;
-          letter-spacing: -0.02em;
         }
         .blog-post.dark .post-title {
           color: #ffffff;
@@ -526,7 +348,6 @@ export default function BlogPost({ post, error }) {
           line-height: 1.6;
           color: #6c757d;
           margin-bottom: 1.5rem;
-          max-width: 800px;
         }
 
         .post-meta {
@@ -534,63 +355,43 @@ export default function BlogPost({ post, error }) {
           align-items: center;
           gap: 1rem;
           flex-wrap: wrap;
-        }
-        .meta-item {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          font-size: 0.9rem;
           color: #6c757d;
+          font-size: 0.9rem;
         }
-        .blog-post.dark .meta-item {
+        .blog-post.dark .post-meta {
           color: #a0a0a0;
-        }
-        .meta-item svg {
-          stroke: currentColor;
-        }
-        .meta-divider {
-          width: 4px;
-          height: 4px;
-          background: #6c757d;
-          border-radius: 50%;
         }
 
         .featured-image-container {
-          margin: 2rem 0 3rem;
+          margin: 2rem 0;
         }
         .featured-image {
-          border-radius: 24px;
+          border-radius: 16px;
           overflow: hidden;
           box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
-        .image-wrapper {
-          position: relative;
-          width: 100%;
-          background: #f0f0f0;
-        }
-        .featured-image img {
+        .featured-img {
           width: 100%;
           height: auto;
           display: block;
         }
         .image-caption {
-          padding: 0.75rem 1rem;
+          padding: 0.75rem;
           font-size: 0.85rem;
           color: #6c757d;
           text-align: center;
           background: #f8f9fa;
-          border-top: 1px solid #e9ecef;
         }
         .blog-post.dark .image-caption {
           background: #1a1a2e;
           color: #a0a0a0;
-          border-top-color: #2c3e50;
         }
 
         .content-grid {
           display: grid;
           grid-template-columns: 1fr 320px;
           gap: 3rem;
+          margin-top: 2rem;
         }
 
         .article-content {
@@ -601,92 +402,11 @@ export default function BlogPost({ post, error }) {
         .blog-post.dark .article-content {
           color: #d1d5db;
         }
-        .article-content p {
-          margin-bottom: 1.5rem;
-        }
-        .article-content h2 {
-          font-size: clamp(1.6rem, 4vw, 2rem);
-          margin-top: 2.5rem;
-          margin-bottom: 1rem;
-          font-weight: 700;
-          color: #1a1a2e;
-        }
-        .blog-post.dark .article-content h2 {
-          color: #ffffff;
-        }
-        .article-content h3 {
-          font-size: clamp(1.3rem, 3.5vw, 1.5rem);
-          margin-top: 2rem;
-          margin-bottom: 0.75rem;
-          font-weight: 600;
-          color: #1a1a2e;
-        }
-        .blog-post.dark .article-content h3 {
-          color: #ffffff;
-        }
-        .article-content a {
-          color: #0056b3;
-          text-decoration: underline;
-          text-underline-offset: 4px;
-        }
-        .blog-post.dark .article-content a {
-          color: #66b0ff;
-        }
-        .article-content img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 16px;
-          margin: 2rem 0;
-        }
-        .article-content ul, .article-content ol {
-          margin: 1.5rem 0;
-          padding-left: 1.75rem;
-        }
-        .article-content li {
-          margin: 0.5rem 0;
-        }
-        .article-content blockquote {
-          border-left: 4px solid #0056b3;
-          padding-left: 1.5rem;
-          margin: 2rem 0;
-          font-style: italic;
-          color: #6c757d;
-        }
-        .blog-post.dark .article-content blockquote {
-          border-left-color: #66b0ff;
-          color: #a0a0a0;
-        }
-        .article-content code {
-          background: #f0f0f0;
-          padding: 0.2rem 0.5rem;
-          border-radius: 6px;
-          font-size: 0.9rem;
-          font-family: monospace;
-        }
-        .blog-post.dark .article-content code {
-          background: #1a1a2e;
-          color: #e9ecef;
-        }
-        .article-content pre {
-          background: #1a1a2e;
-          color: #e9ecef;
-          padding: 1.5rem;
-          border-radius: 16px;
-          overflow-x: auto;
-          margin: 2rem 0;
-        }
-        .article-content pre code {
-          background: none;
-          padding: 0;
-        }
 
         .post-footer {
           margin-top: 3rem;
           padding-top: 2rem;
           border-top: 1px solid #e9ecef;
-        }
-        .blog-post.dark .post-footer {
-          border-top-color: #2c3e50;
         }
         .post-tags {
           display: flex;
@@ -694,33 +414,22 @@ export default function BlogPost({ post, error }) {
           gap: 1rem;
           flex-wrap: wrap;
         }
-        .tags-label {
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: #6c757d;
-        }
         .tags-list {
           display: flex;
           gap: 0.5rem;
           flex-wrap: wrap;
         }
         .tag {
-          display: inline-block;
           padding: 0.25rem 0.75rem;
           background: #f0f0f0;
           color: #495057;
           text-decoration: none;
           border-radius: 20px;
           font-size: 0.75rem;
-          transition: all 0.2s;
         }
         .blog-post.dark .tag {
           background: #1a1a2e;
           color: #a0a0a0;
-        }
-        .tag:hover {
-          background: #e0e0e0;
-          transform: translateY(-1px);
         }
 
         .sidebar {
@@ -742,30 +451,20 @@ export default function BlogPost({ post, error }) {
           color: #0056b3;
           border: 1px solid #e9ecef;
           cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           opacity: 0;
           visibility: hidden;
           transition: all 0.3s ease;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-          z-index: 100;
-        }
-        .blog-post.dark .scroll-top {
-          background: #1a1a2e;
-          color: #66b0ff;
-          border-color: #2c3e50;
+          font-size: 1.5rem;
         }
         .scroll-top.visible {
           opacity: 1;
           visibility: visible;
         }
-        .scroll-top:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 768px) {
+          .container {
+            padding: 1rem;
+          }
           .content-grid {
             grid-template-columns: 1fr;
             gap: 2rem;
@@ -773,52 +472,24 @@ export default function BlogPost({ post, error }) {
           .sidebar {
             order: -1;
           }
-          .sticky-sidebar {
-            position: static;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .container {
-            padding: 1.5rem 1rem;
-          }
-          .post-title {
-            font-size: 1.75rem;
-          }
-          .post-excerpt {
-            font-size: 1rem;
-          }
-          .article-content {
-            font-size: 1rem;
-          }
-          .scroll-top {
-            bottom: 1rem;
-            right: 1rem;
-            width: 40px;
-            height: 40px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .post-meta {
-            gap: 0.5rem;
-          }
-          .meta-item {
-            font-size: 0.75rem;
-          }
         }
       `}</style>
-    </div>
+    </>
   )
 }
 
 export async function getStaticPaths() {
   try {
-    const { data: posts } = await supabase
+    const { data: posts, error } = await supabase
       .from('posts')
       .select('slug')
       .eq('status', 'published')
       .limit(100)
+    
+    if (error) {
+      console.error('Error fetching paths:', error)
+      return { paths: [], fallback: 'blocking' }
+    }
     
     const paths = posts?.map(post => ({ params: { slug: post.slug } })) || []
     return { paths, fallback: 'blocking' }
@@ -832,27 +503,46 @@ export async function getStaticProps({ params }) {
   const { slug } = params
   
   try {
-    const { data: post } = await supabase
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Supabase timeout')), 10000)
+    )
+    
+    const queryPromise = supabase
       .from('posts')
       .select('*')
       .eq('slug', slug)
       .eq('status', 'published')
       .maybeSingle()
+    
+    const { data: post, error } = await Promise.race([queryPromise, timeoutPromise])
+
+    if (error) {
+      console.error('Supabase error:', error)
+      return { props: { error: 'Database error', post: null }, revalidate: 60 }
+    }
 
     if (!post) {
       return { props: { error: 'Post not found', post: null }, revalidate: 60 }
     }
 
-    // Increment view count asynchronously
+    // Increment view count asynchronously (don't wait for it)
     supabase
       .from('posts')
       .update({ views: (post.views || 0) + 1 })
       .eq('id', post.id)
       .then()
+      .catch(err => console.error('Error updating views:', err))
 
-    return { props: { post, error: null }, revalidate: 3600 }
+    return { 
+      props: { 
+        post, 
+        error: null 
+      }, 
+      revalidate: 3600 // Revalidate every hour
+    }
   } catch (error) {
     console.error('Error in getStaticProps:', error)
-    return { props: { error: 'Internal error', post: null }, revalidate: 60 }
+    return { props: { error: 'Internal server error', post: null }, revalidate: 60 }
   }
 }
