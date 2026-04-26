@@ -3,7 +3,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import AdminNavigation from '@/components/admin/AdminNavigation';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Copy, Eye, Code, X, CheckCircle, Clock, XCircle, BarChart3, Users, Share2 } from 'lucide-react';
+import { 
+  Plus, Edit, Trash2, Copy, Eye, Code, X, CheckCircle, Clock, XCircle, 
+  BarChart3, Users, Share2 
+} from 'lucide-react';
 
 export default function PollManager() {
   const [polls, setPolls] = useState([]);
@@ -95,7 +98,6 @@ export default function PollManager() {
         
         if (error) throw error;
         
-        // Delete existing options and re-add
         await supabase.from('poll_options').delete().eq('poll_id', editingPoll.id);
         
         const optionsToInsert = validOptions.map((opt, idx) => ({
@@ -132,7 +134,6 @@ export default function PollManager() {
         toast.success('Poll created successfully');
       }
       
-      // Reset form and close modal
       resetForm();
       setShowCreateModal(false);
       setEditingPoll(null);
@@ -169,7 +170,6 @@ export default function PollManager() {
     setStartDate(poll.start_date?.split('T')[0] || '');
     setEndDate(poll.end_date?.split('T')[0] || '');
     
-    // Fetch options
     const { data: optionsData } = await supabase
       .from('poll_options')
       .select('*')
@@ -257,7 +257,7 @@ export default function PollManager() {
           </div>
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 rounded-lg"><CheckCircle size= size={20} className="text-green-600" /></div>
+              <div className="p-2 bg-green-100 rounded-lg"><CheckCircle size={20} className="text-green-600" /></div>
               <div><div className="text-2xl font-bold">{polls.filter(p => p.status === 'active').length}</div><div className="text-xs text-gray-500">Active</div></div>
             </div>
           </div>
@@ -304,13 +304,26 @@ export default function PollManager() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => setShowEmbedModal(poll.id)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Get Embed Code"><Code size={16} /></button>
-                        <button onClick={() => handleEditPoll(poll)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Edit"><Edit size={16} /></button>
-                        <button onClick={() => handleDeletePoll(poll.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg" title="Delete"><Trash2 size={16} /></button>
+                        <button onClick={() => setShowEmbedModal(poll.id)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Get Embed Code">
+                          <Code size={16} />
+                        </button>
+                        <button onClick={() => handleEditPoll(poll)} className="p-1.5 hover:bg-gray-100 rounded-lg" title="Edit">
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => handleDeletePoll(poll.id)} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg" title="Delete">
+                          <Trash2 size={16} />
+                        </button>
                       </div>
                     </td>
-                  </td>
+                  </tr>
                 ))}
+                {polls.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
+                      No polls yet. Click "Create Poll" to get started.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -424,7 +437,9 @@ export default function PollManager() {
             </div>
             
             <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-3">
-              <button onClick={() => { setShowCreateModal(false); setEditingPoll(null); resetForm(); }} className="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={() => { setShowCreateModal(false); setEditingPoll(null); resetForm(); }} className="px-4 py-2 border rounded-lg hover:bg-gray-50">
+                Cancel
+              </button>
               <button onClick={handleSavePoll} disabled={saving} className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
                 {saving ? 'Saving...' : (editingPoll ? 'Update Poll' : 'Create Poll')}
               </button>
@@ -439,12 +454,25 @@ export default function PollManager() {
           <div className="bg-white rounded-2xl max-w-md w-full">
             <div className="flex items-center justify-between p-4 border-b">
               <h3 className="font-semibold">Embed Poll</h3>
-              <button onClick={() => setShowEmbedModal(null)} className="p-1 hover:bg-gray-100 rounded"><X size={18} /></button>
+              <button onClick={() => setShowEmbedModal(null)} className="p-1 hover:bg-gray-100 rounded">
+                <X size={18} />
+              </button>
             </div>
             <div className="p-4">
               <label className="block text-sm font-medium mb-2">Copy this code to embed the poll anywhere:</label>
-              <textarea readOnly value={getEmbedCode(showEmbedModal)} rows={4} className="w-full p-3 bg-gray-50 border rounded-lg font-mono text-sm" />
-              <button onClick={() => { navigator.clipboard.writeText(getEmbedCode(showEmbedModal)); toast.success('Copied!'); }} className="mt-3 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+              <textarea 
+                readOnly 
+                value={getEmbedCode(showEmbedModal)} 
+                rows={4} 
+                className="w-full p-3 bg-gray-50 border rounded-lg font-mono text-sm"
+              />
+              <button 
+                onClick={() => { 
+                  navigator.clipboard.writeText(getEmbedCode(showEmbedModal)); 
+                  toast.success('Code copied to clipboard!');
+                }} 
+                className="mt-3 w-full py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
                 Copy Code
               </button>
             </div>
