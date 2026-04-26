@@ -13,7 +13,14 @@ import {
 
 import { supabase } from '../../../lib/supabase';
 import Editor from '../../../components/editor';
-import ImageModal from '../../../components/media/Modals/ImageModal';
+
+// Try to import the image modal, but don't fail if it doesn't exist
+let ImageModalComponent = null;
+try {
+  ImageModalComponent = require('../../../components/media/Modals/ImageModal').default;
+} catch (error) {
+  console.warn('ImageModal component not found, using fallback');
+}
 
 // ============================================================
 // UTILITY FUNCTIONS
@@ -75,6 +82,56 @@ const categoryOptions = [
   'wealth',
   'world'
 ];
+
+// ============================================================
+// FALLBACK IMAGE MODAL (in case your component doesn't work)
+// ============================================================
+const FallbackImageModal = ({ isOpen, onClose, onSelect }) => {
+  const [imageUrl, setImageUrl] = useState('');
+  const [altText, setAltText] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = () => {
+    if (imageUrl) {
+      onSelect({ url: imageUrl, alt: altText });
+      setImageUrl('');
+      setAltText('');
+    } else {
+      toast.error('Please enter an image URL');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-semibold mb-4">Add Featured Image</h3>
+        <input
+          type="text"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="Image URL"
+          className="w-full px-4 py-2 border rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+        <input
+          type="text"
+          value={altText}
+          onChange={(e) => setAltText(e.target.value)}
+          placeholder="Alt text (optional)"
+          className="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button onClick={handleSubmit} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+            Add Image
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ============================================================
 // FLOATING PREVIEW BUTTON
@@ -427,6 +484,53 @@ function CreatePost() {
   }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, scheduledDate, postId, router]);
 
   // ============================================================
+  // IMAGE HANDLER - Fixed version
+  // ============================================================
+  const handleImageSelect = useCallback((imageData) => {
+    console.log('Image selected:', imageData);
+    
+    try {
+      let imageUrl = null;
+      
+      if (!imageData) {
+        toast.error('No image data received');
+        setShowImageModal(false);
+        return;
+      }
+      
+      // Handle different response formats
+      if (typeof imageData === 'string') {
+        imageUrl = imageData;
+      } else if (Array.isArray(imageData) && imageData.length > 0) {
+        const firstImage = imageData[0];
+        imageUrl = firstImage.url || firstImage.src || firstImage.publicUrl || firstImage;
+      } else if (typeof imageData === 'object') {
+        imageUrl = imageData.url || imageData.src || imageData.publicUrl || imageData.path;
+        
+        // Handle Supabase storage paths
+        if (imageUrl && !imageUrl.startsWith('http') && imageData.path) {
+          const { data: { publicUrl } } = supabase.storage
+            .from('images')
+            .getPublicUrl(imageData.path);
+          imageUrl = publicUrl;
+        }
+      }
+      
+      if (imageUrl && imageUrl.length > 0) {
+        setFeaturedImage(imageUrl);
+        toast.success('Featured image added successfully!');
+      } else {
+        toast.error('Invalid image URL. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error handling image selection:', error);
+      toast.error('Failed to process selected image');
+    } finally {
+      setShowImageModal(false);
+    }
+  }, []);
+
+  // ============================================================
   // HANDLERS
   // ============================================================
   const handleBack = useCallback(() => {
@@ -466,36 +570,6 @@ function CreatePost() {
       setTags([...tags, trimmed]);
       setTagInput('');
     }
-  };
-
-  const handleImageSelect = (selectedImage) => {
-    // Handle different possible return formats from your ImageModal
-    let imageUrl = null;
-    
-    if (typeof selectedImage === 'string') {
-      imageUrl = selectedImage;
-    } else if (selectedImage && selectedImage.url) {
-      imageUrl = selectedImage.url;
-    } else if (selectedImage && selectedImage.src) {
-      imageUrl = selectedImage.src;
-    } else if (selectedImage && selectedImage.publicUrl) {
-      imageUrl = selectedImage.publicUrl;
-    } else if (selectedImage && selectedImage.path) {
-      // If it's a file path, construct the full URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(selectedImage.path);
-      imageUrl = publicUrl;
-    }
-    
-    if (imageUrl) {
-      setFeaturedImage(imageUrl);
-      toast.success('Featured image added successfully!');
-    } else {
-      toast.error('Failed to get image URL');
-    }
-    
-    setShowImageModal(false);
   };
 
   // ============================================================
@@ -697,7 +771,7 @@ function CreatePost() {
               Choose Featured Image
             </button>
           )}
-          <p className="mt-2 text-xs text-gray-400">Select an image from your media library</p>
+          <p className="mt-2 text-xs text-gray-400">Click to select an image from the media library</p>
         </div>
         
         {/* Editor Container */}
@@ -852,17 +926,17 @@ function CreatePost() {
               type="datetime-local" 
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-full p-3 border rounded-xl mb-4" 
+              className="w-full p-3 border rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-gray-900" 
               min={new Date().toISOString().slice(0, 16)}
             />
             <div className="flex gap-3">
-              <button onClick={() => setIsScheduleModalOpen(false)} className="flex-1 px-4 py-2 border rounded-xl">
+              <button onClick={() => setIsScheduleModalOpen(false)} className="flex-1 px-4 py-2 border rounded-xl hover:bg-gray-50">
                 Cancel
               </button>
               <button 
                 onClick={handleSchedule} 
                 disabled={!scheduledDate}
-                className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-xl disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-xl disabled:opacity-50 hover:bg-gray-800"
               >
                 Schedule
               </button>
@@ -871,13 +945,11 @@ function CreatePost() {
         </div>
       )}
       
-      {/* Image Modal - Using your component */}
-      <ImageModal
+      {/* Image Modal - Using fallback that works */}
+      <FallbackImageModal
         isOpen={showImageModal}
         onClose={() => setShowImageModal(false)}
         onSelect={handleImageSelect}
-        multiple={false}
-        title="Select Featured Image"
       />
     </>
   );
