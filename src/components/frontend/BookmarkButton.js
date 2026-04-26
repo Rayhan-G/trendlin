@@ -1,17 +1,46 @@
-// src/components/frontend/BookmarkButton.js
+// src/components/frontend/BookmarkButton.jsx
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
+import toast from 'react-hot-toast'
 
-export default function BookmarkButton({ postId, postTitle = '', postSlug = '', className = '' }) {
+// Icons
+import { 
+  Bookmark, 
+  BookmarkCheck, 
+  Loader2, 
+  FolderPlus, 
+  Tag, 
+  Star,
+  MoreHorizontal,
+  Share2
+} from 'lucide-react'
+
+export default function BookmarkButton({ 
+  postId, 
+  postTitle = '', 
+  postSlug = '', 
+  postExcerpt = '',
+  featuredImage = '',
+  className = '',
+  variant = 'floating' // floating, inline, compact
+}) {
   const [user, setUser] = useState(null)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
-  const [tooltipText, setTooltipText] = useState('')
+  const [showMenu, setShowMenu] = useState(false)
+  const [categories, setCategories] = useState([])
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [importance, setImportance] = useState(3)
+  const [notes, setNotes] = useState('')
+  const [showNotes, setShowNotes] = useState(false)
+  const [bookmarkId, setBookmarkId] = useState(null)
+  const menuRef = useRef(null)
 
+  // Fetch user and bookmark status
   useEffect(() => {
-    const checkAuthAndBookmark = async () => {
+    const fetchData = async () => {
       try {
         const res = await fetch('/api/auth/me')
         const data = await res.json()
@@ -19,308 +48,614 @@ export default function BookmarkButton({ postId, postTitle = '', postSlug = '', 
         if (data.authenticated) {
           setUser(data.user)
           
-          // Check if bookmark exists
-          const { data: bookmark, error } = await supabase
+          // Fetch bookmark details
+          const { data: bookmark } = await supabase
             .from('bookmarks')
-            .select('id')
+            .select('id, category_id, importance_level, notes')
             .eq('user_id', data.user.id)
             .eq('post_id', postId)
             .maybeSingle()
           
-          if (error) {
-            console.error('Error checking bookmark:', error)
+          if (bookmark) {
+            setIsBookmarked(true)
+            setBookmarkId(bookmark.id)
+            setSelectedCategory(bookmark.category_id)
+            setImportance(bookmark.importance_level || 3)
+            setNotes(bookmark.notes || '')
           }
           
-          setIsBookmarked(!!bookmark)
+          // Fetch user categories
+          const { data: userCategories } = await supabase
+            .from('bookmark_categories')
+            .select('id, name, icon, color')
+            .eq('user_id', data.user.id)
+            .order('position', { ascending: true })
+          
+          setCategories(userCategories || [])
         }
       } catch (error) {
-        console.error('Auth check failed:', error)
+        console.error('Error:', error)
       }
     }
     
-    if (postId) {
-      checkAuthAndBookmark()
-    }
+    fetchData()
   }, [postId])
 
+  // Click outside handler
   useEffect(() => {
-    const handleAuthComplete = async () => {
-      const res = await fetch('/api/auth/me')
-      const data = await res.json()
-      if (data.authenticated) {
-        setUser(data.user)
-        const { data: bookmark } = await supabase
-          .from('bookmarks')
-          .select('id')
-          .eq('user_id', data.user.id)
-          .eq('post_id', postId)
-          .maybeSingle()
-        setIsBookmarked(!!bookmark)
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowMenu(false)
+        setShowNotes(false)
       }
     }
-    window.addEventListener('authComplete', handleAuthComplete)
-    return () => window.removeEventListener('authComplete', handleAuthComplete)
-  }, [postId])
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
-  useEffect(() => {
-    if (showTooltip) {
-      const timer = setTimeout(() => setShowTooltip(false), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [showTooltip])
-
-  const displayTooltip = (msg, isError = false) => {
-    setTooltipText(msg)
-    setShowTooltip(true)
-  }
-
-  const toggleBookmark = async () => {
+  const handleBookmark = async () => {
     if (!user) {
-      displayTooltip('🔖 Sign in to save bookmarks')
+      toast.error('Sign in to save bookmarks', {
+        icon: '🔖',
+        duration: 4000
+      })
       return
     }
 
     setLoading(true)
     
     try {
-      console.log('Toggling bookmark for post:', postId)
-      console.log('User ID:', user.id)
-      
-      if (isBookmarked) {
-        // Remove bookmark
-        console.log('Attempting to remove bookmark...')
+      if (!isBookmarked) {
+        // Create bookmark with advanced metadata
         const { data, error } = await supabase
           .from('bookmarks')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('post_id', postId)
-        
-        if (error) {
-          console.error('Delete error:', error)
-          throw error
-        }
-        
-        console.log('Bookmark removed successfully')
-        setIsBookmarked(false)
-        displayTooltip('❌ Removed from bookmarks')
-      } else {
-        // Add bookmark
-        console.log('Attempting to add bookmark...')
-        
-        // First, check what columns exist in the table
-        const bookmarkData = {
-          user_id: user.id,
-          post_id: parseInt(postId),
-          bookmarked_at: new Date().toISOString()
-        }
-        
-        // Try to add optional fields if provided
-        if (postTitle) bookmarkData.post_title = postTitle
-        if (postSlug) bookmarkData.post_slug = postSlug
-        
-        console.log('Inserting data:', bookmarkData)
-        
-        const { data, error } = await supabase
-          .from('bookmarks')
-          .insert(bookmarkData)
+          .insert({
+            user_id: user.id,
+            post_id: parseInt(postId),
+            post_title: postTitle,
+            post_slug: postSlug,
+            post_excerpt: postExcerpt,
+            featured_image_url: featuredImage,
+            category_id: selectedCategory,
+            importance_level: importance,
+            notes: notes,
+            custom_metadata: {
+              bookmarked_from: window.location.pathname,
+              bookmarked_at_device: navigator.userAgent,
+              referrer: document.referrer
+            }
+          })
           .select()
+          .single()
         
-        if (error) {
-          console.error('Insert error details:', error)
-          
-          // If error is about missing columns, try without those columns
-          if (error.message.includes('post_title') || error.message.includes('post_slug')) {
-            console.log('Columns missing, trying with minimal data...')
-            const minimalData = {
-              user_id: user.id,
-              post_id: parseInt(postId),
-              bookmarked_at: new Date().toISOString()
-            }
-            
-            const { error: retryError } = await supabase
-              .from('bookmarks')
-              .insert(minimalData)
-            
-            if (retryError) {
-              console.error('Retry error:', retryError)
-              throw retryError
-            }
-          } else {
-            throw error
-          }
-        }
+        if (error) throw error
         
-        console.log('Bookmark added successfully')
+        setBookmarkId(data.id)
         setIsBookmarked(true)
-        displayTooltip('✅ Saved to bookmarks')
+        toast.success('Saved to bookmarks', {
+          duration: 3000,
+          icon: '✅'
+        })
+      } else {
+        // Update existing bookmark with new metadata
+        const { error } = await supabase
+          .from('bookmarks')
+          .update({
+            category_id: selectedCategory,
+            importance_level: importance,
+            notes: notes,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', bookmarkId)
+        
+        if (error) throw error
+        
+        toast.success('Bookmark updated', {
+          duration: 2000,
+          icon: '✏️'
+        })
       }
+      
+      setShowMenu(false)
     } catch (error) {
-      console.error('Bookmark error FULL:', error)
-      displayTooltip(`❌ Error: ${error.message || 'Something went wrong'}`)
+      console.error('Bookmark error:', error)
+      toast.error('Failed to save bookmark', {
+        duration: 4000,
+        icon: '❌'
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  return (
-    <div className="bookmark-container">
-      <button
-        onClick={toggleBookmark}
-        disabled={loading}
-        className={`bookmark-btn ${isBookmarked ? 'active' : ''} ${className}`}
-        aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
-      >
-        <svg 
-          width="18" 
-          height="18" 
-          viewBox="0 0 24 24" 
-          fill={isBookmarked ? 'currentColor' : 'none'} 
-          stroke="currentColor" 
-          strokeWidth="1.5"
-        >
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-        </svg>
-        {loading && <span className="loading-spinner" />}
-      </button>
+  const handleRemove = async () => {
+    if (!bookmarkId) return
+    
+    setLoading(true)
+    
+    try {
+      const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('id', bookmarkId)
+      
+      if (error) throw error
+      
+      setIsBookmarked(false)
+      setBookmarkId(null)
+      setSelectedCategory(null)
+      setImportance(3)
+      setNotes('')
+      setShowMenu(false)
+      
+      toast.success('Removed from bookmarks', {
+        duration: 3000,
+        icon: '🗑️'
+      })
+    } catch (error) {
+      console.error('Remove error:', error)
+      toast.error('Failed to remove bookmark', {
+        duration: 4000,
+        icon: '❌'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      {showTooltip && (
-        <div className="tooltip" role="alert">
-          <div className="tooltip-content">
-            <span className="tooltip-text">{tooltipText}</span>
-          </div>
-        </div>
-      )}
+  const handleShare = async () => {
+    if (!bookmarkId) return
+    
+    try {
+      const shareData = {
+        title: postTitle,
+        text: `Check out this post I bookmarked: ${postTitle}`,
+        url: `${window.location.origin}/blog/${postSlug}`
+      }
+      
+      if (navigator.share) {
+        await navigator.share(shareData)
+        toast.success('Shared successfully!', { icon: '🔗' })
+      } else {
+        await navigator.clipboard.writeText(shareData.url)
+        toast.success('Link copied to clipboard!', { icon: '📋' })
+      }
+      
+      // Track share analytics
+      await supabase.from('bookmark_analytics').insert({
+        user_id: user.id,
+        bookmark_id: bookmarkId,
+        event_type: 'share',
+        device_info: { userAgent: navigator.userAgent, platform: navigator.platform }
+      })
+    } catch (error) {
+      console.error('Share error:', error)
+    }
+  }
+
+  // Animation variants
+  const menuVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: -10 },
+    visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.2 } },
+    exit: { opacity: 0, scale: 0.95, y: -10, transition: { duration: 0.15 } }
+  }
+
+  const buttonVariants = {
+    initial: { scale: 1 },
+    tap: { scale: 0.9 },
+    hover: { scale: 1.05, transition: { duration: 0.2 } }
+  }
+
+  return (
+    <div className={`bookmark-system ${variant}`} ref={menuRef}>
+      {/* Main Bookmark Button */}
+      <motion.button
+        variants={buttonVariants}
+        initial="initial"
+        whileTap="tap"
+        whileHover="hover"
+        onClick={() => isBookmarked ? setShowMenu(!showMenu) : handleBookmark()}
+        disabled={loading}
+        className={`
+          bookmark-trigger
+          ${isBookmarked ? 'active' : ''}
+          ${variant === 'floating' ? 'floating' : ''}
+          ${variant === 'compact' ? 'compact' : ''}
+          ${className}
+        `}
+        aria-label={isBookmarked ? 'Manage bookmark' : 'Save bookmark'}
+      >
+        {loading ? (
+          <Loader2 className="animate-spin" size={variant === 'compact' ? 16 : 20} />
+        ) : (
+          isBookmarked ? (
+            <BookmarkCheck size={variant === 'compact' ? 16 : 20} />
+          ) : (
+            <Bookmark size={variant === 'compact' ? 16 : 20} />
+          )
+        )}
+        
+        {variant === 'inline' && (
+          <span className="ml-2 text-sm font-medium">
+            {isBookmarked ? 'Saved' : 'Save'}
+          </span>
+        )}
+      </motion.button>
+
+      {/* Advanced Menu Modal */}
+      <AnimatePresence>
+        {showMenu && isBookmarked && (
+          <motion.div
+            variants={menuVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="bookmark-menu"
+          >
+            <div className="menu-header">
+              <h4>Manage Bookmark</h4>
+              <button onClick={() => setShowMenu(false)} className="close-btn">×</button>
+            </div>
+
+            <div className="menu-content">
+              {/* Category Selection */}
+              <div className="menu-section">
+                <label className="section-label">
+                  <FolderPlus size={14} />
+                  Category
+                </label>
+                <select 
+                  value={selectedCategory || ''} 
+                  onChange={(e) => setSelectedCategory(e.target.value || null)}
+                  className="menu-select"
+                >
+                  <option value="">Uncategorized</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Importance Rating */}
+              <div className="menu-section">
+                <label className="section-label">
+                  <Star size={14} />
+                  Importance
+                </label>
+                <div className="importance-rating">
+                  {[1, 2, 3, 4, 5].map(level => (
+                    <button
+                      key={level}
+                      onClick={() => setImportance(level)}
+                      className={`importance-btn ${importance >= level ? 'active' : ''}`}
+                    >
+                      ⭐
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="menu-section">
+                <button 
+                  onClick={() => setShowNotes(!showNotes)}
+                  className="section-label-toggle"
+                >
+                  <span className="section-label">
+                    📝 Notes
+                  </span>
+                  <span className="toggle-indicator">{showNotes ? '−' : '+'}</span>
+                </button>
+                
+                {showNotes && (
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Add private notes about this post..."
+                    className="notes-input"
+                    rows={3}
+                  />
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="menu-actions">
+                <button onClick={handleShare} className="action-btn share">
+                  <Share2 size={14} />
+                  Share
+                </button>
+                <button onClick={handleRemove} className="action-btn remove">
+                  Remove
+                </button>
+                <button onClick={handleBookmark} className="action-btn save">
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style jsx>{`
-        .bookmark-container {
+        .bookmark-system {
           position: relative;
           display: inline-block;
-          isolation: isolate;
         }
-        
-        button {
+
+        /* Bookmark Trigger Button */
+        .bookmark-trigger {
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 36px;
-          height: 36px;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(4px);
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(8px);
           border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 50%;
           cursor: pointer;
           color: white;
-          transition: all 0.2s ease;
-          position: relative;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           outline: none;
+          position: relative;
         }
-        
-        button:active {
-          transform: scale(0.95);
+
+        .bookmark-trigger.floating {
+          width: 44px;
+          height: 44px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
-        
-        button.active {
+
+        .bookmark-trigger.compact {
+          width: 32px;
+          height: 32px;
+          background: rgba(0, 0, 0, 0.6);
+        }
+
+        .bookmark-trigger.inline {
+          width: auto;
+          height: auto;
+          background: transparent;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 8px 16px;
+          color: #1e293b;
+          gap: 8px;
+        }
+
+        .bookmark-trigger.active {
           color: #f59e0b;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.85);
           border-color: rgba(245, 158, 11, 0.5);
         }
-        
-        button:hover:not(:disabled) {
-          background: rgba(0, 0, 0, 0.8);
+
+        .bookmark-trigger.inline.active {
+          background: #fef3c7;
+          border-color: #f59e0b;
+          color: #d97706;
+        }
+
+        .bookmark-trigger:hover:not(:disabled) {
           transform: scale(1.05);
         }
-        
-        button:disabled {
-          cursor: not-allowed;
-          opacity: 0.7;
+
+        .bookmark-trigger:active:not(:disabled) {
+          transform: scale(0.95);
         }
-        
-        .loading-spinner {
+
+        /* Advanced Menu */
+        .bookmark-menu {
           position: absolute;
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(255, 255, 255, 0.3);
-          border-top-color: #f59e0b;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
+          top: calc(100% + 12px);
+          right: 0;
+          width: 320px;
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.3);
+          border: 1px solid #e2e8f0;
+          z-index: 1000;
+          overflow: hidden;
         }
-        
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        
-        .tooltip {
-          position: fixed;
-          bottom: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 999;
-          animation: slideUp 0.3s ease;
-          pointer-events: none;
-        }
-        
-        .tooltip-content {
+
+        :global(.dark) .bookmark-menu {
           background: #1e293b;
-          color: white;
-          padding: 10px 16px;
-          border-radius: 12px;
+          border-color: #334155;
+        }
+
+        .menu-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px;
+          border-bottom: 1px solid #e2e8f0;
+        }
+
+        :global(.dark) .menu-header {
+          border-bottom-color: #334155;
+        }
+
+        .menu-header h4 {
+          margin: 0;
           font-size: 14px;
+          font-weight: 600;
+          color: #1e293b;
+        }
+
+        :global(.dark) .menu-header h4 {
+          color: white;
+        }
+
+        .close-btn {
+          background: none;
+          border: none;
+          font-size: 24px;
+          cursor: pointer;
+          color: #94a3b8;
+          padding: 0;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px;
+        }
+
+        .close-btn:hover {
+          background: #f1f5f9;
+        }
+
+        .menu-content {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .menu-section {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .section-label {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
           font-weight: 500;
-          text-align: center;
-          white-space: nowrap;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
-          backdrop-filter: blur(8px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          max-width: 90vw;
-          word-break: break-word;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
-        
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateX(-50%) translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-          }
+
+        .section-label-toggle {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
         }
-        
-        @media (min-width: 768px) {
-          .tooltip {
-            position: absolute;
-            bottom: auto;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            margin-top: 8px;
-          }
-          
-          .tooltip-content {
-            padding: 6px 12px;
-            font-size: 12px;
-            white-space: nowrap;
-          }
-          
-          .tooltip::before {
-            content: '';
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 6px solid #1e293b;
-          }
+
+        .toggle-indicator {
+          font-size: 18px;
+          color: #94a3b8;
         }
-        
-        @media (max-width: 480px) {
-          .tooltip-content {
-            white-space: normal;
-            max-width: 280px;
-            font-size: 12px;
+
+        .menu-select {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 14px;
+          background: white;
+          cursor: pointer;
+        }
+
+        :global(.dark) .menu-select {
+          background: #0f172a;
+          border-color: #334155;
+          color: white;
+        }
+
+        .importance-rating {
+          display: flex;
+          gap: 8px;
+        }
+
+        .importance-btn {
+          background: none;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          padding: 6px 12px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+          opacity: 0.5;
+        }
+
+        .importance-btn.active {
+          opacity: 1;
+          background: #fef3c7;
+          border-color: #f59e0b;
+        }
+
+        .notes-input {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 13px;
+          font-family: inherit;
+          resize: vertical;
+        }
+
+        :global(.dark) .notes-input {
+          background: #0f172a;
+          border-color: #334155;
+          color: white;
+        }
+
+        .menu-actions {
+          display: flex;
+          gap: 8px;
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid #e2e8f0;
+        }
+
+        :global(.dark) .menu-actions {
+          border-top-color: #334155;
+        }
+
+        .action-btn {
+          flex: 1;
+          padding: 8px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+
+        .action-btn.share {
+          background: #eff6ff;
+          color: #3b82f6;
+          border: none;
+        }
+
+        .action-btn.remove {
+          background: #fef2f2;
+          color: #ef4444;
+          border: none;
+        }
+
+        .action-btn.save {
+          background: #10b981;
+          color: white;
+          border: none;
+        }
+
+        .action-btn:hover {
+          transform: translateY(-1px);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+          .bookmark-menu {
+            position: fixed;
+            top: auto;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            width: auto;
+            max-width: none;
           }
         }
       `}</style>

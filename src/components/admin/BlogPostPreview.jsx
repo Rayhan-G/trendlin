@@ -6,7 +6,7 @@ import ShareButtons from '@/components/blog/ShareButtons';
 import RightBlock from '@/components/blog/RightBlock';
 import RelatedPosts from '@/components/blog/RelatedPosts';
 
-// Helper functions (exactly matching your blog post)
+// Helper functions
 const getReadingTime = (content) => {
   if (!content) return 1;
   const text = content.replace(/<[^>]*>/g, '');
@@ -40,6 +40,8 @@ export default function BlogPostPreview({
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [viewportWidth, setViewportWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [touchStart, setTouchStart] = useState(null);
 
   const handleScroll = useCallback(() => {
     const scrolled = window.scrollY > 100;
@@ -50,6 +52,33 @@ export default function BlogPostPreview({
     const scrolledProgress = height > 0 ? (winScroll / height) * 100 : 0;
     setScrollProgress(scrolledProgress);
   }, []);
+
+  // Handle viewport resize
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle touch for mobile
+  const handleTouchStart = (e) => {
+    setTouchStart(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStart) return;
+    const touchEnd = e.changedTouches[0].clientY;
+    const diff = touchStart - touchEnd;
+    
+    // Swipe up to scroll to top
+    if (diff > 100 && window.scrollY > 300) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    setTouchStart(null);
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -75,12 +104,16 @@ export default function BlogPostPreview({
     
     checkDarkMode();
     window.addEventListener('scroll', handleScroll);
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
     
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
       observer.disconnect();
     };
   }, [handleScroll]);
@@ -94,10 +127,37 @@ export default function BlogPostPreview({
           <p>Loading preview...</p>
         </div>
         <style jsx>{`
-          .loading-screen { padding: 4rem; text-align: center; }
-          .loading-logo { font-size: 2rem; font-weight: 800; background: linear-gradient(135deg, #0056b3, #00a6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-          .loading-spinner { width: 30px; height: 30px; border: 2px solid #e9ecef; border-top-color: #0056b3; border-radius: 50%; animation: spin 0.6s linear infinite; margin: 1rem auto; }
-          @keyframes spin { to { transform: rotate(360deg); } }
+          .loading-screen { 
+            padding: 4rem; 
+            text-align: center; 
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .loading-logo { 
+            font-size: 2rem; 
+            font-weight: 800; 
+            background: linear-gradient(135deg, #0056b3, #00a6ff); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            color: transparent; 
+          }
+          .loading-spinner { 
+            width: 30px; 
+            height: 30px; 
+            border: 2px solid #e9ecef; 
+            border-top-color: #0056b3; 
+            border-radius: 50%; 
+            animation: spin 0.6s linear infinite; 
+            margin: 1rem auto; 
+          }
+          @keyframes spin { 
+            to { transform: rotate(360deg); } 
+          }
+          @media (max-width: 768px) {
+            .loading-screen { padding: 2rem; }
+          }
         `}</style>
       </div>
     );
@@ -107,6 +167,8 @@ export default function BlogPostPreview({
   const publishedDate = publishedAt;
   const postCategory = category?.toLowerCase() || 'general';
   const displayTags = Array.isArray(tags) ? tags : [];
+  const isMobile = viewportWidth <= 768;
+  const isTablet = viewportWidth > 768 && viewportWidth <= 1024;
 
   return (
     <div className={`blog-post-preview ${isDarkMode ? 'dark' : 'light'}`}>
@@ -140,7 +202,7 @@ export default function BlogPostPreview({
           
           <div className="post-meta">
             <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? "12" : "16"} height={isMobile ? "12" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
@@ -148,14 +210,14 @@ export default function BlogPostPreview({
             </div>
             <div className="meta-divider"></div>
             <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? "12" : "16"} height={isMobile ? "12" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 12v8H4v-8M12 2v8m0 0-3-3m3 3 3-3"/>
               </svg>
               <span>{readingTime} min read</span>
             </div>
             <div className="meta-divider"></div>
             <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? "12" : "16"} height={isMobile ? "12" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
               </svg>
@@ -165,7 +227,7 @@ export default function BlogPostPreview({
               <>
                 <div className="meta-divider"></div>
                 <div className="meta-item">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width={isMobile ? "12" : "16"} height={isMobile ? "12" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
                   </svg>
@@ -185,7 +247,12 @@ export default function BlogPostPreview({
                 alt={title || 'Featured'}
                 loading="eager"
                 fetchpriority="high"
-                style={{ width: '100%', height: 'auto' }}
+                style={{ 
+                  width: '100%', 
+                  height: 'auto',
+                  objectFit: 'cover'
+                }}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
               />
             </div>
           </div>
@@ -244,7 +311,7 @@ export default function BlogPostPreview({
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         aria-label="Scroll to top"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width={isMobile ? "16" : "20"} height={isMobile ? "16" : "20"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="18 15 12 9 6 15"/>
         </svg>
       </button>
@@ -256,6 +323,7 @@ export default function BlogPostPreview({
           transition: background 0.3s ease;
           width: 100%;
           overflow-x: hidden;
+          position: relative;
         }
         .blog-post-preview.dark {
           background: #0a0a0a;
@@ -286,11 +354,32 @@ export default function BlogPostPreview({
           padding: 3rem 2rem;
           width: 100%;
           overflow-x: hidden;
+          box-sizing: border-box;
+        }
+
+        /* Ultra-responsive container padding */
+        @media (max-width: 1200px) {
+          .container { padding: 2.5rem 1.5rem; }
+        }
+        @media (max-width: 992px) {
+          .container { padding: 2rem 1.25rem; }
+        }
+        @media (max-width: 768px) {
+          .container { padding: 1.5rem 1rem; }
+        }
+        @media (max-width: 576px) {
+          .container { padding: 1rem 0.75rem; }
+        }
+        @media (max-width: 480px) {
+          .container { padding: 0.75rem 0.5rem; }
         }
 
         .header {
           text-align: left;
           margin-bottom: 3rem;
+        }
+        @media (max-width: 768px) {
+          .header { margin-bottom: 2rem; }
         }
 
         .breadcrumb {
@@ -301,16 +390,23 @@ export default function BlogPostPreview({
           margin-bottom: 1.5rem;
           flex-wrap: wrap;
         }
+        @media (max-width: 768px) {
+          .breadcrumb { font-size: 0.75rem; gap: 0.375rem; margin-bottom: 1rem; }
+        }
+        @media (max-width: 480px) {
+          .breadcrumb { font-size: 0.7rem; }
+        }
         .breadcrumb a {
           color: #0056b3;
           text-decoration: none;
           cursor: pointer;
+          transition: opacity 0.2s;
         }
         .blog-post-preview.dark .breadcrumb a {
           color: #66b0ff;
         }
-        .breadcrumb a:hover {
-          text-decoration: underline;
+        .breadcrumb a:active {
+          opacity: 0.7;
         }
         .breadcrumb .separator {
           color: #6c757d;
@@ -334,31 +430,37 @@ export default function BlogPostPreview({
           text-transform: uppercase;
           letter-spacing: 0.5px;
           cursor: pointer;
+          transition: all 0.2s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        @media (max-width: 768px) {
+          .category-link { font-size: 0.7rem; padding: 0.2rem 0.6rem; }
         }
         .blog-post-preview.dark .category-link {
           background: rgba(102, 176, 255, 0.15);
           color: #66b0ff;
         }
-        .category-link:hover {
-          background: rgba(0, 86, 179, 0.2);
-          transform: translateY(-1px);
+        .category-link:active {
+          transform: translateY(1px);
         }
 
         .post-title {
-          font-size: clamp(2rem, 5vw, 3.8rem);
+          font-size: clamp(1.5rem, 5vw, 3.8rem);
           font-weight: 800;
           margin-bottom: 1rem;
           color: #1a1a2e;
           line-height: 1.2;
           letter-spacing: -0.02em;
           word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
         .blog-post-preview.dark .post-title {
           color: #ffffff;
         }
 
         .post-excerpt {
-          font-size: 1.125rem;
+          font-size: clamp(0.875rem, 3vw, 1.125rem);
           line-height: 1.6;
           color: #6c757d;
           margin-bottom: 1.5rem;
@@ -368,14 +470,14 @@ export default function BlogPostPreview({
         .post-meta {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: clamp(0.5rem, 2vw, 1rem);
           flex-wrap: wrap;
         }
         .meta-item {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-size: 0.9rem;
+          font-size: clamp(0.7rem, 2.5vw, 0.9rem);
           color: #6c757d;
         }
         .blog-post-preview.dark .meta-item {
@@ -383,12 +485,17 @@ export default function BlogPostPreview({
         }
         .meta-item svg {
           stroke: currentColor;
+          flex-shrink: 0;
         }
         .meta-divider {
           width: 4px;
           height: 4px;
           background: #6c757d;
           border-radius: 50%;
+          flex-shrink: 0;
+        }
+        @media (max-width: 480px) {
+          .meta-divider { width: 3px; height: 3px; }
         }
 
         .featured-image {
@@ -396,6 +503,12 @@ export default function BlogPostPreview({
           border-radius: 24px;
           overflow: hidden;
           box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        @media (max-width: 768px) {
+          .featured-image { margin: 1.5rem 0 2rem; border-radius: 16px; }
+        }
+        @media (max-width: 480px) {
+          .featured-image { margin: 1rem 0 1.5rem; border-radius: 12px; }
         }
         .image-wrapper {
           position: relative;
@@ -413,13 +526,29 @@ export default function BlogPostPreview({
           grid-template-columns: 1fr 320px;
           gap: 3rem;
         }
+        @media (max-width: 1024px) {
+          .content-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+          }
+          .sidebar {
+            order: -1;
+          }
+          .sticky-sidebar {
+            position: static;
+          }
+        }
+        @media (max-width: 768px) {
+          .content-grid { gap: 1.5rem; }
+        }
 
         .article-content {
-          font-size: 1.125rem;
+          font-size: clamp(0.875rem, 3vw, 1.125rem);
           line-height: 1.8;
           color: #2c3e50;
           word-wrap: break-word;
           overflow-wrap: break-word;
+          hyphens: auto;
         }
         .blog-post-preview.dark .article-content {
           color: #d1d5db;
@@ -427,8 +556,11 @@ export default function BlogPostPreview({
         .article-content p {
           margin-bottom: 1.5rem;
         }
+        @media (max-width: 768px) {
+          .article-content p { margin-bottom: 1.25rem; }
+        }
         .article-content h2 {
-          font-size: clamp(1.5rem, 4vw, 2rem);
+          font-size: clamp(1.25rem, 4vw, 2rem);
           margin-top: 2.5rem;
           margin-bottom: 1rem;
           font-weight: 700;
@@ -438,7 +570,7 @@ export default function BlogPostPreview({
           color: #ffffff;
         }
         .article-content h3 {
-          font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+          font-size: clamp(1.1rem, 3.5vw, 1.5rem);
           margin-top: 2rem;
           margin-bottom: 0.75rem;
           font-weight: 600;
@@ -452,6 +584,10 @@ export default function BlogPostPreview({
           text-decoration: underline;
           text-underline-offset: 4px;
           word-wrap: break-word;
+          transition: opacity 0.2s;
+        }
+        .article-content a:active {
+          opacity: 0.7;
         }
         .blog-post-preview.dark .article-content a {
           color: #66b0ff;
@@ -462,9 +598,15 @@ export default function BlogPostPreview({
           border-radius: 16px;
           margin: 2rem 0;
         }
+        @media (max-width: 768px) {
+          .article-content img { border-radius: 12px; margin: 1.5rem 0; }
+        }
         .article-content ul, .article-content ol {
           margin: 1.5rem 0;
           padding-left: 1.75rem;
+        }
+        @media (max-width: 768px) {
+          .article-content ul, .article-content ol { padding-left: 1.25rem; }
         }
         .article-content li {
           margin: 0.5rem 0;
@@ -480,11 +622,14 @@ export default function BlogPostPreview({
           border-left-color: #66b0ff;
           color: #a0a0a0;
         }
+        @media (max-width: 768px) {
+          .article-content blockquote { padding-left: 1rem; margin: 1.5rem 0; }
+        }
         .article-content code {
           background: #f0f0f0;
           padding: 0.2rem 0.5rem;
           border-radius: 6px;
-          font-size: 0.9rem;
+          font-size: 0.9em;
           font-family: monospace;
           word-wrap: break-word;
         }
@@ -499,10 +644,23 @@ export default function BlogPostPreview({
           border-radius: 16px;
           overflow-x: auto;
           margin: 2rem 0;
+          -webkit-overflow-scrolling: touch;
+        }
+        @media (max-width: 768px) {
+          .article-content pre { padding: 1rem; border-radius: 12px; margin: 1.5rem 0; }
         }
         .article-content pre code {
           background: none;
           padding: 0;
+        }
+
+        /* Table responsiveness */
+        .article-content table {
+          width: 100%;
+          display: block;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          margin: 1.5rem 0;
         }
 
         .empty-preview {
@@ -513,6 +671,9 @@ export default function BlogPostPreview({
           color: #adb5bd;
           font-style: italic;
         }
+        @media (max-width: 768px) {
+          .empty-preview { padding: 2rem; font-size: 0.875rem; }
+        }
 
         .post-footer {
           margin-top: 3rem;
@@ -522,11 +683,17 @@ export default function BlogPostPreview({
         .blog-post-preview.dark .post-footer {
           border-top-color: #2c3e50;
         }
+        @media (max-width: 768px) {
+          .post-footer { margin-top: 2rem; padding-top: 1.5rem; }
+        }
         .post-tags {
           display: flex;
           align-items: center;
           gap: 1rem;
           flex-wrap: wrap;
+        }
+        @media (max-width: 768px) {
+          .post-tags { gap: 0.75rem; }
         }
         .tags-label {
           font-size: 0.85rem;
@@ -547,14 +714,18 @@ export default function BlogPostPreview({
           border-radius: 20px;
           font-size: 0.75rem;
           cursor: pointer;
+          transition: all 0.2s;
+          -webkit-tap-highlight-color: transparent;
         }
         .blog-post-preview.dark .tag {
           background: #1a1a2e;
           color: #a0a0a0;
         }
-        .tag:hover {
-          background: #e0e0e0;
-          transform: translateY(-1px);
+        .tag:active {
+          transform: scale(0.95);
+        }
+        @media (max-width: 768px) {
+          .tag { font-size: 0.7rem; padding: 0.2rem 0.6rem; }
         }
 
         .sidebar {
@@ -564,13 +735,16 @@ export default function BlogPostPreview({
           position: sticky;
           top: 100px;
         }
+        @media (max-width: 1024px) {
+          .sticky-sidebar { position: static; }
+        }
 
         .scroll-top {
           position: fixed;
-          bottom: 2rem;
-          right: 2rem;
-          width: 48px;
-          height: 48px;
+          bottom: clamp(1rem, 3vw, 2rem);
+          right: clamp(1rem, 3vw, 2rem);
+          width: clamp(40px, 5vw, 48px);
+          height: clamp(40px, 5vw, 48px);
           border-radius: 50%;
           background: #ffffff;
           color: #0056b3;
@@ -584,6 +758,7 @@ export default function BlogPostPreview({
           transition: all 0.3s ease;
           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
           z-index: 100;
+          -webkit-tap-highlight-color: transparent;
         }
         .blog-post-preview.dark .scroll-top {
           background: #1a1a2e;
@@ -594,71 +769,39 @@ export default function BlogPostPreview({
           opacity: 1;
           visibility: visible;
         }
-        .scroll-top:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        .scroll-top:active {
+          transform: scale(0.95);
+        }
+        @media (hover: hover) {
+          .scroll-top:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+          }
         }
 
-        /* Responsive Breakpoints - EXACTLY LIKE YOUR BLOG */
-        @media (max-width: 1024px) {
-          .content-grid {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-          }
+        /* Print styles */
+        @media print {
+          .progress-bar,
+          .scroll-top,
           .sidebar {
-            order: -1;
+            display: none;
           }
-          .sticky-sidebar {
-            position: static;
+          .blog-post-preview {
+            background: white;
           }
           .container {
-            padding: 2rem 1.5rem;
+            padding: 0;
+            max-width: none;
           }
         }
 
-        @media (max-width: 768px) {
-          .container {
-            padding: 1.5rem 1rem;
-          }
-          .post-title {
-            font-size: 1.75rem;
-          }
-          .post-excerpt {
-            font-size: 1rem;
-          }
-          .article-content {
-            font-size: 1rem;
-          }
-          .scroll-top {
-            bottom: 1rem;
-            right: 1rem;
-            width: 40px;
-            height: 40px;
-          }
-          .breadcrumb {
-            font-size: 0.75rem;
-          }
-          .meta-item {
-            font-size: 0.75rem;
-          }
-          .meta-item svg {
-            width: 12px;
-            height: 12px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .post-meta {
-            gap: 0.5rem;
-          }
-          .meta-item {
-            font-size: 0.7rem;
-          }
-          .container {
-            padding: 1rem 0.75rem;
-          }
-          .post-title {
-            font-size: 1.5rem;
+        /* Reduce motion preference */
+        @media (prefers-reduced-motion: reduce) {
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
           }
         }
       `}</style>

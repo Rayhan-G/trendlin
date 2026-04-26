@@ -1,72 +1,91 @@
-// src/components/admin/FloatingPreviewButton.jsx
-import { useState } from 'react';
+// src/components/admin/FloatingPreviewButton.jsx (ALL DEVICES COMPATIBLE)
+
+import { useState, useEffect } from 'react';
 import { Smartphone, Tablet, Monitor, Eye, X } from 'lucide-react';
 import BlogPostPreview from './BlogPostPreview';
 
 export default function FloatingPreviewButton({ title, content, excerpt, featuredImage, tags, category, readingTime }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] useState(false);
   const [device, setDevice] = useState('desktop');
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const devices = [
-    { id: 'mobile', name: 'Mobile', icon: Smartphone, width: '375px', height: '700px' },
-    { id: 'tablet', name: 'Tablet', icon: Tablet, width: '768px', height: '900px' },
-    { id: 'desktop', name: 'Desktop', icon: Monitor, width: '1200px', height: '90vh' },
+    { id: 'mobile', name: 'Mobile', icon: Smartphone, width: isMobile ? '95%' : '375px', height: isMobile ? '80vh' : '700px' },
+    { id: 'tablet', name: 'Tablet', icon: Tablet, width: isMobile ? '95%' : '768px', height: isMobile ? '80vh' : '900px' },
+    { id: 'desktop', name: 'Desktop', icon: Monitor, width: '95%', height: '85vh' },
   ];
 
   const selectedDevice = devices.find(d => d.id === device);
 
   return (
     <>
-      {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
         className="floating-preview-btn"
         title="Real Preview"
       >
-        <Eye size={24} />
+        <Eye size={isMobile ? 20 : 24} />
         <span className="preview-text">Real Preview</span>
         <style jsx>{`
           .floating-preview-btn {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
+            bottom: 20px;
+            right: 20px;
             width: auto;
-            height: 56px;
+            height: 48px;
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
             color: white;
             border: none;
-            border-radius: 28px;
+            border-radius: 24px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 0 24px;
+            gap: 8px;
+            padding: 0 16px;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             z-index: 1000;
             box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
             transition: all 0.3s ease;
           }
-          .floating-preview-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+          .floating-preview-btn:active {
+            transform: scale(0.95);
           }
           .preview-text {
             display: none;
           }
           @media (min-width: 768px) {
+            .floating-preview-btn {
+              bottom: 30px;
+              right: 30px;
+              height: 56px;
+              gap: 12px;
+              padding: 0 24px;
+              font-size: 14px;
+            }
             .preview-text {
               display: inline;
+            }
+          }
+          @media (hover: hover) {
+            .floating-preview-btn:hover {
+              transform: scale(1.05);
+              box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
             }
           }
         `}</style>
       </button>
 
-      {/* Modal Overlay */}
       {isOpen && (
         <div className="preview-modal-overlay" onClick={() => setIsOpen(false)}>
           <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
-            {/* Modal Header */}
             <div className="preview-modal-header">
               <h3>Real Device Preview</h3>
               <div className="device-selector">
@@ -78,18 +97,17 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
                       onClick={() => setDevice(d.id)}
                       className={`device-option ${device === d.id ? 'active' : ''}`}
                     >
-                      <Icon size={18} />
+                      <Icon size={isMobile ? 16 : 18} />
                       <span>{d.name}</span>
                     </button>
                   );
                 })}
               </div>
               <button className="close-btn" onClick={() => setIsOpen(false)}>
-                <X size={24} />
+                <X size={isMobile ? 20 : 24} />
               </button>
             </div>
 
-            {/* Device Frame */}
             <div className="preview-modal-body">
               <div 
                 className="device-frame"
@@ -97,12 +115,11 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
                   width: selectedDevice.width,
                   height: selectedDevice.height,
                   margin: '0 auto',
+                  borderRadius: device === 'mobile' ? (isMobile ? '20px' : '44px') : device === 'tablet' ? (isMobile ? '16px' : '32px') : '0',
                 }}
               >
                 <div className="device-content">
-                  {device === 'mobile' && (
-                    <div className="mobile-notch"></div>
-                  )}
+                  {device === 'mobile' && !isMobile && <div className="mobile-notch"></div>}
                   <div className="preview-scroll">
                     <BlogPostPreview 
                       title={title}
@@ -114,9 +131,7 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
                       readingTime={readingTime}
                     />
                   </div>
-                  {device === 'mobile' && (
-                    <div className="mobile-home-bar"></div>
-                  )}
+                  {device === 'mobile' && !isMobile && <div className="mobile-home-bar"></div>}
                 </div>
               </div>
             </div>
@@ -134,6 +149,7 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
                 align-items: center;
                 justify-content: center;
                 animation: fadeIn 0.2s ease;
+                padding: 10px;
               }
               
               @keyframes fadeIn {
@@ -143,60 +159,98 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
               
               .preview-modal {
                 background: #1a1a2e;
-                border-radius: 24px;
-                width: 90vw;
+                border-radius: 16px;
+                width: 95vw;
                 max-width: 1400px;
-                height: 85vh;
+                height: 90vh;
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
                 box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
               }
               
+              @media (min-width: 768px) {
+                .preview-modal {
+                  border-radius: 24px;
+                  width: 90vw;
+                  height: 85vh;
+                }
+              }
+              
               .preview-modal-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 16px 24px;
+                padding: 12px 16px;
                 background: #ffffff;
                 border-bottom: 1px solid #e2e8f0;
                 flex-wrap: wrap;
-                gap: 16px;
+                gap: 12px;
+              }
+              
+              @media (min-width: 768px) {
+                .preview-modal-header {
+                  padding: 16px 24px;
+                  gap: 16px;
+                }
               }
               
               .preview-modal-header h3 {
                 margin: 0;
-                font-size: 1.1rem;
+                font-size: 0.9rem;
                 font-weight: 600;
                 color: #1e293b;
               }
               
+              @media (min-width: 768px) {
+                .preview-modal-header h3 {
+                  font-size: 1.1rem;
+                }
+              }
+              
               .device-selector {
                 display: flex;
-                gap: 8px;
+                gap: 6px;
                 background: #f1f5f9;
                 padding: 4px;
-                border-radius: 12px;
+                border-radius: 10px;
+                flex: 1;
+                justify-content: center;
+              }
+              
+              @media (min-width: 768px) {
+                .device-selector {
+                  gap: 8px;
+                  border-radius: 12px;
+                }
               }
               
               .device-option {
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                padding: 8px 16px;
+                gap: 4px;
+                padding: 6px 10px;
                 background: transparent;
                 border: none;
-                border-radius: 8px;
+                border-radius: 6px;
                 cursor: pointer;
-                font-size: 0.85rem;
+                font-size: 0.7rem;
                 font-weight: 500;
                 color: #64748b;
                 transition: all 0.2s;
               }
               
-              .device-option:hover {
-                background: #e2e8f0;
-                color: #1e293b;
+              @media (min-width: 768px) {
+                .device-option {
+                  gap: 8px;
+                  padding: 8px 16px;
+                  font-size: 0.85rem;
+                  border-radius: 8px;
+                }
+              }
+              
+              .device-option:active {
+                transform: scale(0.95);
               }
               
               .device-option.active {
@@ -205,35 +259,60 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
               }
               
+              .device-option span {
+                display: none;
+              }
+              
+              @media (min-width: 768px) {
+                .device-option span {
+                  display: inline;
+                }
+              }
+              
               .close-btn {
                 background: none;
                 border: none;
                 cursor: pointer;
                 color: #64748b;
                 padding: 4px;
-                border-radius: 8px;
+                border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
               }
               
-              .close-btn:hover {
-                background: #f1f5f9;
+              .close-btn:active {
+                transform: scale(0.9);
+              }
+              
+              @media (min-width: 768px) {
+                .close-btn {
+                  padding: 4px;
+                  border-radius: 8px;
+                }
+                .close-btn:hover {
+                  background: #f1f5f9;
+                }
               }
               
               .preview-modal-body {
                 flex: 1;
                 overflow: auto;
-                padding: 24px;
+                padding: 12px;
                 background: #0f172a;
                 display: flex;
                 align-items: center;
                 justify-content: center;
               }
               
+              @media (min-width: 768px) {
+                .preview-modal-body {
+                  padding: 24px;
+                }
+              }
+              
               .device-frame {
                 background: #000000;
-                border-radius: 44px;
                 overflow: hidden;
                 box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
                 transition: all 0.3s ease;
@@ -276,7 +355,13 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
               }
               
               .preview-scroll::-webkit-scrollbar {
-                width: 6px;
+                width: 4px;
+              }
+              
+              @media (min-width: 768px) {
+                .preview-scroll::-webkit-scrollbar {
+                  width: 6px;
+                }
               }
               
               .preview-scroll::-webkit-scrollbar-track {
@@ -286,21 +371,6 @@ export default function FloatingPreviewButton({ title, content, excerpt, feature
               .preview-scroll::-webkit-scrollbar-thumb {
                 background: #888;
                 border-radius: 3px;
-              }
-              
-              @media (max-width: 768px) {
-                .preview-modal {
-                  width: 95vw;
-                  height: 90vh;
-                }
-                
-                .device-option span {
-                  display: none;
-                }
-                
-                .device-option {
-                  padding: 8px 12px;
-                }
               }
             `}</style>
           </div>

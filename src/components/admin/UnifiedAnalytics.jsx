@@ -1,4 +1,5 @@
-// src/components/admin/UnifiedAnalytics.jsx - COMPLETE FIXED VERSION
+// src/components/admin/UnifiedAnalytics.jsx - ALL DEVICES COMPATIBLE
+
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
@@ -22,15 +23,11 @@ import {
   PieChart, X, Check, Target
 } from 'lucide-react';
 
-// Register ChartJS
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, BarElement,
   ArcElement, Title, Tooltip, Legend, Filler
 );
 
-// ============================================================
-// CONFIGURATION FOR EACH DATA SOURCE
-// ============================================================
 const SOURCE_CONFIGS = {
   posts: {
     label: 'Posts & Views',
@@ -51,7 +48,7 @@ const SOURCE_CONFIGS = {
     })),
   },
   affiliate: {
-    label: 'Affiliate Performance',
+    label: 'Affiliate',
     icon: DollarSign,
     color: '#10b981',
     metrics: [
@@ -83,7 +80,7 @@ const SOURCE_CONFIGS = {
     })),
   },
   ads: {
-    label: 'Ad Performance',
+    label: 'Ads',
     icon: Target,
     color: '#8b5cf6',
     metrics: [
@@ -109,12 +106,12 @@ const GROUP_BY_OPTIONS = [
 ];
 
 const DATE_RANGES = [
-  { id: '7d', label: '7 Days', days: 7 },
-  { id: '30d', label: '30 Days', days: 30 },
-  { id: '90d', label: '90 Days', days: 90 },
-  { id: '6m', label: '6 Months', days: 180 },
-  { id: '1y', label: '1 Year', days: 365 },
-  { id: 'all', label: 'All Time', days: null },
+  { id: '7d', label: '7D', days: 7 },
+  { id: '30d', label: '30D', days: 30 },
+  { id: '90d', label: '90D', days: 90 },
+  { id: '6m', label: '6M', days: 180 },
+  { id: '1y', label: '1Y', days: 365 },
+  { id: 'all', label: 'All', days: null },
   { id: 'custom', label: 'Custom', days: null },
 ];
 
@@ -124,9 +121,6 @@ const CHART_TYPES = [
   { id: 'pie', label: 'Pie', icon: PieChart },
 ];
 
-// ============================================================
-// FORMATTING HELPERS
-// ============================================================
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -140,12 +134,14 @@ const formatNumber = (num) => {
   return new Intl.NumberFormat('en-US').format(num || 0);
 };
 
-// ============================================================
-// CUSTOM DATE RANGE PICKER
-// ============================================================
 const CustomDatePicker = ({ startDate, endDate, onApply, onClose }) => {
   const [start, setStart] = useState(startDate ? new Date(startDate).toISOString().split('T')[0] : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [end, setEnd] = useState(endDate ? new Date(endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 640);
+  }, []);
 
   const handleApply = () => {
     if (start && end) {
@@ -155,46 +151,43 @@ const CustomDatePicker = ({ startDate, endDate, onApply, onClose }) => {
   };
 
   return (
-    <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border z-50 p-4 w-72">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold text-gray-700">Custom Date Range</span>
-        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
+    <div className={`absolute top-full ${isMobile ? 'left-0 right-0' : 'right-0'} mt-2 bg-white rounded-xl shadow-xl border z-50 p-3 sm:p-4 w-auto sm:w-72`}>
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <span className="text-xs sm:text-sm font-semibold text-gray-700">Custom Range</span>
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded active:scale-90">
           <X size={14} />
         </button>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Start Date</label>
+          <label className="block text-[10px] sm:text-xs text-gray-500 mb-1">Start</label>
           <input
             type="date"
             value={start}
             onChange={(e) => setStart(e.target.value)}
-            className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500"
+            className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-purple-500"
             max={end}
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">End Date</label>
+          <label className="block text-[10px] sm:text-xs text-gray-500 mb-1">End</label>
           <input
             type="date"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
-            className="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-purple-500"
+            className="w-full p-1.5 sm:p-2 text-xs sm:text-sm border rounded-lg focus:ring-2 focus:ring-purple-500"
             min={start}
           />
         </div>
-        <div className="flex gap-2 pt-2">
-          <button onClick={onClose} className="flex-1 py-2 text-sm border rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={handleApply} className="flex-1 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">Apply</button>
+        <div className="flex gap-2 pt-1 sm:pt-2">
+          <button onClick={onClose} className="flex-1 py-1.5 sm:py-2 text-xs sm:text-sm border rounded-lg hover:bg-gray-50 active:scale-98">Cancel</button>
+          <button onClick={handleApply} className="flex-1 py-1.5 sm:py-2 text-xs sm:text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:scale-98">Apply</button>
         </div>
       </div>
     </div>
   );
 };
 
-// ============================================================
-// TOAST COMPONENT
-// ============================================================
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
     const timer = setTimeout(onClose, 3000);
@@ -202,18 +195,15 @@ const Toast = ({ message, type, onClose }) => {
   }, [onClose]);
 
   return (
-    <div className={`fixed bottom-5 right-5 z-50 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+    <div className={`fixed bottom-3 left-3 right-3 sm:bottom-5 sm:right-5 sm:left-auto z-50 px-3 py-2 sm:px-4 sm:py-3 rounded-lg shadow-lg flex items-center gap-2 max-w-[calc(100vw-24px)] sm:max-w-md ${
       type === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
     }`}>
-      {type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
-      {message}
+      {type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
+      <span className="text-xs sm:text-sm">{message}</span>
     </div>
   );
 };
 
-// ============================================================
-// MAIN COMPONENT
-// ============================================================
 export default function UnifiedAnalytics({ 
   defaultSource = 'posts',
   showSourceSelector = true,
@@ -221,13 +211,12 @@ export default function UnifiedAnalytics({
   title = 'Analytics Dashboard',
   description = 'Comprehensive data analysis'
 }) {
-  // State
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [isMobile, setIsMobile] = useState(false);
   
-  // Configuration
   const [selectedSource, setSelectedSource] = useState(defaultSource);
   const [selectedChartType, setSelectedChartType] = useState('line');
   const [selectedMetrics, setSelectedMetrics] = useState([]);
@@ -237,14 +226,19 @@ export default function UnifiedAnalytics({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [customDateRange, setCustomDateRange] = useState({ start: null, end: null });
   
-  // Data
   const [rawData, setRawData] = useState([]);
   const [chartData, setChartData] = useState(null);
   const [summaryStats, setSummaryStats] = useState(null);
 
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const sourceConfig = SOURCE_CONFIGS[selectedSource];
 
-  // Initialize selected metrics when source changes
   useEffect(() => {
     const config = SOURCE_CONFIGS[selectedSource];
     setSelectedMetrics(config.metrics.slice(0, 2).map(m => m.id));
@@ -254,9 +248,6 @@ export default function UnifiedAnalytics({
     setToast({ show: true, message, type });
   };
 
-  // ============================================================
-  // FETCH DATA
-  // ============================================================
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -268,7 +259,6 @@ export default function UnifiedAnalytics({
 
       const config = SOURCE_CONFIGS[selectedSource];
       
-      // Calculate date range
       let startDate, endDate;
       
       if (dateRange === 'custom' && customDateRange.start && customDateRange.end) {
@@ -285,7 +275,6 @@ export default function UnifiedAnalytics({
       const startStr = startDate.toISOString();
       const endStr = endDate.toISOString();
       
-      // Fetch from Supabase
       const { data, error: fetchError } = await supabase
         .from(config.tableName)
         .select('*')
@@ -298,11 +287,9 @@ export default function UnifiedAnalytics({
       const processedData = config.processData(data || []);
       setRawData(processedData);
       
-      // Process for chart
       const processed = processChartData(processedData);
       setChartData(processed);
       
-      // Calculate summary
       const summary = calculateSummary(processedData);
       setSummaryStats(summary);
       
@@ -316,15 +303,11 @@ export default function UnifiedAnalytics({
     }
   }, [selectedSource, dateRange, customDateRange]);
 
-  // ============================================================
-  // PROCESS CHART DATA
-  // ============================================================
   const processChartData = (data) => {
     if (!data.length) {
       return { labels: [], datasets: [] };
     }
     
-    // Group by selected period
     const grouped = {};
     
     data.forEach(item => {
@@ -354,7 +337,6 @@ export default function UnifiedAnalytics({
       return a.localeCompare(b);
     });
     
-    // Create datasets for selected metrics
     const datasets = selectedMetrics.map(metricId => {
       const metricConfig = sourceConfig.metrics.find(m => m.id === metricId);
       
@@ -368,19 +350,21 @@ export default function UnifiedAnalytics({
         data: dataPoints,
         borderColor: metricConfig?.color || '#3b82f6',
         backgroundColor: `${metricConfig?.color || '#3b82f6'}20`,
-        borderWidth: 2,
-        pointRadius: 3,
-        pointHoverRadius: 6,
+        borderWidth: isMobile ? 1.5 : 2,
+        pointRadius: isMobile ? 2 : 3,
+        pointHoverRadius: isMobile ? 4 : 6,
         fill: selectedChartType === 'line',
         tension: 0.3,
         yAxisID: metricConfig?.yAxisID || 'y',
       };
     });
     
-    // Format labels
     const labels = sortedKeys.map(key => {
       if (groupBy === 'day') {
         return new Date(key).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+      if (isMobile && key.length > 10) {
+        return key.substring(0, 8);
       }
       return key;
     });
@@ -388,9 +372,6 @@ export default function UnifiedAnalytics({
     return { labels, datasets };
   };
 
-  // ============================================================
-  // CALCULATE SUMMARY STATS
-  // ============================================================
   const calculateSummary = (data) => {
     if (!data.length) return null;
     
@@ -417,9 +398,6 @@ export default function UnifiedAnalytics({
     return stats;
   };
 
-  // ============================================================
-  // EXPORT FUNCTION
-  // ============================================================
   const handleExport = () => {
     if (!rawData.length) {
       showToast('No data to export', 'error');
@@ -428,7 +406,6 @@ export default function UnifiedAnalytics({
     
     try {
       const headers = Object.keys(rawData[0]);
-      
       const rows = rawData.map(row => 
         headers.map(h => {
           const value = row[h];
@@ -441,7 +418,6 @@ export default function UnifiedAnalytics({
       );
       
       const csv = [headers.join(','), ...rows].join('\n');
-      
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -452,16 +428,12 @@ export default function UnifiedAnalytics({
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
-      showToast(`Exported ${rawData.length} rows successfully`);
+      showToast(`Exported ${rawData.length} rows`);
     } catch (err) {
-      console.error('Export error:', err);
-      showToast('Failed to export data', 'error');
+      showToast('Export failed', 'error');
     }
   };
 
-  // ============================================================
-  // EFFECTS
-  // ============================================================
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -475,9 +447,6 @@ export default function UnifiedAnalytics({
     }
   }, [groupBy, selectedMetrics, selectedChartType]);
 
-  // ============================================================
-  // HANDLERS
-  // ============================================================
   const handleRefresh = () => {
     setRefreshing(true);
     fetchData();
@@ -490,24 +459,29 @@ export default function UnifiedAnalytics({
   const handleCustomDateApply = (start, end) => {
     setCustomDateRange({ start, end });
     setDateRange('custom');
+    setShowDatePicker(false);
   };
 
-  // ============================================================
-  // CHART OPTIONS
-  // ============================================================
   const chartOptions = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index', intersect: false },
     plugins: {
-      legend: { position: 'top', labels: { usePointStyle: true, padding: 20 } },
+      legend: { 
+        position: 'top', 
+        labels: { 
+          usePointStyle: true, 
+          padding: isMobile ? 8 : 20,
+          font: { size: isMobile ? 10 : 12 }
+        } 
+      },
       tooltip: {
         backgroundColor: '#1e293b',
-        padding: 12,
+        padding: isMobile ? 8 : 12,
         callbacks: {
           label: (ctx) => {
             const value = ctx.raw;
-            if (ctx.dataset.label?.includes('Revenue') || ctx.dataset.label?.includes('$')) {
+            if (ctx.dataset.label?.includes('Revenue')) {
               return `${ctx.dataset.label}: ${formatCurrency(value)}`;
             }
             return `${ctx.dataset.label}: ${formatNumber(value)}`;
@@ -516,11 +490,15 @@ export default function UnifiedAnalytics({
       }
     },
     scales: selectedChartType !== 'pie' ? {
-      x: { grid: { display: false } },
+      x: { 
+        grid: { display: false },
+        ticks: { font: { size: isMobile ? 9 : 12 } }
+      },
       y: { 
         beginAtZero: true,
         grid: { color: '#e2e8f0' },
         ticks: {
+          font: { size: isMobile ? 9 : 12 },
           callback: (value) => {
             if (selectedMetrics.some(m => m.includes('revenue'))) {
               return formatCurrency(value);
@@ -533,20 +511,18 @@ export default function UnifiedAnalytics({
         position: 'right',
         beginAtZero: true,
         grid: { drawOnChartArea: false },
+        ticks: { font: { size: isMobile ? 9 : 12 } }
       }
     } : {},
-  }), [selectedSource, selectedMetrics, selectedChartType]);
+  }), [selectedSource, selectedMetrics, selectedChartType, isMobile]);
 
-  // ============================================================
-  // RENDER CHART
-  // ============================================================
   const renderChart = () => {
     if (!chartData?.datasets?.length) {
       return (
-        <div className="h-80 flex items-center justify-center text-gray-400">
+        <div className="h-60 sm:h-80 flex items-center justify-center text-gray-400">
           <div className="text-center">
-            <BarChart3 size={48} className="mx-auto mb-3 opacity-30" />
-            <p>No data available for the selected period</p>
+            <BarChart3 size={isMobile ? 32 : 48} className="mx-auto mb-2 sm:mb-3 opacity-30" />
+            <p className="text-xs sm:text-sm">No data available</p>
           </div>
         </div>
       );
@@ -565,15 +541,12 @@ export default function UnifiedAnalytics({
     } : chartData;
     
     return (
-      <div className="h-80">
+      <div className="h-60 sm:h-80">
         <ChartComponent data={pieData} options={chartOptions} />
       </div>
     );
   };
 
-  // ============================================================
-  // RENDER SUMMARY CARDS
-  // ============================================================
   const renderSummaryCards = () => {
     if (!summaryStats) return null;
     
@@ -587,8 +560,8 @@ export default function UnifiedAnalytics({
       );
     } else if (selectedSource === 'affiliate') {
       cards.push(
-        { label: 'Total Clicks', value: formatNumber(summaryStats.totalClicks) },
-        { label: 'Total Revenue', value: formatCurrency(summaryStats.totalRevenue) },
+        { label: 'Clicks', value: formatNumber(summaryStats.totalClicks) },
+        { label: 'Revenue', value: formatCurrency(summaryStats.totalRevenue) },
         { label: 'EPC', value: formatCurrency(summaryStats.epc) }
       );
     } else if (selectedSource === 'revenue') {
@@ -606,35 +579,32 @@ export default function UnifiedAnalytics({
     }
     
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
         {cards.map((card, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-100 p-4">
-            <p className="text-sm text-gray-500">{card.label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{card.value}</p>
+          <div key={i} className="bg-white rounded-xl border border-gray-100 p-2 sm:p-4">
+            <p className="text-[10px] sm:text-sm text-gray-500">{card.label}</p>
+            <p className="text-sm sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1 truncate">{card.value}</p>
           </div>
         ))}
       </div>
     );
   };
 
-  // ============================================================
-  // MAIN RENDER
-  // ============================================================
   if (loading) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+      <div className="min-h-[300px] sm:min-h-[400px] flex items-center justify-center">
+        <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 animate-spin" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle size={48} className="text-red-400 mx-auto mb-3" />
-          <p className="text-red-500">{error}</p>
-          <button onClick={fetchData} className="mt-3 text-sm text-purple-600 hover:underline">
+      <div className="min-h-[300px] sm:min-h-[400px] flex items-center justify-center">
+        <div className="text-center p-4">
+          <AlertCircle size={isMobile ? 32 : 48} className="text-red-400 mx-auto mb-2 sm:mb-3" />
+          <p className="text-red-500 text-xs sm:text-sm">{error}</p>
+          <button onClick={fetchData} className="mt-2 sm:mt-3 text-xs sm:text-sm text-purple-600 hover:underline">
             Try Again
           </button>
         </div>
@@ -643,101 +613,95 @@ export default function UnifiedAnalytics({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Toast */}
+    <div className="space-y-3 sm:space-y-6 px-2 sm:px-0">
       {toast.show && (
         <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
       )}
 
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center justify-between gap-2 sm:gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-          <p className="text-sm text-gray-500">{description}</p>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">{title}</h2>
+          {!isMobile && <p className="text-xs sm:text-sm text-gray-500">{description}</p>}
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 w-full sm:w-auto">
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="flex items-center gap-2 px-3 py-2 text-sm bg-white border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm bg-white border rounded-lg hover:bg-gray-50 active:scale-95 disabled:opacity-50"
           >
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
-            Refresh
+            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+            {!isMobile && 'Refresh'}
           </button>
           
           {showExport && (
             <button
               onClick={handleExport}
-              className="flex items-center gap-2 px-3 py-2 text-sm bg-black text-white rounded-lg hover:bg-gray-800"
+              className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm bg-black text-white rounded-lg hover:bg-gray-800 active:scale-95"
             >
-              <Download size={14} />
-              Export CSV
+              <Download size={12} />
+              {!isMobile && 'Export'}
             </button>
           )}
         </div>
       </div>
 
-      {/* Controls Bar */}
-      <div className="flex flex-wrap items-center gap-3 p-3 bg-white rounded-xl border border-gray-100">
-        {/* Source Selector */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 p-2 sm:p-3 bg-white rounded-xl border border-gray-100">
         {showSourceSelector && (
           <>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Source:</span>
-              <div className="flex gap-1">
+            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+              {!isMobile && <span className="text-xs sm:text-sm text-gray-500">Source:</span>}
+              <div className="flex gap-0.5 sm:gap-1">
                 {Object.entries(SOURCE_CONFIGS).map(([id, config]) => (
                   <button
                     key={id}
                     onClick={() => handleSourceChange(id)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition ${
+                    className={`flex items-center gap-0.5 sm:gap-1.5 px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-sm transition active:scale-95 ${
                       selectedSource === id
                         ? 'bg-gray-900 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
-                    <config.icon size={14} />
-                    {config.label}
+                    <config.icon size={isMobile ? 10 : 14} />
+                    {!isMobile && config.label}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="w-px h-6 bg-gray-200" />
+            {!isMobile && <div className="w-px h-5 bg-gray-200" />}
           </>
         )}
 
-        {/* Chart Type */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Chart:</span>
-          <div className="flex gap-1">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+          {!isMobile && <span className="text-xs sm:text-sm text-gray-500">Chart:</span>}
+          <div className="flex gap-0.5 sm:gap-1">
             {CHART_TYPES.map(type => (
               <button
                 key={type.id}
                 onClick={() => setSelectedChartType(type.id)}
-                className={`p-2 rounded-lg transition ${
+                className={`p-1.5 sm:p-2 rounded-lg transition active:scale-95 ${
                   selectedChartType === type.id
                     ? 'bg-gray-900 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
                 title={type.label}
               >
-                <type.icon size={14} />
+                <type.icon size={isMobile ? 10 : 14} />
               </button>
             ))}
           </div>
         </div>
 
-        <div className="w-px h-6 bg-gray-200" />
+        {!isMobile && <div className="w-px h-5 bg-gray-200" />}
 
-        {/* Group By */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Group:</span>
-          <div className="flex gap-1">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+          {!isMobile && <span className="text-xs sm:text-sm text-gray-500">Group:</span>}
+          <div className="flex gap-0.5 sm:gap-1">
             {GROUP_BY_OPTIONS.map(opt => (
               <button
                 key={opt.id}
                 onClick={() => setGroupBy(opt.id)}
-                className={`px-3 py-1.5 rounded-lg text-sm transition ${
+                className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-sm transition active:scale-95 ${
                   groupBy === opt.id
                     ? 'bg-gray-900 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -749,12 +713,11 @@ export default function UnifiedAnalytics({
           </div>
         </div>
 
-        <div className="w-px h-6 bg-gray-200" />
+        {!isMobile && <div className="w-px h-5 bg-gray-200" />}
 
-        {/* Date Range */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Date:</span>
-          <div className="flex gap-1">
+        <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto flex-1">
+          {!isMobile && <span className="text-xs sm:text-sm text-gray-500">Date:</span>}
+          <div className="flex gap-0.5 sm:gap-1">
             {DATE_RANGES.map(range => (
               <button
                 key={range.id}
@@ -766,7 +729,7 @@ export default function UnifiedAnalytics({
                     setCustomDateRange({ start: null, end: null });
                   }
                 }}
-                className={`px-3 py-1.5 rounded-lg text-sm transition ${
+                className={`px-1.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-sm transition active:scale-95 whitespace-nowrap ${
                   dateRange === range.id
                     ? 'bg-gray-900 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -777,7 +740,6 @@ export default function UnifiedAnalytics({
             ))}
           </div>
           
-          {/* Custom Date Picker */}
           <div className="relative">
             {showDatePicker && (
               <CustomDatePicker
@@ -788,36 +750,29 @@ export default function UnifiedAnalytics({
               />
             )}
           </div>
-          
-          {/* Show custom date range indicator */}
-          {dateRange === 'custom' && customDateRange.start && customDateRange.end && (
-            <span className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
-              {new Date(customDateRange.start).toLocaleDateString()} - {new Date(customDateRange.end).toLocaleDateString()}
-            </span>
-          )}
         </div>
 
-        {/* Metric Selector */}
         <div className="relative ml-auto">
           <button
             onClick={() => setShowMetricSelector(!showMetricSelector)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-lg text-sm"
+            className="flex items-center gap-1 sm:gap-2 px-1.5 py-1 sm:px-3 sm:py-1.5 bg-purple-50 text-purple-700 rounded-lg text-[10px] sm:text-sm active:scale-95"
           >
-            <Filter size={14} />
-            Metrics ({selectedMetrics.length})
-            <ChevronDown size={14} />
+            <Filter size={isMobile ? 10 : 14} />
+            {!isMobile && `Metrics (${selectedMetrics.length})`}
+            {isMobile && `${selectedMetrics.length}`}
+            <ChevronDown size={isMobile ? 10 : 14} />
           </button>
           
           {showMetricSelector && (
-            <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border z-50 p-3 min-w-[200px]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-gray-500">Select Metrics</span>
-                <button onClick={() => setShowMetricSelector(false)}>
-                  <X size={14} className="text-gray-400" />
+            <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-xl border z-50 p-2 sm:p-3 min-w-[160px] sm:min-w-[200px]">
+              <div className="flex items-center justify-between mb-1 sm:mb-2">
+                <span className="text-[10px] sm:text-xs font-semibold text-gray-500">Metrics</span>
+                <button onClick={() => setShowMetricSelector(false)} className="active:scale-90">
+                  <X size={12} className="text-gray-400" />
                 </button>
               </div>
               {sourceConfig.metrics.map(metric => (
-                <label key={metric.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                <label key={metric.id} className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 hover:bg-gray-50 rounded cursor-pointer text-xs sm:text-sm">
                   <input
                     type="checkbox"
                     checked={selectedMetrics.includes(metric.id)}
@@ -828,10 +783,10 @@ export default function UnifiedAnalytics({
                         setSelectedMetrics(selectedMetrics.filter(m => m !== metric.id));
                       }
                     }}
-                    className="rounded"
+                    className="rounded w-3 h-3 sm:w-4 sm:h-4"
                   />
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: metric.color }} />
-                  <span className="text-sm">{metric.label}</span>
+                  <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full" style={{ backgroundColor: metric.color }} />
+                  <span>{metric.label}</span>
                 </label>
               ))}
             </div>
@@ -839,84 +794,55 @@ export default function UnifiedAnalytics({
         </div>
       </div>
 
-      {/* Summary Cards */}
       {renderSummaryCards()}
 
-      {/* Main Chart */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5">
         {renderChart()}
       </div>
 
-      {/* Data Table */}
-      {rawData.length > 0 && (
+      {rawData.length > 0 && !isMobile && (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-900">Recent Data</h3>
-            <span className="text-xs text-gray-500">{rawData.length} total rows</span>
+          <div className="px-3 sm:px-5 py-2 sm:py-3 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="font-semibold text-gray-900 text-xs sm:text-sm">Recent Data</h3>
+            <span className="text-[10px] sm:text-xs text-gray-500">{rawData.length} rows</span>
           </div>
-          <div className="max-h-64 overflow-y-auto">
-            <table className="w-full text-sm">
+          <div className="max-h-48 sm:max-h-64 overflow-y-auto">
+            <table className="w-full text-xs sm:text-sm">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                  <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left text-[10px] sm:text-xs font-medium text-gray-500">Date</th>
                   {selectedSource === 'posts' && (
                     <>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Title</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Views</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left text-[10px] sm:text-xs font-medium text-gray-500">Title</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-right text-[10px] sm:text-xs font-medium text-gray-500">Views</th>
                     </>
                   )}
                   {selectedSource === 'affiliate' && (
                     <>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Platform</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Clicks</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Revenue</th>
-                    </>
-                  )}
-                  {selectedSource === 'revenue' && (
-                    <>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Source</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Amount</th>
-                    </>
-                  )}
-                  {selectedSource === 'ads' && (
-                    <>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Impressions</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Clicks</th>
-                      <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Revenue</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-left text-[10px] sm:text-xs font-medium text-gray-500">Platform</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-right text-[10px] sm:text-xs font-medium text-gray-500">Clicks</th>
+                      <th className="px-2 sm:px-4 py-1.5 sm:py-2 text-right text-[10px] sm:text-xs font-medium text-gray-500">Revenue</th>
                     </>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {rawData.slice(0, 10).map((item, i) => (
+                {rawData.slice(0, 5).map((item, i) => (
                   <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-600">
+                    <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-gray-600 text-[10px] sm:text-xs">
                       {new Date(item.date).toLocaleDateString()}
                     </td>
                     {selectedSource === 'posts' && (
                       <>
-                        <td className="px-4 py-2 text-gray-900 truncate max-w-[200px]">{item.title || '-'}</td>
-                        <td className="px-4 py-2 text-right text-gray-600">{formatNumber(item.views)}</td>
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-gray-900 truncate max-w-[120px] sm:max-w-[200px] text-[10px] sm:text-xs">{item.title || '-'}</td>
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-right text-gray-600 text-[10px] sm:text-xs">{formatNumber(item.views)}</td>
                       </>
                     )}
                     {selectedSource === 'affiliate' && (
                       <>
-                        <td className="px-4 py-2 text-gray-900">{item.platform || '-'}</td>
-                        <td className="px-4 py-2 text-right text-gray-600">{formatNumber(item.clicks)}</td>
-                        <td className="px-4 py-2 text-right text-gray-600">{formatCurrency(item.revenue)}</td>
-                      </>
-                    )}
-                    {selectedSource === 'revenue' && (
-                      <>
-                        <td className="px-4 py-2 text-gray-900 capitalize">{item.source?.replace('_', ' ') || '-'}</td>
-                        <td className="px-4 py-2 text-right text-gray-600">{formatCurrency(item.revenue)}</td>
-                      </>
-                    )}
-                    {selectedSource === 'ads' && (
-                      <>
-                        <td className="px-4 py-2 text-right text-gray-600">{formatNumber(item.impressions)}</td>
-                        <td className="px-4 py-2 text-right text-gray-600">{formatNumber(item.clicks)}</td>
-                        <td className="px-4 py-2 text-right text-gray-600">{formatCurrency(item.revenue)}</td>
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-gray-900 text-[10px] sm:text-xs">{item.platform || '-'}</td>
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-right text-gray-600 text-[10px] sm:text-xs">{formatNumber(item.clicks)}</td>
+                        <td className="px-2 sm:px-4 py-1.5 sm:py-2 text-right text-gray-600 text-[10px] sm:text-xs">{formatCurrency(item.revenue)}</td>
                       </>
                     )}
                   </tr>

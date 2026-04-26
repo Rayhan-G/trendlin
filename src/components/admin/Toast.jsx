@@ -1,4 +1,5 @@
-// src/components/admin/Toast.jsx
+// src/components/admin/Toast.jsx (ALL DEVICES COMPATIBLE)
+
 import { useEffect } from 'react'
 
 export default function Toast({ message, type = 'success', onClose }) {
@@ -37,10 +38,10 @@ export default function Toast({ message, type = 'success', onClose }) {
   }
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-white ${getBgColor()} animate-slide-up`}>
-      <span>{getIcon()}</span>
-      <span className="text-sm">{message}</span>
-      <button onClick={onClose} className="ml-2 text-white/80 hover:text-white">
+    <div className={`fixed bottom-3 left-3 right-3 sm:bottom-4 sm:right-4 sm:left-auto z-50 flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg shadow-lg text-white ${getBgColor()} animate-slide-up max-w-[calc(100vw-24px)] sm:max-w-md`}>
+      <span className="text-sm sm:text-base">{getIcon()}</span>
+      <span className="text-xs sm:text-sm flex-1 break-words">{message}</span>
+      <button onClick={onClose} className="ml-1 sm:ml-2 text-white/80 hover:text-white active:scale-90 text-sm sm:text-base">
         ✕
       </button>
     </div>

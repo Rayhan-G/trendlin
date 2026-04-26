@@ -17,7 +17,6 @@ import {
 } from 'react-share'
 import { XLogo } from '@phosphor-icons/react'
 
-// X (Twitter) Share Button
 function XShareButton({ url, title, children }) {
   const handleClick = (e) => {
     e.preventDefault()
@@ -38,17 +37,26 @@ function XShareButton({ url, title, children }) {
           align-items: center;
           justify-content: center;
         }
-        .x-share-btn:hover {
-          transform: translateY(-2px);
+        .x-share-btn:active {
+          transform: scale(0.95);
+        }
+        @media (hover: hover) {
+          .x-share-btn:hover {
+            transform: translateY(-2px);
+          }
         }
       `}</style>
     </button>
   )
 }
 
-// Copy Link Button
 function CopyLinkButton({ url }) {
   const [copied, setCopied] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768)
+  }, [])
 
   const copyLink = () => {
     navigator.clipboard.writeText(url)
@@ -59,11 +67,11 @@ function CopyLinkButton({ url }) {
   return (
     <button onClick={copyLink} className="copy-btn" aria-label="Copy link">
       {copied ? (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width={isMobile ? 20 : 24} height={isMobile ? 20 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
       ) : (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <svg width={isMobile ? 20 : 24} height={isMobile ? 20 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </svg>
@@ -76,17 +84,27 @@ function CopyLinkButton({ url }) {
           background: none;
           border: none;
           cursor: pointer;
-          padding: 8px;
+          padding: 6px;
           border-radius: 50%;
           transition: all 0.2s ease;
           color: #6c757d;
         }
-        .copy-btn:hover {
-          background: #e9ecef;
-          transform: translateY(-2px);
+        .copy-btn:active {
+          transform: scale(0.95);
         }
-        :global(html.dark) .copy-btn:hover {
-          background: #2c3e50;
+        @media (min-width: 768px) {
+          .copy-btn {
+            padding: 8px;
+          }
+        }
+        @media (hover: hover) {
+          .copy-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+          }
+          :global(html.dark) .copy-btn:hover {
+            background: #2c3e50;
+          }
         }
       `}</style>
     </button>
@@ -115,11 +133,11 @@ export default function ShareButtons({ url, title, imageUrl }) {
     }
   }, [])
 
-  const iconSize = isMobile ? 34 : 42
+  const iconSize = isMobile ? 28 : 42
 
   return (
     <div className="share-buttons">
-      <span className="share-label">Share this article</span>
+      <span className="share-label">Share</span>
       <div className="share-icons">
         <XShareButton url={url} title={title}>
           <XLogo size={iconSize} weight="fill" />
@@ -160,34 +178,43 @@ export default function ShareButtons({ url, title, imageUrl }) {
         .share-buttons {
           display: flex;
           align-items: center;
-          gap: 1.5rem;
+          gap: 1rem;
           flex-wrap: wrap;
-          margin-bottom: 2rem;
-          padding-bottom: 1.5rem;
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
           border-bottom: 1px solid #e9ecef;
+        }
+        @media (min-width: 768px) {
+          .share-buttons {
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+          }
         }
         :global(html.dark) .share-buttons {
           border-bottom-color: #2c3e50;
         }
         .share-label {
-          font-size: 0.85rem;
+          font-size: 0.7rem;
           font-weight: 600;
           color: #6c757d;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
+        @media (min-width: 768px) {
+          .share-label {
+            font-size: 0.85rem;
+          }
+        }
         .share-icons {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
           flex-wrap: wrap;
         }
-        @media (max-width: 768px) {
-          .share-buttons {
-            gap: 1rem;
-          }
-          .share-label {
-            font-size: 0.75rem;
+        @media (min-width: 768px) {
+          .share-icons {
+            gap: 0.75rem;
           }
         }
       `}</style>

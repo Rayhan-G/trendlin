@@ -1,4 +1,5 @@
-// src/components/admin/RealTimePreview.js - WITH FULLSCREEN TOGGLE
+// src/components/admin/RealTimePreview.js - ALL DEVICES COMPATIBLE
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import DOMPurify from 'dompurify';
@@ -23,9 +24,6 @@ import { Maximize2, Minimize2, X } from 'lucide-react';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
-// ============================================================
-// X (Twitter) Share Button
-// ============================================================
 function XShareButton({ url, title, children }) {
   const handleClick = (e) => {
     e.preventDefault();
@@ -46,19 +44,26 @@ function XShareButton({ url, title, children }) {
           align-items: center;
           justify-content: center;
         }
-        .x-share-btn:hover {
-          transform: translateY(-2px);
+        .x-share-btn:active {
+          transform: scale(0.95);
+        }
+        @media (hover: hover) {
+          .x-share-btn:hover {
+            transform: translateY(-2px);
+          }
         }
       `}</style>
     </button>
   );
 }
 
-// ============================================================
-// Copy Link Button
-// ============================================================
 function CopyLinkButton({ url }) {
   const [copied, setCopied] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
 
   const copyLink = () => {
     navigator.clipboard?.writeText(url).then(() => {
@@ -70,11 +75,11 @@ function CopyLinkButton({ url }) {
   return (
     <button onClick={copyLink} className="copy-btn" aria-label="Copy link">
       {copied ? (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width={isMobile ? 20 : 24} height={isMobile ? 20 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
       ) : (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <svg width={isMobile ? 20 : 24} height={isMobile ? 20 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </svg>
@@ -87,32 +92,56 @@ function CopyLinkButton({ url }) {
           background: none;
           border: none;
           cursor: pointer;
-          padding: 8px;
+          padding: 6px;
           border-radius: 50%;
           transition: all 0.2s ease;
           color: #6c757d;
         }
-        .copy-btn:hover {
-          background: #e9ecef;
-          transform: translateY(-2px);
+        .copy-btn:active {
+          transform: scale(0.95);
         }
-        .preview-dark .copy-btn:hover {
-          background: #2c3e50;
+        @media (min-width: 768px) {
+          .copy-btn {
+            padding: 8px;
+          }
+        }
+        @media (hover: hover) {
+          .copy-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+          }
+          .preview-dark .copy-btn:hover {
+            background: #2c3e50;
+          }
         }
       `}</style>
     </button>
   );
 }
 
-// ============================================================
-// Share Buttons Component
-// ============================================================
 function ShareButtons({ url, title, imageUrl, isFullscreen }) {
-  const iconSize = isFullscreen ? 42 : 34;
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  useEffect(() => {
+    const checkDevice = () => {
+      setIsMobile(window.innerWidth < 640);
+      setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
+    };
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
+  let iconSize = 32;
+  if (isFullscreen && !isMobile) iconSize = 42;
+  else if (isMobile) iconSize = 28;
+  else if (isTablet) iconSize = 32;
+  else iconSize = 34;
 
   return (
     <div className="share-buttons">
-      <span className="share-label">Share this article</span>
+      <span className="share-label">Share</span>
       <div className="share-icons">
         <XShareButton url={url} title={title}>
           <XLogo size={iconSize} weight="fill" />
@@ -153,7 +182,7 @@ function ShareButtons({ url, title, imageUrl, isFullscreen }) {
         .share-buttons {
           display: flex;
           align-items: center;
-          gap: 1.5rem;
+          gap: 1rem;
           flex-wrap: wrap;
           margin-bottom: 1.5rem;
           padding-bottom: 1.5rem;
@@ -163,21 +192,29 @@ function ShareButtons({ url, title, imageUrl, isFullscreen }) {
           border-bottom-color: #2c3e50;
         }
         .share-label {
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           font-weight: 600;
           color: #6c757d;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
+        @media (min-width: 768px) {
+          .share-label {
+            font-size: 0.85rem;
+          }
+          .share-buttons {
+            gap: 1.5rem;
+          }
+        }
         .share-icons {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
           flex-wrap: wrap;
         }
-        @media (max-width: 768px) {
-          .share-buttons {
-            gap: 1rem;
+        @media (min-width: 768px) {
+          .share-icons {
+            gap: 0.75rem;
           }
         }
       `}</style>
@@ -185,13 +222,15 @@ function ShareButtons({ url, title, imageUrl, isFullscreen }) {
   );
 }
 
-// ============================================================
-// Rating Section Component (Preview)
-// ============================================================
 function RatingPreview({ rating = 4.5, totalRatings = 128, isFullscreen }) {
   const [hoverRating, setHoverRating] = useState(0);
   const [selectedRating, setSelectedRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
 
   const emojis = {
     1: { emoji: '😤', label: 'Hated It', stars: '★', color: '#ef4444' },
@@ -218,17 +257,22 @@ function RatingPreview({ rating = 4.5, totalRatings = 128, isFullscreen }) {
         <style jsx>{`
           .rating-thanks {
             text-align: center;
-            padding: 2rem;
+            padding: 1.5rem;
             margin-top: 2rem;
             border-top: 1px solid #e9ecef;
           }
+          @media (min-width: 768px) {
+            .rating-thanks {
+              padding: 2rem;
+            }
+          }
           .preview-dark .rating-thanks { border-top-color: #2c3e50; }
           .rating-stats { margin-bottom: 0.75rem; }
-          .stars { color: #f59e0b; letter-spacing: 2px; font-size: 1.1rem; }
+          .stars { color: #f59e0b; letter-spacing: 2px; font-size: 1rem; }
           .rating-number { font-weight: 600; margin-left: 0.5rem; color: #495057; }
-          .rating-count { color: #6c757d; font-size: 0.85rem; margin-left: 0.5rem; }
+          .rating-count { color: #6c757d; font-size: 0.75rem; margin-left: 0.5rem; }
           .preview-dark .rating-number { color: #e9ecef; }
-          p { color: #6c757d; }
+          p { color: #6c757d; font-size: 0.85rem; }
         `}</style>
       </div>
     );
@@ -242,7 +286,7 @@ function RatingPreview({ rating = 4.5, totalRatings = 128, isFullscreen }) {
         <span className="rating-count">({totalRatings} ratings)</span>
       </div>
 
-      <p className="rating-title">How did you feel about this article?</p>
+      <p className="rating-title">Rate this article?</p>
 
       <div className="emojis">
         {[1, 2, 3, 4, 5].map((value) => (
@@ -252,11 +296,10 @@ function RatingPreview({ rating = 4.5, totalRatings = 128, isFullscreen }) {
             onMouseEnter={() => setHoverRating(value)}
             onMouseLeave={() => setHoverRating(0)}
             onClick={() => handleRatingClick(value)}
-            style={{ '--emoji-color': emojis[value].color }}
           >
             <span className="emoji">{emojis[value].emoji}</span>
             <span className="emoji-stars">{emojis[value].stars}</span>
-            <span className="emoji-label">{emojis[value].label}</span>
+            {!isMobile && <span className="emoji-label">{emojis[value].label}</span>}
           </button>
         ))}
       </div>
@@ -264,83 +307,128 @@ function RatingPreview({ rating = 4.5, totalRatings = 128, isFullscreen }) {
       <style jsx>{`
         .rating-section {
           text-align: center;
-          padding: ${isFullscreen ? '2.5rem' : '2rem'};
+          padding: 1.5rem;
           background: #f8f9fa;
           border-radius: 20px;
           margin-top: 2rem;
         }
+        @media (min-width: 768px) {
+          .rating-section {
+            padding: ${isFullscreen ? '2.5rem' : '2rem'};
+          }
+        }
         .preview-dark .rating-section { background: #1a2632; }
         .existing-ratings {
-          margin-bottom: 1.5rem;
-          padding-bottom: 1.5rem;
+          margin-bottom: 1rem;
+          padding-bottom: 1rem;
           border-bottom: 1px solid #e9ecef;
         }
+        @media (min-width: 768px) {
+          .existing-ratings {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+          }
+        }
         .preview-dark .existing-ratings { border-bottom-color: #2c3e50; }
-        .stars { color: #f59e0b; letter-spacing: 2px; font-size: 1.1rem; }
+        .stars { color: #f59e0b; letter-spacing: 2px; font-size: 1rem; }
         .rating-number { font-weight: 600; margin-left: 0.5rem; color: #495057; }
-        .rating-count { color: #6c757d; font-size: 0.85rem; margin-left: 0.5rem; }
+        .rating-count { color: #6c757d; font-size: 0.75rem; margin-left: 0.5rem; }
         .preview-dark .rating-number { color: #e9ecef; }
         .rating-title {
-          margin-bottom: 1.5rem;
-          font-size: 1rem;
+          margin-bottom: 1rem;
+          font-size: 0.9rem;
           font-weight: 500;
           color: #495057;
+        }
+        @media (min-width: 768px) {
+          .rating-title {
+            margin-bottom: 1.5rem;
+            font-size: 1rem;
+          }
         }
         .preview-dark .rating-title { color: #e9ecef; }
         .emojis {
           display: flex;
           justify-content: center;
-          gap: 1rem;
+          gap: 0.5rem;
           flex-wrap: wrap;
+        }
+        @media (min-width: 768px) {
+          .emojis {
+            gap: 1rem;
+          }
         }
         .emoji-btn {
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 0.3rem;
+          gap: 0.2rem;
           background: none;
           border: none;
           cursor: pointer;
-          padding: 0.75rem 1rem;
-          border-radius: 16px;
+          padding: 0.5rem;
+          border-radius: 12px;
           transition: all 0.2s ease;
           opacity: 0.6;
+        }
+        @media (min-width: 768px) {
+          .emoji-btn {
+            padding: 0.75rem 1rem;
+            gap: 0.3rem;
+            border-radius: 16px;
+          }
+        }
+        .emoji-btn:active {
+          transform: scale(0.95);
         }
         .emoji-btn.hover {
           opacity: 1;
           background: rgba(0, 86, 179, 0.1);
           transform: scale(1.05);
         }
-        .emoji-btn:hover {
-          opacity: 1;
-          transform: scale(1.05);
+        .emoji { font-size: 1.5rem; }
+        @media (min-width: 768px) {
+          .emoji { font-size: ${isFullscreen ? '3rem' : '2.5rem'}; }
         }
-        .emoji { font-size: ${isFullscreen ? '3rem' : '2.5rem'}; }
-        .emoji-stars { font-size: 0.7rem; color: #f59e0b; letter-spacing: 1px; }
-        .emoji-label { font-size: 0.7rem; font-weight: 500; color: #6c757d; }
+        .emoji-stars { font-size: 0.55rem; color: #f59e0b; letter-spacing: 1px; }
+        @media (min-width: 768px) {
+          .emoji-stars { font-size: 0.7rem; }
+        }
+        .emoji-label { font-size: 0.6rem; font-weight: 500; color: #6c757d; }
+        @media (min-width: 768px) {
+          .emoji-label { font-size: 0.7rem; }
+        }
         .preview-dark .emoji-label { color: #a0a0a0; }
-        @media (max-width: 768px) {
-          .rating-section { padding: 1.5rem; }
-          .emoji { font-size: 1.8rem; }
-          .emoji-label { font-size: 0.55rem; }
-          .emoji-stars { font-size: 0.55rem; }
-          .emoji-btn { padding: 0.5rem 0.6rem; }
-        }
       `}</style>
     </div>
   );
 }
 
-// ============================================================
-// Related Posts Preview
-// ============================================================
 function RelatedPostsPreview({ category = 'Technology', currentTitle = 'Current Post', isFullscreen }) {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  useEffect(() => {
+    const checkDevice = () => {
+      setIsMobile(window.innerWidth < 640);
+      setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
+    };
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
   const mockPosts = [
     { id: 1, title: 'The Future of AI in Content Creation', category, views: 15420, rating: 4.8, date: 'Mar 15, 2024', image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?w=400' },
     { id: 2, title: '10 SEO Strategies That Actually Work', category, views: 12350, rating: 4.6, date: 'Mar 10, 2024', image: 'https://images.unsplash.com/photo-1432888622747-f54472e4c5c3?w=400' },
     { id: 3, title: 'Mastering Content Marketing in 2024', category, views: 8920, rating: 4.5, date: 'Mar 5, 2024', image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400' },
     { id: 4, title: 'The Complete Guide to Blog Monetization', category, views: 21450, rating: 4.9, date: 'Feb 28, 2024', image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=400' },
   ];
+
+  let displayCount = 4;
+  if (isMobile) displayCount = 2;
+  else if (isFullscreen && !isMobile && !isTablet) displayCount = 6;
+  else if (isTablet) displayCount = 3;
 
   return (
     <div className="related-posts">
@@ -351,52 +439,29 @@ function RelatedPostsPreview({ category = 'Technology', currentTitle = 'Current 
         </div>
         <a href="#" className="view-all" onClick={(e) => e.preventDefault()}>
           Browse all
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="9 18 15 12 9 6"/>
           </svg>
         </a>
       </div>
       
-      <div className={`related-grid ${isFullscreen ? 'fullscreen-grid' : ''}`}>
-        {mockPosts.filter(p => p.title !== currentTitle).slice(0, isFullscreen ? 6 : 4).map((post, index) => (
-          <a key={post.id} href="#" className="related-card" onClick={(e) => e.preventDefault()} style={{ animationDelay: `${index * 0.1}s` }}>
+      <div className="related-grid">
+        {mockPosts.filter(p => p.title !== currentTitle).slice(0, displayCount).map((post, index) => (
+          <a key={post.id} href="#" className="related-card" onClick={(e) => e.preventDefault()}>
             {post.image && (
               <div className="related-img">
                 <img src={post.image} alt={post.title} loading="lazy" />
-                <div className="img-overlay"></div>
               </div>
             )}
             <div className="related-content">
               <div className="related-cat-wrapper">
                 <span className="related-cat">{post.category}</span>
-                {post.rating >= 4.5 && <span className="trending-badge">🔥 Trending</span>}
+                {post.rating >= 4.5 && <span className="trending-badge">🔥</span>}
               </div>
-              <h4>{post.title}</h4>
+              <h4>{post.title.length > 40 ? post.title.substring(0, 40) + '...' : post.title}</h4>
               <div className="related-meta">
-                <div className="meta-date">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                  </svg>
-                  <span>{post.date}</span>
-                </div>
-                <div className="meta-views">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                  <span>{post.views?.toLocaleString()}</span>
-                </div>
-                <div className="meta-rating">
-                  <span className="rating-stars">{'★'.repeat(Math.round(post.rating))}</span>
-                  <span>{post.rating.toFixed(1)}</span>
-                </div>
-              </div>
-              <div className="read-more">
-                Read article
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
+                <div className="meta-date">{post.date}</div>
+                <div className="meta-views">{post.views?.toLocaleString()}</div>
               </div>
             </div>
           </a>
@@ -405,218 +470,223 @@ function RelatedPostsPreview({ category = 'Technology', currentTitle = 'Current 
 
       <style jsx>{`
         .related-posts {
-          margin-top: 3rem;
-          padding-top: 2rem;
+          margin-top: 2rem;
+          padding-top: 1.5rem;
           border-top: 1px solid #e9ecef;
-          position: relative;
         }
-        .related-posts::before {
-          content: '';
-          position: absolute;
-          top: -1px;
-          left: 0;
-          width: 60px;
-          height: 3px;
-          background: linear-gradient(90deg, #0056b3, #00a6ff);
-          border-radius: 3px;
+        @media (min-width: 768px) {
+          .related-posts {
+            margin-top: 3rem;
+            padding-top: 2rem;
+          }
         }
         .preview-dark .related-posts { border-top-color: #2c3e50; }
-        .preview-dark .related-posts::before { background: linear-gradient(90deg, #66b0ff, #00a6ff); }
 
         .related-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+        @media (min-width: 768px) {
+          .related-header {
+            margin-bottom: 1.5rem;
+          }
         }
         .header-left {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
         }
-        .header-icon { font-size: 1.5rem; }
+        .header-icon { font-size: 1.2rem; }
         h3 {
-          font-size: 1.25rem;
+          font-size: 1rem;
           font-weight: 700;
           margin: 0;
           color: #1a1a2e;
+        }
+        @media (min-width: 768px) {
+          h3 { font-size: 1.25rem; }
         }
         .preview-dark h3 { color: #ffffff; }
         .view-all {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.85rem;
+          gap: 0.3rem;
+          font-size: 0.75rem;
           color: #0056b3;
           text-decoration: none;
           font-weight: 500;
-          padding: 0.5rem 1rem;
-          border-radius: 40px;
+          padding: 0.3rem 0.6rem;
+          border-radius: 20px;
           background: rgba(0, 86, 179, 0.05);
         }
+        @media (min-width: 768px) {
+          .view-all {
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+          }
+        }
         .preview-dark .view-all { color: #66b0ff; background: rgba(102, 176, 255, 0.1); }
-        .view-all:hover { background: rgba(0, 86, 179, 0.1); }
 
         .related-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1.25rem;
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
         }
-        .fullscreen-grid {
-          grid-template-columns: repeat(3, 1fr);
+        @media (min-width: 640px) {
+          .related-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+          }
         }
+        @media (min-width: 1024px) and (min-width: 1024px) {
+          .related-grid {
+            grid-template-columns: repeat(${isFullscreen ? 3 : 2}, 1fr);
+            gap: 1.25rem;
+          }
+        }
+        
         .related-card {
           text-decoration: none;
           display: flex;
-          gap: 1rem;
-          padding: 1rem;
-          border-radius: 16px;
+          gap: 0.75rem;
+          padding: 0.75rem;
+          border-radius: 12px;
           background: #ffffff;
           border: 1px solid #e9ecef;
           transition: all 0.2s;
         }
-        .preview-dark .related-card { background: #1a2632; border-color: #2c3e50; }
-        .related-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-          border-color: #0056b3;
+        @media (min-width: 768px) {
+          .related-card {
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 16px;
+          }
         }
+        .related-card:active {
+          transform: scale(0.98);
+        }
+        .preview-dark .related-card { background: #1a2632; border-color: #2c3e50; }
 
         .related-img {
-          width: 100px;
-          height: 75px;
+          width: 70px;
+          height: 60px;
           flex-shrink: 0;
           overflow: hidden;
-          border-radius: 12px;
+          border-radius: 8px;
           background: #f0f0f0;
+        }
+        @media (min-width: 768px) {
+          .related-img {
+            width: 100px;
+            height: 75px;
+            border-radius: 12px;
+          }
         }
         .related-img img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s;
         }
-        .related-card:hover .related-img img { transform: scale(1.05); }
 
         .related-content {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 0.4rem;
+          gap: 0.3rem;
         }
         .related-cat-wrapper {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.3rem;
         }
         .related-cat {
-          font-size: 0.65rem;
+          font-size: 0.6rem;
           color: #0056b3;
           text-transform: uppercase;
           font-weight: 700;
           background: rgba(0, 86, 179, 0.1);
-          padding: 0.15rem 0.5rem;
-          border-radius: 20px;
+          padding: 0.1rem 0.4rem;
+          border-radius: 12px;
         }
         .trending-badge {
           font-size: 0.6rem;
-          color: #f59e0b;
-          background: rgba(245, 158, 11, 0.1);
-          padding: 0.15rem 0.4rem;
-          border-radius: 20px;
         }
         h4 {
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           font-weight: 600;
           margin: 0;
           color: #1a1a2e;
-          line-height: 1.4;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          line-height: 1.3;
+        }
+        @media (min-width: 768px) {
+          h4 { font-size: 0.85rem; }
         }
         .preview-dark h4 { color: #e9ecef; }
 
         .related-meta {
           display: flex;
           align-items: center;
-          gap: 0.6rem;
+          gap: 0.5rem;
         }
-        .meta-date, .meta-views, .meta-rating {
-          display: flex;
-          align-items: center;
-          gap: 0.2rem;
-          font-size: 0.6rem;
+        .meta-date, .meta-views {
+          font-size: 0.55rem;
           color: #6c757d;
         }
-        .rating-stars { color: #f59e0b; letter-spacing: 1px; }
-
-        .read-more {
-          display: flex;
-          align-items: center;
-          gap: 0.4rem;
-          font-size: 0.65rem;
-          font-weight: 600;
-          color: #0056b3;
-          opacity: 0;
-          transition: all 0.2s;
-        }
-        .related-card:hover .read-more { opacity: 1; }
-
-        @media (max-width: 1024px) {
-          .fullscreen-grid {
-            grid-template-columns: repeat(2, 1fr);
+        @media (min-width: 768px) {
+          .meta-date, .meta-views {
+            font-size: 0.6rem;
           }
-        }
-        @media (max-width: 768px) {
-          .related-grid { grid-template-columns: 1fr; }
-          .fullscreen-grid { grid-template-columns: 1fr; }
-          h4 { font-size: 0.8rem; }
         }
       `}</style>
     </div>
   );
 }
 
-// ============================================================
-// Right Block Preview
-// ============================================================
 function RightBlockPreview() {
   return (
     <div className="right-block">
       <div className="right-block-icon">✨</div>
-      <h4>Want to stay updated?</h4>
-      <p>Subscribe to our newsletter for the latest insights and trends.</p>
+      <h4>Stay updated</h4>
+      <p>Subscribe for latest insights</p>
       <a href="#" className="right-block-link" onClick={(e) => e.preventDefault()}>
-        Subscribe now →
+        Subscribe →
       </a>
 
       <style jsx>{`
         .right-block {
-          padding: 1.25rem 1.5rem;
+          padding: 1rem;
           background: #f8f9fa;
-          border-radius: 16px;
+          border-radius: 12px;
           text-align: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
+        }
+        @media (min-width: 768px) {
+          .right-block {
+            padding: 1.25rem 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+          }
         }
         .preview-dark .right-block { background: #1a2632; }
-        .right-block-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+        .right-block-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
         h4 {
-          font-size: 1rem;
+          font-size: 0.85rem;
           font-weight: 600;
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.3rem;
           color: #212529;
         }
-        .preview-dark h4 { color: #e9ecef; }
         p {
-          font-size: 0.85rem;
+          font-size: 0.7rem;
           color: #6c757d;
-          margin-bottom: 0.75rem;
-          line-height: 1.5;
+          margin-bottom: 0.5rem;
         }
         .right-block-link {
-          font-size: 0.85rem;
+          font-size: 0.75rem;
           color: #0056b3;
           text-decoration: none;
           font-weight: 500;
@@ -627,9 +697,6 @@ function RightBlockPreview() {
   );
 }
 
-// ============================================================
-// MAIN COMPONENT WITH FULLSCREEN
-// ============================================================
 export default function RealTimePreview({ 
   title, 
   content, 
@@ -648,11 +715,18 @@ export default function RealTimePreview({
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   const previewRef = useRef(null);
   const contentRef = useRef(null);
 
-  // Fullscreen toggle
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const toggleFullscreen = () => {
     if (!isFullscreen) {
       if (previewRef.current) {
@@ -660,8 +734,6 @@ export default function RealTimePreview({
           previewRef.current.requestFullscreen();
         } else if (previewRef.current.webkitRequestFullscreen) {
           previewRef.current.webkitRequestFullscreen();
-        } else if (previewRef.current.msRequestFullscreen) {
-          previewRef.current.msRequestFullscreen();
         }
       }
     } else {
@@ -669,13 +741,10 @@ export default function RealTimePreview({
         document.exitFullscreen();
       } else if (document.webkitExitFullscreen) {
         document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
       }
     }
   };
 
-  // Listen for fullscreen change
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -683,16 +752,13 @@ export default function RealTimePreview({
     
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('msfullscreenchange', handleFullscreenChange);
     
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
     };
   }, []);
 
-  // Handle ESC key
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape' && isFullscreen) {
@@ -703,7 +769,6 @@ export default function RealTimePreview({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isFullscreen]);
 
-  // Scroll progress
   useEffect(() => {
     const handleScroll = () => {
       if (contentRef.current) {
@@ -752,42 +817,17 @@ export default function RealTimePreview({
     }
     
     if (Array.isArray(rawContent)) {
-      return blocksToHtml(rawContent);
-    }
-    
-    if (rawContent.blocks && Array.isArray(rawContent.blocks)) {
-      return blocksToHtml(rawContent.blocks);
+      return rawContent.map(block => {
+        switch (block.type) {
+          case 'heading': return `<h${block.level || 1}>${block.content || ''}</h${block.level || 1}>`;
+          case 'paragraph': return `<p>${block.content || ''}</p>`;
+          default: return `<p>${block.content || ''}</p>`;
+        }
+      }).join('');
     }
     
     return '';
   }, []);
-
-  const blocksToHtml = (blocks) => {
-    if (!blocks || !Array.isArray(blocks)) return '';
-    
-    return blocks.map(block => {
-      switch (block.type) {
-        case 'heading':
-          return `<h${block.level || 1}>${block.content || block.text || ''}</h${block.level || 1}>`;
-        case 'paragraph':
-          return `<p>${block.content || block.text || ''}</p>`;
-        case 'bulletList':
-          return `<ul>${(block.children || block.items || []).map(item => `<li>${item.content || item.text || ''}</li>`).join('')}</ul>`;
-        case 'numberedList':
-          return `<ol>${(block.children || block.items || []).map(item => `<li>${item.content || item.text || ''}</li>`).join('')}</ol>`;
-        case 'blockquote':
-          return `<blockquote>${block.content || block.text || ''}</blockquote>`;
-        case 'codeBlock':
-          return `<pre><code>${block.content || block.text || ''}</code></pre>`;
-        case 'image':
-          return `<img src="${block.url || block.src || ''}" alt="${block.alt || ''}" />`;
-        case 'video':
-          return `<div class="video-embed"><iframe src="${block.url || ''}" frameborder="0" allowfullscreen></iframe></div>`;
-        default:
-          return `<p>${block.content || block.text || ''}</p>`;
-      }
-    }).join('');
-  };
 
   useEffect(() => {
     if (content && isClient) {
@@ -821,33 +861,25 @@ export default function RealTimePreview({
       ref={previewRef}
       className={`preview-wrapper ${isDarkMode ? 'preview-dark' : 'preview-light'} view-${view} ${isFullscreen ? 'fullscreen' : ''}`}
     >
-      {/* Fullscreen Toggle Button */}
       <button 
         className="fullscreen-toggle"
         onClick={toggleFullscreen}
-        title={isFullscreen ? 'Exit Fullscreen (ESC)' : 'Enter Fullscreen'}
+        title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
       >
-        {isFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+        {isFullscreen ? <Minimize2 size={isMobile ? 16 : 20} /> : <Maximize2 size={isMobile ? 16 : 20} />}
       </button>
 
-      {/* Exit Fullscreen Button (only visible in fullscreen) */}
       {isFullscreen && (
-        <button 
-          className="exit-fullscreen-btn"
-          onClick={toggleFullscreen}
-          title="Exit Fullscreen"
-        >
-          <X size={24} />
+        <button className="exit-fullscreen-btn" onClick={toggleFullscreen}>
+          <X size={isMobile ? 20 : 24} />
         </button>
       )}
 
-      {/* Progress Bar */}
       <div className="progress-bar">
         <div className="progress-fill" style={{ width: `${scrollProgress}%` }}></div>
       </div>
 
       <div className="preview-content" ref={contentRef}>
-        {/* Header */}
         <header className="preview-header">
           <nav className="breadcrumb">
             <a href="#" onClick={(e) => e.preventDefault()}>Home</a>
@@ -869,7 +901,7 @@ export default function RealTimePreview({
           
           <div className="post-meta">
             <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? 12 : 16} height={isMobile ? 12 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"/>
                 <polyline points="12 6 12 12 16 14"/>
               </svg>
@@ -877,14 +909,14 @@ export default function RealTimePreview({
             </div>
             <div className="meta-divider"></div>
             <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? 12 : 16} height={isMobile ? 12 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 12v8H4v-8M12 2v8m0 0-3-3m3 3 3-3"/>
               </svg>
               <span>{readingTime} min read</span>
             </div>
             <div className="meta-divider"></div>
             <div className="meta-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg width={isMobile ? 12 : 16} height={isMobile ? 12 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                 <circle cx="12" cy="12" r="3"/>
               </svg>
@@ -893,7 +925,6 @@ export default function RealTimePreview({
           </div>
         </header>
 
-        {/* Featured Image/Video */}
         {featuredVideo?.url && isClient && (
           <div className="featured-video">
             <ReactPlayer url={featuredVideo.url} width="100%" height="100%" controls light={featuredVideo.thumbnailUrl} />
@@ -906,9 +937,7 @@ export default function RealTimePreview({
           </div>
         )}
 
-        {/* Content Grid */}
         <div className={`content-grid ${isFullscreen ? 'fullscreen-grid' : ''}`}>
-          {/* Main Content */}
           <article className="main-content">
             <div 
               className="article-content"
@@ -920,7 +949,7 @@ export default function RealTimePreview({
                 <div className="post-tags">
                   <span className="tags-label">Tags:</span>
                   <div className="tags-list">
-                    {tags.map((tag, index) => (
+                    {tags.slice(0, isMobile ? 3 : 5).map((tag, index) => (
                       <a key={index} href="#" onClick={(e) => e.preventDefault()} className="tag">
                         #{tag}
                       </a>
@@ -931,7 +960,6 @@ export default function RealTimePreview({
             )}
           </article>
 
-          {/* Sidebar */}
           <aside className="sidebar">
             <div className="sticky-sidebar">
               <ShareButtons url={postUrl} title={title || 'Check out this post'} imageUrl={featuredImage} isFullscreen={isFullscreen} />
@@ -940,10 +968,7 @@ export default function RealTimePreview({
           </aside>
         </div>
 
-        {/* Rating Section */}
         <RatingPreview isFullscreen={isFullscreen} />
-
-        {/* Related Posts */}
         <RelatedPostsPreview category={displayCategory} currentTitle={title} isFullscreen={isFullscreen} />
       </div>
 
@@ -951,10 +976,16 @@ export default function RealTimePreview({
         .preview-wrapper {
           position: relative;
           background: #ffffff;
-          border-radius: 24px;
+          border-radius: 16px;
           overflow: hidden;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-          max-height: calc(100vh - 120px);
+          max-height: calc(100vh - 100px);
+        }
+        @media (min-width: 768px) {
+          .preview-wrapper {
+            border-radius: 24px;
+            max-height: calc(100vh - 120px);
+          }
         }
         .preview-wrapper.fullscreen {
           max-height: 100vh;
@@ -964,69 +995,89 @@ export default function RealTimePreview({
           background: #0a0a0a;
         }
         .view-mobile {
-          max-width: 375px;
+          max-width: 100%;
           margin: 0 auto;
-          border-radius: 36px;
+          border-radius: 0;
+        }
+        @media (min-width: 640px) {
+          .view-mobile {
+            max-width: 375px;
+            border-radius: 36px;
+          }
         }
         .view-tablet {
-          max-width: 768px;
-          margin: 0 auto;
+          max-width: 100%;
+        }
+        @media (min-width: 768px) {
+          .view-tablet {
+            max-width: 768px;
+            margin: 0 auto;
+          }
         }
 
         .fullscreen-toggle {
           position: absolute;
-          top: 12px;
-          right: 12px;
+          top: 8px;
+          right: 8px;
           z-index: 100;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 40px;
-          height: 40px;
+          width: 32px;
+          height: 32px;
           background: rgba(255, 255, 255, 0.9);
           border: 1px solid #e9ecef;
-          border-radius: 12px;
+          border-radius: 8px;
           cursor: pointer;
           color: #1a1a2e;
           backdrop-filter: blur(8px);
           transition: all 0.2s ease;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        @media (min-width: 768px) {
+          .fullscreen-toggle {
+            top: 12px;
+            right: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+          }
+        }
+        .fullscreen-toggle:active {
+          transform: scale(0.95);
         }
         .preview-dark .fullscreen-toggle {
           background: rgba(26, 38, 50, 0.9);
           border-color: #2c3e50;
           color: #e9ecef;
         }
-        .fullscreen-toggle:hover {
-          transform: scale(1.05);
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
-        }
-        .fullscreen .fullscreen-toggle {
-          top: 20px;
-          right: 20px;
-        }
 
         .exit-fullscreen-btn {
           position: fixed;
-          top: 20px;
-          right: 20px;
+          top: 10px;
+          right: 10px;
           z-index: 1000;
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 48px;
-          height: 48px;
+          width: 40px;
+          height: 40px;
           background: rgba(0, 0, 0, 0.7);
           border: none;
           border-radius: 50%;
           cursor: pointer;
           color: white;
           backdrop-filter: blur(8px);
-          transition: all 0.2s ease;
         }
-        .exit-fullscreen-btn:hover {
-          background: rgba(0, 0, 0, 0.9);
-          transform: scale(1.1);
+        @media (min-width: 768px) {
+          .exit-fullscreen-btn {
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+          }
+        }
+        .exit-fullscreen-btn:active {
+          transform: scale(0.95);
         }
 
         .progress-bar {
@@ -1049,28 +1100,52 @@ export default function RealTimePreview({
         }
 
         .preview-content {
-          padding: 2.5rem 2rem;
-          max-height: calc(100vh - 120px);
+          padding: 1rem;
+          max-height: calc(100vh - 100px);
           overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        @media (min-width: 768px) {
+          .preview-content {
+            padding: 2rem;
+            max-height: calc(100vh - 120px);
+          }
         }
         .fullscreen .preview-content {
           max-height: 100vh;
-          padding: 3rem 3rem;
+          padding: 1rem;
+        }
+        @media (min-width: 768px) {
+          .fullscreen .preview-content {
+            padding: 2rem;
+          }
         }
         .view-mobile .preview-content {
-          padding: 1.5rem 1rem;
+          padding: 0.75rem;
         }
 
         .preview-header {
-          margin-bottom: 2rem;
+          margin-bottom: 1.5rem;
+        }
+        @media (min-width: 768px) {
+          .preview-header {
+            margin-bottom: 2rem;
+          }
         }
 
         .breadcrumb {
           display: flex;
           align-items: center;
           gap: 0.5rem;
-          font-size: 0.85rem;
-          margin-bottom: 1.5rem;
+          font-size: 0.7rem;
+          margin-bottom: 1rem;
+          flex-wrap: wrap;
+        }
+        @media (min-width: 768px) {
+          .breadcrumb {
+            font-size: 0.85rem;
+            margin-bottom: 1.5rem;
+          }
         }
         .breadcrumb a {
           color: #0056b3;
@@ -1079,83 +1154,108 @@ export default function RealTimePreview({
         .preview-dark .breadcrumb a {
           color: #66b0ff;
         }
-        .breadcrumb .separator {
-          color: #6c757d;
-        }
-        .breadcrumb .current {
-          color: #6c757d;
-        }
 
         .category-tag {
-          margin-bottom: 1rem;
+          margin-bottom: 0.75rem;
         }
         .category-link {
           display: inline-block;
-          padding: 0.25rem 0.75rem;
+          padding: 0.2rem 0.6rem;
           background: rgba(0, 86, 179, 0.1);
           color: #0056b3;
           text-decoration: none;
-          border-radius: 20px;
-          font-size: 0.75rem;
+          border-radius: 16px;
+          font-size: 0.65rem;
           font-weight: 600;
-          text-transform: uppercase;
         }
-        .preview-dark .category-link {
-          background: rgba(102, 176, 255, 0.15);
-          color: #66b0ff;
+        @media (min-width: 768px) {
+          .category-link {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            border-radius: 20px;
+          }
         }
 
         .post-title {
-          font-size: clamp(1.8rem, 4vw, 2.5rem);
+          font-size: 1.3rem;
           font-weight: 800;
-          margin-bottom: 1rem;
+          margin-bottom: 0.75rem;
           color: #1a1a2e;
           line-height: 1.2;
         }
-        .fullscreen .post-title {
-          font-size: clamp(2.5rem, 5vw, 3.5rem);
+        @media (min-width: 768px) {
+          .post-title {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin-bottom: 1rem;
+          }
         }
         .preview-dark .post-title {
           color: #ffffff;
         }
 
         .post-excerpt {
-          font-size: 1rem;
-          line-height: 1.6;
+          font-size: 0.85rem;
+          line-height: 1.5;
           color: #6c757d;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1rem;
         }
-        .fullscreen .post-excerpt {
-          font-size: 1.2rem;
+        @media (min-width: 768px) {
+          .post-excerpt {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+          }
         }
 
         .post-meta {
           display: flex;
           align-items: center;
-          gap: 1rem;
+          gap: 0.5rem;
           flex-wrap: wrap;
+        }
+        @media (min-width: 768px) {
+          .post-meta {
+            gap: 1rem;
+          }
         }
         .meta-item {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.85rem;
+          gap: 0.3rem;
+          font-size: 0.7rem;
           color: #6c757d;
+        }
+        @media (min-width: 768px) {
+          .meta-item {
+            gap: 0.5rem;
+            font-size: 0.85rem;
+          }
         }
         .preview-dark .meta-item {
           color: #a0a0a0;
         }
         .meta-divider {
-          width: 4px;
-          height: 4px;
+          width: 3px;
+          height: 3px;
           background: #6c757d;
           border-radius: 50%;
         }
+        @media (min-width: 768px) {
+          .meta-divider {
+            width: 4px;
+            height: 4px;
+          }
+        }
 
         .featured-image {
-          margin: 1.5rem 0 2rem;
-          border-radius: 20px;
+          margin: 1rem 0 1.5rem;
+          border-radius: 16px;
           overflow: hidden;
+        }
+        @media (min-width: 768px) {
+          .featured-image {
+            margin: 1.5rem 0 2rem;
+            border-radius: 20px;
+          }
         }
         .featured-image img {
           width: 100%;
@@ -1164,138 +1264,96 @@ export default function RealTimePreview({
         }
         .featured-video {
           aspect-ratio: 16/9;
-          margin: 1.5rem 0 2rem;
-          border-radius: 20px;
+          margin: 1rem 0 1.5rem;
+          border-radius: 16px;
           overflow: hidden;
           background: #000;
+        }
+        @media (min-width: 768px) {
+          .featured-video {
+            margin: 1.5rem 0 2rem;
+            border-radius: 20px;
+          }
         }
 
         .content-grid {
           display: grid;
-          grid-template-columns: 1fr 280px;
-          gap: 2rem;
-        }
-        .fullscreen-grid {
-          grid-template-columns: 1fr 320px;
-          gap: 3rem;
-        }
-        .view-mobile .content-grid {
           grid-template-columns: 1fr;
+          gap: 1.5rem;
         }
-        .view-tablet .content-grid {
-          grid-template-columns: 1fr 250px;
+        @media (min-width: 768px) {
+          .content-grid {
+            grid-template-columns: 1fr 280px;
+            gap: 2rem;
+          }
         }
 
         .article-content {
-          font-size: 1rem;
-          line-height: 1.7;
+          font-size: 0.9rem;
+          line-height: 1.6;
           color: #2c3e50;
         }
-        .fullscreen .article-content {
-          font-size: 1.125rem;
+        @media (min-width: 768px) {
+          .article-content {
+            font-size: 1rem;
+            line-height: 1.7;
+          }
         }
         .preview-dark .article-content {
           color: #d1d5db;
         }
         .article-content p {
-          margin-bottom: 1.25rem;
+          margin-bottom: 1rem;
         }
         .article-content h2 {
-          font-size: 1.6rem;
-          margin-top: 2rem;
-          margin-bottom: 1rem;
-          font-weight: 700;
-          color: #1a1a2e;
-        }
-        .fullscreen .article-content h2 {
-          font-size: 2rem;
-        }
-        .preview-dark .article-content h2 {
-          color: #ffffff;
-        }
-        .article-content h3 {
-          font-size: 1.3rem;
+          font-size: 1.2rem;
           margin-top: 1.5rem;
           margin-bottom: 0.75rem;
-          font-weight: 600;
-          color: #1a1a2e;
         }
-        .preview-dark .article-content h3 {
-          color: #ffffff;
-        }
-        .article-content a {
-          color: #0056b3;
-          text-decoration: underline;
-        }
-        .preview-dark .article-content a {
-          color: #66b0ff;
+        @media (min-width: 768px) {
+          .article-content h2 {
+            font-size: 1.6rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+          }
         }
         .article-content img {
           max-width: 100%;
           height: auto;
           border-radius: 12px;
-          margin: 1.5rem 0;
-        }
-        .article-content ul, .article-content ol {
-          margin: 1.25rem 0;
-          padding-left: 1.5rem;
-        }
-        .article-content blockquote {
-          border-left: 4px solid #0056b3;
-          padding-left: 1.25rem;
-          margin: 1.5rem 0;
-          font-style: italic;
-          color: #6c757d;
-        }
-        .preview-dark .article-content blockquote {
-          border-left-color: #66b0ff;
-          color: #a0a0a0;
-        }
-        .article-content pre {
-          background: #1a1a2e;
-          color: #e9ecef;
-          padding: 1.25rem;
-          border-radius: 12px;
-          overflow-x: auto;
-          margin: 1.5rem 0;
+          margin: 1rem 0;
         }
 
         .post-footer {
-          margin-top: 2rem;
-          padding-top: 1.5rem;
+          margin-top: 1.5rem;
+          padding-top: 1rem;
           border-top: 1px solid #e9ecef;
         }
-        .preview-dark .post-footer {
-          border-top-color: #2c3e50;
+        @media (min-width: 768px) {
+          .post-footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+          }
         }
         .post-tags {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-        .tags-label {
-          font-size: 0.8rem;
-          font-weight: 600;
-          color: #6c757d;
-        }
-        .tags-list {
-          display: flex;
           gap: 0.5rem;
           flex-wrap: wrap;
         }
+        .tags-label {
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: #6c757d;
+        }
         .tag {
           display: inline-block;
-          padding: 0.2rem 0.6rem;
+          padding: 0.15rem 0.5rem;
           background: #f0f0f0;
           color: #495057;
           text-decoration: none;
-          border-radius: 20px;
-          font-size: 0.7rem;
-        }
-        .preview-dark .tag {
-          background: #1a1a2e;
-          color: #a0a0a0;
+          border-radius: 16px;
+          font-size: 0.6rem;
         }
 
         .sidebar {
@@ -1308,21 +1366,10 @@ export default function RealTimePreview({
 
         .empty-preview {
           text-align: center;
-          padding: 3rem;
+          padding: 2rem;
           color: #94a3b8;
           font-style: italic;
-        }
-
-        @media (max-width: 768px) {
-          .preview-content {
-            padding: 1.5rem 1rem;
-          }
-          .fullscreen .preview-content {
-            padding: 2rem 1.5rem;
-          }
-          .post-title {
-            font-size: 1.5rem;
-          }
+          font-size: 0.85rem;
         }
       `}</style>
     </div>

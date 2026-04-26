@@ -6,6 +6,14 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
   const [relatedPosts, setRelatedPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     const checkDarkMode = () => {
@@ -29,7 +37,7 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
           .eq('status', 'published')
           .neq('id', currentPostId)
           .order('views', { ascending: false })
-          .limit(4)
+          .limit(isMobile ? 2 : 4)
 
         if (error) throw error
 
@@ -55,7 +63,7 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
     if (currentPostId && currentCategory) {
       fetchRelatedPosts()
     }
-  }, [currentPostId, currentCategory])
+  }, [currentPostId, currentCategory, isMobile])
 
   if (loading || relatedPosts.length === 0) return null
 
@@ -68,7 +76,7 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
         </div>
         <Link href={`/category/${currentCategory.toLowerCase()}`} className="view-all">
           Browse all
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg width={isMobile ? 12 : 16} height={isMobile ? 12 : 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="9 18 15 12 9 6"/>
           </svg>
         </Link>
@@ -76,31 +84,30 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
       
       <div className="related-grid">
         {relatedPosts.map((post, index) => (
-          <Link key={post.id} href={`/blog/${post.slug}`} className="related-card" style={{ animationDelay: `${index * 0.1}s` }}>
+          <Link key={post.id} href={`/blog/${post.slug}`} className="related-card">
             {post.image_url && (
               <div className="related-img">
                 <img src={post.image_url} alt={post.title} loading="lazy" />
-                <div className="img-overlay"></div>
               </div>
             )}
             <div className="related-content">
               <div className="related-cat-wrapper">
                 <span className="related-cat">{post.category}</span>
                 {post.ratingValue >= 4.5 && (
-                  <span className="trending-badge">🔥 Trending</span>
+                  <span className="trending-badge">🔥</span>
                 )}
               </div>
               <h4>{post.title}</h4>
               <div className="related-meta">
                 <div className="meta-date">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10"/>
                     <polyline points="12 6 12 12 16 14"/>
                   </svg>
                   <span>{post.formattedDate}</span>
                 </div>
                 <div className="meta-views">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                     <circle cx="12" cy="12" r="3"/>
                   </svg>
@@ -114,8 +121,8 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
                 )}
               </div>
               <div className="read-more">
-                Read article
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                Read
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polyline points="9 18 15 12 9 6"/>
                 </svg>
               </div>
@@ -126,20 +133,32 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
 
       <style jsx>{`
         .related-posts {
-          margin-top: 4rem;
-          padding-top: 3rem;
+          margin-top: 2rem;
+          padding-top: 1.5rem;
           border-top: 1px solid #e9ecef;
           position: relative;
+        }
+        @media (min-width: 768px) {
+          .related-posts {
+            margin-top: 4rem;
+            padding-top: 3rem;
+          }
         }
         .related-posts::before {
           content: '';
           position: absolute;
           top: -1px;
           left: 0;
-          width: 60px;
-          height: 3px;
+          width: 40px;
+          height: 2px;
           background: linear-gradient(90deg, #0056b3, #00a6ff);
-          border-radius: 3px;
+          border-radius: 2px;
+        }
+        @media (min-width: 768px) {
+          .related-posts::before {
+            width: 60px;
+            height: 3px;
+          }
         }
         .related-posts.dark {
           border-top-color: #2c3e50;
@@ -152,167 +171,176 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 2rem;
+          margin-bottom: 1rem;
           flex-wrap: wrap;
-          gap: 1rem;
+          gap: 0.5rem;
+        }
+        @media (min-width: 768px) {
+          .related-header {
+            margin-bottom: 2rem;
+            gap: 1rem;
+          }
         }
         .header-left {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
+        }
+        @media (min-width: 768px) {
+          .header-left {
+            gap: 0.75rem;
+          }
         }
         .header-icon {
-          font-size: 1.5rem;
+          font-size: 1.2rem;
+        }
+        @media (min-width: 768px) {
+          .header-icon {
+            font-size: 1.5rem;
+          }
         }
         h3 {
-          font-size: 1.35rem;
+          font-size: 1rem;
           font-weight: 700;
           margin: 0;
-          background: linear-gradient(135deg, #1a1a2e, #2c3e50);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
+          color: #1a1a2e;
+        }
+        @media (min-width: 768px) {
+          h3 {
+            font-size: 1.35rem;
+          }
         }
         .related-posts.dark h3 {
-          background: linear-gradient(135deg, #ffffff, #e9ecef);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
+          color: #ffffff;
         }
         .view-all {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.85rem;
+          gap: 0.3rem;
+          font-size: 0.7rem;
           color: #0056b3;
           text-decoration: none;
           font-weight: 500;
-          padding: 0.5rem 1rem;
-          border-radius: 40px;
-          transition: all 0.2s ease;
+          padding: 0.3rem 0.6rem;
+          border-radius: 20px;
           background: rgba(0, 86, 179, 0.05);
+        }
+        @media (min-width: 768px) {
+          .view-all {
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+          }
+        }
+        .view-all:active {
+          transform: scale(0.95);
         }
         .related-posts.dark .view-all {
           color: #66b0ff;
           background: rgba(102, 176, 255, 0.1);
         }
-        .view-all:hover {
-          background: rgba(0, 86, 179, 0.1);
-          transform: translateX(4px);
-        }
-        .view-all svg {
-          transition: transform 0.2s;
-        }
-        .view-all:hover svg {
-          transform: translateX(2px);
-        }
 
         .related-grid {
           display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1.5rem;
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
         }
+        @media (min-width: 768px) {
+          .related-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+          }
+        }
+        
         .related-card {
           text-decoration: none;
           display: flex;
-          gap: 1.25rem;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          padding: 1rem;
-          border-radius: 20px;
+          gap: 0.75rem;
+          transition: all 0.3s ease;
+          padding: 0.75rem;
+          border-radius: 16px;
           background: #ffffff;
           border: 1px solid #e9ecef;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-          opacity: 0;
-          animation: fadeInUp 0.5s ease forwards;
+        }
+        @media (min-width: 768px) {
+          .related-card {
+            gap: 1.25rem;
+            padding: 1rem;
+            border-radius: 20px;
+          }
+        }
+        .related-card:active {
+          transform: scale(0.98);
         }
         .related-posts.dark .related-card {
           background: #1a2632;
           border-color: #2c3e50;
         }
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .related-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 24px rgba(0,0,0,0.1);
-          border-color: #0056b3;
-        }
-        .related-posts.dark .related-card:hover {
-          border-color: #66b0ff;
-          box-shadow: 0 12px 24px rgba(102,176,255,0.1);
-        }
 
         .related-img {
-          position: relative;
-          width: 110px;
-          height: 80px;
+          width: 80px;
+          height: 65px;
           flex-shrink: 0;
           overflow: hidden;
-          border-radius: 14px;
-          background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+          border-radius: 12px;
+          background: #f0f0f0;
+        }
+        @media (min-width: 768px) {
+          .related-img {
+            width: 110px;
+            height: 80px;
+            border-radius: 14px;
+          }
         }
         .related-img img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.5s ease;
-        }
-        .related-card:hover .related-img img {
-          transform: scale(1.1);
-        }
-        .img-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(0,0,0,0), rgba(0,0,0,0.1));
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
-        .related-card:hover .img-overlay {
-          opacity: 1;
         }
 
         .related-content {
           flex: 1;
           display: flex;
           flex-direction: column;
-          gap: 0.5rem;
+          gap: 0.3rem;
+        }
+        @media (min-width: 768px) {
+          .related-content {
+            gap: 0.5rem;
+          }
         }
         .related-cat-wrapper {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 0.3rem;
           flex-wrap: wrap;
         }
         .related-cat {
-          font-size: 0.7rem;
+          font-size: 0.6rem;
           color: #0056b3;
           text-transform: uppercase;
           font-weight: 700;
-          letter-spacing: 0.5px;
           background: rgba(0, 86, 179, 0.1);
-          padding: 0.2rem 0.6rem;
-          border-radius: 20px;
+          padding: 0.15rem 0.5rem;
+          border-radius: 12px;
+        }
+        @media (min-width: 768px) {
+          .related-cat {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+          }
         }
         .related-posts.dark .related-cat {
           color: #66b0ff;
           background: rgba(102, 176, 255, 0.15);
         }
         .trending-badge {
-          font-size: 0.65rem;
-          color: #f59e0b;
-          background: rgba(245, 158, 11, 0.1);
-          padding: 0.2rem 0.5rem;
-          border-radius: 20px;
+          font-size: 0.6rem;
         }
         h4 {
-          font-size: 0.95rem;
+          font-size: 0.8rem;
           font-weight: 600;
           margin: 0;
           color: #1a1a2e;
@@ -321,85 +349,57 @@ export default function RelatedPosts({ currentPostId, currentCategory }) {
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          transition: color 0.2s;
         }
-        .related-card:hover h4 {
-          color: #0056b3;
+        @media (min-width: 768px) {
+          h4 {
+            font-size: 0.95rem;
+          }
         }
         .related-posts.dark h4 {
           color: #e9ecef;
-        }
-        .related-posts.dark .related-card:hover h4 {
-          color: #66b0ff;
         }
 
         .related-meta {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
           flex-wrap: wrap;
         }
         .meta-date, .meta-views, .meta-rating {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
-          font-size: 0.65rem;
+          gap: 0.2rem;
+          font-size: 0.55rem;
           color: #6c757d;
         }
-        .meta-date svg, .meta-views svg {
-          stroke: currentColor;
+        @media (min-width: 768px) {
+          .meta-date, .meta-views, .meta-rating {
+            gap: 0.25rem;
+            font-size: 0.65rem;
+          }
         }
         .rating-stars {
           color: #f59e0b;
           letter-spacing: 1px;
-          font-size: 0.7rem;
+          font-size: 0.6rem;
         }
 
         .read-more {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.7rem;
+          gap: 0.3rem;
+          font-size: 0.6rem;
           font-weight: 600;
           color: #0056b3;
-          opacity: 0;
-          transform: translateX(-10px);
-          transition: all 0.3s ease;
+        }
+        @media (min-width: 768px) {
+          .read-more {
+            gap: 0.5rem;
+            font-size: 0.7rem;
+          }
         }
         .related-posts.dark .read-more {
           color: #66b0ff;
-        }
-        .related-card:hover .read-more {
-          opacity: 1;
-          transform: translateX(0);
-        }
-        .read-more svg {
-          transition: transform 0.2s;
-        }
-        .read-more:hover svg {
-          transform: translateX(4px);
-        }
-
-        @media (max-width: 768px) {
-          .related-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-          }
-          .related-card {
-            padding: 0.75rem;
-          }
-          .related-img {
-            width: 90px;
-            height: 70px;
-          }
-          h4 {
-            font-size: 0.85rem;
-          }
-          .read-more {
-            opacity: 1;
-            transform: translateX(0);
-            font-size: 0.65rem;
-          }
         }
       `}</style>
     </div>
