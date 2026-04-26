@@ -4,11 +4,9 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/router'
 import { useState, useEffect, useCallback } from 'react'
 import Head from 'next/head'
-// Removed: import RatingSection from '@/components/blog/RatingSection'
 import ShareButtons from '@/components/blog/ShareButtons'
 import RightBlock from '@/components/blog/RightBlock'
 import RelatedPosts from '@/components/blog/RelatedPosts'
-// Removed: import BookmarkButton from '@/components/frontend/BookmarkButton'
 
 // Helper functions
 const getReadingTime = (content) => {
@@ -188,6 +186,30 @@ export default function BlogPost({ post, error }) {
     )
   }
 
+  // Get the featured image URL - prioritize featured_image over image_url
+  const featuredImageUrl = post.featured_image || post.image_url || null
+  const featuredImageAlt = post.featured_image_alt || post.title
+  const featuredImageCaption = post.featured_image_caption || ''
+  const featuredImageAlignment = post.featured_image_alignment || 'center'
+  const featuredImageWidth = post.featured_image_width || '100%'
+  
+  // Build image style based on alignment and width
+  const imageStyle = {
+    textAlign: featuredImageAlignment,
+    maxWidth: featuredImageWidth,
+    margin: featuredImageAlignment === 'center' ? '0 auto' : 
+            featuredImageAlignment === 'left' ? '0 auto 0 0' : 
+            '0 0 0 auto'
+  }
+
+  const imageContainerStyle = {
+    display: 'block',
+    margin: featuredImageAlignment === 'center' ? '0 auto' : 
+            featuredImageAlignment === 'left' ? '0 auto 0 0' : 
+            '0 0 0 auto',
+    maxWidth: '100%'
+  }
+
   const postUrl = `https://trendlin.com/blog/${post.slug}`
   const publishedDate = post.published_at || post.created_at
   const postCategory = post.category?.toLowerCase() || 'general'
@@ -197,7 +219,7 @@ export default function BlogPost({ post, error }) {
     "@type": "Article",
     "headline": post.title,
     "description": post.excerpt,
-    "image": post.image_url,
+    "image": featuredImageUrl,
     "datePublished": publishedDate,
     "dateModified": post.updated_at,
     "author": {
@@ -221,24 +243,37 @@ export default function BlogPost({ post, error }) {
   return (
     <div className={`blog-post ${isDarkMode ? 'dark' : 'light'}`}>
       <Head>
-        <title>{post.seo_title || `${post.title} | Trendlin`}</title>
-        <meta name="description" content={post.seo_description || post.excerpt || `Read ${post.title} on Trendlin`} />
-        <meta name="keywords" content={post.tags?.join(', ') || post.category} />
+        <title>{post.seo_title || post.meta_title || `${post.title} | Trendlin`}</title>
+        <meta name="description" content={post.seo_description || post.meta_description || post.excerpt || `Read ${post.title} on Trendlin`} />
+        <meta name="keywords" content={post.keywords || post.tags?.join(', ') || post.category} />
         <meta name="author" content={post.author || "Trendlin Team"} />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        
+        {/* Open Graph tags */}
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt || `Read ${post.title} on Trendlin`} />
-        <meta property="og:image" content={post.image_url || post.featured_image} />
+        <meta property="og:image" content={featuredImageUrl} />
+        <meta property="og:image:alt" content={featuredImageAlt} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:url" content={postUrl} />
         <meta property="og:type" content="article" />
         <meta property="og:site_name" content="Trendlin" />
+        
+        {/* Twitter Card tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.title} />
         <meta name="twitter:description" content={post.excerpt || `Read ${post.title} on Trendlin`} />
-        <meta name="twitter:image" content={post.image_url || post.featured_image} />
+        <meta name="twitter:image" content={featuredImageUrl} />
+        <meta name="twitter:image:alt" content={featuredImageAlt} />
+        
         <link rel="canonical" href={postUrl} />
+        
+        {/* Additional SEO */}
+        {featuredImageCaption && (
+          <meta name="image:caption" content={featuredImageCaption} />
+        )}
+        
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
@@ -253,13 +288,13 @@ export default function BlogPost({ post, error }) {
           <nav className="breadcrumb" aria-label="Breadcrumb">
             <a href="/">Home</a>
             <span className="separator">/</span>
-            <a href={`/category/${postCategory}`}>{post.category}</a>
+            <a href={`/category/${encodeURIComponent(postCategory)}`}>{post.category}</a>
             <span className="separator">/</span>
             <span className="current" aria-current="page">{post.title}</span>
           </nav>
           
           <div className="category-tag">
-            <a href={`/category/${postCategory}`} className="category-link">
+            <a href={`/category/${encodeURIComponent(postCategory)}`} className="category-link">
               {post.category}
             </a>
           </div>
@@ -308,17 +343,21 @@ export default function BlogPost({ post, error }) {
           </div>
         </header>
 
-        {/* Featured Image - Bookmark button removed */}
-        {post.image_url && (
-          <div className="featured-image-container">
+        {/* Featured Image - Fixed to use featured_image column */}
+        {featuredImageUrl && (
+          <div className="featured-image-container" style={imageStyle}>
             <div className="featured-image">
-              <div className="image-wrapper">
+              <div className="image-wrapper" style={imageContainerStyle}>
                 <img 
-                  src={post.image_url} 
-                  alt={post.title}
+                  src={featuredImageUrl} 
+                  alt={featuredImageAlt}
+                  title={post.featured_image_title || post.title}
                   loading="eager"
                   fetchpriority="high"
                 />
+                {featuredImageCaption && (
+                  <figcaption className="image-caption">{featuredImageCaption}</figcaption>
+                )}
               </div>
             </div>
           </div>
@@ -341,7 +380,7 @@ export default function BlogPost({ post, error }) {
                     <span className="tags-label">Tags:</span>
                     <div className="tags-list">
                       {post.tags.map((tag, index) => (
-                        <a key={index} href={`/tag/${tag.toLowerCase()}`} className="tag">
+                        <a key={index} href={`/tag/${encodeURIComponent(tag.toLowerCase())}`} className="tag">
                           #{tag}
                         </a>
                       ))}
@@ -355,13 +394,11 @@ export default function BlogPost({ post, error }) {
           {/* Sidebar */}
           <aside className="sidebar">
             <div className="sticky-sidebar">
-              <ShareButtons url={postUrl} title={post.title} imageUrl={post.image_url || postUrl} />
+              <ShareButtons url={postUrl} title={post.title} imageUrl={featuredImageUrl || postUrl} />
               <RightBlock postSlug={post.slug} />
             </div>
           </aside>
         </div>
-
-        {/* Rating Section - REMOVED */}
 
         {/* Related Posts */}
         <RelatedPosts 
@@ -535,6 +572,19 @@ export default function BlogPost({ post, error }) {
           width: 100%;
           height: auto;
           display: block;
+        }
+        .image-caption {
+          padding: 0.75rem 1rem;
+          font-size: 0.85rem;
+          color: #6c757d;
+          text-align: center;
+          background: #f8f9fa;
+          border-top: 1px solid #e9ecef;
+        }
+        .blog-post.dark .image-caption {
+          background: #1a1a2e;
+          color: #a0a0a0;
+          border-top-color: #2c3e50;
         }
 
         .content-grid {
