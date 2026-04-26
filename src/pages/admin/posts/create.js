@@ -13,14 +13,7 @@ import {
 
 import { supabase } from '../../../lib/supabase';
 import Editor from '../../../components/editor';
-
-// Try to import the image modal, but don't fail if it doesn't exist
-let ImageModalComponent = null;
-try {
-  ImageModalComponent = require('../../../components/media/Modals/ImageModal').default;
-} catch (error) {
-  console.warn('ImageModal component not found, using fallback');
-}
+import ImageModal from '../../../components/media/Modals/ImageModal';
 
 // ============================================================
 // UTILITY FUNCTIONS
@@ -84,56 +77,6 @@ const categoryOptions = [
 ];
 
 // ============================================================
-// FALLBACK IMAGE MODAL (in case your component doesn't work)
-// ============================================================
-const FallbackImageModal = ({ isOpen, onClose, onSelect }) => {
-  const [imageUrl, setImageUrl] = useState('');
-  const [altText, setAltText] = useState('');
-
-  if (!isOpen) return null;
-
-  const handleSubmit = () => {
-    if (imageUrl) {
-      onSelect({ url: imageUrl, alt: altText });
-      setImageUrl('');
-      setAltText('');
-    } else {
-      toast.error('Please enter an image URL');
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-semibold mb-4">Add Featured Image</h3>
-        <input
-          type="text"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="Image URL"
-          className="w-full px-4 py-2 border rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
-        <input
-          type="text"
-          value={altText}
-          onChange={(e) => setAltText(e.target.value)}
-          placeholder="Alt text (optional)"
-          className="w-full px-4 py-2 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        />
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50">
-            Cancel
-          </button>
-          <button onClick={handleSubmit} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-            Add Image
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================
 // FLOATING PREVIEW BUTTON
 // ============================================================
 const FloatingPreviewButton = ({ title, content, excerpt, featuredImage, tags, category, readingTime }) => {
@@ -184,6 +127,11 @@ function CreatePost() {
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
   const [featuredImage, setFeaturedImage] = useState('');
+  const [featuredImageAlt, setFeaturedImageAlt] = useState('');
+  const [featuredImageCaption, setFeaturedImageCaption] = useState('');
+  const [featuredImageTitle, setFeaturedImageTitle] = useState('');
+  const [featuredImageAlignment, setFeaturedImageAlignment] = useState('center');
+  const [featuredImageWidth, setFeaturedImageWidth] = useState('100%');
   const [slug, setSlug] = useState('');
   const [category, setCategory] = useState('');
   const [keywords, setKeywords] = useState([]);
@@ -224,9 +172,10 @@ function CreatePost() {
     if (keywords.length >= 3 && keywords.length <= 8) score += 10;
     if (tags.length >= 3 && tags.length <= 10) score += 5;
     if (slug && slug !== 'untitled' && slug.length <= 60) score += 5;
+    if (featuredImage) score += 5;
     
     return Math.min(100, score);
-  }, [title, excerpt, content, category, keywords, tags, slug]);
+  }, [title, excerpt, content, category, keywords, tags, slug, featuredImage]);
 
   // ============================================================
   // UPDATE STATS
@@ -300,6 +249,11 @@ function CreatePost() {
         excerpt: excerpt || null,
         content: content || '',
         featured_image: featuredImage || null,
+        featured_image_alt: featuredImageAlt || null,
+        featured_image_caption: featuredImageCaption || null,
+        featured_image_title: featuredImageTitle || null,
+        featured_image_alignment: featuredImageAlignment || 'center',
+        featured_image_width: featuredImageWidth || '100%',
         slug: finalSlug,
         category: category || null,
         keywords: keywords.length > 0 ? keywords.join(',') : null,
@@ -351,7 +305,7 @@ function CreatePost() {
     } finally {
       setIsSaving(false);
     }
-  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, postId, router]);
+  }, [title, excerpt, content, featuredImage, featuredImageAlt, featuredImageCaption, featuredImageTitle, featuredImageAlignment, featuredImageWidth, slug, category, keywords, tags, metaTitle, metaDescription, postId, router]);
 
   // ============================================================
   // PUBLISH POST
@@ -376,6 +330,11 @@ function CreatePost() {
         excerpt: excerpt || null,
         content,
         featured_image: featuredImage || null,
+        featured_image_alt: featuredImageAlt || null,
+        featured_image_caption: featuredImageCaption || null,
+        featured_image_title: featuredImageTitle || null,
+        featured_image_alignment: featuredImageAlignment || 'center',
+        featured_image_width: featuredImageWidth || '100%',
         slug: finalSlug,
         category: category || null,
         keywords: keywords.length > 0 ? keywords.join(',') : null,
@@ -416,7 +375,7 @@ function CreatePost() {
     } finally {
       setIsSaving(false);
     }
-  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, postId, router]);
+  }, [title, excerpt, content, featuredImage, featuredImageAlt, featuredImageCaption, featuredImageTitle, featuredImageAlignment, featuredImageWidth, slug, category, keywords, tags, metaTitle, metaDescription, postId, router]);
 
   // ============================================================
   // SCHEDULE POST
@@ -441,6 +400,11 @@ function CreatePost() {
         excerpt: excerpt || null,
         content: content || '',
         featured_image: featuredImage || null,
+        featured_image_alt: featuredImageAlt || null,
+        featured_image_caption: featuredImageCaption || null,
+        featured_image_title: featuredImageTitle || null,
+        featured_image_alignment: featuredImageAlignment || 'center',
+        featured_image_width: featuredImageWidth || '100%',
         slug: finalSlug,
         category: category || null,
         keywords: keywords.length > 0 ? keywords.join(',') : null,
@@ -481,53 +445,30 @@ function CreatePost() {
       setIsScheduleModalOpen(false);
       setScheduledDate('');
     }
-  }, [title, excerpt, content, featuredImage, slug, category, keywords, tags, metaTitle, metaDescription, scheduledDate, postId, router]);
+  }, [title, excerpt, content, featuredImage, featuredImageAlt, featuredImageCaption, featuredImageTitle, featuredImageAlignment, featuredImageWidth, slug, category, keywords, tags, metaTitle, metaDescription, scheduledDate, postId, router]);
 
   // ============================================================
-  // IMAGE HANDLER - Fixed version
+  // IMAGE HANDLER - Using your ImageModal's onUpload prop
   // ============================================================
-  const handleImageSelect = useCallback((imageData) => {
-    console.log('Image selected:', imageData);
+  const handleImageUpload = useCallback((imageData) => {
+    console.log('Image data from modal:', imageData);
     
-    try {
-      let imageUrl = null;
-      
-      if (!imageData) {
-        toast.error('No image data received');
-        setShowImageModal(false);
-        return;
-      }
-      
-      // Handle different response formats
-      if (typeof imageData === 'string') {
-        imageUrl = imageData;
-      } else if (Array.isArray(imageData) && imageData.length > 0) {
-        const firstImage = imageData[0];
-        imageUrl = firstImage.url || firstImage.src || firstImage.publicUrl || firstImage;
-      } else if (typeof imageData === 'object') {
-        imageUrl = imageData.url || imageData.src || imageData.publicUrl || imageData.path;
-        
-        // Handle Supabase storage paths
-        if (imageUrl && !imageUrl.startsWith('http') && imageData.path) {
-          const { data: { publicUrl } } = supabase.storage
-            .from('images')
-            .getPublicUrl(imageData.path);
-          imageUrl = publicUrl;
-        }
-      }
-      
-      if (imageUrl && imageUrl.length > 0) {
-        setFeaturedImage(imageUrl);
-        toast.success('Featured image added successfully!');
-      } else {
-        toast.error('Invalid image URL. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error handling image selection:', error);
-      toast.error('Failed to process selected image');
-    } finally {
-      setShowImageModal(false);
+    if (imageData && imageData.src) {
+      setFeaturedImage(imageData.src);
+      setFeaturedImageAlt(imageData.alt || '');
+      setFeaturedImageCaption(imageData.caption || '');
+      setFeaturedImageTitle(imageData.title || '');
+      setFeaturedImageAlignment(imageData.alignment || 'center');
+      setFeaturedImageWidth(imageData.width || '100%');
+      toast.success('Featured image added successfully!');
+    } else if (imageData && typeof imageData === 'string') {
+      setFeaturedImage(imageData);
+      toast.success('Featured image added successfully!');
+    } else {
+      toast.error('Failed to get image data');
     }
+    
+    setShowImageModal(false);
   }, []);
 
   // ============================================================
@@ -742,7 +683,7 @@ function CreatePost() {
             <div className="relative inline-block group">
               <img 
                 src={featuredImage} 
-                alt="Featured" 
+                alt={featuredImageAlt || 'Featured'} 
                 className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm" 
               />
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -754,7 +695,13 @@ function CreatePost() {
                   <ImageIcon className="w-4 h-4 text-gray-600" />
                 </button>
                 <button 
-                  onClick={() => setFeaturedImage('')} 
+                  onClick={() => {
+                    setFeaturedImage('');
+                    setFeaturedImageAlt('');
+                    setFeaturedImageCaption('');
+                    setFeaturedImageTitle('');
+                    toast.info('Featured image removed');
+                  }} 
                   className="p-1 bg-white rounded-lg shadow-md hover:bg-red-50"
                   title="Remove image"
                 >
@@ -771,7 +718,7 @@ function CreatePost() {
               Choose Featured Image
             </button>
           )}
-          <p className="mt-2 text-xs text-gray-400">Click to select an image from the media library</p>
+          <p className="mt-2 text-xs text-gray-400">Click to open media library. You can crop, resize, and add SEO data.</p>
         </div>
         
         {/* Editor Container */}
@@ -945,11 +892,11 @@ function CreatePost() {
         </div>
       )}
       
-      {/* Image Modal - Using fallback that works */}
-      <FallbackImageModal
+      {/* Your Image Modal - Using onUpload prop */}
+      <ImageModal
         isOpen={showImageModal}
         onClose={() => setShowImageModal(false)}
-        onSelect={handleImageSelect}
+        onUpload={handleImageUpload}
       />
     </>
   );
