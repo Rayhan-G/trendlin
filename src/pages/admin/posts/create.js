@@ -13,6 +13,7 @@ import {
 
 import { supabase } from '../../../lib/supabase';
 import Editor from '../../../components/editor';
+import ImageModal from '../../../components/media/Modals/ImageModal';
 
 // ============================================================
 // UTILITY FUNCTIONS
@@ -74,50 +75,6 @@ const categoryOptions = [
   'wealth',
   'world'
 ];
-
-// ============================================================
-// IMAGE MODAL (SIMPLE VERSION)
-// ============================================================
-const ImageModal = ({ isOpen, onClose, onUpload }) => {
-  const [url, setUrl] = useState('');
-  const [alt, setAlt] = useState('');
-
-  if (!isOpen) return null;
-
-  const handleSubmit = () => {
-    if (url) {
-      onUpload({ src: url, alt });
-      setUrl('');
-      setAlt('');
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <h3 className="text-xl font-semibold mb-4">Add Featured Image</h3>
-        <input
-          type="text"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Image URL"
-          className="w-full px-4 py-2 border rounded-lg mb-3"
-        />
-        <input
-          type="text"
-          value={alt}
-          onChange={(e) => setAlt(e.target.value)}
-          placeholder="Alt text (optional)"
-          className="w-full px-4 py-2 border rounded-lg mb-4"
-        />
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 border rounded-lg">Cancel</button>
-          <button onClick={handleSubmit} className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg">Add Image</button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ============================================================
 // FLOATING PREVIEW BUTTON
@@ -511,11 +468,33 @@ function CreatePost() {
     }
   };
 
-  const handleImageUpload = (imageData) => {
-    if (imageData && imageData.src) {
-      setFeaturedImage(imageData.src);
-      toast.success('Featured image added!');
+  const handleImageSelect = (selectedImage) => {
+    // Handle different possible return formats from your ImageModal
+    let imageUrl = null;
+    
+    if (typeof selectedImage === 'string') {
+      imageUrl = selectedImage;
+    } else if (selectedImage && selectedImage.url) {
+      imageUrl = selectedImage.url;
+    } else if (selectedImage && selectedImage.src) {
+      imageUrl = selectedImage.src;
+    } else if (selectedImage && selectedImage.publicUrl) {
+      imageUrl = selectedImage.publicUrl;
+    } else if (selectedImage && selectedImage.path) {
+      // If it's a file path, construct the full URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(selectedImage.path);
+      imageUrl = publicUrl;
     }
+    
+    if (imageUrl) {
+      setFeaturedImage(imageUrl);
+      toast.success('Featured image added successfully!');
+    } else {
+      toast.error('Failed to get image URL');
+    }
+    
     setShowImageModal(false);
   };
 
@@ -682,24 +661,43 @@ function CreatePost() {
 
         {/* Featured Image */}
         <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Featured Image
+          </label>
           {featuredImage ? (
             <div className="relative inline-block group">
-              <img src={featuredImage} alt="Featured" className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm" />
+              <img 
+                src={featuredImage} 
+                alt="Featured" 
+                className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm" 
+              />
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setShowImageModal(true)} className="p-1 bg-white rounded-lg shadow-md hover:bg-gray-100">
+                <button 
+                  onClick={() => setShowImageModal(true)} 
+                  className="p-1 bg-white rounded-lg shadow-md hover:bg-gray-100"
+                  title="Change image"
+                >
                   <ImageIcon className="w-4 h-4 text-gray-600" />
                 </button>
-                <button onClick={() => setFeaturedImage('')} className="p-1 bg-white rounded-lg shadow-md hover:bg-red-50">
+                <button 
+                  onClick={() => setFeaturedImage('')} 
+                  className="p-1 bg-white rounded-lg shadow-md hover:bg-red-50"
+                  title="Remove image"
+                >
                   <X className="w-4 h-4 text-red-500" />
                 </button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setShowImageModal(true)} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
+            <button 
+              onClick={() => setShowImageModal(true)} 
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+            >
               <ImageIcon className="w-4 h-4" />
               Choose Featured Image
             </button>
           )}
+          <p className="mt-2 text-xs text-gray-400">Select an image from your media library</p>
         </div>
         
         {/* Editor Container */}
@@ -873,14 +871,14 @@ function CreatePost() {
         </div>
       )}
       
-      {/* Image Modal */}
-      {showImageModal && (
-        <ImageModal 
-          isOpen={showImageModal} 
-          onClose={() => setShowImageModal(false)} 
-          onUpload={handleImageUpload} 
-        />
-      )}
+      {/* Image Modal - Using your component */}
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        onSelect={handleImageSelect}
+        multiple={false}
+        title="Select Featured Image"
+      />
     </>
   );
 }
