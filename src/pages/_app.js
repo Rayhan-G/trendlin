@@ -1,8 +1,10 @@
+// pages/_app.js
 import '../styles/globals.css'
 import { useRouter } from 'next/router'
 import FrontendLayout from '../components/frontend/Layout'
 import { useEffect, useState } from 'react'
 import ErrorBoundary from '../components/ErrorBoundary'
+import Toast from '../components/ui/Toast'
 
 export default function App({ Component, pageProps }) {
   const router = useRouter()
@@ -33,6 +35,7 @@ export default function App({ Component, pageProps }) {
     return (
       <ErrorBoundary>
         <Component {...pageProps} />
+        <Toast />
       </ErrorBoundary>
     )
   }
@@ -42,6 +45,7 @@ export default function App({ Component, pageProps }) {
     <ErrorBoundary>
       <FrontendLayout>
         <Component {...pageProps} />
+        <Toast />
       </FrontendLayout>
     </ErrorBoundary>
   )
