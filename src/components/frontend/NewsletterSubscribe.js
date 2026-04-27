@@ -796,7 +796,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     )
   }
 
-  // Subscription Form (for non-subscribed users)
+  // Subscription Form (for non-subscribed users) - COMPLETE FIXED VERSION
   return (
     <>
       <div className={`newsletter-wrapper ${variant}`}>
@@ -814,7 +814,16 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
                   ? `Subscribe for the latest ${currentCategoryName?.toLowerCase()} trends` 
                   : 'Get the week\'s best content, curated just for you'}
               </p>
-              {!user && variant !== 'footer' && <span className="free-badge">Free forever</span>}
+              {!user && variant !== 'footer' && (
+                <div className="auth-required-badge">
+                  🔒 Sign in required to subscribe
+                </div>
+              )}
+              {!user && variant === 'footer' && (
+                <div className="auth-required-badge-footer">
+                  🔒 Create a free account to subscribe
+                </div>
+              )}
             </div>
           </div>
 
@@ -828,8 +837,13 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
               </div>
               <div className="categories-grid">
                 {categories.map((category) => (
-                  <label key={category.id} className={`category-option ${selectedCategories.includes(category.id) ? 'selected' : ''}`}>
-                    <input type="checkbox" checked={selectedCategories.includes(category.id)} onChange={() => handleCategoryToggle(category.id)} />
+                  <label key={category.id} className={`category-option ${selectedCategories.includes(category.id) ? 'selected' : ''} ${!user ? 'disabled-category' : ''}`}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedCategories.includes(category.id)} 
+                      onChange={() => handleCategoryToggle(category.id)} 
+                      disabled={!user}
+                    />
                     <span>{category.icon}</span>
                     <span>{category.name}</span>
                   </label>
@@ -844,22 +858,34 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
 
             {error && <div className="error-message">{error}</div>}
             
-            <button 
-              type="submit" 
-              onClick={handleSubscribe}
-              className={`subscribe-button ${isHovered ? 'hovered' : ''}`}
-              disabled={loading || cooldown || selectedCategories.length === 0}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
-            >
-              {loading ? (
-                <span className="btn-spinner"></span>
-              ) : getButtonText()}
-            </button>
+            {!user ? (
+              <button 
+                onClick={() => {
+                  setShowAuthPopup(true)
+                  window.dispatchEvent(new CustomEvent('openAuth', { detail: 'signup' }))
+                }}
+                className="signup-required-button"
+              >
+                🔒 Sign up free to subscribe →
+              </button>
+            ) : (
+              <button 
+                type="submit" 
+                onClick={handleSubscribe}
+                className={`subscribe-button ${isHovered ? 'hovered' : ''}`}
+                disabled={loading || cooldown || selectedCategories.length === 0}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+              >
+                {loading ? (
+                  <span className="btn-spinner"></span>
+                ) : getButtonText()}
+              </button>
+            )}
             
             <p className="footer-note">
               Weekly on {deliveryDay} • Unsubscribe anytime
-              {!user && variant !== 'footer' && " • Free signup required"}
+              {!user && " • Create a free account to subscribe"}
             </p>
           </div>
         </div>
@@ -889,9 +915,32 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           :global(.dark) .newsletter-text h3 { color: white; }
           .newsletter-text p { font-size: 0.8rem; color: #6b7280; margin: 0; }
           :global(.dark) .newsletter-text p { color: rgba(255,255,255,0.6); }
-          .free-badge { display: inline-block; background: #dbeafe; padding: 0.2rem 0.6rem; border-radius: 40px; font-size: 0.65rem; color: #1e40af; margin-top: 0.5rem; }
-          :global(.dark) .free-badge { background: rgba(6,182,212,0.2); color: #06b6d4; }
-          .newsletter-form-section { width: 100%; }
+          .auth-required-badge {
+            display: inline-block;
+            background: #fef3c7;
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            color: #92400e;
+            margin-top: 0.5rem;
+          }
+          :global(.dark) .auth-required-badge {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+          }
+          .auth-required-badge-footer {
+            display: inline-block;
+            background: #fef3c7;
+            padding: 0.3rem 0.8rem;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            color: #92400e;
+            margin-top: 0.5rem;
+          }
+          :global(.dark) .auth-required-badge-footer {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+          }
           .categories-section { margin-bottom: 1rem; padding: 1rem; background: #f9fafb; border-radius: 16px; border: 1px solid #e5e7eb; }
           :global(.dark) .categories-section { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
           .categories-header { display: flex; justify-content: space-between; margin-bottom: 0.75rem; }
@@ -903,14 +952,45 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           :global(.dark) .category-option { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: white; }
           .category-option.selected { background: #eff6ff; border-color: #06b6d4; color: #1e40af; }
           :global(.dark) .category-option.selected { background: rgba(6,182,212,0.25); border-color: #06b6d4; color: white; }
-          .category-option:hover { background: #f3f4f6; }
-          :global(.dark) .category-option:hover { background: rgba(6,182,212,0.15); }
+          .category-option:hover:not(.disabled-category) { background: #f3f4f6; }
+          :global(.dark) .category-option:hover:not(.disabled-category) { background: rgba(6,182,212,0.15); }
+          .disabled-category {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
           .category-option input { display: none; }
           .posts-preview { font-size: 0.65rem; color: #1e40af; background: #eff6ff; padding: 0.4rem; border-radius: 8px; text-align: center; }
           :global(.dark) .posts-preview { color: #06b6d4; background: rgba(6,182,212,0.08); }
           .subscribe-button { width: 100%; padding: 0.75rem; background: #06b6d4; border: none; border-radius: 40px; color: white; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
           .subscribe-button:hover:not(:disabled) { background: #0891b2; transform: translateY(-1px); box-shadow: 0 8px 20px -6px rgba(6,182,212,0.4); }
           .subscribe-button:disabled { opacity: 0.5; cursor: not-allowed; }
+          .signup-required-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 40px;
+            color: #374151;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .signup-required-button:hover {
+            background: #e5e7eb;
+            border-color: #06b6d4;
+            color: #06b6d4;
+          }
+          :global(.dark) .signup-required-button {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.7);
+          }
+          :global(.dark) .signup-required-button:hover {
+            background: rgba(6,182,212,0.1);
+            border-color: #06b6d4;
+            color: #06b6d4;
+          }
           .btn-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
           @keyframes spin { to { transform: rotate(360deg); } }
           .error-message { color: #ef4444; font-size: 0.7rem; margin: 0.5rem 0; text-align: center; }
@@ -923,6 +1003,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
         `}</style>
       </div>
 
+      {/* Auth Popup for non-authenticated users */}
       {showAuthPopup && variant !== 'footer' && (
         <div className="auth-popup">
           <div className="auth-popup-content">
