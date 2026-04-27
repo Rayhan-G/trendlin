@@ -1,4 +1,4 @@
-// src/pages/blog/[slug].js
+// src/pages/blog/[slug].js - COMPLETE FIXED CODE (NO BLUE BORDERS)
 
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/router'
@@ -156,7 +156,7 @@ export default function BlogPost({ post, error }) {
     )
   }
 
-  // Get featured image URL - check all possible fields
+  // Get featured image URL
   const featuredImageUrl = post.featured_image || post.image_url || null
   const featuredImageAlt = post.featured_image_alt || post.title
   const featuredImageCaption = post.featured_image_caption || ''
@@ -218,7 +218,7 @@ export default function BlogPost({ post, error }) {
             </div>
           </header>
 
-          {/* Featured Image - Fixed Version */}
+          {/* Featured Image */}
           {featuredImageUrl && !imageError && (
             <div className="featured-image-container">
               <div className="featured-image">
@@ -394,13 +394,245 @@ export default function BlogPost({ post, error }) {
           margin-top: 2rem;
         }
 
+        /* ==================== ARTICLE CONTENT STYLES ==================== */
         .article-content {
           font-size: 1.125rem;
           line-height: 1.8;
           color: #2c3e50;
         }
+        
         .blog-post.dark .article-content {
           color: #d1d5db;
+        }
+
+        /* CLEAN HEADING STYLES - NO BORDERS, NO UNDERLINES */
+        .article-content h1,
+        .article-content h2,
+        .article-content h3,
+        .article-content h4,
+        .article-content h5,
+        .article-content h6 {
+          font-weight: 700;
+          line-height: 1.3;
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          color: #1a1a2e;
+          border: none !important;
+          text-decoration: none !important;
+        }
+        
+        .blog-post.dark .article-content h1,
+        .blog-post.dark .article-content h2,
+        .blog-post.dark .article-content h3,
+        .blog-post.dark .article-content h4,
+        .blog-post.dark .article-content h5,
+        .blog-post.dark .article-content h6 {
+          color: #ffffff;
+        }
+        
+        /* H1 */
+        .article-content h1 {
+          font-size: 2.5rem;
+          font-weight: 800;
+          margin-top: 0;
+          margin-bottom: 1rem;
+        }
+        
+        /* H2 */
+        .article-content h2 {
+          font-size: 2rem;
+          font-weight: 700;
+          margin-top: 1.5rem;
+          margin-bottom: 0.75rem;
+        }
+        
+        /* H3 */
+        .article-content h3 {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin-top: 1.25rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        /* H4 */
+        .article-content h4 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        /* H5 */
+        .article-content h5 {
+          font-size: 1.125rem;
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+        }
+        
+        /* H6 */
+        .article-content h6 {
+          font-size: 1rem;
+          font-weight: 600;
+          margin-top: 1rem;
+          margin-bottom: 0.5rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        /* Paragraphs */
+        .article-content p {
+          margin-bottom: 1.25rem;
+        }
+
+        /* Links */
+        .article-content a {
+          color: #0056b3;
+          text-decoration: underline;
+          text-decoration-thickness: 1px;
+          text-underline-offset: 2px;
+        }
+        
+        .article-content a:hover {
+          color: #003d82;
+          text-decoration-thickness: 2px;
+        }
+        
+        .blog-post.dark .article-content a {
+          color: #66b0ff;
+        }
+
+        /* Lists */
+        .article-content ul,
+        .article-content ol {
+          margin: 1.25rem 0;
+          padding-left: 2rem;
+        }
+        
+        .article-content li {
+          margin-bottom: 0.5rem;
+        }
+        
+        .article-content ul {
+          list-style-type: disc;
+        }
+        
+        .article-content ol {
+          list-style-type: decimal;
+        }
+
+        /* Blockquotes */
+        .article-content blockquote {
+          border-left: 3px solid #0056b3;
+          margin: 1.5rem 0;
+          padding: 0.5rem 0 0.5rem 1.5rem;
+          font-style: italic;
+          color: #6c757d;
+          background: #f8f9fa;
+          border-radius: 0 8px 8px 0;
+        }
+        
+        .blog-post.dark .article-content blockquote {
+          border-left-color: #66b0ff;
+          background: #1a1a2e;
+          color: #a0a0a0;
+        }
+
+        /* Code blocks */
+        .article-content pre {
+          background: #1e1e1e;
+          color: #d4d4d4;
+          padding: 1rem;
+          border-radius: 8px;
+          overflow-x: auto;
+          margin: 1.5rem 0;
+        }
+        
+        .article-content code {
+          background: #f4f4f4;
+          padding: 0.2rem 0.4rem;
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.875em;
+        }
+        
+        .blog-post.dark .article-content code {
+          background: #2a2a3e;
+          color: #e0e0e0;
+        }
+
+        /* Tables */
+        .article-content table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.5rem 0;
+        }
+        
+        .article-content th,
+        .article-content td {
+          border: 1px solid #e9ecef;
+          padding: 0.75rem;
+          text-align: left;
+        }
+        
+        .article-content th {
+          background: #f8f9fa;
+          font-weight: 600;
+        }
+        
+        .blog-post.dark .article-content th,
+        .blog-post.dark .article-content td {
+          border-color: #2a2a3e;
+        }
+        
+        .blog-post.dark .article-content th {
+          background: #1a1a2e;
+        }
+
+        /* Images inside content */
+        .article-content img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 12px;
+          margin: 1.5rem 0;
+        }
+
+        /* Image alignment classes */
+        .article-content .image-left {
+          float: left;
+          margin: 0.5rem 1.5rem 0.5rem 0;
+          max-width: 50%;
+        }
+        
+        .article-content .image-right {
+          float: right;
+          margin: 0.5rem 0 0.5rem 1.5rem;
+          max-width: 50%;
+        }
+        
+        .article-content .image-center {
+          display: block;
+          margin: 1.5rem auto;
+          text-align: center;
+        }
+        
+        /* Clearfix for floated elements */
+        .article-content::after {
+          content: '';
+          display: table;
+          clear: both;
+        }
+
+        /* Horizontal Rule */
+        .article-content hr {
+          margin: 2rem 0;
+          border: none;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, #e9ecef, transparent);
+        }
+        
+        .blog-post.dark .article-content hr {
+          background: linear-gradient(90deg, transparent, #2a2a3e, transparent);
         }
 
         .post-footer {
@@ -408,17 +640,29 @@ export default function BlogPost({ post, error }) {
           padding-top: 2rem;
           border-top: 1px solid #e9ecef;
         }
+        
         .post-tags {
           display: flex;
           align-items: center;
           gap: 1rem;
           flex-wrap: wrap;
         }
+        
+        .tags-label {
+          font-weight: 600;
+          color: #1a1a2e;
+        }
+        
+        .blog-post.dark .tags-label {
+          color: #ffffff;
+        }
+        
         .tags-list {
           display: flex;
           gap: 0.5rem;
           flex-wrap: wrap;
         }
+        
         .tag {
           padding: 0.25rem 0.75rem;
           background: #f0f0f0;
@@ -426,15 +670,28 @@ export default function BlogPost({ post, error }) {
           text-decoration: none;
           border-radius: 20px;
           font-size: 0.75rem;
+          transition: all 0.2s ease;
         }
+        
+        .tag:hover {
+          background: #0056b3;
+          color: white;
+        }
+        
         .blog-post.dark .tag {
           background: #1a1a2e;
           color: #a0a0a0;
+        }
+        
+        .blog-post.dark .tag:hover {
+          background: #66b0ff;
+          color: #1a1a2e;
         }
 
         .sidebar {
           position: relative;
         }
+        
         .sticky-sidebar {
           position: sticky;
           top: 100px;
@@ -455,22 +712,65 @@ export default function BlogPost({ post, error }) {
           visibility: hidden;
           transition: all 0.3s ease;
           font-size: 1.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        
+        .scroll-top:hover {
+          background: #0056b3;
+          color: white;
+          transform: translateY(-3px);
+        }
+        
         .scroll-top.visible {
           opacity: 1;
           visibility: visible;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+          .content-grid {
+            gap: 2rem;
+          }
         }
 
         @media (max-width: 768px) {
           .container {
             padding: 1rem;
           }
+          
           .content-grid {
             grid-template-columns: 1fr;
             gap: 2rem;
           }
+          
           .sidebar {
             order: -1;
+          }
+          
+          .article-content h1 {
+            font-size: 2rem;
+          }
+          
+          .article-content h2 {
+            font-size: 1.5rem;
+          }
+          
+          .article-content h3 {
+            font-size: 1.25rem;
+          }
+          
+          .article-content h4 {
+            font-size: 1.125rem;
+          }
+          
+          .article-content .image-left,
+          .article-content .image-right {
+            float: none;
+            margin: 1rem auto;
+            max-width: 100%;
           }
         }
       `}</style>
@@ -526,7 +826,12 @@ export async function getStaticProps({ params }) {
       return { props: { error: 'Post not found', post: null }, revalidate: 60 }
     }
 
-    // Increment view count asynchronously (don't wait for it)
+    // Parse tags if they're stored as string
+    if (post.tags && typeof post.tags === 'string') {
+      post.tags = post.tags.split(',').map(tag => tag.trim())
+    }
+
+    // Increment view count asynchronously
     supabase
       .from('posts')
       .update({ views: (post.views || 0) + 1 })
@@ -539,7 +844,7 @@ export async function getStaticProps({ params }) {
         post, 
         error: null 
       }, 
-      revalidate: 3600 // Revalidate every hour
+      revalidate: 3600
     }
   } catch (error) {
     console.error('Error in getStaticProps:', error)
