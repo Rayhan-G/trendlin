@@ -1349,3 +1349,205 @@ html.dark .preview-frame-content::-webkit-scrollbar-thumb {
     padding: 5px;
   }
 }
+
+/* ==================== COMPLETE HEADING FIX FOR BLOG POSTS ==================== */
+
+/* Force heading styles for blog content */
+.article-content {
+  font-size: 1.125rem;
+  line-height: 1.8;
+  color: #2c3e50;
+}
+
+.dark .article-content {
+  color: #d1d5db;
+}
+
+/* ALL HEADING STYLES WITH !important to ensure they apply */
+.article-content h1 {
+  font-size: 2.5rem !important;
+  font-weight: 800 !important;
+  margin-top: 0 !important;
+  margin-bottom: 1rem !important;
+  line-height: 1.2 !important;
+  color: #1a1a2e !important;
+  display: block !important;
+}
+
+.article-content h2 {
+  font-size: 2rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.75rem !important;
+  line-height: 1.3 !important;
+  color: #1a1a2e !important;
+  display: block !important;
+}
+
+.article-content h3 {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.4 !important;
+  color: #1a1a2e !important;
+  display: block !important;
+}
+
+.article-content h4 {
+  font-size: 1.25rem !important;
+  font-weight: 600 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.4 !important;
+  color: #1a1a2e !important;
+  display: block !important;
+}
+
+.article-content h5 {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+  line-height: 1.5 !important;
+  color: #1a1a2e !important;
+  display: block !important;
+}
+
+.article-content h6 {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.5 !important;
+  color: #6c757d !important;
+  display: block !important;
+}
+
+/* Dark mode headings */
+.dark .article-content h1,
+.dark .article-content h2,
+.dark .article-content h3,
+.dark .article-content h4,
+.dark .article-content h5 {
+  color: #ffffff !important;
+}
+
+.dark .article-content h6 {
+  color: #a0a0a0 !important;
+}
+
+/* Ensure headings are visible */
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Paragraph spacing */
+.article-content p {
+  margin-bottom: 1.25rem !important;
+  line-height: 1.8 !important;
+}
+
+/* Lists in article content */
+.article-content ul,
+.article-content ol {
+  margin: 1.25rem 0 !important;
+  padding-left: 2rem !important;
+}
+
+.article-content li {
+  margin-bottom: 0.5rem !important;
+}
+
+.article-content ul {
+  list-style-type: disc !important;
+}
+
+.article-content ol {
+  list-style-type: decimal !important;
+}
+
+/* Blockquotes */
+.article-content blockquote {
+  border-left: 3px solid #0056b3 !important;
+  margin: 1.5rem 0 !important;
+  padding: 0.5rem 0 0.5rem 1.5rem !important;
+  font-style: italic !important;
+  color: #6c757d !important;
+  background: #f8f9fa !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+.dark .article-content blockquote {
+  border-left-color: #66b0ff !important;
+  background: #1a1a2e !important;
+  color: #a0a0a0 !important;
+}
+
+/* Links */
+.article-content a {
+  color: #0056b3 !important;
+  text-decoration: underline !important;
+}
+
+.dark .article-content a {
+  color: #66b0ff !important;
+}
+
+/* Images */
+.article-content img {
+  max-width: 100% !important;
+  height: auto !important;
+  border-radius: 12px !important;
+  margin: 1.5rem 0 !important;
+}
+
+/* Code blocks */
+.article-content pre {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  padding: 1rem !important;
+  border-radius: 8px !important;
+  overflow-x: auto !important;
+  margin: 1.5rem 0 !important;
+}
+
+.article-content code {
+  background: #f4f4f4 !important;
+  padding: 0.2rem 0.4rem !important;
+  border-radius: 4px !important;
+  font-family: monospace !important;
+  font-size: 0.875em !important;
+}
+
+.dark .article-content code {
+  background: #2a2a3e !important;
+  color: #e0e0e0 !important;
+}
+
+/* Responsive headings */
+@media (max-width: 768px) {
+  .article-content h1 {
+    font-size: 2rem !important;
+  }
+  
+  .article-content h2 {
+    font-size: 1.5rem !important;
+  }
+  
+  .article-content h3 {
+    font-size: 1.25rem !important;
+  }
+  
+  .article-content h4 {
+    font-size: 1.125rem !important;
+  }
+}

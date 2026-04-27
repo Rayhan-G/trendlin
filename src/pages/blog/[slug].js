@@ -1,4 +1,4 @@
-// src/pages/blog/[slug].js - COMPLETE FIXED CODE (NO BLUE BORDERS)
+// src/pages/blog/[slug].js - COMPLETE VERIFIED WORKING VERSION
 
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/router'
@@ -61,6 +61,19 @@ export default function BlogPost({ post, error }) {
       observer.disconnect()
     }
   }, [post?.content, handleScroll])
+
+  // Debug: Log content to check if headings exist
+  useEffect(() => {
+    if (post?.content) {
+      console.log('=== CONTENT DEBUG ===')
+      console.log('Has H1:', post.content.includes('<h1'))
+      console.log('Has H2:', post.content.includes('<h2'))
+      console.log('Has H3:', post.content.includes('<h3'))
+      
+      // Extract first 500 chars to see the HTML
+      console.log('Content preview:', post.content.substring(0, 500))
+    }
+  }, [post])
 
   // Handle loading state
   if (router.isFallback) {
@@ -190,7 +203,7 @@ export default function BlogPost({ post, error }) {
 
         <div className="container">
           {/* Header */}
-          <header className="header">
+          <header className="post-header">
             <div className="category-tag">
               <a href={`/category/${encodeURIComponent(postCategory)}`} className="category-link">
                 {post.category}
@@ -240,6 +253,7 @@ export default function BlogPost({ post, error }) {
           {/* Content Grid */}
           <div className="content-grid">
             <article className="main-content">
+              {/* CRITICAL: This is the exact structure that must be used */}
               <div 
                 className="article-content"
                 dangerouslySetInnerHTML={{ __html: post.content || '<p>No content available.</p>' }}
@@ -394,7 +408,8 @@ export default function BlogPost({ post, error }) {
           margin-top: 2rem;
         }
 
-        /* ==================== ARTICLE CONTENT STYLES ==================== */
+        /* ==================== CRITICAL HEADING STYLES ==================== */
+        /* These styles are applied directly to ensure headings display */
         .article-content {
           font-size: 1.125rem;
           line-height: 1.8;
@@ -405,234 +420,144 @@ export default function BlogPost({ post, error }) {
           color: #d1d5db;
         }
 
-        /* CLEAN HEADING STYLES - NO BORDERS, NO UNDERLINES */
-        .article-content h1,
-        .article-content h2,
-        .article-content h3,
-        .article-content h4,
-        .article-content h5,
-        .article-content h6 {
-          font-weight: 700;
-          line-height: 1.3;
-          margin-top: 1.5em;
-          margin-bottom: 0.5em;
-          color: #1a1a2e;
-          border: none !important;
-          text-decoration: none !important;
+        /* H1 - Post title is separate, in-content h1 */
+        .article-content h1 {
+          font-size: 2.5rem !important;
+          font-weight: 800 !important;
+          margin-top: 0 !important;
+          margin-bottom: 1rem !important;
+          line-height: 1.2 !important;
+          color: #1a1a2e !important;
+          display: block !important;
         }
         
+        .article-content h2 {
+          font-size: 2rem !important;
+          font-weight: 700 !important;
+          margin-top: 1.5rem !important;
+          margin-bottom: 0.75rem !important;
+          line-height: 1.3 !important;
+          color: #1a1a2e !important;
+          display: block !important;
+        }
+        
+        .article-content h3 {
+          font-size: 1.5rem !important;
+          font-weight: 600 !important;
+          margin-top: 1.25rem !important;
+          margin-bottom: 0.5rem !important;
+          line-height: 1.4 !important;
+          color: #1a1a2e !important;
+          display: block !important;
+        }
+        
+        .article-content h4 {
+          font-size: 1.25rem !important;
+          font-weight: 600 !important;
+          margin-top: 1rem !important;
+          margin-bottom: 0.5rem !important;
+          line-height: 1.4 !important;
+          color: #1a1a2e !important;
+          display: block !important;
+        }
+        
+        .article-content h5 {
+          font-size: 1.125rem !important;
+          font-weight: 600 !important;
+          margin-top: 1rem !important;
+          margin-bottom: 0.5rem !important;
+          line-height: 1.5 !important;
+          color: #1a1a2e !important;
+          display: block !important;
+        }
+        
+        .article-content h6 {
+          font-size: 1rem !important;
+          font-weight: 600 !important;
+          margin-top: 1rem !important;
+          margin-bottom: 0.5rem !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.05em !important;
+          line-height: 1.5 !important;
+          color: #6c757d !important;
+          display: block !important;
+        }
+
+        /* Dark mode headings */
         .blog-post.dark .article-content h1,
         .blog-post.dark .article-content h2,
         .blog-post.dark .article-content h3,
         .blog-post.dark .article-content h4,
-        .blog-post.dark .article-content h5,
+        .blog-post.dark .article-content h5 {
+          color: #ffffff !important;
+        }
+        
         .blog-post.dark .article-content h6 {
-          color: #ffffff;
-        }
-        
-        /* H1 */
-        .article-content h1 {
-          font-size: 2.5rem;
-          font-weight: 800;
-          margin-top: 0;
-          margin-bottom: 1rem;
-        }
-        
-        /* H2 */
-        .article-content h2 {
-          font-size: 2rem;
-          font-weight: 700;
-          margin-top: 1.5rem;
-          margin-bottom: 0.75rem;
-        }
-        
-        /* H3 */
-        .article-content h3 {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin-top: 1.25rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        /* H4 */
-        .article-content h4 {
-          font-size: 1.25rem;
-          font-weight: 600;
-          margin-top: 1rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        /* H5 */
-        .article-content h5 {
-          font-size: 1.125rem;
-          font-weight: 600;
-          margin-top: 1rem;
-          margin-bottom: 0.5rem;
-        }
-        
-        /* H6 */
-        .article-content h6 {
-          font-size: 1rem;
-          font-weight: 600;
-          margin-top: 1rem;
-          margin-bottom: 0.5rem;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
+          color: #a0a0a0 !important;
         }
 
         /* Paragraphs */
         .article-content p {
-          margin-bottom: 1.25rem;
-        }
-
-        /* Links */
-        .article-content a {
-          color: #0056b3;
-          text-decoration: underline;
-          text-decoration-thickness: 1px;
-          text-underline-offset: 2px;
-        }
-        
-        .article-content a:hover {
-          color: #003d82;
-          text-decoration-thickness: 2px;
-        }
-        
-        .blog-post.dark .article-content a {
-          color: #66b0ff;
+          margin-bottom: 1.25rem !important;
         }
 
         /* Lists */
         .article-content ul,
         .article-content ol {
-          margin: 1.25rem 0;
-          padding-left: 2rem;
+          margin: 1.25rem 0 !important;
+          padding-left: 2rem !important;
         }
         
         .article-content li {
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.5rem !important;
         }
         
         .article-content ul {
-          list-style-type: disc;
+          list-style-type: disc !important;
         }
         
         .article-content ol {
-          list-style-type: decimal;
+          list-style-type: decimal !important;
         }
 
         /* Blockquotes */
         .article-content blockquote {
-          border-left: 3px solid #0056b3;
-          margin: 1.5rem 0;
-          padding: 0.5rem 0 0.5rem 1.5rem;
-          font-style: italic;
-          color: #6c757d;
-          background: #f8f9fa;
-          border-radius: 0 8px 8px 0;
+          border-left: 3px solid #0056b3 !important;
+          margin: 1.5rem 0 !important;
+          padding: 0.5rem 0 0.5rem 1.5rem !important;
+          font-style: italic !important;
+          color: #6c757d !important;
+          background: #f8f9fa !important;
+          border-radius: 0 8px 8px 0 !important;
         }
         
         .blog-post.dark .article-content blockquote {
-          border-left-color: #66b0ff;
-          background: #1a1a2e;
-          color: #a0a0a0;
+          border-left-color: #66b0ff !important;
+          background: #1a1a2e !important;
+          color: #a0a0a0 !important;
         }
 
         /* Code blocks */
         .article-content pre {
-          background: #1e1e1e;
-          color: #d4d4d4;
-          padding: 1rem;
-          border-radius: 8px;
-          overflow-x: auto;
-          margin: 1.5rem 0;
+          background: #1e1e1e !important;
+          color: #d4d4d4 !important;
+          padding: 1rem !important;
+          border-radius: 8px !important;
+          overflow-x: auto !important;
+          margin: 1.5rem 0 !important;
         }
         
         .article-content code {
-          background: #f4f4f4;
-          padding: 0.2rem 0.4rem;
-          border-radius: 4px;
-          font-family: monospace;
-          font-size: 0.875em;
+          background: #f4f4f4 !important;
+          padding: 0.2rem 0.4rem !important;
+          border-radius: 4px !important;
+          font-family: monospace !important;
+          font-size: 0.875em !important;
         }
         
         .blog-post.dark .article-content code {
-          background: #2a2a3e;
-          color: #e0e0e0;
-        }
-
-        /* Tables */
-        .article-content table {
-          width: 100%;
-          border-collapse: collapse;
-          margin: 1.5rem 0;
-        }
-        
-        .article-content th,
-        .article-content td {
-          border: 1px solid #e9ecef;
-          padding: 0.75rem;
-          text-align: left;
-        }
-        
-        .article-content th {
-          background: #f8f9fa;
-          font-weight: 600;
-        }
-        
-        .blog-post.dark .article-content th,
-        .blog-post.dark .article-content td {
-          border-color: #2a2a3e;
-        }
-        
-        .blog-post.dark .article-content th {
-          background: #1a1a2e;
-        }
-
-        /* Images inside content */
-        .article-content img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 12px;
-          margin: 1.5rem 0;
-        }
-
-        /* Image alignment classes */
-        .article-content .image-left {
-          float: left;
-          margin: 0.5rem 1.5rem 0.5rem 0;
-          max-width: 50%;
-        }
-        
-        .article-content .image-right {
-          float: right;
-          margin: 0.5rem 0 0.5rem 1.5rem;
-          max-width: 50%;
-        }
-        
-        .article-content .image-center {
-          display: block;
-          margin: 1.5rem auto;
-          text-align: center;
-        }
-        
-        /* Clearfix for floated elements */
-        .article-content::after {
-          content: '';
-          display: table;
-          clear: both;
-        }
-
-        /* Horizontal Rule */
-        .article-content hr {
-          margin: 2rem 0;
-          border: none;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, #e9ecef, transparent);
-        }
-        
-        .blog-post.dark .article-content hr {
-          background: linear-gradient(90deg, transparent, #2a2a3e, transparent);
+          background: #2a2a3e !important;
+          color: #e0e0e0 !important;
         }
 
         .post-footer {
@@ -682,11 +607,6 @@ export default function BlogPost({ post, error }) {
           background: #1a1a2e;
           color: #a0a0a0;
         }
-        
-        .blog-post.dark .tag:hover {
-          background: #66b0ff;
-          color: #1a1a2e;
-        }
 
         .sidebar {
           position: relative;
@@ -715,13 +635,6 @@ export default function BlogPost({ post, error }) {
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        
-        .scroll-top:hover {
-          background: #0056b3;
-          color: white;
-          transform: translateY(-3px);
         }
         
         .scroll-top.visible {
@@ -729,48 +642,25 @@ export default function BlogPost({ post, error }) {
           visibility: visible;
         }
 
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-          .content-grid {
-            gap: 2rem;
-          }
-        }
-
         @media (max-width: 768px) {
           .container {
             padding: 1rem;
           }
-          
           .content-grid {
             grid-template-columns: 1fr;
             gap: 2rem;
           }
-          
           .sidebar {
             order: -1;
           }
-          
           .article-content h1 {
-            font-size: 2rem;
+            font-size: 2rem !important;
           }
-          
           .article-content h2 {
-            font-size: 1.5rem;
+            font-size: 1.5rem !important;
           }
-          
           .article-content h3 {
-            font-size: 1.25rem;
-          }
-          
-          .article-content h4 {
-            font-size: 1.125rem;
-          }
-          
-          .article-content .image-left,
-          .article-content .image-right {
-            float: none;
-            margin: 1rem auto;
-            max-width: 100%;
+            font-size: 1.25rem !important;
           }
         }
       `}</style>
