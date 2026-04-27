@@ -1,3 +1,4 @@
+// src/components/frontend/UserMenu.js
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -62,15 +63,6 @@ export default function UserMenu({ user, onLogout }) {
               onClick={() => setIsOpen(false)}
             >
               👤 Your Profile
-            </Link>
-            
-            {/* NEWSLETTER SETTINGS LINK - For all authenticated users */}
-            <Link
-              href="/newsletter/manage"
-              className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              onClick={() => setIsOpen(false)}
-            >
-              📬 Newsletter Settings
             </Link>
             
             {/* Admin Dashboard - Only for admin users */}

@@ -1,12 +1,30 @@
 // src/components/frontend/Footer.js
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import NewsletterSubscribe from './NewsletterSubscribe'
+import { useSubscription } from '@/contexts/SubscriptionContext'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
+  const router = useRouter()
+  const { isSubscribed: globalIsSubscribed, loading: subscriptionLoading } = useSubscription()
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  // Routes where footer should be hidden
+  const hideFooterRoutes = [
+    '/profile',
+    '/newsletter/manage',
+    '/admin',
+    '/dashboard',
+    '/settings'
+  ]
+
+  // Check if current route should hide footer
+  const shouldHideFooter = hideFooterRoutes.some(route => 
+    router.pathname === route || router.pathname.startsWith('/admin')
+  )
 
   // Check if user is subscribed to newsletter on mount
   const checkSubscription = async () => {
@@ -34,7 +52,7 @@ export default function Footer() {
   // Listen for subscription changes
   useEffect(() => {
     const handleSubscriptionChange = (event) => {
-      console.log('Subscription change detected:', event.detail.isSubscribed)
+      console.log('Footer received subscription change:', event.detail.isSubscribed)
       setIsSubscribed(event.detail.isSubscribed)
     }
     
@@ -42,7 +60,7 @@ export default function Footer() {
     const handleStorageChange = (event) => {
       if (event.key === 'newsletter_subscribed') {
         const newStatus = event.newValue === 'true'
-        console.log('Storage change detected:', newStatus)
+        console.log('Footer storage change detected:', newStatus)
         setIsSubscribed(newStatus)
       }
     }
@@ -101,8 +119,13 @@ export default function Footer() {
     }
   }
 
+  // Don't render footer at all on specified routes
+  if (shouldHideFooter) {
+    return null
+  }
+
   // Don't show loading state - just hide the section until we know
-  if (loading) {
+  if (loading || subscriptionLoading) {
     return (
       <footer className="footer">
         <div className="footer-container">

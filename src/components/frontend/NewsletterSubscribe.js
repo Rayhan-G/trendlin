@@ -1,4 +1,4 @@
-// src/components/frontend/NewsletterSubscribe.js (UPDATED with event dispatches)
+// src/components/frontend/NewsletterSubscribe.js
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
@@ -170,7 +170,6 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     setShowConfirmModal(true)
   }
 
-  // UPDATED: confirmSubscription with event dispatches
   const confirmSubscription = async () => {
     if (!pendingSubscription) return
 
@@ -225,12 +224,10 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       
       if (onSubscriptionChange) onSubscriptionChange(true)
       
-      // IMPORTANT: Dispatch event for footer and other components
       window.dispatchEvent(new CustomEvent('subscriptionChange', { 
         detail: { isSubscribed: true }
       }))
       
-      // Also dispatch storage event for cross-tab sync
       localStorage.setItem('newsletter_subscribed', 'true')
       window.dispatchEvent(new Event('storage'))
       
@@ -284,7 +281,6 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     }
   }
 
-  // UPDATED: handleCancelSubscription with event dispatches
   const handleCancelSubscription = async () => {
     if (!confirm('Are you sure you want to unsubscribe? You will no longer receive our newsletter.')) {
       return
@@ -309,12 +305,10 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       
       if (onSubscriptionChange) onSubscriptionChange(false)
       
-      // IMPORTANT: Dispatch event for footer and other components
       window.dispatchEvent(new CustomEvent('subscriptionChange', { 
         detail: { isSubscribed: false }
       }))
       
-      // Also dispatch storage event for cross-tab sync
       localStorage.setItem('newsletter_subscribed', 'false')
       window.dispatchEvent(new Event('storage'))
       
@@ -358,6 +352,8 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
         detail: { message: 'Email updated successfully!', type: 'success' }
       })
       window.dispatchEvent(event)
+      
+      setEmailError('')
     } catch (err) {
       setEmailError(err.message)
     } finally {
@@ -557,7 +553,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           :global(.dark) .category-confirm-pill { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); color: #06b6d4; }
           .confirm-modal-actions { display: flex; gap: 12px; margin-top: 8px; }
           .confirm-btn { flex: 2; padding: 12px; background: #06b6d4; border: none; border-radius: 40px; color: white; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
-          .confirm-btn:hover:not(:disabled) { background: #0891b2; transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(6,182,212,0.3); }
+          .confirm-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px -5px rgba(6,182,212,0.3); }
           .confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
           .cancel-btn-modal { flex: 1; padding: 12px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 40px; color: #374151; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
           :global(.dark) .cancel-btn-modal { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
@@ -639,6 +635,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           </div>
         </div>
 
+        {/* Categories Card */}
         <div className="manage-card">
           <div className="card-header">
             <div className="card-title">
@@ -721,6 +718,58 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           )}
         </div>
 
+        {/* Email Change Card */}
+        <div className="manage-card email-card">
+          <div className="card-header">
+            <div className="card-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              <h4>Email Address</h4>
+            </div>
+          </div>
+          
+          <div className="email-section">
+            <div className="current-email">
+              <label>Current email</label>
+              <div className="email-display">
+                <span className="email-value">{user.email}</span>
+              </div>
+            </div>
+            
+            <div className="email-change-form">
+              <label>New email address</label>
+              <div className="email-input-group">
+                <input 
+                  type="email" 
+                  value={newEmail} 
+                  onChange={(e) => setNewEmail(e.target.value)} 
+                  placeholder="Enter new email address"
+                  className="email-input"
+                  disabled={emailLoading}
+                />
+                <button 
+                  onClick={handleUpdateEmail} 
+                  disabled={emailLoading || !newEmail || newEmail === user.email}
+                  className="update-email-btn"
+                >
+                  {emailLoading ? (
+                    <span className="btn-spinner-small"></span>
+                  ) : (
+                    'Update Email'
+                  )}
+                </button>
+              </div>
+              {emailError && <p className="error-msg">{emailError}</p>}
+              <p className="email-note">
+                ⚠️ You'll need to verify your new email address. A confirmation link will be sent.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Unsubscribe Button */}
         <button onClick={handleCancelSubscription} disabled={loading} className="unsubscribe-btn">
           Unsubscribe
         </button>
@@ -769,48 +818,396 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           .manage-badge { margin-left: auto; }
           .badge-active { background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 40px; font-size: 0.7rem; font-weight: 500; }
           :global(.dark) .badge-active { background: rgba(34,197,94,0.15); color: #22c55e; }
-          .manage-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 20px; padding: 1rem; margin-bottom: 1rem; }
-          :global(.dark) .manage-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
-          .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-          .card-title { display: flex; align-items: center; gap: 0.5rem; }
-          .card-title svg { color: #06b6d4; stroke: #06b6d4; }
-          .card-title h4 { font-size: 0.75rem; font-weight: 600; color: #6b7280; margin: 0; text-transform: uppercase; letter-spacing: 0.5px; }
-          :global(.dark) .card-title h4 { color: rgba(255,255,255,0.7); }
-          .edit-btn { background: transparent; border: 1px solid #06b6d4; color: #06b6d4; padding: 4px 12px; border-radius: 40px; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
-          .edit-btn:hover { background: #eff6ff; }
-          :global(.dark) .edit-btn { border: 1px solid rgba(6,182,212,0.3); }
-          :global(.dark) .edit-btn:hover { background: rgba(6,182,212,0.1); }
-          .categories-display { display: flex; flex-direction: column; gap: 0.75rem; }
-          .categories-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-          .category-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: #f3f4f6; border-radius: 40px; font-size: 0.75rem; color: #374151; }
-          :global(.dark) .category-pill { background: rgba(255,255,255,0.08); color: white; }
-          .delivery-info { display: flex; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; border-top: 1px solid #e5e7eb; }
-          :global(.dark) .delivery-info { border-top: 1px solid rgba(255,255,255,0.08); }
-          .info-item { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: #6b7280; }
-          :global(.dark) .info-item { color: rgba(255,255,255,0.4); }
-          .info-item svg { color: #06b6d4; stroke: #06b6d4; }
-          .empty-state { color: #9ca3af; font-size: 0.75rem; margin: 0; }
-          :global(.dark) .empty-state { color: rgba(255,255,255,0.4); }
-          .edit-mode { margin-top: 0.5rem; }
-          .categories-grid-edit { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
-          .category-checkbox { display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 40px; cursor: pointer; transition: all 0.2s; }
-          :global(.dark) .category-checkbox { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
-          .category-checkbox.checked { background: #eff6ff; border-color: #06b6d4; }
-          :global(.dark) .category-checkbox.checked { background: rgba(6,182,212,0.2); border-color: #06b6d4; }
-          .category-checkbox input { display: none; }
-          .checkbox-icon { font-size: 0.9rem; }
-          .checkbox-label { font-size: 0.75rem; color: #374151; }
-          :global(.dark) .checkbox-label { color: white; }
-          .edit-actions { display: flex; gap: 0.5rem; }
-          .save-btn { padding: 6px 16px; background: #06b6d4; border: none; border-radius: 40px; color: white; font-weight: 500; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
-          .save-btn:hover:not(:disabled) { background: #0891b2; transform: translateY(-1px); }
-          .cancel-btn { padding: 6px 16px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 40px; color: #374151; font-size: 0.75rem; cursor: pointer; }
-          :global(.dark) .cancel-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
-          .error-msg { color: #ef4444; font-size: 0.7rem; margin-top: 0.5rem; }
-          .unsubscribe-btn { width: 100%; padding: 10px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 40px; color: #dc2626; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; }
-          :global(.dark) .unsubscribe-btn { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; }
-          .unsubscribe-btn:hover:not(:disabled) { background: #fee2e2; }
-          :global(.dark) .unsubscribe-btn:hover:not(:disabled) { background: rgba(239,68,68,0.2); }
+          
+          .manage-card { 
+            background: #f9fafb; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 20px; 
+            padding: 1rem; 
+            margin-bottom: 1rem;
+          }
+          :global(.dark) .manage-card { 
+            background: rgba(255,255,255,0.03); 
+            border: 1px solid rgba(255,255,255,0.08);
+          }
+          
+          .email-card {
+            margin-bottom: 1rem;
+          }
+          
+          .card-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 0.75rem; 
+          }
+          .card-title { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem; 
+          }
+          .card-title svg { 
+            color: #06b6d4; 
+            stroke: #06b6d4; 
+          }
+          .card-title h4 { 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            color: #6b7280; 
+            margin: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+          }
+          :global(.dark) .card-title h4 { 
+            color: rgba(255,255,255,0.7); 
+          }
+          
+          .edit-btn { 
+            background: transparent; 
+            border: 1px solid #06b6d4; 
+            color: #06b6d4; 
+            padding: 4px 12px; 
+            border-radius: 40px; 
+            font-size: 0.7rem; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+            transition: all 0.2s; 
+          }
+          .edit-btn:hover { 
+            background: #eff6ff; 
+          }
+          :global(.dark) .edit-btn { 
+            border: 1px solid rgba(6,182,212,0.3); 
+          }
+          :global(.dark) .edit-btn:hover { 
+            background: rgba(6,182,212,0.1); 
+          }
+          
+          .categories-display { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 0.75rem; 
+          }
+          .categories-list { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 0.5rem; 
+          }
+          .category-pill { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            padding: 4px 12px; 
+            background: #f3f4f6; 
+            border-radius: 40px; 
+            font-size: 0.75rem; 
+            color: #374151; 
+            border: 1px solid transparent;
+          }
+          :global(.dark) .category-pill { 
+            background: rgba(255,255,255,0.08); 
+            color: white; 
+          }
+          
+          .delivery-info { 
+            display: flex; 
+            gap: 1rem; 
+            flex-wrap: wrap; 
+            padding-top: 0.5rem; 
+            border-top: 1px solid #e5e7eb; 
+          }
+          :global(.dark) .delivery-info { 
+            border-top: 1px solid rgba(255,255,255,0.08); 
+          }
+          .info-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 0.7rem; 
+            color: #6b7280; 
+          }
+          :global(.dark) .info-item { 
+            color: rgba(255,255,255,0.4); 
+          }
+          .info-item svg { 
+            color: #06b6d4; 
+            stroke: #06b6d4; 
+          }
+          
+          .empty-state { 
+            color: #9ca3af; 
+            font-size: 0.75rem; 
+            margin: 0; 
+          }
+          :global(.dark) .empty-state { 
+            color: rgba(255,255,255,0.4); 
+          }
+          
+          .edit-mode { 
+            margin-top: 0.5rem; 
+          }
+          .categories-grid-edit { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 0.5rem; 
+            margin-bottom: 1rem; 
+          }
+          .category-checkbox { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            padding: 6px 14px; 
+            background: #f3f4f6; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 40px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+          }
+          :global(.dark) .category-checkbox { 
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(255,255,255,0.1); 
+          }
+          .category-checkbox.checked { 
+            background: #eff6ff; 
+            border-color: #06b6d4; 
+          }
+          :global(.dark) .category-checkbox.checked { 
+            background: rgba(6,182,212,0.2); 
+            border-color: #06b6d4; 
+          }
+          .category-checkbox input { 
+            display: none; 
+          }
+          .checkbox-icon { 
+            font-size: 0.9rem; 
+          }
+          .checkbox-label { 
+            font-size: 0.75rem; 
+            color: #374151; 
+          }
+          :global(.dark) .checkbox-label { 
+            color: white; 
+          }
+          
+          .edit-actions { 
+            display: flex; 
+            gap: 0.5rem; 
+          }
+          .save-btn { 
+            padding: 6px 16px; 
+            background: #06b6d4; 
+            border: none; 
+            border-radius: 40px; 
+            color: white; 
+            font-weight: 500; 
+            font-size: 0.75rem; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+          }
+          .save-btn:hover:not(:disabled) { 
+            background: #0891b2; 
+            transform: translateY(-1px); 
+          }
+          .cancel-btn { 
+            padding: 6px 16px; 
+            background: #f3f4f6; 
+            border: 1px solid #e5e7eb; 
+            border-radius: 40px; 
+            color: #374151; 
+            font-size: 0.75rem; 
+            cursor: pointer; 
+          }
+          :global(.dark) .cancel-btn { 
+            background: rgba(255,255,255,0.08); 
+            border: 1px solid rgba(255,255,255,0.15); 
+            color: rgba(255,255,255,0.7); 
+          }
+          
+          /* Email Section Styles */
+          .email-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+          }
+          
+          .current-email label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          :global(.dark) .current-email label {
+            color: rgba(255,255,255,0.5);
+          }
+          
+          .email-display {
+            padding: 0.75rem;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+          }
+          :global(.dark) .email-display {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.1);
+          }
+          
+          .email-value {
+            font-family: monospace;
+            font-size: 0.875rem;
+            color: #111827;
+          }
+          :global(.dark) .email-value {
+            color: white;
+          }
+          
+          .email-change-form label {
+            display: block;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          :global(.dark) .email-change-form label {
+            color: rgba(255,255,255,0.5);
+          }
+          
+          .email-input-group {
+            display: flex;
+            gap: 0.75rem;
+          }
+          
+          .email-input {
+            flex: 1;
+            padding: 0.625rem 1rem;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 40px;
+            color: #111827;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+          }
+          :global(.dark) .email-input {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            color: white;
+          }
+          
+          .email-input:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 3px rgba(6,182,212,0.1);
+          }
+          
+          .email-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          .update-email-btn {
+            padding: 0.625rem 1.5rem;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 40px;
+            color: #374151;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+          }
+          :global(.dark) .update-email-btn {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.7);
+          }
+          
+          .update-email-btn:hover:not(:disabled) {
+            background: #e5e7eb;
+            border-color: #06b6d4;
+            color: #06b6d4;
+          }
+          :global(.dark) .update-email-btn:hover:not(:disabled) {
+            background: rgba(6,182,212,0.1);
+            border-color: #06b6d4;
+            color: #06b6d4;
+          }
+          
+          .update-email-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          .btn-spinner-small {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #06b6d4;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+          }
+          
+          .email-note {
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #fef3c7;
+            border-radius: 8px;
+            color: #92400e;
+          }
+          :global(.dark) .email-note {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+          }
+          
+          .error-msg { 
+            color: #ef4444; 
+            font-size: 0.7rem; 
+            margin-top: 0.5rem; 
+          }
+          
+          .unsubscribe-btn { 
+            width: 100%; 
+            padding: 10px; 
+            background: #fef2f2; 
+            border: 1px solid #fecaca; 
+            border-radius: 40px; 
+            color: #dc2626; 
+            font-size: 0.75rem; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+          }
+          :global(.dark) .unsubscribe-btn { 
+            background: rgba(239,68,68,0.1); 
+            border: 1px solid rgba(239,68,68,0.3); 
+            color: #ef4444; 
+          }
+          .unsubscribe-btn:hover:not(:disabled) { 
+            background: #fee2e2; 
+          }
+          :global(.dark) .unsubscribe-btn:hover:not(:disabled) { 
+            background: rgba(239,68,68,0.2); 
+          }
+          
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+          
+          @media (max-width: 640px) {
+            .email-input-group {
+              flex-direction: column;
+            }
+            .update-email-btn {
+              width: 100%;
+            }
+          }
         `}</style>
       </div>
     )
