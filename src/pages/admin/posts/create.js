@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// pages/admin/posts/create.js
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { ToastContainer, toast } from 'react-toastify';
@@ -38,11 +39,12 @@ const createUniqueSlug = async (title, currentId = null) => {
   
   try {
     let exists = true;
-    while (exists) {
+    while (exists && counter < 20) { // Limit attempts
       const { data, error } = await supabase
         .from('posts')
         .select('id')
         .eq('slug', uniqueSlug)
+        .limit(1)
         .maybeSingle();
       
       if (error || !data) {
@@ -61,6 +63,27 @@ const createUniqueSlug = async (title, currentId = null) => {
   }
   
   return uniqueSlug;
+};
+
+// ============================================================
+// OPTIMIZE CONTENT - COMPRESS HTML
+// ============================================================
+const optimizeContent = (html) => {
+  if (!html) return '';
+  
+  // Remove unnecessary whitespace
+  let optimized = html
+    .replace(/\s+/g, ' ')  // Replace multiple spaces with single
+    .replace(/>\s+</g, '><')  // Remove spaces between tags
+    .trim();
+  
+  // Remove empty paragraphs
+  optimized = optimized.replace(/<p>\s*<\/p>/g, '');
+  
+  // Optimize image attributes
+  optimized = optimized.replace(/data-[^=]+="[^"]*"/g, ''); // Remove data attributes if not needed
+  
+  return optimized;
 };
 
 // ============================================================
@@ -151,6 +174,11 @@ function CreatePost() {
   const [errors, setErrors] = useState({});
   const [scheduledDate, setScheduledDate] = useState('');
   const [stats, setStats] = useState({ wordCount: 0, readingTime: 0, seoScore: 0 });
+  const [saveProgress, setSaveProgress] = useState(0);
+
+  // Refs
+  const saveTimeoutRef = useRef(null);
+  const contentSizeRef = useRef(0);
 
   // ============================================================
   // SEO SCORE CALCULATION
@@ -190,10 +218,14 @@ function CreatePost() {
     setStats({ wordCount, readingTime, seoScore });
     setHasUnsavedChanges(true);
     
+    // Auto-generate excerpt from first paragraph if empty
     if (!excerpt && wordCount > 50) {
       const firstPara = plainText.slice(0, 160).trim();
       if (firstPara) setExcerpt(firstPara + (plainText.length > 160 ? '...' : ''));
     }
+    
+    // Track content size
+    contentSizeRef.current = content.length;
   }, [content, calculateSEOScore, excerpt]);
 
   // ============================================================
@@ -232,22 +264,41 @@ function CreatePost() {
   }, [hasUnsavedChanges]);
 
   // ============================================================
-  // SAVE DRAFT
+  // SAVE DRAFT - OPTIMIZED VERSION
   // ============================================================
   const saveDraft = useCallback(async () => {
+    // Don't save if saving already
+    if (isSaving) {
+      toast.info('Already saving...');
+      return false;
+    }
+    
+    // Validate minimum content
     if (!title && (!content || content === '<p></p>')) {
       toast.warning('Add a title or some content before saving');
       return false;
     }
     
     setIsSaving(true);
+    setSaveProgress(10);
+    
     try {
-      const finalSlug = slug || await createUniqueSlug(title || 'untitled', postId);
+      // Show progress
+      setSaveProgress(20);
       
+      // Optimize content before saving
+      const optimizedContent = optimizeContent(content);
+      setSaveProgress(30);
+      
+      // Generate slug if needed
+      const finalSlug = slug || generateSlug(title || 'untitled');
+      setSaveProgress(40);
+      
+      // Prepare post data (remove null values to reduce payload)
       const postData = {
         title: title || 'Untitled',
         excerpt: excerpt || null,
-        content: content || '',
+        content: optimizedContent, // Use optimized content
         featured_image: featuredImage || null,
         featured_image_alt: featuredImageAlt || null,
         featured_image_caption: featuredImageCaption || null,
@@ -264,48 +315,97 @@ function CreatePost() {
         updated_at: new Date().toISOString()
       };
       
+      // Remove undefined values
+      Object.keys(postData).forEach(key => {
+        if (postData[key] === undefined) delete postData[key];
+      });
+      
+      setSaveProgress(60);
+      
       let result;
       
       if (postId) {
+        // UPDATE EXISTING POST
         result = await supabase
           .from('posts')
           .update(postData)
           .eq('id', postId)
-          .select()
-          .single();
+          .select('id, slug')
+          .maybeSingle();
           
+        setSaveProgress(90);
+        
         if (result.error) throw result.error;
         toast.success('✨ Draft updated successfully!');
       } else {
+        // CREATE NEW POST - Use insert with returning
         result = await supabase
           .from('posts')
           .insert([{
             ...postData,
             created_at: new Date().toISOString()
           }])
-          .select()
-          .single();
+          .select('id, slug')
+          .maybeSingle();
           
+        setSaveProgress(90);
+        
         if (result.error) throw result.error;
         
         if (result.data) {
           setPostId(result.data.id);
           setSlug(result.data.slug);
           toast.success('✨ Draft saved successfully!');
+          
+          // Update URL without full page reload
           router.replace(`/admin/posts/edit/${result.data.id}`, undefined, { shallow: true });
         }
       }
       
+      setSaveProgress(100);
       setHasUnsavedChanges(false);
+      
+      // Reset progress after 1 second
+      setTimeout(() => setSaveProgress(0), 1000);
+      
       return true;
     } catch (error) {
       console.error('Save error:', error);
-      toast.error(`Failed to save draft: ${error.message}`);
+      
+      // Handle specific error types
+      if (error.message?.includes('timeout')) {
+        toast.error('Save timeout: Your content may be too large. Try saving smaller sections or split into multiple posts.');
+      } else if (error.message?.includes('permission')) {
+        toast.error('Permission denied. Please check your Supabase RLS policies.');
+      } else if (error.message?.includes('network')) {
+        toast.error('Network error. Please check your connection and try again.');
+      } else {
+        toast.error(`Failed to save draft: ${error.message}`);
+      }
+      
+      setSaveProgress(0);
       return false;
     } finally {
       setIsSaving(false);
     }
-  }, [title, excerpt, content, featuredImage, featuredImageAlt, featuredImageCaption, featuredImageTitle, featuredImageAlignment, featuredImageWidth, slug, category, keywords, tags, metaTitle, metaDescription, postId, router]);
+  }, [title, excerpt, content, featuredImage, featuredImageAlt, featuredImageCaption, featuredImageTitle, featuredImageAlignment, featuredImageWidth, slug, category, keywords, tags, metaTitle, metaDescription, postId, router, isSaving]);
+
+  // ============================================================
+  // AUTO-SAVE DRAFT (every 30 seconds)
+  // ============================================================
+  useEffect(() => {
+    if (hasUnsavedChanges && (title || (content && content !== '<p></p>'))) {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('Auto-saving draft...');
+        saveDraft();
+      }, 30000); // Auto-save every 30 seconds
+    }
+    
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [title, content, hasUnsavedChanges, saveDraft]);
 
   // ============================================================
   // PUBLISH POST
@@ -323,12 +423,14 @@ function CreatePost() {
     
     setIsSaving(true);
     try {
-      const finalSlug = slug || await createUniqueSlug(title, postId);
+      // Optimize content before publishing
+      const optimizedContent = optimizeContent(content);
+      const finalSlug = slug || generateSlug(title);
       
       const postData = {
-        title,
+        title: title.trim(),
         excerpt: excerpt || null,
-        content,
+        content: optimizedContent,
         featured_image: featuredImage || null,
         featured_image_alt: featuredImageAlt || null,
         featured_image_caption: featuredImageCaption || null,
@@ -358,10 +460,7 @@ function CreatePost() {
       } else {
         result = await supabase
           .from('posts')
-          .insert([{
-            ...postData,
-            created_at: new Date().toISOString()
-          }]);
+          .insert([postData]);
           
         if (result.error) throw result.error;
       }
@@ -393,12 +492,13 @@ function CreatePost() {
     
     setIsSaving(true);
     try {
-      const finalSlug = slug || await createUniqueSlug(title, postId);
+      const optimizedContent = optimizeContent(content);
+      const finalSlug = slug || generateSlug(title);
       
       const postData = {
-        title,
+        title: title.trim(),
         excerpt: excerpt || null,
-        content: content || '',
+        content: optimizedContent,
         featured_image: featuredImage || null,
         featured_image_alt: featuredImageAlt || null,
         featured_image_caption: featuredImageCaption || null,
@@ -448,7 +548,7 @@ function CreatePost() {
   }, [title, excerpt, content, featuredImage, featuredImageAlt, featuredImageCaption, featuredImageTitle, featuredImageAlignment, featuredImageWidth, slug, category, keywords, tags, metaTitle, metaDescription, scheduledDate, postId, router]);
 
   // ============================================================
-  // IMAGE HANDLER - Using your ImageModal's onUpload prop
+  // IMAGE HANDLER
   // ============================================================
   const handleImageUpload = useCallback((imageData) => {
     console.log('Image data from modal:', imageData);
@@ -525,6 +625,16 @@ function CreatePost() {
       
       <ToastContainer position="top-right" autoClose={3000} />
       
+      {/* Save Progress Bar */}
+      {saveProgress > 0 && (
+        <div className="fixed top-0 left-0 right-0 h-1 bg-purple-100 z-[100]">
+          <div 
+            className="h-full bg-purple-600 transition-all duration-300"
+            style={{ width: `${saveProgress}%` }}
+          />
+        </div>
+      )}
+      
       {/* Top Navigation Bar */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -545,6 +655,14 @@ function CreatePost() {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Content Size Warning */}
+              {contentSizeRef.current > 500000 && (
+                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-yellow-50">
+                  <AlertCircle className="w-3.5 h-3.5 text-yellow-600" />
+                  <span className="text-xs text-yellow-600">Large content ({Math.round(contentSizeRef.current / 1024)}KB)</span>
+                </div>
+              )}
+              
               {/* Stats */}
               <div className="hidden lg:flex items-center gap-4 px-3 py-1.5 rounded-xl bg-gray-50">
                 <div className="flex items-center gap-1.5">
@@ -585,7 +703,7 @@ function CreatePost() {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 text-sm"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>Save Draft</span>
+                <span>{isSaving ? 'Saving...' : 'Save Draft'}</span>
               </button>
               
               <button 
@@ -892,7 +1010,7 @@ function CreatePost() {
         </div>
       )}
       
-      {/* Your Image Modal - Using onUpload prop */}
+      {/* Image Modal */}
       <ImageModal
         isOpen={showImageModal}
         onClose={() => setShowImageModal(false)}
