@@ -5,6 +5,7 @@ import FrontendLayout from '../components/frontend/Layout'
 import { useEffect, useState } from 'react'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Toast from '../components/ui/Toast'
+import { SubscriptionProvider } from '../contexts/SubscriptionContext'
 
 export default function App({ Component, pageProps }) {
   const router = useRouter()
@@ -34,8 +35,10 @@ export default function App({ Component, pageProps }) {
   if (isAdminRoute) {
     return (
       <ErrorBoundary>
-        <Component {...pageProps} />
-        <Toast />
+        <SubscriptionProvider>
+          <Component {...pageProps} />
+          <Toast />
+        </SubscriptionProvider>
       </ErrorBoundary>
     )
   }
@@ -43,10 +46,12 @@ export default function App({ Component, pageProps }) {
   // Frontend routes
   return (
     <ErrorBoundary>
-      <FrontendLayout>
-        <Component {...pageProps} />
-        <Toast />
-      </FrontendLayout>
+      <SubscriptionProvider>
+        <FrontendLayout>
+          <Component {...pageProps} />
+          <Toast />
+        </FrontendLayout>
+      </SubscriptionProvider>
     </ErrorBoundary>
   )
 }

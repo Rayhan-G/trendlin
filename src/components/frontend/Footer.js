@@ -9,35 +9,63 @@ export default function Footer() {
   const [loading, setLoading] = useState(true)
 
   // Check if user is subscribed to newsletter on mount
-  useEffect(() => {
-    const checkSubscription = async () => {
-      try {
-        const res = await fetch('/api/auth/me')
-        const data = await res.json()
-        
-        if (data.authenticated && data.newsletter?.is_subscribed === true) {
-          setIsSubscribed(true)
-        }
-      } catch (error) {
-        console.error('Error checking subscription:', error)
-      } finally {
-        setLoading(false)
+  const checkSubscription = async () => {
+    try {
+      const res = await fetch('/api/auth/me')
+      const data = await res.json()
+      
+      if (data.authenticated && data.newsletter?.is_subscribed === true) {
+        setIsSubscribed(true)
+      } else {
+        setIsSubscribed(false)
       }
+    } catch (error) {
+      console.error('Error checking subscription:', error)
+      setIsSubscribed(false)
+    } finally {
+      setLoading(false)
     }
-    
+  }
+
+  useEffect(() => {
     checkSubscription()
   }, [])
 
   // Listen for subscription changes
   useEffect(() => {
     const handleSubscriptionChange = (event) => {
+      console.log('Subscription change detected:', event.detail.isSubscribed)
       setIsSubscribed(event.detail.isSubscribed)
     }
     
+    // Listen for storage events (cross-tab)
+    const handleStorageChange = (event) => {
+      if (event.key === 'newsletter_subscribed') {
+        const newStatus = event.newValue === 'true'
+        console.log('Storage change detected:', newStatus)
+        setIsSubscribed(newStatus)
+      }
+    }
+    
     window.addEventListener('subscriptionChange', handleSubscriptionChange)
+    window.addEventListener('storage', handleStorageChange)
     
     return () => {
       window.removeEventListener('subscriptionChange', handleSubscriptionChange)
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [])
+
+  // Also listen for auth changes
+  useEffect(() => {
+    const handleAuthComplete = () => {
+      checkSubscription()
+    }
+    
+    window.addEventListener('authComplete', handleAuthComplete)
+    
+    return () => {
+      window.removeEventListener('authComplete', handleAuthComplete)
     }
   }, [])
 
@@ -75,7 +103,6 @@ export default function Footer() {
 
   // Don't show loading state - just hide the section until we know
   if (loading) {
-    // Return footer without newsletter section while checking
     return (
       <footer className="footer">
         <div className="footer-container">
@@ -266,6 +293,7 @@ export default function Footer() {
             <NewsletterSubscribe 
               variant="footer" 
               onSubscriptionChange={(subscribed) => {
+                console.log('Subscription changed in footer:', subscribed)
                 setIsSubscribed(subscribed)
                 // Dispatch event for other components
                 window.dispatchEvent(new CustomEvent('subscriptionChange', { 

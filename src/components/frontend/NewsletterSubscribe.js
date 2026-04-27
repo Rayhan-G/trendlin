@@ -1,4 +1,4 @@
-// src/components/frontend/NewsletterSubscribe.js
+// src/components/frontend/NewsletterSubscribe.js (UPDATED with event dispatches)
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
@@ -170,6 +170,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     setShowConfirmModal(true)
   }
 
+  // UPDATED: confirmSubscription with event dispatches
   const confirmSubscription = async () => {
     if (!pendingSubscription) return
 
@@ -224,6 +225,15 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       
       if (onSubscriptionChange) onSubscriptionChange(true)
       
+      // IMPORTANT: Dispatch event for footer and other components
+      window.dispatchEvent(new CustomEvent('subscriptionChange', { 
+        detail: { isSubscribed: true }
+      }))
+      
+      // Also dispatch storage event for cross-tab sync
+      localStorage.setItem('newsletter_subscribed', 'true')
+      window.dispatchEvent(new Event('storage'))
+      
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Successfully subscribed to newsletter!', type: 'success' }
       })
@@ -274,6 +284,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     }
   }
 
+  // UPDATED: handleCancelSubscription with event dispatches
   const handleCancelSubscription = async () => {
     if (!confirm('Are you sure you want to unsubscribe? You will no longer receive our newsletter.')) {
       return
@@ -297,6 +308,15 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       setOriginalCategories([])
       
       if (onSubscriptionChange) onSubscriptionChange(false)
+      
+      // IMPORTANT: Dispatch event for footer and other components
+      window.dispatchEvent(new CustomEvent('subscriptionChange', { 
+        detail: { isSubscribed: false }
+      }))
+      
+      // Also dispatch storage event for cross-tab sync
+      localStorage.setItem('newsletter_subscribed', 'false')
+      window.dispatchEvent(new Event('storage'))
       
       const event = new CustomEvent('showToast', { 
         detail: { message: 'You have been unsubscribed.', type: 'info' }
@@ -796,7 +816,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     )
   }
 
-  // Subscription Form (for non-subscribed users) - COMPLETE FIXED VERSION
+  // Subscription Form (for non-subscribed users)
   return (
     <>
       <div className={`newsletter-wrapper ${variant}`}>
@@ -817,11 +837,6 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
               {!user && variant !== 'footer' && (
                 <div className="auth-required-badge">
                   🔒 Sign in required to subscribe
-                </div>
-              )}
-              {!user && variant === 'footer' && (
-                <div className="auth-required-badge-footer">
-                  🔒 Create a free account to subscribe
                 </div>
               )}
             </div>
@@ -925,19 +940,6 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             margin-top: 0.5rem;
           }
           :global(.dark) .auth-required-badge {
-            background: rgba(245, 158, 11, 0.2);
-            color: #fbbf24;
-          }
-          .auth-required-badge-footer {
-            display: inline-block;
-            background: #fef3c7;
-            padding: 0.3rem 0.8rem;
-            border-radius: 40px;
-            font-size: 0.7rem;
-            color: #92400e;
-            margin-top: 0.5rem;
-          }
-          :global(.dark) .auth-required-badge-footer {
             background: rgba(245, 158, 11, 0.2);
             color: #fbbf24;
           }
