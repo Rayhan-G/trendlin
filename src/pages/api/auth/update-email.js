@@ -1,6 +1,5 @@
-// pages/api/auth/update-email.js
+// pages/api/newsletter/update-email.js
 import { supabase } from '@/lib/supabase'
-import { randomBytes } from 'crypto'
 
 export default async function handler(req, res) {
   if (req.method !== 'PUT') {
@@ -51,26 +50,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Verification code has expired' })
   }
 
-  // Check if email already exists
-  const { data: existing } = await supabase
-    .from('users')
-    .select('id')
-    .eq('email', email.toLowerCase())
-    .neq('id', session.user_id)
-    .maybeSingle()
-
-  if (existing) {
-    return res.status(409).json({ error: 'Email already in use' })
-  }
-
-  // Update user's email
+  // Update newsletter email only - NOT the user account email
   const { error: updateError } = await supabase
-    .from('users')
-    .update({ email: email.toLowerCase() })
-    .eq('id', session.user_id)
+    .from('newsletter_preferences')
+    .update({ 
+      newsletter_email: email.toLowerCase(),
+      updated_at: new Date().toISOString()
+    })
+    .eq('user_id', session.user_id)
 
   if (updateError) {
-    return res.status(500).json({ error: 'Failed to update email' })
+    console.error('Error updating newsletter email:', updateError)
+    return res.status(500).json({ error: 'Failed to update newsletter email' })
   }
 
   // Mark verification code as used
@@ -79,5 +70,8 @@ export default async function handler(req, res) {
     .update({ used: true })
     .eq('verification_id', verificationId)
 
-  return res.status(200).json({ success: true, message: 'Email updated successfully!' })
+  return res.status(200).json({ 
+    success: true, 
+    message: 'Newsletter email updated successfully!' 
+  })
 }

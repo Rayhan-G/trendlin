@@ -15,20 +15,25 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
   const [showAuthPopup, setShowAuthPopup] = useState(false)
   const [currentPageCategory, setCurrentPageCategory] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
-  const [newEmail, setNewEmail] = useState('')
+  
+  // Email states - separate for account vs newsletter
+  const [accountEmail, setAccountEmail] = useState('')
+  const [newsletterEmail, setNewsletterEmail] = useState('')
+  const [originalNewsletterEmail, setOriginalNewsletterEmail] = useState('')
+  const [newEmailInput, setNewEmailInput] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [pendingSubscription, setPendingSubscription] = useState(null)
-  const [isHovered, setIsHovered] = useState(false)
   
   // Email verification states
   const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [verificationCode, setVerificationCode] = useState('')
   const [verificationId, setVerificationId] = useState('')
   const [pendingNewEmail, setPendingNewEmail] = useState('')
-  const [verificationStep, setVerificationStep] = useState('email')
   const [sendingCode, setSendingCode] = useState(false)
+  
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingSubscription, setPendingSubscription] = useState(null)
+  const [isHovered, setIsHovered] = useState(false)
 
   const categories = [
     { id: 'health', name: 'Health & Wellness', icon: '🌿', color: '#10b981' },
@@ -61,12 +66,17 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
         
         if (data.authenticated) {
           setUser(data.user)
-          setNewEmail(data.user.email)
+          setAccountEmail(data.user.email)
           
           if (data.newsletter && data.newsletter.is_subscribed === true) {
             setSubscriptionStatus('subscribed')
             setSelectedCategories(data.newsletter.categories || [])
             setOriginalCategories(data.newsletter.categories || [])
+            // Load newsletter email (fallback to user email if not set)
+            const newsEmail = data.newsletter.newsletter_email || data.user.email
+            setNewsletterEmail(newsEmail)
+            setOriginalNewsletterEmail(newsEmail)
+            setNewEmailInput(newsEmail)
             if (onSubscriptionChange) onSubscriptionChange(true)
           } else {
             setSubscriptionStatus(null)
@@ -132,12 +142,16 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
         .then(data => {
           if (data.authenticated) {
             setUser(data.user)
-            setNewEmail(data.user.email)
+            setAccountEmail(data.user.email)
             setShowAuthPopup(false)
             if (data.newsletter && data.newsletter.is_subscribed) {
               setSubscriptionStatus('subscribed')
               setSelectedCategories(data.newsletter.categories || [])
               setOriginalCategories(data.newsletter.categories || [])
+              const newsEmail = data.newsletter.newsletter_email || data.user.email
+              setNewsletterEmail(newsEmail)
+              setOriginalNewsletterEmail(newsEmail)
+              setNewEmailInput(newsEmail)
               if (onSubscriptionChange) onSubscriptionChange(true)
             }
           }
@@ -202,6 +216,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             delivery_frequency: 'weekly',
             max_posts_per_week: pendingSubscription.postCount,
             post_format: 'digest',
+            newsletter_email: user.email,
             subscribed_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -216,6 +231,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             delivery_frequency: 'weekly',
             max_posts_per_week: pendingSubscription.postCount,
             post_format: 'digest',
+            newsletter_email: user.email,
             subscribed_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -226,6 +242,9 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       setSubscriptionStatus('subscribed')
       setSelectedCategories(pendingSubscription.categories)
       setOriginalCategories(pendingSubscription.categories)
+      setNewsletterEmail(user.email)
+      setOriginalNewsletterEmail(user.email)
+      setNewEmailInput(user.email)
       setShowSuccessModal(true)
       setCooldown(true)
       setTimeout(() => setCooldown(false), 30000)
@@ -333,13 +352,13 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
   }
 
   const sendVerificationCode = async () => {
-    if (!newEmail || !newEmail.includes('@')) {
+    if (!newEmailInput || !newEmailInput.includes('@')) {
       setEmailError('Please enter a valid email address')
       return
     }
 
-    if (newEmail === user.email) {
-      setEmailError('New email must be different from current email')
+    if (newEmailInput === newsletterEmail) {
+      setEmailError('New email must be different from current newsletter email')
       return
     }
 
@@ -350,7 +369,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       const res = await fetch('/api/auth/send-verification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newEmail })
+        body: JSON.stringify({ email: newEmailInput })
       })
 
       const data = await res.json()
@@ -360,8 +379,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       }
 
       setVerificationId(data.verificationId)
-      setPendingNewEmail(newEmail)
-      setVerificationStep('code')
+      setPendingNewEmail(newEmailInput)
       setShowVerificationModal(true)
       
       const event = new CustomEvent('showToast', { 
@@ -376,7 +394,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     }
   }
 
-  const verifyAndUpdateEmail = async () => {
+  const verifyAndUpdateNewsletterEmail = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
       setEmailError('Please enter the 6-digit verification code')
       return
@@ -386,7 +404,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     setEmailError('')
 
     try {
-      const res = await fetch('/api/auth/update-email', {
+      const res = await fetch('/api/newsletter/update-email', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -399,19 +417,20 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to update email')
+        throw new Error(data.error || 'Failed to update newsletter email')
       }
 
-      setUser({ ...user, email: pendingNewEmail })
-      setNewEmail(pendingNewEmail)
+      // Update only the newsletter email, not the user account email
+      setNewsletterEmail(pendingNewEmail)
+      setOriginalNewsletterEmail(pendingNewEmail)
+      setNewEmailInput(pendingNewEmail)
       setShowVerificationModal(false)
-      setVerificationStep('email')
       setVerificationCode('')
       setPendingNewEmail('')
       setEmailError('')
       
       const event = new CustomEvent('showToast', { 
-        detail: { message: 'Email updated successfully!', type: 'success' }
+        detail: { message: 'Newsletter delivery email updated successfully!', type: 'success' }
       })
       window.dispatchEvent(event)
       
@@ -635,8 +654,8 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="success-icon">✅</div>
           <h3>Successfully Subscribed!</h3>
-          <p>You'll now receive our weekly newsletter at:</p>
-          <p className="email-highlight">{user?.email}</p>
+          <p>Newsletters will be sent to:</p>
+          <p className="email-highlight">{newsletterEmail || user?.email}</p>
           <button onClick={() => setShowSuccessModal(false)}>
             Got it, thanks →
           </button>
@@ -666,7 +685,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           .success-icon { font-size: 48px; margin-bottom: 16px; }
           .modal-content h3 { margin: 0 0 12px; color: #0f172a; }
           .modal-content p { color: #64748b; margin: 0 0 8px; }
-          .email-highlight { font-family: monospace; font-weight: bold; color: #06b6d4; margin-bottom: 16px; }
+          .email-highlight { font-family: monospace; font-weight: bold; color: #06b6d4; margin-bottom: 16px; word-break: break-all; }
           .modal-content button { width: 100%; padding: 12px; background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; margin-top: 16px; }
           :global(.dark) .modal-content { background: #1e293b; }
           :global(.dark) .modal-content h3 { color: white; }
@@ -689,7 +708,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           </div>
           <div className="manage-header-info">
             <h3>Newsletter Active</h3>
-            <p>{user.email}</p>
+            <p>Account: {accountEmail}</p>
           </div>
           <div className="manage-badge">
             <span className="badge-active">✓ Subscribed</span>
@@ -779,7 +798,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
           )}
         </div>
 
-        {/* Email Change Card */}
+        {/* Newsletter Email Card - DOES NOT affect account email */}
         <div className="manage-card email-card">
           <div className="card-header">
             <div className="card-title">
@@ -787,33 +806,42 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                 <polyline points="22,6 12,13 2,6" />
               </svg>
-              <h4>Email Address</h4>
+              <h4>Newsletter Delivery Email</h4>
             </div>
           </div>
           
           <div className="email-section">
             <div className="current-email">
-              <label>Current email</label>
+              <label>Current delivery email</label>
               <div className="email-display">
-                <span className="email-value">{user.email}</span>
+                <span className="email-value">{newsletterEmail}</span>
               </div>
+            </div>
+            
+            <div className="account-email-note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span>Your account email (<strong>{accountEmail}</strong>) remains unchanged. This only changes where you receive newsletter deliveries.</span>
             </div>
             
             {!showVerificationModal ? (
               <div className="email-change-form">
-                <label>New email address</label>
+                <label>New delivery email address</label>
                 <div className="email-input-group">
                   <input 
                     type="email" 
-                    value={newEmail} 
-                    onChange={(e) => setNewEmail(e.target.value)} 
-                    placeholder="Enter new email address"
+                    value={newEmailInput} 
+                    onChange={(e) => setNewEmailInput(e.target.value)} 
+                    placeholder="Enter new email for newsletter delivery"
                     className="email-input"
                     disabled={sendingCode}
                   />
                   <button 
                     onClick={sendVerificationCode} 
-                    disabled={sendingCode || !newEmail || newEmail === user.email}
+                    disabled={sendingCode || !newEmailInput || newEmailInput === newsletterEmail}
                     className="update-email-btn"
                   >
                     {sendingCode ? (
@@ -831,7 +859,6 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
                   <button 
                     onClick={() => {
                       setShowVerificationModal(false)
-                      setVerificationStep('email')
                       setVerificationCode('')
                       setEmailError('')
                     }}
@@ -858,7 +885,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
                     autoFocus
                   />
                   <button 
-                    onClick={verifyAndUpdateEmail} 
+                    onClick={verifyAndUpdateNewsletterEmail} 
                     disabled={emailLoading || verificationCode.length !== 6}
                     className="verify-btn"
                   >
@@ -1186,9 +1213,32 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             font-family: monospace;
             font-size: 0.875rem;
             color: #111827;
+            word-break: break-all;
           }
           :global(.dark) .email-value {
             color: white;
+          }
+          
+          .account-email-note {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.75rem;
+            background: #eff6ff;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #1e40af;
+          }
+          :global(.dark) .account-email-note {
+            background: rgba(6,182,212,0.1);
+            color: #06b6d4;
+          }
+          .account-email-note svg {
+            flex-shrink: 0;
+            color: #06b6d4;
+          }
+          .account-email-note strong {
+            font-weight: 600;
           }
           
           .email-change-form label {
