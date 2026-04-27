@@ -1,3 +1,4 @@
+// src/components/Editor/index.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -17,11 +18,6 @@ import Placeholder from '@tiptap/extension-placeholder';
 import { X } from 'lucide-react';
 import Toolbar from './Toolbar';
 import { ImageExtension } from './extensions/ImageExtension';
-import { GalleryExtension, GalleryItem } from './extensions/GalleryExtension';
-import { VideoExtension } from './extensions/VideoExtension';
-import { EmbedExtension } from './extensions/EmbedExtension';
-import { AudioExtension } from './extensions/AudioExtension';
-import { PDFExtension } from './extensions/PDFExtension';
 import MediaControls from './MediaControls';
 
 // Custom Font Extension
@@ -192,6 +188,7 @@ const RightBlockPanel = ({ data, onUpdate, onClose }) => {
   );
 };
 
+// Main Editor Component
 const Editor = ({ 
   content = '', 
   onChange, 
@@ -218,9 +215,12 @@ const Editor = ({
   const isInternalUpdate = useRef(false);
   const timeoutRef = useRef(null);
   const initialLoadRef = useRef(true);
+  const rafRef = useRef(null);
 
   const calculateStats = useCallback((html) => {
-    const text = html?.replace(/<[^>]*>/g, '') || '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html || '';
+    const text = tempDiv.textContent || tempDiv.innerText || '';
     const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
     const chars = text.replace(/\s/g, '').length;
     const minutes = Math.max(1, Math.ceil(words / 200));
@@ -249,16 +249,6 @@ const Editor = ({
     setSeoScore(Math.min(score, 100));
   }, []);
 
-  const handleMediaEdit = useCallback((type, attrs) => {
-    setSelectedMedia({ type, attrs });
-    setShowMediaControls(true);
-  }, []);
-
-  const handleMediaControlsClose = useCallback(() => {
-    setShowMediaControls(false);
-    setSelectedMedia(null);
-  }, []);
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ 
@@ -277,7 +267,10 @@ const Editor = ({
       Highlight.configure({ multicolor: true }),
       TextStyle,
       Color,
-      Table.configure({ resizable: true }),
+      Table.configure({ 
+        resizable: true,
+        HTMLAttributes: { class: 'min-w-full border-collapse border border-gray-300' }
+      }),
       TableRow,
       TableCell,
       TableHeader,
@@ -286,95 +279,87 @@ const Editor = ({
       Placeholder.configure({
         placeholder: 'Start writing your post here...',
         emptyEditorClass: 'is-editor-empty',
+        showOnlyWhenEditable: true,
       }),
       ImageExtension,
-      GalleryExtension,
-      GalleryItem,
-      VideoExtension,
-      EmbedExtension,
-      AudioExtension,
-      PDFExtension,
     ],
     content: content || '<p></p>',
+    editable: true,
     editorProps: {
       attributes: {
         class: 'prose prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[500px] px-8 py-6',
       },
+      handleDOMEvents: {
+        drop: (view, event) => {
+          const hasFiles = event.dataTransfer?.files?.length;
+          if (hasFiles) {
+            event.preventDefault();
+          }
+          return false;
+        },
+      },
     },
     onUpdate: ({ editor }) => {
       isInternalUpdate.current = true;
-      const html = editor.getHTML();
       
-      if (onChange) onChange(html);
-      calculateStats(html);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       
-      setIsSaving(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setIsSaving(false);
-        setLastSaved(new Date());
-      }, 500);
+      rafRef.current = requestAnimationFrame(() => {
+        const html = editor.getHTML();
+        if (onChange) onChange(html);
+        calculateStats(html);
+        
+        setIsSaving(true);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+          setIsSaving(false);
+          setLastSaved(new Date());
+        }, 500);
+      });
       
       setTimeout(() => { isInternalUpdate.current = false; }, 100);
     },
   });
 
   const handleImageInsert = useCallback((data) => {
-    editor?.chain().focus().setImage({
-      src: data.src,
-      alt: data.alt || '',
-      alignment: data.alignment || 'center',
-      width: data.width || '100%',
-    }).run();
-  }, [editor]);
-
-  const handleVideoInsert = useCallback((data) => {
-    editor?.chain().focus().setVideo({
-      src: data.src,
-      alt: data.alt || '',
-      alignment: data.alignment || 'center',
-      width: data.width || '100%',
-    }).run();
-  }, [editor]);
-
-  const handleEmbedInsert = useCallback((data) => {
-    editor?.chain().focus().setEmbed({
-      html: data.html,
-      src: data.src,
-      alignment: data.alignment || 'center',
-      width: data.width || '100%',
-    }).run();
-  }, [editor]);
-
-  const handleAudioInsert = useCallback((data) => {
-    if (data.html) editor?.chain().focus().insertContent(data.html).run();
-  }, [editor]);
-
-  const handlePDFInsert = useCallback((data) => {
-    if (data.html) editor?.chain().focus().insertContent(data.html).run();
-  }, [editor]);
-
-  const handleGalleryInsert = useCallback((data) => {
-    editor?.chain().focus().insertGallery(data.media || data.images).run();
+    if (!editor) return;
+    
+    editor.chain()
+      .focus()
+      .setImage({
+        src: data.src,
+        alt: data.alt || '',
+        title: data.title || '',
+        width: data.width || '100%',
+        alignment: data.alignment || 'center',
+        caption: data.caption || '',
+        link: data.link || '',
+      })
+      .run();
   }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
+    
     if (initialLoadRef.current) {
       initialLoadRef.current = false;
       calculateStats(content);
       return;
     }
+    
     if (!isInternalUpdate.current) {
-      const cur = editor.getHTML();
-      if (content !== cur && content) {
+      const currentContent = editor.getHTML();
+      if (content !== currentContent && content) {
         editor.commands.setContent(content);
       }
     }
   }, [content, editor, calculateStats]);
 
-  useEffect(() => () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   if (!editor) {
@@ -394,11 +379,6 @@ const Editor = ({
         onPublish={onPublish}
         onPreview={onPreview}
         onImageInsert={handleImageInsert}
-        onGalleryInsert={handleGalleryInsert}
-        onVideoInsert={handleVideoInsert}
-        onEmbedInsert={handleEmbedInsert}
-        onAudioInsert={handleAudioInsert}
-        onPDFInsert={handlePDFInsert}
         wordCount={wordCount}
         readingTime={readingTime}
         seoScore={seoScore}
@@ -410,7 +390,6 @@ const Editor = ({
       />
       
       <div className="flex relative">
-        {/* Main Editor Area */}
         <div 
           className={`editor-content-area transition-all duration-300 ${showRightBlock ? 'w-[calc(100%-320px)]' : 'w-full'}`}
           ref={setEditorContainerRef}
@@ -418,7 +397,6 @@ const Editor = ({
           <EditorContent editor={editor} />
         </div>
         
-        {/* Right Block Panel */}
         {showRightBlock && (
           <RightBlockPanel 
             data={rightBlockData}
@@ -428,18 +406,6 @@ const Editor = ({
         )}
       </div>
       
-      {/* Media Controls */}
-      {showMediaControls && selectedMedia && (
-        <MediaControls
-          editor={editor}
-          selectedMedia={selectedMedia}
-          onClose={handleMediaControlsClose}
-          onEdit={handleMediaEdit}
-          mode="floating"
-        />
-      )}
-      
-      {/* Footer Stats */}
       <div className="flex items-center justify-between px-6 py-2 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 text-xs text-gray-500">
         <div className="flex items-center gap-4 flex-wrap">
           <span>{wordCount.toLocaleString()} words</span>
@@ -455,10 +421,12 @@ const Editor = ({
         </div>
       </div>
 
+      {/* CRITICAL CSS TO FIX IMAGE PLACEMENT */}
       <style jsx global>{`
         .editor-wrapper {
           position: relative;
           isolation: isolate;
+          overflow: visible !important;
         }
         
         .editor-content-area {
@@ -472,41 +440,97 @@ const Editor = ({
           min-height: 500px;
         }
         
-        .ProseMirror p {
-          margin-bottom: 1em;
+        /* Clearfix - THIS IS KEY FOR FLOATING IMAGES */
+        .ProseMirror::after {
+          content: '';
+          display: table;
+          clear: both;
         }
         
+        /* Ensure paragraphs clear floating images */
+        .ProseMirror p {
+          margin-bottom: 1em;
+          clear: none;
+        }
+        
+        /* Force clear after floating images */
+        .ProseMirror p:last-of-type {
+          clear: both;
+        }
+        
+        /* Image wrapper styles - CRITICAL */
+        .image-wrapper {
+          display: block;
+          margin: 1rem 0;
+          max-width: 100%;
+        }
+        
+        /* Left aligned images */
+        .image-wrapper[style*="float: left"] {
+          margin: 0.5rem 1.5rem 0.5rem 0;
+          clear: none;
+        }
+        
+        /* Right aligned images */
+        .image-wrapper[style*="float: right"] {
+          margin: 0.5rem 0 0.5rem 1.5rem;
+          clear: none;
+        }
+        
+        /* Center aligned images */
+        .image-wrapper[style*="margin-left: auto"] {
+          margin: 1.5rem auto;
+          clear: both;
+        }
+        
+        /* Prevent text from wrapping too tightly around images */
+        .ProseMirror p:has(+ .image-wrapper[style*="float"]),
+        .ProseMirror .image-wrapper[style*="float"] + p {
+          clear: none;
+        }
+        
+        /* Image styling */
+        .image-wrapper img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 0.5rem;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* Caption styling */
+        .image-wrapper .caption-text {
+          margin-top: 0.5rem;
+          font-size: 0.875rem;
+          color: #6b7280;
+          text-align: center;
+          font-style: italic;
+        }
+        
+        /* Responsive images */
+        @media (max-width: 768px) {
+          .image-wrapper[style*="float: left"],
+          .image-wrapper[style*="float: right"] {
+            float: none !important;
+            margin: 1rem auto !important;
+            text-align: center;
+          }
+        }
+        
+        /* Loading animation */
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        
+        /* Dropdown z-index */
         [class*="dropdown"],
         [class*="popup"],
         [class*="modal"],
-        [class*="picker"],
-        .tippy-box,
-        [data-tippy-root] {
+        .tippy-box {
           z-index: 9999 !important;
-        }
-        
-        .toolbar-dropdown {
-          z-index: 10000 !important;
-        }
-        
-        .font-size-picker {
-          max-height: 300px;
-          overflow-y: auto;
-        }
-        
-        .color-picker-popup {
-          z-index: 10001 !important;
-        }
-        
-        .media-controls-wrapper {
-          z-index: 100 !important;
-        }
-        
-        .ProseMirror,
-        .editor-content,
-        .tiptap {
-          overflow: visible !important;
-          contain: layout style;
         }
       `}</style>
     </div>
