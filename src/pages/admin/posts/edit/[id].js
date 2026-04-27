@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// pages/admin/posts/edit/[id].js
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
@@ -9,7 +10,7 @@ import {
   AlertCircle, Clock, TrendingUp, LayoutDashboard, Edit3,
   X, Image as ImageIcon, LinkIcon, 
   RefreshCw, Copy, ChevronDown,
-  ChevronUp, Settings, Loader2, FolderOpen
+  ChevronUp, Settings, Loader2, FolderOpen, Heart, Share2, Bookmark, User
 } from 'lucide-react';
 
 import { supabase } from '../../../../lib/supabase';
@@ -37,11 +38,12 @@ const createUniqueSlug = async (title, currentId = null) => {
   
   try {
     let exists = true;
-    while (exists) {
+    while (exists && counter < 20) {
       const { data, error } = await supabase
         .from('posts')
         .select('id')
         .eq('slug', uniqueSlug)
+        .limit(1)
         .maybeSingle();
       
       if (error || !data) {
@@ -63,6 +65,20 @@ const createUniqueSlug = async (title, currentId = null) => {
 };
 
 // ============================================================
+// OPTIMIZE CONTENT
+// ============================================================
+const optimizeContent = (html) => {
+  if (!html) return '';
+  let optimized = html
+    .replace(/\s+/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+  optimized = optimized.replace(/<p>\s*<\/p>/g, '');
+  optimized = optimized.replace(/data-[^=]+="[^"]*"/g, '');
+  return optimized;
+};
+
+// ============================================================
 // CATEGORIES
 // ============================================================
 const categoryOptions = [
@@ -74,6 +90,201 @@ const categoryOptions = [
   'wealth',
   'world'
 ];
+
+// ============================================================
+// ENHANCED PREVIEW MODAL - EXACT POST REPRESENTATION
+// ============================================================
+const PreviewModal = ({ isOpen, onClose, title, content, featuredImage, category, tags, readingTime, publishedDate }) => {
+  const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  
+  if (!isOpen) return null;
+  
+  const formatDate = (date) => {
+    return new Date(date || Date.now()).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+  
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Check out this article: ${title}`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success('Link copied to clipboard!');
+    }
+  };
+  
+  return (
+    <div className="fixed inset-0 z-[2000] bg-black/90 flex items-center justify-center" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl w-[95vw] max-w-[1200px] h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <Eye className="w-5 h-5 text-purple-600" />
+            <h3 className="font-semibold text-gray-900 dark:text-white">Post Preview</h3>
+            <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs rounded-full">
+              How readers will see it
+            </span>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-auto">
+          <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Category Tag */}
+            {category && (
+              <div className="mb-4">
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-semibold rounded-full">
+                  <FolderOpen className="w-3 h-3" />
+                  {category.charAt(0).toUpperCase() + category.slice(1)}
+                </span>
+              </div>
+            )}
+            
+            {/* Title */}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+              {title || 'Untitled Post'}
+            </h1>
+            
+            {/* Meta Info */}
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-1.5">
+                <User className="w-4 h-4" />
+                <span>Admin</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(publishedDate)}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                <span>{readingTime || 5} min read</span>
+              </div>
+            </div>
+            
+            {/* Featured Image */}
+            {featuredImage && (
+              <div className="mb-8 rounded-xl overflow-hidden shadow-lg">
+                <img 
+                  src={featuredImage} 
+                  alt={title || 'Featured image'} 
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            )}
+            
+            {/* Tags */}
+            {tags && tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {tags.map((tag, index) => (
+                  <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-xs rounded-lg">
+                    <LinkIcon className="w-3 h-3" />
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            
+            {/* Main Content */}
+            <div 
+              className="prose prose-lg prose-purple max-w-none
+                         prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-white
+                         prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl
+                         prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed
+                         prose-a:text-purple-600 dark:prose-a:text-purple-400 prose-a:no-underline hover:prose-a:underline
+                         prose-strong:text-gray-900 dark:prose-strong:text-white prose-strong:font-semibold
+                         prose-img:rounded-lg prose-img:shadow-md prose-img:mx-auto
+                         prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-sm
+                         prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-pre:rounded-xl
+                         prose-blockquote:border-l-4 prose-blockquote:border-purple-500 prose-blockquote:pl-4 prose-blockquote:italic
+                         prose-ul:list-disc prose-ul:pl-6
+                         prose-ol:list-decimal prose-ol:pl-6
+                         prose-li:text-gray-700 dark:prose-li:text-gray-300
+                         prose-table:border-collapse prose-table:w-full
+                         prose-th:border prose-th:border-gray-300 dark:prose-th:border-gray-700 prose-th:p-2 prose-th:bg-gray-100 dark:prose-th:bg-gray-800
+                         prose-td:border prose-td:border-gray-300 dark:prose-td:border-gray-700 prose-td:p-2
+                         [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg
+                         [&_iframe]:w-full [&_iframe]:aspect-video [&_iframe]:rounded-lg [&_iframe]:shadow-md
+                         [&_video]:w-full [&_video]:rounded-lg
+                         [&_.image-left]:float-left [&_.image-left]:mr-6 [&_.image-left]:mb-4
+                         [&_.image-right]:float-right [&_.image-right]:ml-6 [&_.image-right]:mb-4
+                         [&_.image-center]:mx-auto [&_.image-center]:block"
+              dangerouslySetInnerHTML={{ 
+                __html: content || '<p class="text-gray-400 text-center py-12">No content yet...</p>' 
+              }} 
+            />
+            
+            {/* Social Interaction Bar */}
+            <div className="mt-12 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <button 
+                    onClick={() => setIsLiked(!isLiked)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Heart className={`w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600 dark:text-gray-400'}`} />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {isLiked ? 'Liked' : 'Like'}
+                    </span>
+                  </button>
+                  
+                  <button 
+                    onClick={handleShare}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Share</span>
+                  </button>
+                  
+                  <button 
+                    onClick={() => setIsBookmarked(!isBookmarked)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-purple-500 text-purple-500' : 'text-gray-600 dark:text-gray-400'}`} />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {isBookmarked ? 'Saved' : 'Save'}
+                    </span>
+                  </button>
+                </div>
+                
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {readingTime || 5} min read
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+        
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              <span className="font-medium">Preview Mode</span> - This is exactly how your post will appear when published
+            </div>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-semibold
+                       hover:scale-105 active:scale-95 transition-all duration-200 shadow-lg"
+            >
+              Close Preview
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ============================================================
 // EDITOR SKELETON
@@ -105,38 +316,6 @@ const ImageModal = dynamic(
   }),
   { ssr: false }
 );
-
-// ============================================================
-// PREVIEW MODAL
-// ============================================================
-const PreviewModal = ({ isOpen, onClose, title, content, featuredImage }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[2000] bg-black/90 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 rounded-2xl w-[95vw] max-w-[1200px] h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-          <h3 className="font-semibold text-gray-900 dark:text-white">Post Preview</h3>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-3xl mx-auto">
-            <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{title || 'Untitled'}</h1>
-            {featuredImage && (
-              <img src={featuredImage} alt="Featured" className="w-full rounded-lg mb-6" />
-            )}
-            <div 
-              className="prose prose-gray dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: content || '<p class="text-gray-500">No content yet...</p>' }} 
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // ============================================================
 // SCHEDULE MODAL
@@ -189,7 +368,7 @@ const ScheduleModal = ({ isOpen, onClose, onSchedule, currentDate }) => {
 };
 
 // ============================================================
-// MAIN COMPONENT - NO AUTH
+// MAIN COMPONENT
 // ============================================================
 export default function EditPost() {
   const router = useRouter();
@@ -223,6 +402,10 @@ export default function EditPost() {
   const [showAdvancedSEO, setShowAdvancedSEO] = useState(false);
   const [errors, setErrors] = useState({});
   const [stats, setStats] = useState({ wordCount: 0, readingTime: 0, seoScore: 0 });
+  const [saveProgress, setSaveProgress] = useState(0);
+
+  const saveTimeoutRef = useRef(null);
+  const contentSizeRef = useRef(0);
 
   // ============================================================
   // FETCH POST DATA
@@ -303,6 +486,7 @@ export default function EditPost() {
     
     setStats({ wordCount, readingTime, seoScore });
     setHasUnsavedChanges(true);
+    contentSizeRef.current = content.length;
   }, [content, calculateSEOScore]);
 
   // ============================================================
@@ -338,16 +522,22 @@ export default function EditPost() {
     if (!postId) return false;
     
     setIsSaving(true);
+    setSaveProgress(10);
+    
     try {
+      setSaveProgress(30);
+      const optimizedContent = optimizeContent(content);
+      setSaveProgress(50);
+      
       let finalSlug = slug;
       if (status === 'published' && !finalSlug) {
         finalSlug = await createUniqueSlug(title, postId);
       }
       
       const postData = {
-        title,
+        title: title || 'Untitled',
         excerpt: excerpt || null,
-        content,
+        content: optimizedContent,
         featured_image: featuredImage || null,
         slug: finalSlug || slug,
         category: category || null,
@@ -360,6 +550,8 @@ export default function EditPost() {
         ...additionalData
       };
       
+      setSaveProgress(70);
+      
       const { error } = await supabase
         .from('posts')
         .update(postData)
@@ -367,11 +559,19 @@ export default function EditPost() {
       
       if (error) throw error;
       
+      setSaveProgress(100);
       setHasUnsavedChanges(false);
+      
+      if (slug !== finalSlug && finalSlug) {
+        setSlug(finalSlug);
+      }
+      
+      setTimeout(() => setSaveProgress(0), 1000);
       return true;
     } catch (error) {
       console.error('Update error:', error);
       toast.error(`Failed to update post: ${error.message}`);
+      setSaveProgress(0);
       return false;
     } finally {
       setIsSaving(false);
@@ -387,6 +587,23 @@ export default function EditPost() {
       toast.success('✨ Draft saved successfully!');
     }
   };
+
+  // ============================================================
+  // AUTO-SAVE DRAFT
+  // ============================================================
+  useEffect(() => {
+    if (hasUnsavedChanges && postId && (title || (content && content !== '<p></p>'))) {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        console.log('Auto-saving draft...');
+        updatePost('draft');
+      }, 30000);
+    }
+    
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [title, content, hasUnsavedChanges, postId, updatePost]);
 
   // ============================================================
   // PUBLISH POST
@@ -495,6 +712,16 @@ export default function EditPost() {
       
       <ToastContainer position="top-right" autoClose={3000} />
       
+      {/* Save Progress Bar */}
+      {saveProgress > 0 && (
+        <div className="fixed top-0 left-0 right-0 h-1 bg-purple-100 z-[100]">
+          <div 
+            className="h-full bg-purple-600 transition-all duration-300"
+            style={{ width: `${saveProgress}%` }}
+          />
+        </div>
+      )}
+      
       {/* Top Navigation Bar */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -524,6 +751,14 @@ export default function EditPost() {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Content Size Warning */}
+              {contentSizeRef.current > 500000 && (
+                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-yellow-50">
+                  <AlertCircle className="w-3.5 h-3.5 text-yellow-600" />
+                  <span className="text-xs text-yellow-600">Large content ({Math.round(contentSizeRef.current / 1024)}KB)</span>
+                </div>
+              )}
+              
               {/* Stats */}
               <div className="hidden lg:flex items-center gap-4 px-3 py-1.5 rounded-xl bg-gray-50">
                 <div className="flex items-center gap-1.5">
@@ -564,7 +799,7 @@ export default function EditPost() {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 text-sm"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>Save Draft</span>
+                <span>{isSaving ? 'Saving...' : 'Save Draft'}</span>
               </button>
               
               <button 
@@ -623,6 +858,7 @@ export default function EditPost() {
           />
           <div className="mt-2 text-right text-xs text-gray-400">
             {title.length}/120 characters
+            {title.length > 60 && title.length <= 70 && <span className="ml-2 text-amber-600">⚠️ Title is long</span>}
           </div>
         </div>
 
@@ -644,6 +880,7 @@ export default function EditPost() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-gray-400">Choose a category for better organization</p>
         </div>
 
         {/* Excerpt */}
@@ -661,24 +898,46 @@ export default function EditPost() {
 
         {/* Featured Image */}
         <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Featured Image
+          </label>
           {featuredImage ? (
             <div className="relative inline-block group">
-              <img src={featuredImage} alt="Featured" className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm" />
+              <img 
+                src={featuredImage} 
+                alt="Featured" 
+                className="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm" 
+              />
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setShowImageModal(true)} className="p-1 bg-white rounded-lg shadow-md hover:bg-gray-100">
+                <button 
+                  onClick={() => setShowImageModal(true)} 
+                  className="p-1 bg-white rounded-lg shadow-md hover:bg-gray-100"
+                  title="Change image"
+                >
                   <ImageIcon className="w-4 h-4 text-gray-600" />
                 </button>
-                <button onClick={() => setFeaturedImage('')} className="p-1 bg-white rounded-lg shadow-md hover:bg-red-50">
+                <button 
+                  onClick={() => {
+                    setFeaturedImage('');
+                    toast.info('Featured image removed');
+                  }} 
+                  className="p-1 bg-white rounded-lg shadow-md hover:bg-red-50"
+                  title="Remove image"
+                >
                   <X className="w-4 h-4 text-red-500" />
                 </button>
               </div>
             </div>
           ) : (
-            <button onClick={() => setShowImageModal(true)} className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200">
+            <button 
+              onClick={() => setShowImageModal(true)} 
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors"
+            >
               <ImageIcon className="w-4 h-4" />
               Choose Featured Image
             </button>
           )}
+          <p className="mt-2 text-xs text-gray-400">Click to open media library. You can crop, resize, and add SEO data.</p>
         </div>
         
         {/* Editor Container */}
@@ -819,7 +1078,11 @@ export default function EditPost() {
         onClose={() => setIsPreviewModalOpen(false)} 
         title={title} 
         content={content} 
-        featuredImage={featuredImage} 
+        featuredImage={featuredImage}
+        category={category}
+        tags={tags}
+        readingTime={stats.readingTime}
+        publishedDate={scheduledDate || new Date().toISOString()}
       />
       
       <ScheduleModal 
