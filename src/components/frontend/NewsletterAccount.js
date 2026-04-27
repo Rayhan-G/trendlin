@@ -168,6 +168,9 @@ export default function NewsletterAccount({ user, onSubscribeChange }) {
           padding: 1.5rem;
           color: white;
         }
+        :global(.dark) .newsletter-account {
+          background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        }
         .newsletter-header {
           display: flex;
           align-items: center;
@@ -182,11 +185,13 @@ export default function NewsletterAccount({ user, onSubscribeChange }) {
         .newsletter-info h3 {
           margin: 0;
           font-size: 1.1rem;
+          color: white;
         }
         .user-email {
           margin: 0;
           font-size: 0.75rem;
           opacity: 0.7;
+          color: rgba(255,255,255,0.7);
         }
         .subscribe-btn {
           padding: 0.5rem 1.25rem;
@@ -241,6 +246,7 @@ export default function NewsletterAccount({ user, onSubscribeChange }) {
           font-weight: 600;
           text-transform: uppercase;
           opacity: 0.7;
+          color: rgba(255,255,255,0.7);
         }
         .category-chips {
           display: flex;
@@ -256,6 +262,7 @@ export default function NewsletterAccount({ user, onSubscribeChange }) {
           border-radius: 40px;
           cursor: pointer;
           font-size: 0.75rem;
+          color: white;
         }
         .category-chip.active {
           background: rgba(6,182,212,0.3);
@@ -274,6 +281,10 @@ export default function NewsletterAccount({ user, onSubscribeChange }) {
           color: white;
           font-size: 0.8rem;
         }
+        select option {
+          background: #1e293b;
+          color: white;
+        }
         .volume-control {
           display: flex;
           align-items: center;
@@ -285,6 +296,7 @@ export default function NewsletterAccount({ user, onSubscribeChange }) {
         .volume-value {
           font-size: 0.8rem;
           min-width: 80px;
+          color: rgba(255,255,255,0.8);
         }
         input[type="range"] {
           height: 4px;

@@ -1,4 +1,4 @@
-// src/components/Editor/Toolbar.jsx - WITH MIXED CONTENT TEMPLATES
+// src/components/Editor/Toolbar.jsx - COMPLETE PROFESSIONAL VERSION
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
@@ -15,18 +15,20 @@ import {
   Lightbulb, AlertCircle, AlertTriangle, Star, Heart, Zap, CheckCircle, HelpCircle,
   Info, LayoutGrid, Edit2, Check, Loader2,
   PanelRight, PanelRightClose, SpellCheck,
-  Newspaper, BookOpen, LayoutTemplate, FileStack  // Added for templates
+  Newspaper, BookOpen, LayoutTemplate, FileStack, Briefcase, Users,
+  GraduationCap, Mail, MapPin, Award, Target, Shield, BarChart,
+  User, Eye as EyeIcon, Share2, Bookmark, Settings,
+  CalendarDays, Clock as ClockIcon, Quote as QuoteIcon
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
-import MediaControls from './MediaControls'
 
-// Dynamically import EmojiPicker to reduce initial bundle size
+// Dynamically import EmojiPicker
 const EmojiPicker = dynamic(() => import('emoji-picker-react').catch(() => () => <div className="p-4 text-center">Failed to load emoji picker</div>), { 
   ssr: false,
   loading: () => <div className="p-4 text-center"><Loader2 className="animate-spin mx-auto" /></div>
 })
 
-// Dynamically import media modals with error boundaries
+// Dynamically import media modals
 const ImageModal = dynamic(() => import('@/components/media/Modals/ImageModal').catch(() => () => <div className="p-4 text-red-500">Failed to load ImageModal</div>), { ssr: false })
 const VideoModal = dynamic(() => import('@/components/media/Modals/VideoModal').catch(() => () => <div className="p-4 text-red-500">Failed to load VideoModal</div>), { ssr: false })
 const AudioModal = dynamic(() => import('@/components/media/Modals/AudioModal').catch(() => () => <div className="p-4 text-red-500">Failed to load AudioModal</div>), { ssr: false })
@@ -42,216 +44,345 @@ const showToast = (message, type = 'info') => {
   window.dispatchEvent(toastEvent)
 }
 
-// ==================== TEMPLATE GENERATORS ====================
-const generateContentPageTemplate = () => {
-  const id = generateId()
-  return `
-    <div class="template-content-page" data-template-type="content" data-template-id="${id}">
-      <div class="page-content" style="max-width: 800px; margin: 2rem auto;">
-        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Content Title: Clear & Direct</h1>
-        <div class="meta" style="color: #6b7280; margin: 0.5rem 0 1.5rem; border-left: 4px solid #2563eb; padding-left: 1rem;">
-          📄 Updated: ${new Date().toLocaleDateString()} • 4 min read
+// ==================== PROFESSIONAL TEMPLATES ====================
+
+// Template 1: Standard Blog Post
+const getBlogPostTemplate = () => `
+<div class="template-blog-post" data-template-type="blog-post" data-id="${generateId()}">
+  <div class="max-w-3xl mx-auto px-4">
+    <div class="mb-8 text-center">
+      <div class="flex items-center justify-center gap-2 text-sm text-gray-500 mb-4">
+        <span class="flex items-center gap-1">📅 ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        <span>•</span>
+        <span class="flex items-center gap-1">⏱️ 5 min read</span>
+        <span>•</span>
+        <span class="flex items-center gap-1">👤 Author Name</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4 leading-tight">Your Blog Post Title Here</h1>
+      <p class="text-xl text-gray-600 max-w-2xl mx-auto">A compelling subtitle or summary that hooks readers and makes them want to continue reading your content.</p>
+    </div>
+    
+    <div class="mb-8">
+      <img src="https://picsum.photos/id/104/1200/600" alt="Blog header image" class="w-full rounded-2xl shadow-lg object-cover aspect-[2/1]" />
+      <p class="text-center text-sm text-gray-500 mt-2">Caption for your featured image</p>
+    </div>
+    
+    <div class="prose prose-lg max-w-none">
+      <p>Welcome to this blog post! This template provides a clean, readable structure perfect for personal blogs, news articles, and opinion pieces.</p>
+      
+      <h2>Why This Topic Matters</h2>
+      <p>In today's fast-paced digital world, staying informed about key trends is essential. This post explores the most important developments and what they mean for you.</p>
+      
+      <blockquote>
+        <p>"The only way to do great work is to love what you do. Passion drives excellence."</p>
+      </blockquote>
+      
+      <h2>Key Takeaways</h2>
+      <ul>
+        <li><strong>First major insight</strong> — Explanation of why this matters</li>
+        <li><strong>Second important point</strong> — How this applies to your situation</li>
+        <li><strong>Third actionable tip</strong> — What you can do right now</li>
+      </ul>
+      
+      <div class="bg-gray-50 p-6 rounded-xl my-8 border-l-4 border-purple-500">
+        <p class="font-semibold mb-2">💡 Pro Tip</p>
+        <p class="mb-0">Start small. Implement one change at a time and measure the results before moving to the next improvement.</p>
+      </div>
+      
+      <hr class="my-12" />
+      
+      <div class="flex items-center justify-between border-t border-b border-gray-200 py-4 my-8">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">JD</div>
+          <div>
+            <p class="font-semibold">Jane Doe</p>
+            <p class="text-sm text-gray-500">Content Creator & Digital Strategist</p>
+          </div>
         </div>
-        <div class="featured-media" style="margin: 1.5rem 0;">
-          <img src="https://picsum.photos/id/20/800/400" alt="content visual" style="width:100%; border-radius: 1rem;">
+        <div class="flex gap-2">
+          <span class="p-2 rounded-full hover:bg-gray-100 cursor-pointer">🐦</span>
+          <span class="p-2 rounded-full hover:bg-gray-100 cursor-pointer">💼</span>
+          <span class="p-2 rounded-full hover:bg-gray-100 cursor-pointer">📤</span>
         </div>
-        <div class="body-text" style="font-size: 1.1rem; margin: 2rem 0;">
-          <p>This is a standard content page. Use these for evergreen information, documentation, or any structured page that doesn't require timestamps or author bylines.</p>
-          <h2 style="font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 1rem;">Subheading example</h2>
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-          <ul style="margin: 1rem 0 1rem 2rem;">
-            <li>Clear hierarchy</li>
-            <li>No publication date required</li>
-            <li>Focus on utility</li>
-          </ul>
-          <div class="callout" style="background: #eef2ff; padding: 1.5rem; border-radius: 1rem; margin: 2rem 0;">
-            💡 <strong>Tip box</strong> — Great for summarizing key takeaways or extra resources.
+      </div>
+    </div>
+  </div>
+</div>
+`
+
+// Template 2: Long-Form Article
+const getArticleTemplate = () => `
+<div class="template-article" data-template-type="article" data-id="${generateId()}">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="mb-12">
+      <div class="flex items-center gap-2 text-sm text-purple-600 mb-4">
+        <span class="bg-purple-100 px-3 py-1 rounded-full">FEATURE ARTICLE</span>
+      </div>
+      <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">The Complete Guide to Modern Content Strategy</h1>
+      <p class="text-xl text-gray-600 mb-6 leading-relaxed">A comprehensive analysis of how leading organizations are transforming their content approach for the digital age.</p>
+      <div class="flex items-center justify-between border-b border-gray-200 pb-6">
+        <div class="flex items-center gap-4">
+          <div class="w-14 h-14 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-xl font-bold">MS</div>
+          <div>
+            <p class="font-semibold text-lg">Dr. Michael Stevens</p>
+            <div class="flex items-center gap-3 text-sm text-gray-500">
+              <span>📅 ${new Date().toLocaleDateString()}</span>
+              <span>📖 15 min read</span>
+              <span>🎓 PhD in Digital Media</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  `
-}
-
-const generateArticleTemplate = () => {
-  const id = generateId()
-  const date = new Date()
-  const author = "Dr. Sarah Chen"
-  
-  return `
-    <div class="template-article" data-template-type="article" data-template-id="${id}">
-      <article class="full-article" style="max-width: 900px; margin: 0 auto;">
-        <div class="article-header" style="text-align: center; margin-bottom: 2rem;">
-          <span class="category" style="background: #2563eb10; padding: 0.2rem 0.8rem; border-radius: 2rem; font-size: 0.8rem; display: inline-block;">📖 FEATURE ARTICLE</span>
-          <h1 style="font-size: 2.8rem; font-weight: 700; margin: 1rem 0;">The Future of Digital Publishing</h1>
-          <div class="byline" style="color: #4b5563; border-top: 1px solid #eaeaea; border-bottom: 1px solid #eaeaea; padding: 0.75rem 0; display: inline-block;">
-            By <strong>${author}</strong> — ${date.toLocaleDateString()} — 12 min read
-          </div>
-        </div>
-
-        <div class="hero-img" style="margin: 0 auto 2rem;">
-          <img src="https://picsum.photos/id/42/1200/600" alt="article hero" style="width:100%; border-radius: 1.5rem;">
-          <figcaption style="text-align: center; font-size:0.8rem; color:#6b7280; margin-top: 0.5rem;">Photo by Unsplash</figcaption>
-        </div>
-
-        <div class="article-body" style="font-size: 1.1rem; line-height: 1.7;">
-          <p class="lead" style="font-size:1.3rem; font-weight:400; border-left: 5px solid #2563eb; padding-left: 1.5rem; margin-bottom: 1.5rem;">
-            This is a dedicated article template. It emphasizes authorship, depth, and shareable structure for long-form content.
-          </p>
-          <p>Articles often include pull quotes, data visualizations, and references. They are less frequent than blog posts but carry more authority and depth.</p>
-          <blockquote style="font-style: italic; border-left: 3px solid #ccc; margin: 1.5rem 0; padding-left: 1.5rem; color:#2d3e50;">
-            “A great article doesn't just inform — it changes how you think.”
-          </blockquote>
-          <h2 style="font-size: 1.75rem; font-weight: 600; margin: 1.5rem 0 1rem;">Research methodology</h2>
-          <p>With proper subheadings, footnotes, and references. Articles shine when they are evergreen or deeply researched content that provides lasting value.</p>
-          <div class="author-bio" style="background:#f1f5f9; padding: 1rem; border-radius: 1rem; margin-top: 3rem;">
-            <strong>${author}</strong> — Writer & researcher focused on media evolution and digital publishing strategies.
-          </div>
-        </div>
-      </article>
+    
+    <div class="mb-10">
+      <img src="https://picsum.photos/id/26/1600/800" alt="Article hero" class="w-full rounded-2xl shadow-xl" />
+      <p class="text-center text-sm text-gray-500 mt-3">Research shows content marketing ROI continues to grow year over year</p>
     </div>
-  `
-}
-
-const generateBlogTemplate = () => {
-  const id = generateId()
-  const date = new Date()
-  const tags = ["#Life", "#Tech", "#Personal"]
-  
-  return `
-    <div class="template-blog" data-template-type="blog" data-template-id="${id}">
-      <div class="blog-single" style="max-width: 720px; margin: 2rem auto;">
-        <div class="post-meta" style="display: flex; gap: 1rem; color:#6c757d; font-size:0.85rem; margin-bottom: 1rem;">
-          <span>📅 ${date.toLocaleDateString()}</span>
-          <span>✍️ 3 min read</span>
-          <span>🏷️ ${tags.join(' • ')}</span>
+    
+    <div class="prose prose-xl max-w-none">
+      <p class="text-2xl text-gray-600 font-light leading-relaxed">Content strategy has evolved dramatically over the past decade. What worked in 2020 is already outdated. This comprehensive guide examines the latest research and provides actionable frameworks for modern content creators.</p>
+      
+      <div class="bg-gray-50 p-8 rounded-2xl my-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="text-purple-600">📊</span>
+          <h3 class="font-bold text-xl mb-0">Key Statistics at a Glance</h3>
         </div>
-        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">What I learned this week (blog style)</h1>
-
-        <div class="blog-content" style="margin: 2rem 0;">
-          <p>Blog posts are more conversational. They have dates, tags, and often a comment section. This template is optimized for frequent, timely updates.</p>
-          <p>✅ Keep paragraphs short.<br>✅ Add personal voice.<br>✅ Encourage discussion.</p>
-          <img src="https://picsum.photos/id/26/700/300" alt="blog image" style="width:100%; border-radius: 1rem; margin: 1.5rem 0;">
-          <p>Unlike articles, blog posts don't require deep research. They reflect the author's current thinking or news. Perfect for daily updates, personal journals, and quick insights.</p>
-          <p>The conversational tone makes blog posts more engaging for regular readers who want to stay updated with your latest thoughts and activities.</p>
-        </div>
-
-        <hr style="margin: 2rem 0; border-color: #eaeaea;">
-        <div class="blog-footer" style="text-align: center;">
-          <p><strong>Share this post:</strong> Twitter / LinkedIn / Facebook</p>
-          <p><em>Want more? Subscribe to the newsletter for weekly updates.</em></p>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="text-3xl font-bold text-purple-600">73%</div>
+            <div class="text-sm text-gray-600">of companies have a dedicated content strategy</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl font-bold text-purple-600">3.5x</div>
+            <div class="text-sm text-gray-600">more leads generated by consistent bloggers</div>
+          </div>
+          <div class="text-center">
+            <div class="text-3xl font-bold text-purple-600">94%</div>
+            <div class="text-sm text-gray-600">of marketers use content in their strategy</div>
+          </div>
         </div>
       </div>
-    </div>
-  `
-}
-
-const generateMixedHomepageTemplate = () => {
-  const id = generateId()
-  
-  return `
-    <div class="template-mixed-homepage" data-template-type="mixed" data-template-id="${id}">
-      <div class="homepage-mixed">
-        <!-- Hero -->
-        <div class="hero" style="text-align: center; padding: 3rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 1rem; margin-bottom: 2rem;">
-          <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Ideas. Insights. Stories.</h1>
-          <p style="font-size: 1.1rem; opacity: 0.9;">Content • Long‑form Articles • Daily Blog</p>
-        </div>
-
-        <!-- Featured Article Section -->
-        <div style="margin-bottom: 3rem;">
-          <div class="featured-article" style="background: #f8fafc; border-radius: 1.5rem; padding: 2rem; border-left: 4px solid #2563eb;">
-            <span class="badge" style="background:#2563eb; color:white; padding:0.2rem 0.6rem; border-radius: 1rem; font-size:0.75rem;">⭐ FEATURED ARTICLE</span>
-            <h2 style="margin: 0.75rem 0 0.5rem; font-size: 1.5rem;">The Attention Economy in 2025</h2>
-            <p style="color: #4b5563;">A deep investigative piece on how media cycles have changed human behavior and attention spans in the digital age.</p>
-            <a href="#" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 500;">Read full article →</a>
-          </div>
-        </div>
-
-        <!-- Standard Content Grid -->
-        <h2 style="margin: 2rem 0 1rem;">📘 Essential Guides (Content)</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-          <div class="card" style="background:white; padding:1.5rem; border-radius:1rem; border: 1px solid #eaeaea;">
-            <h3 style="margin-bottom: 0.5rem;">Getting Started</h3>
-            <p style="color: #6b7280;">Static content: setup, basics, FAQ, and beginner guides.</p>
-            <a href="#" style="color: #2563eb; text-decoration: none;">Learn more →</a>
-          </div>
-          <div class="card" style="background:white; padding:1.5rem; border-radius:1rem; border: 1px solid #eaeaea;">
-            <h3 style="margin-bottom: 0.5rem;">Reference Library</h3>
-            <p style="color: #6b7280;">Always up to date technical docs and API references.</p>
-            <a href="#" style="color: #2563eb; text-decoration: none;">Explore →</a>
-          </div>
-        </div>
-
-        <!-- Recent Blog Posts -->
-        <h2 style="margin: 2rem 0 1rem;">📝 Latest from the Blog</h2>
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-          <div class="blog-item" style="border-bottom:1px solid #e2e8f0; padding:1rem 0;">
-            <small style="color: #6b7280;">${new Date().toLocaleDateString()}</small>
-            <h3 style="margin:0.2rem 0"><a href="#" style="color: #1a1a1a; text-decoration: none;">5 productivity hacks this month</a></h3>
-            <p style="color: #6b7280;">Quick blog-style update with practical tips.</p>
-          </div>
-          <div class="blog-item" style="border-bottom:1px solid #e2e8f0; padding:1rem 0;">
-            <small style="color: #6b7280;">${new Date(Date.now() - 86400000).toLocaleDateString()}</small>
-            <h3 style="margin:0.2rem 0"><a href="#" style="color: #1a1a1a; text-decoration: none;">Why I switched to minimalist code</a></h3>
-            <p style="color: #6b7280;">Personal take on simplifying development workflow.</p>
-          </div>
-        </div>
-        <a href="#" style="display: inline-block; margin: 1rem 0; color: #2563eb; text-decoration: none;">View all blog posts →</a>
+      
+      <h2>The Evolution of Content Consumption</h2>
+      <p>User behavior has shifted dramatically. According to recent studies, the average attention span has decreased, but engagement with high-quality long-form content has actually increased. This paradox reveals that users are more selective, not less engaged.</p>
+      
+      <div class="bg-purple-50 p-6 rounded-xl border-l-4 border-purple-600 my-8">
+        <p class="font-semibold text-purple-800 mb-2">🎯 Key Finding</p>
+        <p class="mb-0">Content personalization increases engagement by 42% on average. The most successful campaigns used dynamic content tailored to user segments.</p>
+      </div>
+      
+      <h2>Practical Implementation Framework</h2>
+      <ol>
+        <li><strong>Audit existing content</strong> — Identify what's working and what needs improvement</li>
+        <li><strong>Define audience personas</strong> — Create detailed profiles of your ideal readers</li>
+        <li><strong>Establish KPIs</strong> — Measure what matters (engagement, conversions, retention)</li>
+        <li><strong>Create content pillars</strong> — Focus on 3-5 core themes that align with your brand</li>
+      </ol>
+      
+      <div class="border-t border-gray-200 pt-8 mt-12">
+        <h3 class="text-2xl font-bold mb-4">References</h3>
+        <ul class="text-sm text-gray-600">
+          <li>1. Content Marketing Institute. (2024). Annual B2B Content Marketing Report.</li>
+          <li>2. Journal of Digital Marketing. (2024). The ROI of Content Strategy.</li>
+        </ul>
       </div>
     </div>
-  `
-}
+  </div>
+</div>
+`
+
+// Template 3: Company/Brand Page
+const getCompanyPageTemplate = () => `
+<div class="template-company-page" data-template-type="company" data-id="${generateId()}">
+  <div class="max-w-6xl mx-auto px-4">
+    <div class="text-center mb-16">
+      <div class="inline-flex items-center gap-2 bg-purple-100 px-4 py-2 rounded-full mb-6">
+        <span class="text-purple-600">🏆</span>
+        <span class="text-sm text-purple-600 font-medium">Trusted by 10,000+ customers</span>
+      </div>
+      <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-6">Transforming Ideas<br />Into Digital Reality</h1>
+      <p class="text-xl text-gray-600 max-w-2xl mx-auto">We help businesses build exceptional digital experiences that drive growth and delight customers.</p>
+      <div class="flex items-center justify-center gap-4 mt-8">
+        <span class="px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold cursor-pointer">Get Started</span>
+        <span class="px-6 py-3 border border-gray-300 rounded-xl font-semibold cursor-pointer">Contact Sales</span>
+      </div>
+    </div>
+    
+    <div class="grid md:grid-cols-3 gap-8 mb-16">
+      <div class="text-center p-6">
+        <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl">🎯</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Mission-Driven</h3>
+        <p class="text-gray-600">Empowering businesses to reach their full potential through innovative technology solutions.</p>
+      </div>
+      <div class="text-center p-6">
+        <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl">🛡️</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Enterprise Security</h3>
+        <p class="text-gray-600">Bank-grade security protocols protecting your data and your customers' trust.</p>
+      </div>
+      <div class="text-center p-6">
+        <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <span class="text-2xl">👥</span>
+        </div>
+        <h3 class="text-xl font-bold mb-2">Global Community</h3>
+        <p class="text-gray-600">Join thousands of creators and developers building the future of the web.</p>
+      </div>
+    </div>
+    
+    <div class="bg-gray-50 rounded-3xl p-8 md:p-12 mb-16">
+      <div class="text-center mb-8">
+        <h2 class="text-3xl font-bold mb-4">Our Platform by the Numbers</h2>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div><div class="text-3xl font-bold text-purple-600">99.9%</div><div class="text-sm text-gray-600">Uptime SLA</div></div>
+        <div><div class="text-3xl font-bold text-purple-600">2.5M+</div><div class="text-sm text-gray-600">Active Users</div></div>
+        <div><div class="text-3xl font-bold text-purple-600">150+</div><div class="text-sm text-gray-600">Countries</div></div>
+        <div><div class="text-3xl font-bold text-purple-600">24/7</div><div class="text-sm text-gray-600">Support</div></div>
+      </div>
+    </div>
+    
+    <div class="bg-purple-600 text-white rounded-3xl p-8 md:p-12 text-center">
+      <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+      <p class="text-purple-100 mb-6">Join thousands of satisfied customers and transform your business today.</p>
+      <div class="flex flex-wrap items-center justify-center gap-4">
+        <span class="px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold cursor-pointer">Request Demo</span>
+        <span class="px-6 py-3 border border-white/30 rounded-xl font-semibold cursor-pointer">Contact Sales</span>
+      </div>
+    </div>
+  </div>
+</div>
+`
+
+// Template 4: Case Study
+const getCaseStudyTemplate = () => `
+<div class="template-case-study" data-template-type="case-study" data-id="${generateId()}">
+  <div class="max-w-4xl mx-auto px-4">
+    <div class="mb-8">
+      <div class="flex items-center gap-2 text-sm text-purple-600 mb-4">
+        <span>💼</span>
+        <span>CASE STUDY</span>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">How Company X Increased Revenue by 284% Using Our Platform</h1>
+      <p class="text-xl text-gray-600">A detailed analysis of transformation from struggling startup to market leader.</p>
+    </div>
+    
+    <div class="bg-gray-50 rounded-2xl p-6 mb-8">
+      <div class="grid md:grid-cols-4 gap-6 text-center">
+        <div><div class="text-2xl font-bold text-purple-600">284%</div><div class="text-sm text-gray-600">Revenue Growth</div></div>
+        <div><div class="text-2xl font-bold text-purple-600">3x</div><div class="text-sm text-gray-600">User Acquisition</div></div>
+        <div><div class="text-2xl font-bold text-purple-600">67%</div><div class="text-sm text-gray-600">Reduced Churn</div></div>
+        <div><div class="text-2xl font-bold text-purple-600">6 mo</div><div class="text-sm text-gray-600">Time to Results</div></div>
+      </div>
+    </div>
+    
+    <div class="prose prose-lg max-w-none">
+      <h2>The Challenge</h2>
+      <p>When Company X approached us in early 2024, they were facing significant headwinds: flat growth, high customer acquisition costs, and increasing competition in their space.</p>
+      
+      <h2>Our Solution</h2>
+      <p>We implemented a comprehensive digital transformation strategy focused on three key areas: customer experience optimization, automated marketing workflows, and data-driven decision making.</p>
+      
+      <div class="bg-purple-50 p-6 rounded-xl my-8">
+        <p class="font-semibold">🎯 The Results</p>
+        <p class="mb-0">Within six months, Company X saw dramatic improvements across all metrics, culminating in a successful Series B fundraising round.</p>
+      </div>
+      
+      <h2>Client Testimonial</h2>
+      <blockquote>
+        <p>"The team's expertise and dedication transformed our business. We couldn't have achieved these results without their partnership."</p>
+        <footer>— CEO, Company X</footer>
+      </blockquote>
+    </div>
+  </div>
+</div>
+`
+
+// Template 5: Newsletter Signup
+const getNewsletterTemplate = () => `
+<div class="template-newsletter" data-template-type="newsletter" data-id="${generateId()}">
+  <div class="max-w-4xl mx-auto px-4 text-center">
+    <div class="mb-8">
+      <div class="inline-flex items-center gap-2 bg-green-100 px-4 py-2 rounded-full mb-6">
+        <span class="text-green-600">📧</span>
+        <span class="text-sm text-green-600 font-medium">Weekly Newsletter</span>
+      </div>
+      <h1 class="text-5xl font-bold text-gray-900 mb-4">The Weekly Pause</h1>
+      <p class="text-xl text-gray-600 max-w-lg mx-auto">Curated insights, practical tips, and inspiring stories delivered to your inbox every Friday.</p>
+    </div>
+    
+    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 mb-12">
+      <div class="max-w-2xl mx-auto">
+        <div class="flex flex-col md:flex-row gap-4">
+          <input type="email" placeholder="Enter your email" class="flex-1 px-4 py-3 border rounded-xl bg-white" />
+          <button class="px-6 py-3 bg-purple-600 text-white rounded-xl font-semibold">Subscribe</button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">No spam, unsubscribe anytime.</p>
+      </div>
+    </div>
+    
+    <div class="grid md:grid-cols-3 gap-8 mb-12 text-left">
+      <div class="p-6 border rounded-2xl">
+        <div class="text-3xl mb-3">📈</div>
+        <h3 class="font-bold text-lg mb-2">Market Trends</h3>
+        <p class="text-gray-600 text-sm">Weekly analysis of industry shifts</p>
+      </div>
+      <div class="p-6 border rounded-2xl">
+        <div class="text-3xl mb-3">💡</div>
+        <h3 class="font-bold text-lg mb-2">Actionable Tips</h3>
+        <p class="text-gray-600 text-sm">Practical advice you can implement</p>
+      </div>
+      <div class="p-6 border rounded-2xl">
+        <div class="text-3xl mb-3">🌟</div>
+        <h3 class="font-bold text-lg mb-2">Member Spotlight</h3>
+        <p class="text-gray-600 text-sm">Success stories from our community</p>
+      </div>
+    </div>
+  </div>
+</div>
+`
 
 // ==================== TEMPLATES DROPDOWN ====================
 const TemplatesDropdown = ({ editor, onClose }) => {
-  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
   const [customTitle, setCustomTitle] = useState('')
   const [showCustomize, setShowCustomize] = useState(false)
 
   const templates = [
-    { 
-      id: 'content', 
-      name: 'Content Page', 
-      icon: FileText, 
-      description: 'Standard informational page',
-      color: 'blue',
-      template: generateContentPageTemplate
-    },
-    { 
-      id: 'article', 
-      name: 'Long‑form Article', 
-      icon: BookOpen, 
-      description: 'Deep dive / research piece',
-      color: 'purple',
-      template: generateArticleTemplate
-    },
-    { 
-      id: 'blog', 
-      name: 'Blog Post', 
-      icon: Newspaper, 
-      description: 'Timely / personal update',
-      color: 'green',
-      template: generateBlogTemplate
-    },
-    { 
-      id: 'mixed', 
-      name: 'Mixed Homepage', 
-      icon: LayoutTemplate, 
-      description: 'Content + Article + Blog',
-      color: 'orange',
-      template: generateMixedHomepageTemplate
-    }
+    { id: 'blog-post', name: 'Blog Post', category: 'blog', icon: Newspaper, description: 'Standard blog post with author bio', template: getBlogPostTemplate, tags: ['blog', 'article'] },
+    { id: 'long-article', name: 'Long-Form Article', category: 'article', icon: BookOpen, description: 'Research-backed article with statistics', template: getArticleTemplate, tags: ['article', 'research'] },
+    { id: 'company-page', name: 'Company Page', category: 'business', icon: Briefcase, description: 'Professional company overview', template: getCompanyPageTemplate, tags: ['business', 'brand'] },
+    { id: 'case-study', name: 'Case Study', category: 'business', icon: Award, description: 'Success story with metrics', template: getCaseStudyTemplate, tags: ['case-study', 'metrics'] },
+    { id: 'newsletter', name: 'Newsletter Signup', category: 'marketing', icon: Mail, description: 'Email collection landing page', template: getNewsletterTemplate, tags: ['email', 'marketing'] }
   ]
+
+  const categories = [
+    { id: 'all', label: 'All', icon: LayoutTemplate },
+    { id: 'blog', label: 'Blog', icon: Newspaper },
+    { id: 'article', label: 'Articles', icon: BookOpen },
+    { id: 'business', label: 'Business', icon: Briefcase },
+    { id: 'marketing', label: 'Marketing', icon: Target }
+  ]
+
+  const filteredTemplates = useMemo(() => {
+    return templates.filter(t => {
+      const matchesCategory = selectedCategory === 'all' || t.category === selectedCategory
+      const matchesSearch = searchTerm === '' || 
+        t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.description.toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesCategory && matchesSearch
+    })
+  }, [selectedCategory, searchTerm])
 
   const insertTemplate = (template) => {
     let html = template.template()
-    
-    // If custom title is provided, try to replace the first h1
     if (customTitle && showCustomize) {
-      html = html.replace(/<h1[^>]*>.*?<\/h1>/, `<h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">${escapeHtml(customTitle)}</h1>`)
+      html = html.replace(/<h1[^>]*>.*?<\/h1>/, `<h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">${escapeHtml(customTitle)}</h1>`)
     }
-    
     editor.chain().focus().insertContent(html).run()
     showToast(`${template.name} inserted`, 'success')
     onClose()
@@ -263,97 +394,68 @@ const TemplatesDropdown = ({ editor, onClose }) => {
     return div.innerHTML
   }
 
-  const getColorClasses = (color) => {
-    const colors = {
-      blue: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30',
-      purple: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30',
-      green: 'border-green-500 bg-green-50 dark:bg-green-950/30',
-      orange: 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
-    }
-    return colors[color] || colors.blue
-  }
-
-  const getIconColor = (color) => {
-    const colors = {
-      blue: 'text-blue-500',
-      purple: 'text-purple-500',
-      green: 'text-green-500',
-      orange: 'text-orange-500'
-    }
-    return colors[color] || colors.blue
-  }
-
   return (
-    <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border z-[100] w-[480px] max-h-[550px] overflow-hidden">
-      <div className="p-3 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
-            <LayoutTemplate size={16} className="text-purple-500" />
-            Insert Mixed Content Template
+    <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-[100] w-[560px] max-h-[70vh] overflow-hidden">
+      <div className="p-4 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <LayoutTemplate size={18} className="text-purple-600" />
+            <h3 className="font-semibold">Insert Template</h3>
           </div>
-          <button 
-            onClick={() => setShowCustomize(!showCustomize)}
-            className="text-xs text-purple-600 hover:text-purple-700"
-          >
-            {showCustomize ? 'Hide options' : 'Customize'}
+          <button onClick={() => setShowCustomize(!showCustomize)} className="text-xs text-purple-600 flex items-center gap-1">
+            <Settings size={12} />
+            {showCustomize ? 'Hide' : 'Customize'}
           </button>
         </div>
         
         {showCustomize && (
-          <div className="mt-3">
-            <label className="text-xs text-gray-500 block mb-1">Custom Title (optional)</label>
-            <input 
-              type="text"
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              placeholder="Enter custom title..."
-              className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700"
-              autoFocus
-            />
-          </div>
+          <input type="text" value={customTitle} onChange={(e) => setCustomTitle(e.target.value)} placeholder="Custom title (optional)" className="w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 mb-3" />
         )}
+        
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input type="text" placeholder="Search templates..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500" />
+        </div>
       </div>
-
-      <div className="max-h-[450px] overflow-y-auto p-3">
+      
+      <div className="p-3 border-b flex flex-wrap gap-2">
+        {categories.map(cat => {
+          const Icon = cat.icon
+          return (
+            <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 ${selectedCategory === cat.id ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+              <Icon size={14} /> {cat.label}
+            </button>
+          )
+        })}
+      </div>
+      
+      <div className="overflow-y-auto max-h-[400px] p-4">
         <div className="grid grid-cols-2 gap-3">
-          {templates.map((template) => {
+          {filteredTemplates.map((template) => {
             const Icon = template.icon
             return (
-              <button
-                key={template.id}
-                onClick={() => insertTemplate(template)}
-                onMouseEnter={() => setSelectedTemplate(template.id)}
-                onMouseLeave={() => setSelectedTemplate(null)}
-                className={`p-3 rounded-xl text-left transition-all border-2 relative overflow-hidden group
-                  ${selectedTemplate === template.id ? getColorClasses(template.color) : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
-              >
+              <button key={template.id} onClick={() => insertTemplate(template)} className="p-4 text-left border border-gray-200 rounded-xl hover:border-purple-300 hover:shadow-md transition-all group bg-white">
                 <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg ${getColorClasses(template.color)}`}>
-                    <Icon size={18} className={getIconColor(template.color)} />
+                  <div className="p-2 rounded-lg bg-purple-100 group-hover:bg-purple-200 transition">
+                    <Icon size={18} className="text-purple-600" />
                   </div>
-                  <div className="flex-1">
+                  <div>
                     <div className="font-semibold text-sm">{template.name}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{template.description}</div>
-                    <div className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
-                      <span>✨ One-click insert</span>
+                    <div className="flex gap-1 mt-2 text-[10px] text-gray-400">
+                      {template.tags.slice(0, 2).map(tag => <span key={tag} className="px-1.5 py-0.5 bg-gray-100 rounded">#{tag}</span>)}
                     </div>
                   </div>
                 </div>
-                
-                {/* Preview indicator */}
-                {selectedTemplate === template.id && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10 dark:to-white/5 pointer-events-none" />
-                )}
               </button>
             )
           })}
         </div>
-
-        <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
-          <div className="text-[10px] text-gray-400 text-center">
-            📋 Templates include: Pages, Articles, Blog posts, and Mixed layouts
-          </div>
-        </div>
+        {filteredTemplates.length === 0 && <div className="text-center py-8 text-gray-500">No templates found.</div>}
+      </div>
+      
+      <div className="p-3 border-t bg-gray-50 text-center">
+        <p className="text-xs text-gray-500">✨ Templates are fully editable after insertion</p>
       </div>
     </div>
   )
@@ -362,40 +464,23 @@ const TemplatesDropdown = ({ editor, onClose }) => {
 // ==================== FONT DROPDOWN ====================
 const FontDropdown = ({ currentFont, onApplyFont, onClose }) => {
   const [fontSearch, setFontSearch] = useState('')
-  const fontFamilies = [
-    'Inter', 'Arial', 'Helvetica', 'Times New Roman', 'Georgia',
-    'Courier New', 'Verdana', 'Roboto', 'Open Sans', 'Montserrat',
-    'Playfair Display', 'Lato', 'Poppins', 'Nunito', 'Merriweather'
-  ]
+  const fontFamilies = ['Inter', 'Arial', 'Helvetica', 'Times New Roman', 'Georgia', 'Courier New', 'Verdana', 'Roboto', 'Open Sans', 'Montserrat', 'Playfair Display', 'Lato', 'Poppins']
 
   const filteredFonts = useMemo(() => {
-    return fontSearch 
-      ? fontFamilies.filter(f => f.toLowerCase().includes(fontSearch.toLowerCase()))
-      : fontFamilies
+    return fontSearch ? fontFamilies.filter(f => f.toLowerCase().includes(fontSearch.toLowerCase())) : fontFamilies
   }, [fontSearch])
 
   return (
     <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border z-[100] w-80 max-h-96 overflow-hidden">
-      <div className="p-3 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+      <div className="p-3 border-b bg-gradient-to-r from-purple-50 to-pink-50">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Search fonts..." 
-            value={fontSearch} 
-            onChange={(e) => setFontSearch(e.target.value)} 
-            className="w-full pl-9 pr-3 py-2 text-sm border-0 rounded-lg bg-white dark:bg-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            autoFocus
-          />
+          <input type="text" placeholder="Search fonts..." value={fontSearch} onChange={(e) => setFontSearch(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border-0 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500" autoFocus />
         </div>
       </div>
       <div className="max-h-80 overflow-y-auto p-2">
         {filteredFonts.map(font => (
-          <button 
-            key={font} 
-            onClick={() => { onApplyFont(font); onClose() }} 
-            className={`w-full text-left px-3 py-2 rounded-lg transition ${currentFont === font ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400' : 'hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-          >
+          <button key={font} onClick={() => { onApplyFont(font); onClose() }} className={`w-full text-left px-3 py-2 rounded-lg transition ${currentFont === font ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'}`}>
             <span style={{ fontFamily: font }}>{font}</span>
           </button>
         ))}
@@ -410,18 +495,10 @@ const ColorPickerDropdown = ({ colors, onSelectColor, onRemoveColor, title = "Te
     <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">{title}</div>
     <div className="grid grid-cols-7 gap-1.5 mb-3">
       {colors.map(color => (
-        <button 
-          key={color} 
-          onClick={() => onSelectColor(color)} 
-          className="w-6 h-6 rounded-lg border dark:border-gray-600 hover:scale-110 transition-transform"
-          style={{ backgroundColor: color }}
-          aria-label={`Select color ${color}`}
-        />
+        <button key={color} onClick={() => onSelectColor(color)} className="w-6 h-6 rounded-lg border hover:scale-110 transition-transform" style={{ backgroundColor: color }} />
       ))}
     </div>
-    <button onClick={onRemoveColor} className="text-xs text-red-500 hover:text-red-600 w-full text-center">
-      Remove {title.toLowerCase()}
-    </button>
+    <button onClick={onRemoveColor} className="text-xs text-red-500 hover:text-red-600 w-full text-center">Remove {title.toLowerCase()}</button>
   </div>
 )
 
@@ -442,7 +519,7 @@ const TableDropdown = ({ onInsertTable, onTableControl }) => {
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Quick Insert</div>
         <div className="grid grid-cols-3 gap-2">
           {tablePresets.map((preset) => (
-            <button key={preset.label} onClick={() => onInsertTable(preset.rows, preset.cols)} className="py-2 px-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-purple-100 transition-all text-center">
+            <button key={preset.label} onClick={() => onInsertTable(preset.rows, preset.cols)} className="py-2 px-3 rounded-lg bg-gray-100 hover:bg-purple-100 transition-all text-center">
               <div className="text-sm font-medium">{preset.label}</div>
               <div className="text-xs text-gray-500">{preset.rows} × {preset.cols}</div>
             </button>
@@ -452,15 +529,13 @@ const TableDropdown = ({ onInsertTable, onTableControl }) => {
 
       <div className="p-3 border-b">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Grid Selector</div>
-        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2" onMouseLeave={() => { setPreviewRows(3); setPreviewCols(3) }}>
+        <div className="bg-gray-50 rounded-lg p-2" onMouseLeave={() => { setPreviewRows(3); setPreviewCols(3) }}>
           <div className="grid grid-cols-6 gap-1 mb-2">
             {Array.from({ length: 36 }, (_, i) => {
               const row = Math.floor(i / 6) + 1
               const col = (i % 6) + 1
               const isActive = row <= previewRows && col <= previewCols
-              return (
-                <button key={i} onMouseEnter={() => { setPreviewRows(row); setPreviewCols(col) }} onClick={() => onInsertTable(row, col)} className={`aspect-square rounded transition-all ${isActive ? 'bg-purple-600 shadow-md scale-95' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300'}`} aria-label={`Insert ${row}x${col} table`} />
-              )
+              return <button key={i} onMouseEnter={() => { setPreviewRows(row); setPreviewCols(col) }} onClick={() => onInsertTable(row, col)} className={`aspect-square rounded transition-all ${isActive ? 'bg-purple-600 shadow-md scale-95' : 'bg-gray-200 hover:bg-gray-300'}`} />
             })}
           </div>
           <div className="text-center text-sm font-medium text-purple-600">{previewRows} × {previewCols}</div>
@@ -479,7 +554,7 @@ const TableDropdown = ({ onInsertTable, onTableControl }) => {
           <button onClick={() => onTableControl('toggleHeaderRow')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2"><Layout size={14} /> Toggle Header Row</button>
           <button onClick={() => onTableControl('mergeCells')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2"><Merge size={14} /> Merge Cells</button>
           <button onClick={() => onTableControl('splitCell')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2"><Split size={14} /> Split Cell</button>
-          <button onClick={() => onTableControl('deleteTable')} className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 rounded-lg flex items-center gap-2 font-semibold"><Trash2 size={14} /> Delete Table</button>
+          <button onClick={() => onTableControl('deleteTable')} className="w-full text-left px-3 py-2 text-sm hover:bg-red-50 text-red-600 rounded-lg flex items-center gap-2"><Trash2 size={14} /> Delete Table</button>
         </div>
       </div>
     </div>
@@ -491,68 +566,38 @@ const CodeBlockDropdown = ({ editor, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('')
   
   const languages = [
-    { value: 'javascript', label: 'JavaScript', icon: '📜' },
-    { value: 'typescript', label: 'TypeScript', icon: '📘' },
-    { value: 'python', label: 'Python', icon: '🐍' },
-    { value: 'java', label: 'Java', icon: '☕' },
-    { value: 'cpp', label: 'C++', icon: '⚙️' },
-    { value: 'html', label: 'HTML', icon: '🌐' },
-    { value: 'css', label: 'CSS', icon: '🎨' },
-    { value: 'json', label: 'JSON', icon: '📊' },
-    { value: 'sql', label: 'SQL', icon: '🗄️' },
-    { value: 'bash', label: 'Bash', icon: '💻' },
-    { value: 'yaml', label: 'YAML', icon: '📋' },
-    { value: 'markdown', label: 'Markdown', icon: '📝' },
+    { value: 'javascript', label: 'JavaScript', icon: '📜' }, { value: 'typescript', label: 'TypeScript', icon: '📘' },
+    { value: 'python', label: 'Python', icon: '🐍' }, { value: 'java', label: 'Java', icon: '☕' },
+    { value: 'html', label: 'HTML', icon: '🌐' }, { value: 'css', label: 'CSS', icon: '🎨' },
+    { value: 'json', label: 'JSON', icon: '📊' }, { value: 'sql', label: 'SQL', icon: '🗄️' },
+    { value: 'bash', label: 'Bash', icon: '💻' }, { value: 'yaml', label: 'YAML', icon: '📋' },
   ]
 
   const filteredLanguages = useMemo(() => {
     if (!searchTerm) return languages
-    return languages.filter(lang => 
-      lang.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lang.value.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    return languages.filter(lang => lang.label.toLowerCase().includes(searchTerm.toLowerCase()))
   }, [searchTerm])
 
   const insertCodeBlock = (language = null) => {
-    if (language) {
-      editor.chain().focus().setCodeBlock({ language: language.value }).run()
-    } else {
-      editor.chain().focus().setCodeBlock().run()
-    }
+    if (language) editor.chain().focus().setCodeBlock({ language: language.value }).run()
+    else editor.chain().focus().setCodeBlock().run()
     onClose()
   }
 
   return (
     <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border z-[100] w-80 overflow-hidden">
       <div className="p-3 border-b">
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-          <Code2 size={12} /> Code Blocks
-        </div>
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-2"><Code2 size={12} /> Code Blocks</div>
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search language..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700"
-            autoFocus
-          />
+          <input type="text" placeholder="Search language..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" autoFocus />
         </div>
       </div>
-
       <div className="max-h-80 overflow-y-auto p-2">
-        <button onClick={() => insertCodeBlock()} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2 mb-2 border-b">
-          <Terminal size={14} />
-          <span className="font-medium">Plain Text</span>
-          <span className="text-xs text-gray-400 ml-auto">No language</span>
-        </button>
-        
+        <button onClick={() => insertCodeBlock()} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2 mb-2 border-b"><Terminal size={14} /><span className="font-medium">Plain Text</span></button>
         {filteredLanguages.map((lang) => (
-          <button key={lang.value} onClick={() => insertCodeBlock(lang)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2 transition">
-            <span className="text-lg">{lang.icon}</span>
-            <span>{lang.label}</span>
-            <span className="text-xs text-gray-400 ml-auto">{lang.value}</span>
+          <button key={lang.value} onClick={() => insertCodeBlock(lang)} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2">
+            <span className="text-lg">{lang.icon}</span><span>{lang.label}</span>
           </button>
         ))}
       </div>
@@ -566,39 +611,20 @@ const CalloutDropdown = ({ editor, onClose }) => {
   const [showTitleInput, setShowTitleInput] = useState(false)
 
   const calloutTypes = [
-    { id: 'note', label: 'Note', icon: MessageCircle, color: 'blue', bgColor: 'bg-blue-50 dark:bg-blue-950/30', borderColor: 'border-blue-500', iconColor: 'text-blue-500' },
-    { id: 'tip', label: 'Tip', icon: Lightbulb, color: 'green', bgColor: 'bg-green-50 dark:bg-green-950/30', borderColor: 'border-green-500', iconColor: 'text-green-500' },
-    { id: 'important', label: 'Important', icon: Star, color: 'purple', bgColor: 'bg-purple-50 dark:bg-purple-950/30', borderColor: 'border-purple-500', iconColor: 'text-purple-500' },
-    { id: 'warning', label: 'Warning', icon: AlertTriangle, color: 'yellow', bgColor: 'bg-yellow-50 dark:bg-yellow-950/30', borderColor: 'border-yellow-500', iconColor: 'text-yellow-500' },
-    { id: 'danger', label: 'Danger', icon: AlertCircle, color: 'red', bgColor: 'bg-red-50 dark:bg-red-950/30', borderColor: 'border-red-500', iconColor: 'text-red-500' },
-    { id: 'info', label: 'Info', icon: Info, color: 'cyan', bgColor: 'bg-cyan-50 dark:bg-cyan-950/30', borderColor: 'border-cyan-500', iconColor: 'text-cyan-500' },
-    { id: 'quote', label: 'Quote', icon: Quote, color: 'gray', bgColor: 'bg-gray-50 dark:bg-gray-900/50', borderColor: 'border-gray-500', iconColor: 'text-gray-500' },
+    { id: 'note', label: 'Note', icon: MessageCircle, bgColor: 'bg-blue-50', borderColor: 'border-blue-500', iconColor: 'text-blue-500' },
+    { id: 'tip', label: 'Tip', icon: Lightbulb, bgColor: 'bg-green-50', borderColor: 'border-green-500', iconColor: 'text-green-500' },
+    { id: 'warning', label: 'Warning', icon: AlertTriangle, bgColor: 'bg-yellow-50', borderColor: 'border-yellow-500', iconColor: 'text-yellow-500' },
+    { id: 'danger', label: 'Danger', icon: AlertCircle, bgColor: 'bg-red-50', borderColor: 'border-red-500', iconColor: 'text-red-500' },
+    { id: 'info', label: 'Info', icon: Info, bgColor: 'bg-cyan-50', borderColor: 'border-cyan-500', iconColor: 'text-cyan-500' },
   ]
 
   const insertCallout = (type) => {
-    const callout = calloutTypes.find(t => t.id === type)
     const calloutId = generateId()
-    
-    const titleHtml = calloutTitle && showTitleInput 
-      ? `<div class="callout-title"><span class="callout-title-icon">${getIconHtml(callout.icon)}</span><strong class="callout-title-text">${escapeHtml(calloutTitle)}</strong></div>`
-      : `<div class="callout-title"><span class="callout-title-icon">${getIconHtml(callout.icon)}</span><strong class="callout-title-text">${callout.label}</strong></div>`
-    
-    const calloutHtml = `<div class="callout callout-${type}" data-callout-id="${calloutId}">${titleHtml}<div class="callout-content"><p></p></div></div>`
+    const calloutHtml = `<div class="callout callout-${type}" data-callout-id="${calloutId}"><div class="callout-title"><strong>${calloutTitle || type.label}</strong></div><div class="callout-content"><p></p></div></div>`
     editor.chain().focus().insertContent(calloutHtml).run()
     setCalloutTitle('')
-    setShowTitleInput(false)
     onClose()
-    showToast(`${callout.label} inserted`, 'success')
-  }
-
-  const getIconHtml = (Icon) => {
-    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`
-  }
-
-  const escapeHtml = (text) => {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
+    showToast(`${type.label} inserted`, 'success')
   }
 
   const insertBlockquote = () => {
@@ -607,36 +633,20 @@ const CalloutDropdown = ({ editor, onClose }) => {
   }
 
   return (
-    <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border z-[100] w-96 max-h-[500px] overflow-hidden">
+    <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border z-[100] w-80 max-h-[500px] overflow-hidden">
       <div className="p-3 border-b">
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Insert Callout / Quote</div>
-        
-        <button onClick={insertBlockquote} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-3 mb-3 border">
-          <Quote size={18} className="text-gray-500" />
-          <div><div className="font-medium">Standard Blockquote</div><div className="text-xs text-gray-500">Simple quotation style</div></div>
-        </button>
-        
-        <div className="mb-3">
-          <label className="flex items-center gap-2 text-sm mb-2">
-            <input type="checkbox" checked={showTitleInput} onChange={(e) => setShowTitleInput(e.target.checked)} className="rounded" />
-            Add custom title
-          </label>
-          {showTitleInput && (
-            <input type="text" value={calloutTitle} onChange={(e) => setCalloutTitle(e.target.value)} placeholder="Enter callout title..." className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500" autoFocus />
-          )}
-        </div>
-        
-        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Callout Types</div>
+        <button onClick={insertBlockquote} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-3 mb-3 border"><Quote size={18} /><div><div className="font-medium">Standard Blockquote</div></div></button>
+        <label className="flex items-center gap-2 text-sm mb-2"><input type="checkbox" checked={showTitleInput} onChange={(e) => setShowTitleInput(e.target.checked)} className="rounded" /> Add custom title</label>
+        {showTitleInput && <input type="text" value={calloutTitle} onChange={(e) => setCalloutTitle(e.target.value)} placeholder="Enter callout title..." className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 mb-3" autoFocus />}
       </div>
-      
       <div className="max-h-80 overflow-y-auto p-2">
         <div className="grid grid-cols-2 gap-2">
           {calloutTypes.map((type) => {
             const Icon = type.icon
             return (
-              <button key={type.id} onClick={() => insertCallout(type.id)} className={`p-3 rounded-lg transition-all text-left hover:shadow-md ${type.bgColor} border-l-4 ${type.borderColor}`}>
-                <div className="flex items-center gap-2 mb-1"><Icon size={16} className={type.iconColor} /><span className={`font-medium text-sm ${type.iconColor}`}>{type.label}</span></div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">{getCalloutDescription(type.id)}</div>
+              <button key={type.id} onClick={() => insertCallout(type)} className={`p-3 rounded-lg text-left hover:shadow-md ${type.bgColor} border-l-4 ${type.borderColor}`}>
+                <div className="flex items-center gap-2"><Icon size={16} className={type.iconColor} /><span className={`font-medium text-sm ${type.iconColor}`}>{type.label}</span></div>
               </button>
             )
           })}
@@ -644,19 +654,6 @@ const CalloutDropdown = ({ editor, onClose }) => {
       </div>
     </div>
   )
-}
-
-const getCalloutDescription = (id) => {
-  const descriptions = {
-    note: 'General information',
-    tip: 'Helpful advice',
-    warning: 'Be careful',
-    danger: 'Serious warning',
-    info: 'Additional info',
-    quote: 'Cited text',
-    important: 'Critical info'
-  }
-  return descriptions[id] || ''
 }
 
 // ==================== LIST ALIGNMENT DROPDOWN ====================
@@ -678,24 +675,11 @@ const ListAlignmentDropdown = ({ editor, onClose }) => {
 
 // ==================== MAIN TOOLBAR COMPONENT ====================
 const Toolbar = ({ 
-  editor, 
-  onSave, 
-  onSchedule, 
-  onPublish, 
-  onPreview, 
-  onImageInsert,
-  onGalleryInsert,
-  onVideoInsert,
-  onEmbedInsert,
-  onAudioInsert,
-  onPDFInsert,
-  wordCount = 0, 
-  readingTime = 1, 
-  seoScore = 0,
-  showRightBlock = false,
-  onToggleRightBlock = null,
-  grammarlyEnabled = true,
-  onToggleGrammarly = null
+  editor, onSave, onSchedule, onPublish, onPreview, 
+  onImageInsert, onGalleryInsert, onVideoInsert, onEmbedInsert, onAudioInsert, onPDFInsert,
+  wordCount = 0, readingTime = 1, seoScore = 0,
+  showRightBlock = false, onToggleRightBlock = null,
+  grammarlyEnabled = true, onToggleGrammarly = null
 }) => {
   const [activeDropdown, setActiveDropdown] = useState(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -725,51 +709,31 @@ const Toolbar = ({
   const colors = ['#000000', '#E53935', '#D81B60', '#8E24AA', '#5E35B1', '#3949AB', '#1E88E5', '#039BE5', '#00ACC1', '#00897B', '#43A047', '#7CB342', '#C0CA33', '#FDD835', '#FFB300', '#FB8C00', '#F4511E', '#795548', '#757575', '#607D8B', '#FFFFFF']
   const highlightColors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#F0E68C']
 
-  // Detect media selection for MediaControls
   useEffect(() => {
     if (!editor) return
-
     const updateSelection = () => {
       try {
         const { state } = editor
         const { from } = state.selection
         const node = state.doc.nodeAt(from)
-        
-        if (node && (node.type.name === 'embed' || node.type.name === 'video' || 
-                     node.type.name === 'image' || node.type.name === 'audio' || 
-                     node.type.name === 'pdf')) {
-          setSelectedMediaForControls({
-            type: node.type.name,
-            attrs: { ...node.attrs },
-            pos: from
-          })
+        if (node && ['embed', 'video', 'image', 'audio', 'pdf'].includes(node.type.name)) {
+          setSelectedMediaForControls({ type: node.type.name, attrs: { ...node.attrs }, pos: from })
           setShowMediaControls(true)
-        } else {
-          if (!editMode) {
-            setSelectedMediaForControls(null)
-            setShowMediaControls(false)
-          }
+        } else if (!editMode) {
+          setSelectedMediaForControls(null)
+          setShowMediaControls(false)
         }
-      } catch (error) {
-        console.error('Selection detection error:', error)
-      }
+      } catch (error) {}
     }
-
     editor.on('selectionUpdate', updateSelection)
     updateSelection()
-
-    return () => {
-      editor.off('selectionUpdate', updateSelection)
-    }
+    return () => editor.off('selectionUpdate', updateSelection)
   }, [editor, editMode])
 
-  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event) => {
       Object.entries(dropdownRefs).forEach(([key, ref]) => {
-        if (ref.current && !ref.current.contains(event.target)) {
-          if (activeDropdown === key) setActiveDropdown(null)
-        }
+        if (ref.current && !ref.current.contains(event.target) && activeDropdown === key) setActiveDropdown(null)
       })
       if (showEmojiPicker) setShowEmojiPicker(false)
     }
@@ -777,145 +741,58 @@ const Toolbar = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [activeDropdown, showEmojiPicker])
 
-  // Fullscreen handler
   useEffect(() => {
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
   }, [])
 
-  // Clear media controls
   const clearMediaControls = useCallback(() => {
     setSelectedMediaForControls(null)
     setShowMediaControls(false)
   }, [])
 
-  // Handle media edit from MediaControls
   const handleMediaEdit = useCallback((type, attrs) => {
     setSelectedMedia({ type, attrs })
-    
-    switch(type) {
-      case 'image':
-        setShowImageModal(true)
-        break
-      case 'video':
-        setShowVideoModal(true)
-        break
-      case 'embed':
-        setShowEmbedModal(true)
-        break
-      case 'gallery':
-        setShowGalleryModal(true)
-        break
-      case 'audio':
-        setShowAudioModal(true)
-        break
-      case 'pdf':
-        setShowPDFModal(true)
-        break
-      default:
-        showToast(`Edit ${type}`, 'info')
-    }
+    if (type === 'image') setShowImageModal(true)
+    else if (type === 'video') setShowVideoModal(true)
+    else if (type === 'embed') setShowEmbedModal(true)
+    else if (type === 'gallery') setShowGalleryModal(true)
+    else if (type === 'audio') setShowAudioModal(true)
+    else if (type === 'pdf') setShowPDFModal(true)
+    else showToast(`Edit ${type}`, 'info')
   }, [])
 
-  // Toggle edit mode
   const toggleEditMode = useCallback(() => {
     setEditMode(!editMode)
-    if (editMode) {
-      clearMediaControls()
-    }
+    if (editMode) clearMediaControls()
   }, [editMode, clearMediaControls])
 
-  // ==================== EDIT MODE HANDLER ====================
   const handleEditModeClick = useCallback((event) => {
     if (!editor || !editMode) return
-
     setTimeout(() => {
       try {
         const { state } = editor
-        const { selection } = state
-        const { $from } = selection
-        
-        let node = $from.node()
-        
-        if (!node && $from.parent) {
-          node = $from.parent
+        const node = state.doc.nodeAt(state.selection.from)
+        if (node && ['image', 'video', 'embed', 'gallery', 'audio', 'pdf'].includes(node.type.name)) {
+          setSelectedMedia({ node, type: node.type.name, attrs: node.attrs })
+          setSelectedMediaForControls({ type: node.type.name, attrs: { ...node.attrs }, pos: state.selection.from })
+          setShowMediaControls(true)
+          if (node.type.name === 'image') setShowImageModal(true)
+          else if (node.type.name === 'video') setShowVideoModal(true)
+          else if (node.type.name === 'embed') setShowEmbedModal(true)
+          else if (node.type.name === 'gallery') setShowGalleryModal(true)
+          else if (node.type.name === 'audio') setShowAudioModal(true)
+          else if (node.type.name === 'pdf') setShowPDFModal(true)
+          setActiveDropdown(null)
         }
-        
-        if (node && node.type) {
-          const nodeType = node.type.name
-          const attrs = node.attrs || {}
-          
-          setSelectedMedia({ node, type: nodeType, attrs })
-          
-          if (['image', 'video', 'embed', 'gallery', 'audio', 'pdf'].includes(nodeType)) {
-            setSelectedMediaForControls({
-              type: nodeType,
-              attrs: { ...attrs },
-              pos: $from.pos
-            })
-            setShowMediaControls(true)
-          }
-          
-          if (nodeType === 'image') {
-            setShowImageModal(true)
-            setActiveDropdown(null)
-            showToast('Edit image', 'info')
-          } else if (nodeType === 'video') {
-            setShowVideoModal(true)
-            setActiveDropdown(null)
-            showToast('Edit video', 'info')
-          } else if (nodeType === 'embed') {
-            setShowEmbedModal(true)
-            setActiveDropdown(null)
-            showToast('Edit embed', 'info')
-          } else if (nodeType === 'gallery') {
-            setShowGalleryModal(true)
-            setActiveDropdown(null)
-            showToast('Edit gallery', 'info')
-          } else if (nodeType === 'audio') {
-            setShowAudioModal(true)
-            setActiveDropdown(null)
-            showToast('Edit audio', 'info')
-          } else if (nodeType === 'pdf') {
-            setShowPDFModal(true)
-            setActiveDropdown(null)
-            showToast('Edit PDF', 'info')
-          }
-        } else {
-          const domNode = event.target
-          if (domNode && domNode.nodeType === Node.ELEMENT_NODE) {
-            const mediaType = domNode.getAttribute('data-media-type')
-            if (mediaType && ['image', 'video', 'embed', 'gallery', 'audio', 'pdf'].includes(mediaType)) {
-              setSelectedMedia({ domNode, type: mediaType })
-              setSelectedMediaForControls({ type: mediaType, attrs: {}, pos: null })
-              setShowMediaControls(true)
-              
-              if (mediaType === 'image') setShowImageModal(true)
-              else if (mediaType === 'video') setShowVideoModal(true)
-              else if (mediaType === 'embed') setShowEmbedModal(true)
-              else if (mediaType === 'gallery') setShowGalleryModal(true)
-              else if (mediaType === 'audio') setShowAudioModal(true)
-              else if (mediaType === 'pdf') setShowPDFModal(true)
-              
-              setActiveDropdown(null)
-              showToast(`Edit ${mediaType}`, 'info')
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error in edit mode click handler:', error)
-        showToast('Failed to edit media', 'error')
-      }
+      } catch (error) {}
     }, 10)
   }, [editor, editMode])
 
-  // Add edit mode event listener
   useEffect(() => {
     if (!editor) return
-
     const editorElement = editor.view.dom
-    
     if (editMode) {
       editorElement.addEventListener('click', handleEditModeClick)
       editorElement.style.cursor = 'cell'
@@ -923,7 +800,6 @@ const Toolbar = ({
       editorElement.removeEventListener('click', handleEditModeClick)
       editorElement.style.cursor = ''
     }
-
     return () => {
       editorElement.removeEventListener('click', handleEditModeClick)
       editorElement.style.cursor = ''
@@ -932,279 +808,96 @@ const Toolbar = ({
 
   if (!editor) return null
 
-  // ==================== MEDIA HANDLERS ====================
   const handleImageUpload = (imageData) => {
-    if (onImageInsert) {
-      onImageInsert(imageData)
-    } else {
-      const imageHtml = `<img src="${imageData.src || imageData.url}" alt="${imageData.alt || 'Image'}" class="editor-image" data-media-type="image" data-id="${generateId()}" />`
-      editor.chain().focus().insertContent(imageHtml).run()
-      showToast('Image inserted successfully', 'success')
-    }
+    if (onImageInsert) onImageInsert(imageData)
+    else editor.chain().focus().insertContent(`<img src="${imageData.src}" alt="${imageData.alt || 'Image'}" />`).run()
     setShowImageModal(false)
     setSelectedMedia(null)
     clearMediaControls()
+    showToast('Image inserted', 'success')
   }
 
   const handleVideoUpload = (videoData) => {
-    if (onVideoInsert) {
-      onVideoInsert(videoData)
-    } else {
-      const videoId = generateId()
-      const videoHtml = `<div class="video-wrapper" data-media-type="video" data-id="${videoId}">
-        <video controls src="${videoData.src || videoData.url}" poster="${videoData.poster || ''}">
-          <source src="${videoData.src || videoData.url}" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      </div>`
-      editor.chain().focus().insertContent(videoHtml).run()
-      showToast('Video inserted successfully', 'success')
-    }
+    if (onVideoInsert) onVideoInsert(videoData)
     setShowVideoModal(false)
-    setSelectedMedia(null)
     clearMediaControls()
   }
 
   const handleEmbedUpload = (embedData) => {
-    if (onEmbedInsert) {
-      onEmbedInsert(embedData)
-    } else {
-      const embedId = generateId()
-      const embedHtml = `<div class="embed-wrapper" data-media-type="embed" data-id="${embedId}">
-        ${embedData.html || `<iframe src="${embedData.url}" frameborder="0" allowfullscreen title="${embedData.title || 'Embed content'}"></iframe>`}
-      </div>`
-      editor.chain().focus().insertContent(embedHtml).run()
-      showToast('Embed inserted successfully', 'success')
-    }
+    if (onEmbedInsert) onEmbedInsert(embedData)
     setShowEmbedModal(false)
-    setSelectedMedia(null)
     clearMediaControls()
   }
 
   const handleGalleryInsert = (galleryData) => {
-    if (onGalleryInsert) {
-      onGalleryInsert(galleryData)
-    } else {
-      const galleryId = generateId()
-      const galleryHtml = `<div class="gallery-wrapper" data-media-type="gallery" data-id="${galleryId}">
-        <div class="gallery-grid">
-          ${galleryData.media?.map(item => {
-            if (item.type === 'video') {
-              return `<video src="${item.src}" controls class="gallery-video"></video>`
-            }
-            return `<img src="${item.src}" alt="${item.alt || 'Gallery image'}" class="gallery-image" />`
-          }).join('') || galleryData.images?.map(img => `<img src="${img.url || img.src}" alt="${img.alt || 'Gallery image'}" class="gallery-image" />`).join('')}
-        </div>
-      </div>`
-      editor.chain().focus().insertContent(galleryHtml).run()
-      showToast('Gallery inserted successfully', 'success')
-    }
+    if (onGalleryInsert) onGalleryInsert(galleryData)
     setShowGalleryModal(false)
     clearMediaControls()
   }
 
-  const handleAudioUpload = (audioData) => { 
-    if (onAudioInsert) {
-      onAudioInsert(audioData)
-    } else if (audioData.html) {
-      editor.chain().focus().insertContent(audioData.html).run()
-      showToast('Audio inserted successfully', 'success')
-    }
-    setShowAudioModal(false) 
-  }
-  
-  const handlePDFUpload = (pdfData) => { 
-    if (onPDFInsert) {
-      onPDFInsert(pdfData)
-    } else if (pdfData.html) {
-      editor.chain().focus().insertContent(pdfData.html).run()
-      showToast('PDF inserted successfully', 'success')
-    }
-    setShowPDFModal(false) 
-  }
+  const handleAudioUpload = (audioData) => { if (onAudioInsert) onAudioInsert(audioData); setShowAudioModal(false); clearMediaControls() }
+  const handlePDFUpload = (pdfData) => { if (onPDFInsert) onPDFInsert(pdfData); setShowPDFModal(false); clearMediaControls() }
 
-  // ==================== TEXT FORMATTING HANDLERS ====================
-  const applyFontFamily = (font) => { 
-    setCurrentFont(font)
-    editor.chain().focus().setMark('textStyle', { fontFamily: font }).run()
-    setActiveDropdown(null)
-    showToast(`Font changed to ${font}`, 'info')
-  }
-  
-  const applyFontSize = (size) => { 
-    setCurrentFontSize(size)
-    editor.chain().focus().setMark('textStyle', { fontSize: `${size}px` }).run()
-    setActiveDropdown(null)
-  }
-  
-  const setTextColor = (color) => { 
-    editor.chain().focus().setColor(color).run()
-    setActiveDropdown(null)
-  }
-  
-  const removeTextColor = () => { 
-    editor.chain().focus().unsetColor().run()
-    setActiveDropdown(null)
-  }
-  
-  const setHighlight = (color) => { 
-    editor.chain().focus().toggleHighlight({ color }).run()
-    setActiveDropdown(null)
-  }
-  
-  const removeHighlight = () => { 
-    editor.chain().focus().unsetHighlight().run()
-    setActiveDropdown(null)
-  }
-  
-  const clearFormatting = () => { 
-    editor.chain().focus().clearNodes().unsetAllMarks().run()
-    showToast('Formatting cleared', 'info')
-  }
-  
-  const setLink = () => { 
-    const url = prompt('Enter URL:', 'https://')
-    if (url && url !== 'https://') {
-      editor.chain().focus().setLink({ href: url }).run()
-      showToast('Link added', 'success')
-    }
-  }
-  
-  const unsetLink = () => {
-    editor.chain().focus().unsetLink().run()
-    showToast('Link removed', 'info')
-  }
-  
+  const applyFontFamily = (font) => { setCurrentFont(font); editor.chain().focus().setMark('textStyle', { fontFamily: font }).run(); setActiveDropdown(null) }
+  const applyFontSize = (size) => { setCurrentFontSize(size); editor.chain().focus().setMark('textStyle', { fontSize: `${size}px` }).run(); setActiveDropdown(null) }
+  const setTextColor = (color) => { editor.chain().focus().setColor(color).run(); setActiveDropdown(null) }
+  const removeTextColor = () => { editor.chain().focus().unsetColor().run(); setActiveDropdown(null) }
+  const setHighlight = (color) => { editor.chain().focus().toggleHighlight({ color }).run(); setActiveDropdown(null) }
+  const removeHighlight = () => { editor.chain().focus().unsetHighlight().run(); setActiveDropdown(null) }
+  const clearFormatting = () => { editor.chain().focus().clearNodes().unsetAllMarks().run(); showToast('Formatting cleared', 'info') }
+  const setLink = () => { const url = prompt('Enter URL:'); if (url) editor.chain().focus().setLink({ href: url }).run() }
+  const unsetLink = () => editor.chain().focus().unsetLink().run()
   const setAlignment = (alignment) => editor.chain().focus().setTextAlign(alignment).run()
   const insertHorizontalRule = () => editor.chain().focus().setHorizontalRule().run()
   const toggleBulletList = () => editor.chain().focus().toggleBulletList().run()
   const toggleOrderedList = () => editor.chain().focus().toggleOrderedList().run()
   const toggleTaskList = () => editor.chain().focus().toggleTaskList().run()
-  
-  const insertTable = (rows, cols) => { 
-    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run()
-    setActiveDropdown(null)
-    showToast(`Inserted ${rows}x${cols} table`, 'success')
-  }
-  
+  const insertTable = (rows, cols) => { editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run(); setActiveDropdown(null) }
   const handleTableControl = (action) => {
-    const actions = { 
-      addRowBefore: () => editor.chain().focus().addRowBefore().run(), 
-      addRowAfter: () => editor.chain().focus().addRowAfter().run(), 
-      deleteRow: () => editor.chain().focus().deleteRow().run(), 
-      addColumnBefore: () => editor.chain().focus().addColumnBefore().run(), 
-      addColumnAfter: () => editor.chain().focus().addColumnAfter().run(), 
-      deleteColumn: () => editor.chain().focus().deleteColumn().run(), 
-      mergeCells: () => editor.chain().focus().mergeCells().run(), 
-      splitCell: () => editor.chain().focus().splitCell().run(), 
-      toggleHeaderRow: () => editor.chain().focus().toggleHeaderRow().run(), 
-      deleteTable: () => editor.chain().focus().deleteTable().run() 
-    }
+    const actions = { addRowBefore: () => editor.chain().focus().addRowBefore().run(), addRowAfter: () => editor.chain().focus().addRowAfter().run(), deleteRow: () => editor.chain().focus().deleteRow().run(), addColumnBefore: () => editor.chain().focus().addColumnBefore().run(), addColumnAfter: () => editor.chain().focus().addColumnAfter().run(), deleteColumn: () => editor.chain().focus().deleteColumn().run(), mergeCells: () => editor.chain().focus().mergeCells().run(), splitCell: () => editor.chain().focus().splitCell().run(), toggleHeaderRow: () => editor.chain().focus().toggleHeaderRow().run(), deleteTable: () => editor.chain().focus().deleteTable().run() }
     actions[action]?.()
     setActiveDropdown(null)
-    showToast(`Table: ${action.replace(/([A-Z])/g, ' $1').toLowerCase()}`, 'info')
   }
-
-  const onEmojiClick = (emojiObject) => { 
-    editor.chain().focus().insertContent(emojiObject.emoji).run()
-    setShowEmojiPicker(false)
-  }
-  
-  const toggleFullscreen = () => { 
-    const el = document.querySelector('.ProseMirror')
-    if (!document.fullscreenElement) {
-      el?.requestFullscreen()
-      showToast('Fullscreen mode', 'info')
-    } else {
-      document.exitFullscreen()
-    }
-  }
-  
-  const copyHtml = () => { 
-    navigator.clipboard.writeText(editor.getHTML())
-    showToast('HTML copied to clipboard', 'success')
-  }
-  
+  const onEmojiClick = (emojiObject) => { editor.chain().focus().insertContent(emojiObject.emoji).run(); setShowEmojiPicker(false) }
+  const toggleFullscreen = () => { const el = document.querySelector('.ProseMirror'); if (!document.fullscreenElement) el?.requestFullscreen(); else document.exitFullscreen() }
+  const copyHtml = () => { navigator.clipboard.writeText(editor.getHTML()); showToast('HTML copied', 'success') }
   const selectAll = () => editor.commands.selectAll()
+  const getSeoScoreColor = () => { if (seoScore >= 80) return 'text-green-500'; if (seoScore >= 60) return 'text-yellow-500'; return 'text-red-500' }
+  const getCurrentHeading = () => { if (editor.isActive('heading', { level: 1 })) return 'H1'; if (editor.isActive('heading', { level: 2 })) return 'H2'; if (editor.isActive('heading', { level: 3 })) return 'H3'; return 'Normal' }
+  const setHeading = (level) => { if (level === 0) editor.chain().focus().setParagraph().run(); else editor.chain().focus().toggleHeading({ level }).run(); setActiveDropdown(null) }
 
-  const getSeoScoreColor = () => { 
-    if (seoScore >= 80) return 'text-green-500'
-    if (seoScore >= 60) return 'text-yellow-500'
-    return 'text-red-500'
-  }
-  
-  const getCurrentHeading = () => { 
-    if (editor.isActive('heading', { level: 1 })) return 'H1'
-    if (editor.isActive('heading', { level: 2 })) return 'H2'
-    if (editor.isActive('heading', { level: 3 })) return 'H3'
-    return 'Normal'
-  }
-  
-  const setHeading = (level) => { 
-    if (level === 0) editor.chain().focus().setParagraph().run()
-    else editor.chain().focus().toggleHeading({ level }).run()
-    setActiveDropdown(null)
-  }
-
-  const headingOptions = [
-    { label: 'Normal', level: 0 },
-    { label: 'Heading 1', level: 1 },
-    { label: 'Heading 2', level: 2 },
-    { label: 'Heading 3', level: 3 }
-  ]
+  const headingOptions = [{ label: 'Normal', level: 0 }, { label: 'Heading 1', level: 1 }, { label: 'Heading 2', level: 2 }, { label: 'Heading 3', level: 3 }]
 
   return (
     <>
       <div className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 transition-all duration-300 ${isCollapsed ? 'py-1' : 'py-2'} px-4 sticky top-0 z-40 shadow-sm`}>
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)} 
-          className="absolute -right-3 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-800 border rounded-full p-1 shadow-md hover:shadow-lg z-50 transition-all hover:scale-110"
-          aria-label={isCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
-        >
+        <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-800 border rounded-full p-1 shadow-md hover:shadow-lg z-50 transition-all hover:scale-110">
           {isCollapsed ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
         </button>
 
         {!isCollapsed ? (
           <div className="flex flex-wrap items-center gap-1">
-            {/* TEMPLATES DROPDOWN - NEW FEATURE */}
+            {/* TEMPLATES BUTTON */}
             <div className="relative" ref={dropdownRefs.templates}>
-              <button 
-                onClick={() => setActiveDropdown(activeDropdown === 'templates' ? null : 'templates')}
-                className="h-9 px-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium flex items-center gap-2 transition-all hover:shadow-md hover:scale-105"
-                title="Insert Content Templates"
-              >
-                <FileStack size={14} />
+              <button onClick={() => setActiveDropdown(activeDropdown === 'templates' ? null : 'templates')} className="h-9 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium flex items-center gap-2 transition-all hover:shadow-md">
+                <LayoutTemplate size={14} />
                 Templates
                 <ChevronDown size={14} className="text-white/70" />
               </button>
-              {activeDropdown === 'templates' && (
-                <TemplatesDropdown editor={editor} onClose={() => setActiveDropdown(null)} />
-              )}
+              {activeDropdown === 'templates' && <TemplatesDropdown editor={editor} onClose={() => setActiveDropdown(null)} />}
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
             {/* Heading Dropdown */}
             <div className="relative" ref={dropdownRefs.heading}>
-              <button 
-                onClick={() => setActiveDropdown(activeDropdown === 'heading' ? null : 'heading')}
-                className="h-9 px-3 rounded-lg bg-gray-50 text-sm font-medium hover:bg-gray-100 flex items-center gap-1.5 transition-colors"
-              >
+              <button onClick={() => setActiveDropdown(activeDropdown === 'heading' ? null : 'heading')} className="h-9 px-3 rounded-lg bg-gray-50 text-sm font-medium hover:bg-gray-100 flex items-center gap-1.5">
                 {getCurrentHeading()} <ChevronDown size={14} className="text-gray-400" />
               </button>
               {activeDropdown === 'heading' && (
                 <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border p-1.5 z-[100] min-w-[140px]">
                   {headingOptions.map(h => (
-                    <button 
-                      key={h.label} 
-                      onClick={() => setHeading(h.level)} 
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                        (h.level === 0 && getCurrentHeading() === 'Normal') ||
-                        (h.level > 0 && editor.isActive('heading', { level: h.level }))
-                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600'
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                    >
+                    <button key={h.label} onClick={() => setHeading(h.level)} className={`w-full text-left px-3 py-2 rounded-lg text-sm ${(h.level === 0 && getCurrentHeading() === 'Normal') || (h.level > 0 && editor.isActive('heading', { level: h.level })) ? 'bg-purple-50 text-purple-600' : 'hover:bg-gray-50'}`}>
                       {h.label}
                     </button>
                   ))}
@@ -1214,24 +907,24 @@ const Toolbar = ({
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Text Formatting Buttons */}
+            {/* Text Formatting */}
             <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-gray-800 rounded-lg p-0.5">
-              <button onClick={() => editor.chain().focus().toggleBold().run()} className={`p-1.5 rounded-md transition-all ${editor.isActive('bold') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} title="Bold (Ctrl+B)"><Bold size={16} /></button>
-              <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`p-1.5 rounded-md transition-all ${editor.isActive('italic') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} title="Italic (Ctrl+I)"><Italic size={16} /></button>
-              <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={`p-1.5 rounded-md transition-all ${editor.isActive('underline') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} title="Underline (Ctrl+U)"><Underline size={16} /></button>
-              <button onClick={() => editor.chain().focus().toggleStrike().run()} className={`p-1.5 rounded-md transition-all ${editor.isActive('strike') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} title="Strikethrough"><Strikethrough size={16} /></button>
-              <button onClick={() => editor.chain().focus().toggleCode().run()} className={`p-1.5 rounded-md transition-all ${editor.isActive('code') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} title="Inline Code"><Code size={16} /></button>
+              <button onClick={() => editor.chain().focus().toggleBold().run()} className={`p-1.5 rounded-md ${editor.isActive('bold') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><Bold size={16} /></button>
+              <button onClick={() => editor.chain().focus().toggleItalic().run()} className={`p-1.5 rounded-md ${editor.isActive('italic') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><Italic size={16} /></button>
+              <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={`p-1.5 rounded-md ${editor.isActive('underline') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><Underline size={16} /></button>
+              <button onClick={() => editor.chain().focus().toggleStrike().run()} className={`p-1.5 rounded-md ${editor.isActive('strike') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><Strikethrough size={16} /></button>
+              <button onClick={() => editor.chain().focus().toggleCode().run()} className={`p-1.5 rounded-md ${editor.isActive('code') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><Code size={16} /></button>
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
             
-            <button onClick={clearFormatting} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-red-500 transition-colors" title="Clear Formatting"><X size={16} /></button>
+            <button onClick={clearFormatting} className="p-1.5 rounded-lg hover:bg-gray-100 text-red-500"><X size={16} /></button>
             
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Font Family Dropdown */}
+            {/* Font Family */}
             <div className="relative" ref={dropdownRefs.font}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'font' ? null : 'font')} className="h-9 px-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 text-sm font-medium flex items-center gap-2 border border-purple-200 dark:border-purple-800 transition-all hover:shadow-md">
+              <button onClick={() => setActiveDropdown(activeDropdown === 'font' ? null : 'font')} className="h-9 px-3 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 text-sm font-medium flex items-center gap-2 border border-purple-200">
                 <Sparkles size={14} className="text-purple-500" />
                 <span className="max-w-[120px] truncate">{currentFont}</span>
                 <ChevronDown size={14} className="text-purple-400" />
@@ -1239,16 +932,16 @@ const Toolbar = ({
               {activeDropdown === 'font' && <FontDropdown currentFont={currentFont} onApplyFont={applyFontFamily} onClose={() => setActiveDropdown(null)} />}
             </div>
 
-            {/* Font Size Dropdown */}
+            {/* Font Size */}
             <div className="relative" ref={dropdownRefs.size}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'size' ? null : 'size')} className="h-9 px-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-sm font-medium flex items-center gap-1.5 transition-colors hover:bg-gray-100">
+              <button onClick={() => setActiveDropdown(activeDropdown === 'size' ? null : 'size')} className="h-9 px-3 rounded-lg bg-gray-50 text-sm font-medium flex items-center gap-1.5">
                 <Type size={14} /><span className="font-mono">{currentFontSize}px</span><ChevronDown size={14} className="text-gray-400" />
               </button>
               {activeDropdown === 'size' && (
                 <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border p-2 z-[100] w-64 max-h-80 overflow-y-auto">
                   <div className="grid grid-cols-5 gap-1">
                     {fontSizes.map(size => (
-                      <button key={size} onClick={() => applyFontSize(size)} className={`px-2 py-2 text-center rounded-lg text-sm font-mono transition-colors ${currentFontSize === size.toString() ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-600' : 'hover:bg-gray-100'}`}>{size}</button>
+                      <button key={size} onClick={() => applyFontSize(size)} className={`px-2 py-2 text-center rounded-lg text-sm font-mono ${currentFontSize === size.toString() ? 'bg-purple-100 text-purple-600' : 'hover:bg-gray-100'}`}>{size}</button>
                     ))}
                   </div>
                 </div>
@@ -1257,82 +950,82 @@ const Toolbar = ({
 
             {/* Color Picker */}
             <div className="relative" ref={dropdownRefs.color}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'color' ? null : 'color')} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Text Color"><Palette size={16} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'color' ? null : 'color')} className="p-1.5 rounded-lg hover:bg-gray-100"><Palette size={16} /></button>
               {activeDropdown === 'color' && <ColorPickerDropdown colors={colors} onSelectColor={setTextColor} onRemoveColor={removeTextColor} title="Text Color" />}
             </div>
 
             {/* Highlighter */}
             <div className="relative" ref={dropdownRefs.highlight}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'highlight' ? null : 'highlight')} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Highlight Text"><Highlighter size={16} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'highlight' ? null : 'highlight')} className="p-1.5 rounded-lg hover:bg-gray-100"><Highlighter size={16} /></button>
               {activeDropdown === 'highlight' && <ColorPickerDropdown colors={highlightColors} onSelectColor={setHighlight} onRemoveColor={removeHighlight} title="Highlight Color" />}
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Alignment Buttons */}
-            <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-gray-800 rounded-lg p-0.5">
-              <button onClick={() => setAlignment('left')} className={`p-1.5 rounded-md transition-all ${editor.isActive({ textAlign: 'left' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`} title="Align Left"><AlignLeft size={16} /></button>
-              <button onClick={() => setAlignment('center')} className={`p-1.5 rounded-md transition-all ${editor.isActive({ textAlign: 'center' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`} title="Align Center"><AlignCenter size={16} /></button>
-              <button onClick={() => setAlignment('right')} className={`p-1.5 rounded-md transition-all ${editor.isActive({ textAlign: 'right' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`} title="Align Right"><AlignRight size={16} /></button>
-              <button onClick={() => setAlignment('justify')} className={`p-1.5 rounded-md transition-all ${editor.isActive({ textAlign: 'justify' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`} title="Justify"><AlignJustify size={16} /></button>
+            {/* Alignment */}
+            <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+              <button onClick={() => setAlignment('left')} className={`p-1.5 rounded-md ${editor.isActive({ textAlign: 'left' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><AlignLeft size={16} /></button>
+              <button onClick={() => setAlignment('center')} className={`p-1.5 rounded-md ${editor.isActive({ textAlign: 'center' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><AlignCenter size={16} /></button>
+              <button onClick={() => setAlignment('right')} className={`p-1.5 rounded-md ${editor.isActive({ textAlign: 'right' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><AlignRight size={16} /></button>
+              <button onClick={() => setAlignment('justify')} className={`p-1.5 rounded-md ${editor.isActive({ textAlign: 'justify' }) ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><AlignJustify size={16} /></button>
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* List Buttons */}
-            <div className="flex items-center gap-0.5 bg-gray-50 dark:bg-gray-800 rounded-lg p-0.5">
-              <button onClick={toggleBulletList} className={`p-1.5 rounded-md transition-all ${editor.isActive('bulletList') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`} title="Bullet List"><List size={16} /></button>
-              <button onClick={toggleOrderedList} className={`p-1.5 rounded-md transition-all ${editor.isActive('orderedList') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`} title="Numbered List"><ListOrdered size={16} /></button>
-              <button onClick={toggleTaskList} className={`p-1.5 rounded-md transition-all ${editor.isActive('taskList') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`} title="Task List"><CheckSquare size={16} /></button>
+            {/* Lists */}
+            <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg p-0.5">
+              <button onClick={toggleBulletList} className={`p-1.5 rounded-md ${editor.isActive('bulletList') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><List size={16} /></button>
+              <button onClick={toggleOrderedList} className={`p-1.5 rounded-md ${editor.isActive('orderedList') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><ListOrdered size={16} /></button>
+              <button onClick={toggleTaskList} className={`p-1.5 rounded-md ${editor.isActive('taskList') ? 'bg-gray-900 text-white' : 'hover:bg-gray-200'}`}><CheckSquare size={16} /></button>
             </div>
 
             <div className="relative" ref={dropdownRefs.listAlign}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'listAlign' ? null : 'listAlign')} className="p-1.5 rounded-lg hover:bg-gray-100 flex items-center gap-1" title="List Alignment"><AlignLeft size={16} /><ChevronDown size={12} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'listAlign' ? null : 'listAlign')} className="p-1.5 rounded-lg hover:bg-gray-100 flex items-center gap-1"><AlignLeft size={16} /><ChevronDown size={12} /></button>
               {activeDropdown === 'listAlign' && <ListAlignmentDropdown editor={editor} onClose={() => setActiveDropdown(null)} />}
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
             {/* Block Elements */}
-            <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`p-1.5 rounded-md transition-all hover:bg-gray-100 ${editor.isActive('blockquote') ? 'bg-gray-200' : ''}`} title="Blockquote"><Quote size={16} /></button>
-            <button onClick={() => editor.chain().focus().setParagraph().run()} className="p-1.5 rounded-md hover:bg-gray-100 transition-colors" title="Paragraph"><Pilcrow size={16} /></button>
-            <button onClick={insertHorizontalRule} className="p-1.5 rounded-md hover:bg-gray-100 transition-colors" title="Horizontal Rule"><Minus size={16} /></button>
+            <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className={`p-1.5 rounded-md hover:bg-gray-100 ${editor.isActive('blockquote') ? 'bg-gray-200' : ''}`}><Quote size={16} /></button>
+            <button onClick={() => editor.chain().focus().setParagraph().run()} className="p-1.5 rounded-md hover:bg-gray-100"><Pilcrow size={16} /></button>
+            <button onClick={insertHorizontalRule} className="p-1.5 rounded-md hover:bg-gray-100"><Minus size={16} /></button>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Code Block Dropdown */}
+            {/* Code Block */}
             <div className="relative" ref={dropdownRefs.codeBlock}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'codeBlock' ? null : 'codeBlock')} className={`p-1.5 rounded-lg hover:bg-gray-100 transition-all ${editor.isActive('codeBlock') ? 'bg-purple-100 text-purple-600' : ''}`} title="Code Block"><Code2 size={16} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'codeBlock' ? null : 'codeBlock')} className={`p-1.5 rounded-lg hover:bg-gray-100 ${editor.isActive('codeBlock') ? 'bg-purple-100 text-purple-600' : ''}`}><Code2 size={16} /></button>
               {activeDropdown === 'codeBlock' && <CodeBlockDropdown editor={editor} onClose={() => setActiveDropdown(null)} />}
             </div>
 
-            {/* Callout Dropdown */}
+            {/* Callout */}
             <div className="relative" ref={dropdownRefs.callout}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'callout' ? null : 'callout')} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Insert Callout"><MessageCircle size={16} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'callout' ? null : 'callout')} className="p-1.5 rounded-lg hover:bg-gray-100"><MessageCircle size={16} /></button>
               {activeDropdown === 'callout' && <CalloutDropdown editor={editor} onClose={() => setActiveDropdown(null)} />}
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Table Dropdown */}
+            {/* Table */}
             <div className="relative" ref={dropdownRefs.table}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'table' ? null : 'table')} className="p-1.5 rounded-lg hover:bg-gray-100 flex items-center gap-1" title="Insert Table"><TableIcon size={16} /><ChevronDown size={12} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'table' ? null : 'table')} className="p-1.5 rounded-lg hover:bg-gray-100 flex items-center gap-1"><TableIcon size={16} /><ChevronDown size={12} /></button>
               {activeDropdown === 'table' && <TableDropdown onInsertTable={insertTable} onTableControl={handleTableControl} />}
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Link Buttons */}
-            <button onClick={setLink} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Insert Link (Ctrl+K)"><LinkIcon size={16} /></button>
-            <button onClick={unsetLink} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Remove Link"><Unlink size={16} /></button>
+            {/* Links */}
+            <button onClick={setLink} className="p-1.5 rounded-lg hover:bg-gray-100"><LinkIcon size={16} /></button>
+            <button onClick={unsetLink} className="p-1.5 rounded-lg hover:bg-gray-100"><Unlink size={16} /></button>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Media Insert Button */}
+            {/* Media Insert */}
             <div className="relative" ref={dropdownRefs.more}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'more' ? null : 'more')} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Insert Media"><Plus size={16} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'more' ? null : 'more')} className="p-1.5 rounded-lg hover:bg-gray-100"><Plus size={16} /></button>
               {activeDropdown === 'more' && (
-                <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border p-2 z-[100] w-52">
+                <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border p-2 z-[100] w-48">
                   <button onClick={() => { setShowImageModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2"><Image size={14} /> Image</button>
                   <button onClick={() => { setShowVideoModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2"><Video size={14} /> Video</button>
                   <button onClick={() => { setShowAudioModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2"><Music size={14} /> Audio</button>
@@ -1345,62 +1038,48 @@ const Toolbar = ({
               )}
             </div>
 
-            {/* RIGHT BLOCK TOGGLE BUTTON */}
+            {/* Right Block Toggle */}
             {onToggleRightBlock && (
-              <button
-                onClick={onToggleRightBlock}
-                className={`p-1.5 rounded-lg transition-all ${
-                  showRightBlock 
-                    ? 'bg-purple-600 text-white shadow-md' 
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600'
-                }`}
-                title={showRightBlock ? "Hide Right Block Panel" : "Show Right Block Panel"}
-              >
+              <button onClick={onToggleRightBlock} className={`p-1.5 rounded-lg transition-all ${showRightBlock ? 'bg-purple-600 text-white shadow-md' : 'hover:bg-gray-100'}`}>
                 {showRightBlock ? <PanelRightClose size={16} /> : <PanelRight size={16} />}
               </button>
             )}
 
-            {/* GRAMMARLY TOGGLE BUTTON */}
+            {/* Grammarly Toggle */}
             {onToggleGrammarly && (
-              <button
-                onClick={onToggleGrammarly}
-                className={`p-1.5 rounded-lg transition-all ${
-                  grammarlyEnabled 
-                    ? 'bg-green-600 text-white shadow-md' 
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600'
-                }`}
-                title={grammarlyEnabled ? "Disable Grammarly" : "Enable Grammarly"}
-              >
+              <button onClick={onToggleGrammarly} className={`p-1.5 rounded-lg transition-all ${grammarlyEnabled ? 'bg-green-600 text-white shadow-md' : 'hover:bg-gray-100'}`}>
                 <SpellCheck size={16} />
               </button>
             )}
 
-            {/* EDIT MODE BUTTON */}
-            <button onClick={toggleEditMode} className={`p-1.5 rounded-lg transition-all duration-200 ${editMode ? 'bg-purple-600 text-white shadow-lg scale-105' : 'hover:bg-gray-100'}`} title={editMode ? "Exit Edit Mode" : "Enter Edit Mode"}>{editMode ? <Check size={16} /> : <Edit2 size={16} />}</button>
+            {/* Edit Mode */}
+            <button onClick={toggleEditMode} className={`p-1.5 rounded-lg transition-all ${editMode ? 'bg-purple-600 text-white shadow-lg scale-105' : 'hover:bg-gray-100'}`}>
+              {editMode ? <Check size={16} /> : <Edit2 size={16} />}
+            </button>
 
             {/* Emoji Picker */}
             <div className="relative">
-              <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Insert Emoji"><Smile size={16} /></button>
+              <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="p-1.5 rounded-lg hover:bg-gray-100"><Smile size={16} /></button>
               {showEmojiPicker && <div className="absolute top-full left-0 mt-1 z-[100]"><EmojiPicker onEmojiClick={onEmojiClick} /></div>}
             </div>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
-            {/* Utility Buttons */}
-            <button onClick={selectAll} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Select All"><Copy size={16} /></button>
-            <button onClick={copyHtml} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Copy HTML"><Code size={16} /></button>
+            {/* Utilities */}
+            <button onClick={selectAll} className="p-1.5 rounded-lg hover:bg-gray-100"><Copy size={16} /></button>
+            <button onClick={copyHtml} className="p-1.5 rounded-lg hover:bg-gray-100"><Code size={16} /></button>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
             {/* Undo/Redo */}
-            <button onClick={() => editor.chain().focus().undo().run()} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Undo"><Undo size={16} /></button>
-            <button onClick={() => editor.chain().focus().redo().run()} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="Redo"><Redo size={16} /></button>
+            <button onClick={() => editor.chain().focus().undo().run()} className="p-1.5 rounded-lg hover:bg-gray-100"><Undo size={16} /></button>
+            <button onClick={() => editor.chain().focus().redo().run()} className="p-1.5 rounded-lg hover:bg-gray-100"><Redo size={16} /></button>
 
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
 
             {/* View Options */}
             <div className="relative" ref={dropdownRefs.view}>
-              <button onClick={() => setActiveDropdown(activeDropdown === 'view' ? null : 'view')} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors" title="View Options"><Eye size={16} /></button>
+              <button onClick={() => setActiveDropdown(activeDropdown === 'view' ? null : 'view')} className="p-1.5 rounded-lg hover:bg-gray-100"><Eye size={16} /></button>
               {activeDropdown === 'view' && (
                 <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border p-2 z-[100] w-48">
                   <button onClick={toggleFullscreen} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-lg flex items-center gap-2">{isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />} {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</button>
@@ -1408,18 +1087,18 @@ const Toolbar = ({
               )}
             </div>
 
-            {/* Stats Display */}
-            <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full text-xs ml-2">
+            {/* Stats */}
+            <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 rounded-full text-xs ml-2">
               <FileText size={12} className="text-gray-500" /><span className="font-mono">{wordCount.toLocaleString()}</span>
               <span className="text-gray-300">|</span><Clock size={12} className="text-gray-500" /><span className="font-mono">{readingTime}m</span>
               <span className="text-gray-300">|</span><TrendingUp size={12} className={getSeoScoreColor()} /><span className={`font-mono ${getSeoScoreColor()}`}>{seoScore}%</span>
             </div>
 
-            {/* Action Buttons */}
+            {/* Actions */}
             <div className="flex items-center gap-2 ml-auto">
-              <button onClick={onSave} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm hover:bg-gray-200"><Save size={14} /> Save</button>
-              <button onClick={onSchedule} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm hover:bg-gray-200"><Calendar size={14} /> Schedule</button>
-              <button onClick={onPreview} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm hover:bg-gray-200"><Eye size={14} /> Preview</button>
+              <button onClick={onSave} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-sm hover:bg-gray-200"><Save size={14} /> Save</button>
+              <button onClick={onSchedule} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-sm hover:bg-gray-200"><Calendar size={14} /> Schedule</button>
+              <button onClick={onPreview} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg text-sm hover:bg-gray-200"><Eye size={14} /> Preview</button>
               <button onClick={onPublish} className="flex items-center gap-2 px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800"><Send size={14} /> Publish</button>
             </div>
           </div>
@@ -1436,10 +1115,10 @@ const Toolbar = ({
 
       {/* Media Controls Bar */}
       {showMediaControls && selectedMediaForControls && !isCollapsed && (
-        <div className="sticky top-[57px] z-30 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-b border-purple-200 dark:border-purple-800 px-4 py-2 shadow-sm">
+        <div className="sticky top-[57px] z-30 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-b border-purple-200 px-4 py-2 shadow-sm">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <MediaControls editor={editor} onEdit={handleMediaEdit} className="mx-auto" />
-            <button onClick={clearMediaControls} className="p-1.5 hover:bg-purple-200 dark:hover:bg-purple-800 rounded-full"><X size={16} className="text-purple-600" /></button>
+            <span className="text-sm text-purple-600">Editing: {selectedMediaForControls.type}</span>
+            <button onClick={clearMediaControls} className="p-1.5 hover:bg-purple-200 rounded-full"><X size={16} className="text-purple-600" /></button>
           </div>
         </div>
       )}

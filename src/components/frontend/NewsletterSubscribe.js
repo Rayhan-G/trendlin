@@ -59,7 +59,6 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             setSubscriptionStatus('subscribed')
             setSelectedCategories(data.newsletter.categories || [])
             setOriginalCategories(data.newsletter.categories || [])
-            // Notify parent component
             if (onSubscriptionChange) onSubscriptionChange(true)
           } else {
             setSubscriptionStatus(null)
@@ -223,8 +222,13 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       setCooldown(true)
       setTimeout(() => setCooldown(false), 30000)
       
-      // Notify parent component
       if (onSubscriptionChange) onSubscriptionChange(true)
+      
+      // Show success toast
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Successfully subscribed to newsletter!', type: 'success' }
+      })
+      window.dispatchEvent(event)
     } catch (err) {
       console.error('Subscription error:', err)
       setError(err.message || 'Something went wrong. Please try again.')
@@ -257,7 +261,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
 
       setOriginalCategories(selectedCategories)
       setError('')
-      // Show success toast
+      
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Preferences updated successfully!', type: 'success' }
       })
@@ -293,10 +297,8 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       setSelectedCategories([])
       setOriginalCategories([])
       
-      // Notify parent component
       if (onSubscriptionChange) onSubscriptionChange(false)
       
-      // Show success toast
       const event = new CustomEvent('showToast', { 
         detail: { message: 'You have been unsubscribed.', type: 'info' }
       })
@@ -385,7 +387,7 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
         <div className="spinner"></div>
         <style jsx>{`
           .loading-placeholder {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            background: ${variant === 'footer' ? 'rgba(255,255,255,0.03)' : 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)'};
             border-radius: 24px;
             padding: 2rem;
             display: flex;
@@ -558,13 +560,13 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             text-align: center;
           }
           .success-icon { font-size: 48px; margin-bottom: 16px; }
-          h3 { margin: 0 0 12px; color: #0f172a; }
-          p { color: #64748b; margin: 0 0 8px; }
+          .modal-content h3 { margin: 0 0 12px; color: #0f172a; }
+          .modal-content p { color: #64748b; margin: 0 0 8px; }
           .email-highlight { font-family: monospace; font-weight: bold; color: #06b6d4; margin-bottom: 16px; }
-          button { width: 100%; padding: 12px; background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; margin-top: 16px; }
+          .modal-content button { width: 100%; padding: 12px; background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 600; margin-top: 16px; }
           :global(.dark) .modal-content { background: #1e293b; }
-          :global(.dark) h3 { color: white; }
-          :global(.dark) p { color: #94a3b8; }
+          :global(.dark) .modal-content h3 { color: white; }
+          :global(.dark) .modal-content p { color: #94a3b8; }
         `}</style>
       </div>
     )
@@ -809,7 +811,9 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
 
         <style jsx>{`
           .newsletter-wrapper {
-            background: ${variant === 'footer' ? 'rgba(255,255,255,0.03)' : 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)'};
+            background: ${variant === 'footer' 
+              ? 'rgba(255,255,255,0.03)' 
+              : 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)'};
             border-radius: ${variant === 'footer' ? '20px' : '28px'};
             padding: ${variant === 'footer' ? '1.5rem' : '2rem'};
             ${variant === 'footer' ? 'border: 1px solid rgba(255,255,255,0.08);' : ''}
