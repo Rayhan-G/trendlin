@@ -1,4 +1,5 @@
-// src/components/Editor/Toolbar.jsx - COMPLETE WITH BLOCK BUTTON REMOVED
+// src/components/Editor/Toolbar.jsx - WITH MIXED CONTENT TEMPLATES
+
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'
 import {
@@ -13,7 +14,8 @@ import {
   Layout, Merge, Split, Trash2, Code2, Terminal, Languages, MessageCircle,
   Lightbulb, AlertCircle, AlertTriangle, Star, Heart, Zap, CheckCircle, HelpCircle,
   Info, LayoutGrid, Edit2, Check, Loader2,
-  PanelRight, PanelRightClose, SpellCheck
+  PanelRight, PanelRightClose, SpellCheck,
+  Newspaper, BookOpen, LayoutTemplate, FileStack  // Added for templates
 } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import MediaControls from './MediaControls'
@@ -38,6 +40,323 @@ const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9
 const showToast = (message, type = 'info') => {
   const toastEvent = new CustomEvent('showToast', { detail: { message, type } })
   window.dispatchEvent(toastEvent)
+}
+
+// ==================== TEMPLATE GENERATORS ====================
+const generateContentPageTemplate = () => {
+  const id = generateId()
+  return `
+    <div class="template-content-page" data-template-type="content" data-template-id="${id}">
+      <div class="page-content" style="max-width: 800px; margin: 2rem auto;">
+        <h1 style="font-size: 2.5rem; font-weight: 700; margin-bottom: 1rem;">Content Title: Clear & Direct</h1>
+        <div class="meta" style="color: #6b7280; margin: 0.5rem 0 1.5rem; border-left: 4px solid #2563eb; padding-left: 1rem;">
+          📄 Updated: ${new Date().toLocaleDateString()} • 4 min read
+        </div>
+        <div class="featured-media" style="margin: 1.5rem 0;">
+          <img src="https://picsum.photos/id/20/800/400" alt="content visual" style="width:100%; border-radius: 1rem;">
+        </div>
+        <div class="body-text" style="font-size: 1.1rem; margin: 2rem 0;">
+          <p>This is a standard content page. Use these for evergreen information, documentation, or any structured page that doesn't require timestamps or author bylines.</p>
+          <h2 style="font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 1rem;">Subheading example</h2>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+          <ul style="margin: 1rem 0 1rem 2rem;">
+            <li>Clear hierarchy</li>
+            <li>No publication date required</li>
+            <li>Focus on utility</li>
+          </ul>
+          <div class="callout" style="background: #eef2ff; padding: 1.5rem; border-radius: 1rem; margin: 2rem 0;">
+            💡 <strong>Tip box</strong> — Great for summarizing key takeaways or extra resources.
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+const generateArticleTemplate = () => {
+  const id = generateId()
+  const date = new Date()
+  const author = "Dr. Sarah Chen"
+  
+  return `
+    <div class="template-article" data-template-type="article" data-template-id="${id}">
+      <article class="full-article" style="max-width: 900px; margin: 0 auto;">
+        <div class="article-header" style="text-align: center; margin-bottom: 2rem;">
+          <span class="category" style="background: #2563eb10; padding: 0.2rem 0.8rem; border-radius: 2rem; font-size: 0.8rem; display: inline-block;">📖 FEATURE ARTICLE</span>
+          <h1 style="font-size: 2.8rem; font-weight: 700; margin: 1rem 0;">The Future of Digital Publishing</h1>
+          <div class="byline" style="color: #4b5563; border-top: 1px solid #eaeaea; border-bottom: 1px solid #eaeaea; padding: 0.75rem 0; display: inline-block;">
+            By <strong>${author}</strong> — ${date.toLocaleDateString()} — 12 min read
+          </div>
+        </div>
+
+        <div class="hero-img" style="margin: 0 auto 2rem;">
+          <img src="https://picsum.photos/id/42/1200/600" alt="article hero" style="width:100%; border-radius: 1.5rem;">
+          <figcaption style="text-align: center; font-size:0.8rem; color:#6b7280; margin-top: 0.5rem;">Photo by Unsplash</figcaption>
+        </div>
+
+        <div class="article-body" style="font-size: 1.1rem; line-height: 1.7;">
+          <p class="lead" style="font-size:1.3rem; font-weight:400; border-left: 5px solid #2563eb; padding-left: 1.5rem; margin-bottom: 1.5rem;">
+            This is a dedicated article template. It emphasizes authorship, depth, and shareable structure for long-form content.
+          </p>
+          <p>Articles often include pull quotes, data visualizations, and references. They are less frequent than blog posts but carry more authority and depth.</p>
+          <blockquote style="font-style: italic; border-left: 3px solid #ccc; margin: 1.5rem 0; padding-left: 1.5rem; color:#2d3e50;">
+            “A great article doesn't just inform — it changes how you think.”
+          </blockquote>
+          <h2 style="font-size: 1.75rem; font-weight: 600; margin: 1.5rem 0 1rem;">Research methodology</h2>
+          <p>With proper subheadings, footnotes, and references. Articles shine when they are evergreen or deeply researched content that provides lasting value.</p>
+          <div class="author-bio" style="background:#f1f5f9; padding: 1rem; border-radius: 1rem; margin-top: 3rem;">
+            <strong>${author}</strong> — Writer & researcher focused on media evolution and digital publishing strategies.
+          </div>
+        </div>
+      </article>
+    </div>
+  `
+}
+
+const generateBlogTemplate = () => {
+  const id = generateId()
+  const date = new Date()
+  const tags = ["#Life", "#Tech", "#Personal"]
+  
+  return `
+    <div class="template-blog" data-template-type="blog" data-template-id="${id}">
+      <div class="blog-single" style="max-width: 720px; margin: 2rem auto;">
+        <div class="post-meta" style="display: flex; gap: 1rem; color:#6c757d; font-size:0.85rem; margin-bottom: 1rem;">
+          <span>📅 ${date.toLocaleDateString()}</span>
+          <span>✍️ 3 min read</span>
+          <span>🏷️ ${tags.join(' • ')}</span>
+        </div>
+        <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1.5rem;">What I learned this week (blog style)</h1>
+
+        <div class="blog-content" style="margin: 2rem 0;">
+          <p>Blog posts are more conversational. They have dates, tags, and often a comment section. This template is optimized for frequent, timely updates.</p>
+          <p>✅ Keep paragraphs short.<br>✅ Add personal voice.<br>✅ Encourage discussion.</p>
+          <img src="https://picsum.photos/id/26/700/300" alt="blog image" style="width:100%; border-radius: 1rem; margin: 1.5rem 0;">
+          <p>Unlike articles, blog posts don't require deep research. They reflect the author's current thinking or news. Perfect for daily updates, personal journals, and quick insights.</p>
+          <p>The conversational tone makes blog posts more engaging for regular readers who want to stay updated with your latest thoughts and activities.</p>
+        </div>
+
+        <hr style="margin: 2rem 0; border-color: #eaeaea;">
+        <div class="blog-footer" style="text-align: center;">
+          <p><strong>Share this post:</strong> Twitter / LinkedIn / Facebook</p>
+          <p><em>Want more? Subscribe to the newsletter for weekly updates.</em></p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+const generateMixedHomepageTemplate = () => {
+  const id = generateId()
+  
+  return `
+    <div class="template-mixed-homepage" data-template-type="mixed" data-template-id="${id}">
+      <div class="homepage-mixed">
+        <!-- Hero -->
+        <div class="hero" style="text-align: center; padding: 3rem 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 1rem; margin-bottom: 2rem;">
+          <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Ideas. Insights. Stories.</h1>
+          <p style="font-size: 1.1rem; opacity: 0.9;">Content • Long‑form Articles • Daily Blog</p>
+        </div>
+
+        <!-- Featured Article Section -->
+        <div style="margin-bottom: 3rem;">
+          <div class="featured-article" style="background: #f8fafc; border-radius: 1.5rem; padding: 2rem; border-left: 4px solid #2563eb;">
+            <span class="badge" style="background:#2563eb; color:white; padding:0.2rem 0.6rem; border-radius: 1rem; font-size:0.75rem;">⭐ FEATURED ARTICLE</span>
+            <h2 style="margin: 0.75rem 0 0.5rem; font-size: 1.5rem;">The Attention Economy in 2025</h2>
+            <p style="color: #4b5563;">A deep investigative piece on how media cycles have changed human behavior and attention spans in the digital age.</p>
+            <a href="#" style="display: inline-block; margin-top: 1rem; color: #2563eb; text-decoration: none; font-weight: 500;">Read full article →</a>
+          </div>
+        </div>
+
+        <!-- Standard Content Grid -->
+        <h2 style="margin: 2rem 0 1rem;">📘 Essential Guides (Content)</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <div class="card" style="background:white; padding:1.5rem; border-radius:1rem; border: 1px solid #eaeaea;">
+            <h3 style="margin-bottom: 0.5rem;">Getting Started</h3>
+            <p style="color: #6b7280;">Static content: setup, basics, FAQ, and beginner guides.</p>
+            <a href="#" style="color: #2563eb; text-decoration: none;">Learn more →</a>
+          </div>
+          <div class="card" style="background:white; padding:1.5rem; border-radius:1rem; border: 1px solid #eaeaea;">
+            <h3 style="margin-bottom: 0.5rem;">Reference Library</h3>
+            <p style="color: #6b7280;">Always up to date technical docs and API references.</p>
+            <a href="#" style="color: #2563eb; text-decoration: none;">Explore →</a>
+          </div>
+        </div>
+
+        <!-- Recent Blog Posts -->
+        <h2 style="margin: 2rem 0 1rem;">📝 Latest from the Blog</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="blog-item" style="border-bottom:1px solid #e2e8f0; padding:1rem 0;">
+            <small style="color: #6b7280;">${new Date().toLocaleDateString()}</small>
+            <h3 style="margin:0.2rem 0"><a href="#" style="color: #1a1a1a; text-decoration: none;">5 productivity hacks this month</a></h3>
+            <p style="color: #6b7280;">Quick blog-style update with practical tips.</p>
+          </div>
+          <div class="blog-item" style="border-bottom:1px solid #e2e8f0; padding:1rem 0;">
+            <small style="color: #6b7280;">${new Date(Date.now() - 86400000).toLocaleDateString()}</small>
+            <h3 style="margin:0.2rem 0"><a href="#" style="color: #1a1a1a; text-decoration: none;">Why I switched to minimalist code</a></h3>
+            <p style="color: #6b7280;">Personal take on simplifying development workflow.</p>
+          </div>
+        </div>
+        <a href="#" style="display: inline-block; margin: 1rem 0; color: #2563eb; text-decoration: none;">View all blog posts →</a>
+      </div>
+    </div>
+  `
+}
+
+// ==================== TEMPLATES DROPDOWN ====================
+const TemplatesDropdown = ({ editor, onClose }) => {
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [customTitle, setCustomTitle] = useState('')
+  const [showCustomize, setShowCustomize] = useState(false)
+
+  const templates = [
+    { 
+      id: 'content', 
+      name: 'Content Page', 
+      icon: FileText, 
+      description: 'Standard informational page',
+      color: 'blue',
+      template: generateContentPageTemplate
+    },
+    { 
+      id: 'article', 
+      name: 'Long‑form Article', 
+      icon: BookOpen, 
+      description: 'Deep dive / research piece',
+      color: 'purple',
+      template: generateArticleTemplate
+    },
+    { 
+      id: 'blog', 
+      name: 'Blog Post', 
+      icon: Newspaper, 
+      description: 'Timely / personal update',
+      color: 'green',
+      template: generateBlogTemplate
+    },
+    { 
+      id: 'mixed', 
+      name: 'Mixed Homepage', 
+      icon: LayoutTemplate, 
+      description: 'Content + Article + Blog',
+      color: 'orange',
+      template: generateMixedHomepageTemplate
+    }
+  ]
+
+  const insertTemplate = (template) => {
+    let html = template.template()
+    
+    // If custom title is provided, try to replace the first h1
+    if (customTitle && showCustomize) {
+      html = html.replace(/<h1[^>]*>.*?<\/h1>/, `<h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">${escapeHtml(customTitle)}</h1>`)
+    }
+    
+    editor.chain().focus().insertContent(html).run()
+    showToast(`${template.name} inserted`, 'success')
+    onClose()
+  }
+
+  const escapeHtml = (text) => {
+    const div = document.createElement('div')
+    div.textContent = text
+    return div.innerHTML
+  }
+
+  const getColorClasses = (color) => {
+    const colors = {
+      blue: 'border-blue-500 bg-blue-50 dark:bg-blue-950/30',
+      purple: 'border-purple-500 bg-purple-50 dark:bg-purple-950/30',
+      green: 'border-green-500 bg-green-50 dark:bg-green-950/30',
+      orange: 'border-orange-500 bg-orange-50 dark:bg-orange-950/30'
+    }
+    return colors[color] || colors.blue
+  }
+
+  const getIconColor = (color) => {
+    const colors = {
+      blue: 'text-blue-500',
+      purple: 'text-purple-500',
+      green: 'text-green-500',
+      orange: 'text-orange-500'
+    }
+    return colors[color] || colors.blue
+  }
+
+  return (
+    <div className="absolute top-full left-0 mt-1.5 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border z-[100] w-[480px] max-h-[550px] overflow-hidden">
+      <div className="p-3 border-b bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <LayoutTemplate size={16} className="text-purple-500" />
+            Insert Mixed Content Template
+          </div>
+          <button 
+            onClick={() => setShowCustomize(!showCustomize)}
+            className="text-xs text-purple-600 hover:text-purple-700"
+          >
+            {showCustomize ? 'Hide options' : 'Customize'}
+          </button>
+        </div>
+        
+        {showCustomize && (
+          <div className="mt-3">
+            <label className="text-xs text-gray-500 block mb-1">Custom Title (optional)</label>
+            <input 
+              type="text"
+              value={customTitle}
+              onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder="Enter custom title..."
+              className="w-full px-3 py-1.5 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 dark:bg-gray-700"
+              autoFocus
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="max-h-[450px] overflow-y-auto p-3">
+        <div className="grid grid-cols-2 gap-3">
+          {templates.map((template) => {
+            const Icon = template.icon
+            return (
+              <button
+                key={template.id}
+                onClick={() => insertTemplate(template)}
+                onMouseEnter={() => setSelectedTemplate(template.id)}
+                onMouseLeave={() => setSelectedTemplate(null)}
+                className={`p-3 rounded-xl text-left transition-all border-2 relative overflow-hidden group
+                  ${selectedTemplate === template.id ? getColorClasses(template.color) : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${getColorClasses(template.color)}`}>
+                    <Icon size={18} className={getIconColor(template.color)} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm">{template.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">{template.description}</div>
+                    <div className="text-[10px] text-gray-400 mt-2 flex items-center gap-1">
+                      <span>✨ One-click insert</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Preview indicator */}
+                {selectedTemplate === template.id && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10 dark:to-white/5 pointer-events-none" />
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+          <div className="text-[10px] text-gray-400 text-center">
+            📋 Templates include: Pages, Articles, Blog posts, and Mixed layouts
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ==================== FONT DROPDOWN ====================
@@ -399,7 +718,7 @@ const Toolbar = ({
   const dropdownRefs = {
     font: useRef(null), size: useRef(null), color: useRef(null), highlight: useRef(null),
     table: useRef(null), listAlign: useRef(null), more: useRef(null), view: useRef(null),
-    heading: useRef(null), codeBlock: useRef(null), callout: useRef(null)
+    heading: useRef(null), codeBlock: useRef(null), callout: useRef(null), templates: useRef(null)
   }
 
   const fontSizes = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 48, 56, 64, 72]
@@ -847,6 +1166,24 @@ const Toolbar = ({
 
         {!isCollapsed ? (
           <div className="flex flex-wrap items-center gap-1">
+            {/* TEMPLATES DROPDOWN - NEW FEATURE */}
+            <div className="relative" ref={dropdownRefs.templates}>
+              <button 
+                onClick={() => setActiveDropdown(activeDropdown === 'templates' ? null : 'templates')}
+                className="h-9 px-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium flex items-center gap-2 transition-all hover:shadow-md hover:scale-105"
+                title="Insert Content Templates"
+              >
+                <FileStack size={14} />
+                Templates
+                <ChevronDown size={14} className="text-white/70" />
+              </button>
+              {activeDropdown === 'templates' && (
+                <TemplatesDropdown editor={editor} onClose={() => setActiveDropdown(null)} />
+              )}
+            </div>
+
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1" />
+
             {/* Heading Dropdown */}
             <div className="relative" ref={dropdownRefs.heading}>
               <button 
