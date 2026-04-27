@@ -1,3 +1,4 @@
+// pages/api/auth/send-verification.js (you already have this)
 import { randomBytes } from 'crypto'
 import { supabase } from '../../../lib/supabase'
 

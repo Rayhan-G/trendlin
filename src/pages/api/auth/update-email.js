@@ -1,5 +1,6 @@
-// src/pages/api/auth/update-email.js
+// pages/api/auth/update-email.js
 import { supabase } from '@/lib/supabase'
+import { randomBytes } from 'crypto'
 
 export default async function handler(req, res) {
   if (req.method !== 'PUT') {
@@ -21,10 +22,33 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Invalid session' })
   }
 
-  const { email } = req.body
+  const { email, verificationCode, verificationId } = req.body
 
   if (!email || !email.includes('@')) {
     return res.status(400).json({ error: 'Valid email required' })
+  }
+
+  if (!verificationCode || !verificationId) {
+    return res.status(400).json({ error: 'Verification required. Please verify your new email first.' })
+  }
+
+  // Verify the code
+  const { data: verification, error: verifyError } = await supabase
+    .from('verification_codes')
+    .select('*')
+    .eq('verification_id', verificationId)
+    .eq('email', email.toLowerCase())
+    .eq('code', verificationCode)
+    .eq('used', false)
+    .single()
+
+  if (verifyError || !verification) {
+    return res.status(400).json({ error: 'Invalid or expired verification code' })
+  }
+
+  // Check if code expired
+  if (new Date(verification.expires_at) < new Date()) {
+    return res.status(400).json({ error: 'Verification code has expired' })
   }
 
   // Check if email already exists
@@ -39,6 +63,7 @@ export default async function handler(req, res) {
     return res.status(409).json({ error: 'Email already in use' })
   }
 
+  // Update user's email
   const { error: updateError } = await supabase
     .from('users')
     .update({ email: email.toLowerCase() })
@@ -48,5 +73,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to update email' })
   }
 
-  return res.status(200).json({ success: true })
+  // Mark verification code as used
+  await supabase
+    .from('verification_codes')
+    .update({ used: true })
+    .eq('verification_id', verificationId)
+
+  return res.status(200).json({ success: true, message: 'Email updated successfully!' })
 }

@@ -21,6 +21,14 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingSubscription, setPendingSubscription] = useState(null)
   const [isHovered, setIsHovered] = useState(false)
+  
+  // Email verification states
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
+  const [verificationId, setVerificationId] = useState('')
+  const [pendingNewEmail, setPendingNewEmail] = useState('')
+  const [verificationStep, setVerificationStep] = useState('email')
+  const [sendingCode, setSendingCode] = useState(false)
 
   const categories = [
     { id: 'health', name: 'Health & Wellness', icon: '🌿', color: '#10b981' },
@@ -324,9 +332,53 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
     }
   }
 
-  const handleUpdateEmail = async () => {
+  const sendVerificationCode = async () => {
     if (!newEmail || !newEmail.includes('@')) {
       setEmailError('Please enter a valid email address')
+      return
+    }
+
+    if (newEmail === user.email) {
+      setEmailError('New email must be different from current email')
+      return
+    }
+
+    setSendingCode(true)
+    setEmailError('')
+
+    try {
+      const res = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newEmail })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send verification code')
+      }
+
+      setVerificationId(data.verificationId)
+      setPendingNewEmail(newEmail)
+      setVerificationStep('code')
+      setShowVerificationModal(true)
+      
+      const event = new CustomEvent('showToast', { 
+        detail: { message: 'Verification code sent! Check your email or console.', type: 'success' }
+      })
+      window.dispatchEvent(event)
+      
+    } catch (err) {
+      setEmailError(err.message)
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
+  const verifyAndUpdateEmail = async () => {
+    if (!verificationCode || verificationCode.length !== 6) {
+      setEmailError('Please enter the 6-digit verification code')
       return
     }
 
@@ -337,7 +389,11 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
       const res = await fetch('/api/auth/update-email', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newEmail })
+        body: JSON.stringify({ 
+          email: pendingNewEmail,
+          verificationCode: verificationCode,
+          verificationId: verificationId
+        })
       })
 
       const data = await res.json()
@@ -346,14 +402,19 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
         throw new Error(data.error || 'Failed to update email')
       }
 
-      setUser({ ...user, email: newEmail })
+      setUser({ ...user, email: pendingNewEmail })
+      setNewEmail(pendingNewEmail)
+      setShowVerificationModal(false)
+      setVerificationStep('email')
+      setVerificationCode('')
+      setPendingNewEmail('')
+      setEmailError('')
       
       const event = new CustomEvent('showToast', { 
         detail: { message: 'Email updated successfully!', type: 'success' }
       })
       window.dispatchEvent(event)
       
-      setEmailError('')
     } catch (err) {
       setEmailError(err.message)
     } finally {
@@ -738,34 +799,95 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
               </div>
             </div>
             
-            <div className="email-change-form">
-              <label>New email address</label>
-              <div className="email-input-group">
-                <input 
-                  type="email" 
-                  value={newEmail} 
-                  onChange={(e) => setNewEmail(e.target.value)} 
-                  placeholder="Enter new email address"
-                  className="email-input"
-                  disabled={emailLoading}
-                />
-                <button 
-                  onClick={handleUpdateEmail} 
-                  disabled={emailLoading || !newEmail || newEmail === user.email}
-                  className="update-email-btn"
-                >
-                  {emailLoading ? (
-                    <span className="btn-spinner-small"></span>
-                  ) : (
-                    'Update Email'
-                  )}
-                </button>
+            {!showVerificationModal ? (
+              <div className="email-change-form">
+                <label>New email address</label>
+                <div className="email-input-group">
+                  <input 
+                    type="email" 
+                    value={newEmail} 
+                    onChange={(e) => setNewEmail(e.target.value)} 
+                    placeholder="Enter new email address"
+                    className="email-input"
+                    disabled={sendingCode}
+                  />
+                  <button 
+                    onClick={sendVerificationCode} 
+                    disabled={sendingCode || !newEmail || newEmail === user.email}
+                    className="update-email-btn"
+                  >
+                    {sendingCode ? (
+                      <span className="btn-spinner-small"></span>
+                    ) : (
+                      'Send Verification'
+                    )}
+                  </button>
+                </div>
+                {emailError && <p className="error-msg">{emailError}</p>}
               </div>
-              {emailError && <p className="error-msg">{emailError}</p>}
-              <p className="email-note">
-                ⚠️ You'll need to verify your new email address. A confirmation link will be sent.
-              </p>
-            </div>
+            ) : (
+              <div className="verification-form">
+                <div className="verification-header">
+                  <button 
+                    onClick={() => {
+                      setShowVerificationModal(false)
+                      setVerificationStep('email')
+                      setVerificationCode('')
+                      setEmailError('')
+                    }}
+                    className="back-btn"
+                  >
+                    ← Back
+                  </button>
+                  <label>Verify New Email</label>
+                </div>
+                
+                <div className="verification-email-display">
+                  {pendingNewEmail}
+                </div>
+                
+                <div className="code-input-group">
+                  <input 
+                    type="text" 
+                    maxLength="6"
+                    value={verificationCode} 
+                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))} 
+                    placeholder="Enter 6-digit code"
+                    className="code-input"
+                    disabled={emailLoading}
+                    autoFocus
+                  />
+                  <button 
+                    onClick={verifyAndUpdateEmail} 
+                    disabled={emailLoading || verificationCode.length !== 6}
+                    className="verify-btn"
+                  >
+                    {emailLoading ? (
+                      <span className="btn-spinner-small"></span>
+                    ) : (
+                      'Verify & Update'
+                    )}
+                  </button>
+                </div>
+                
+                <div className="resend-section">
+                  <button 
+                    onClick={sendVerificationCode}
+                    disabled={sendingCode}
+                    className="resend-btn"
+                  >
+                    Resend code
+                  </button>
+                  <span className="expiry-note">Code expires in 10 minutes</span>
+                </div>
+                
+                {emailError && <p className="error-msg">{emailError}</p>}
+                
+                <p className="email-note-dev">
+                  💡 Check your console for the verification code (development mode only)
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1010,6 +1132,10 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             background: #0891b2; 
             transform: translateY(-1px); 
           }
+          .save-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
           .cancel-btn { 
             padding: 6px 16px; 
             background: #f3f4f6; 
@@ -1144,6 +1270,160 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             cursor: not-allowed;
           }
           
+          /* Verification Form Styles */
+          .verification-form {
+            margin-top: 0.5rem;
+          }
+          
+          .verification-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+          }
+          
+          .back-btn {
+            background: none;
+            border: none;
+            color: #06b6d4;
+            cursor: pointer;
+            font-size: 0.875rem;
+            padding: 0;
+          }
+          
+          .back-btn:hover {
+            text-decoration: underline;
+          }
+          
+          .verification-header label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          :global(.dark) .verification-header label {
+            color: rgba(255,255,255,0.5);
+          }
+          
+          .verification-email-display {
+            padding: 0.75rem;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 0.875rem;
+            text-align: center;
+            color: #1e40af;
+            margin-bottom: 1rem;
+            word-break: break-all;
+          }
+          :global(.dark) .verification-email-display {
+            background: rgba(6,182,212,0.1);
+            border-color: rgba(6,182,212,0.3);
+            color: #06b6d4;
+          }
+          
+          .code-input-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+          }
+          
+          .code-input {
+            flex: 1;
+            padding: 0.75rem;
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            color: #111827;
+            font-size: 1.125rem;
+            text-align: center;
+            letter-spacing: 4px;
+            font-family: monospace;
+          }
+          :global(.dark) .code-input {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.15);
+            color: white;
+          }
+          
+          .code-input:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 0 3px rgba(6,182,212,0.1);
+          }
+          
+          .verify-btn {
+            padding: 0.75rem 1.5rem;
+            background: #06b6d4;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+          }
+          
+          .verify-btn:hover:not(:disabled) {
+            background: #0891b2;
+            transform: translateY(-1px);
+          }
+          
+          .verify-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          .resend-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+          }
+          
+          .resend-btn {
+            background: none;
+            border: none;
+            color: #06b6d4;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 0;
+          }
+          
+          .resend-btn:hover:not(:disabled) {
+            text-decoration: underline;
+          }
+          
+          .resend-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          .expiry-note {
+            font-size: 0.7rem;
+            color: #9ca3af;
+          }
+          :global(.dark) .expiry-note {
+            color: #6b7280;
+          }
+          
+          .email-note-dev {
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: #fef3c7;
+            border-radius: 8px;
+            color: #92400e;
+            text-align: center;
+          }
+          :global(.dark) .email-note-dev {
+            background: rgba(245, 158, 11, 0.1);
+            color: #fbbf24;
+          }
+          
           .btn-spinner-small {
             display: inline-block;
             width: 14px;
@@ -1152,19 +1432,6 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
             border-top-color: #06b6d4;
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
-          }
-          
-          .email-note {
-            font-size: 0.7rem;
-            margin-top: 0.5rem;
-            padding: 0.5rem;
-            background: #fef3c7;
-            border-radius: 8px;
-            color: #92400e;
-          }
-          :global(.dark) .email-note {
-            background: rgba(245, 158, 11, 0.1);
-            color: #fbbf24;
           }
           
           .error-msg { 
@@ -1205,6 +1472,12 @@ export default function NewsletterSubscribe({ variant = 'default', onSubscriptio
               flex-direction: column;
             }
             .update-email-btn {
+              width: 100%;
+            }
+            .code-input-group {
+              flex-direction: column;
+            }
+            .verify-btn {
               width: 100%;
             }
           }
