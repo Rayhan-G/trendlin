@@ -1,4 +1,4 @@
-// src/components/Editor/Toolbar.jsx - COMPLETE PROFESSIONAL VERSION
+// src/components/editor/Toolbar.jsx - COMPLETE PROFESSIONAL VERSION
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import PropTypes from 'prop-types'

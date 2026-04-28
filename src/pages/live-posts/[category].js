@@ -21,7 +21,7 @@ import TableHeader from '@tiptap/extension-table-header';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 
-import Toolbar from '../../components/Editor/Toolbar';
+import Toolbar from '../../components/editor/Toolbar';
 import CommentSection from '../../components/frontend/CommentSection';
 import { Heart, MessageCircle, Share2, Clock, Sparkles } from 'lucide-react';
 
