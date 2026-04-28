@@ -7,15 +7,15 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-    // GET: Fetch active post for a category
+    // GET: Fetch active post
     if (req.method === 'GET') {
         const { category } = req.query;
         
         const { data, error } = await supabase
             .from('live_posts')
             .select('*')
-            .eq('status', 'published')
             .eq('category', category)
+            .eq('status', 'published')
             .gt('expires_at', new Date().toISOString())
             .order('published_at', { ascending: false })
             .limit(1)
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ post: data || null });
     }
     
-    // POST: Create new post
+    // POST: Create new post - NO VALIDATION, anything goes
     if (req.method === 'POST') {
         const { category, title, content, status, media_items } = req.body;
         
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
         return res.status(201).json({ post: data });
     }
     
-    // PUT: Update existing post
+    // PUT: Update existing post - NO VALIDATION
     if (req.method === 'PUT') {
         const { id } = req.query;
         const { title, content, status, media_items } = req.body;
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
             updated_at: new Date().toISOString()
         };
         
-        if (status === 'published') {
+        if (status === 'published' && !updateData.published_at) {
             updateData.status = 'published';
             updateData.published_at = new Date().toISOString();
             updateData.expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -103,19 +103,6 @@ export default async function handler(req, res) {
         
         if (error) return res.status(500).json({ error: error.message });
         return res.status(200).json({ post: data });
-    }
-    
-    // DELETE: Delete a post
-    if (req.method === 'DELETE') {
-        const { id } = req.query;
-        
-        const { error } = await supabase
-            .from('live_posts')
-            .delete()
-            .eq('id', id);
-        
-        if (error) return res.status(500).json({ error: error.message });
-        return res.status(200).json({ success: true });
     }
     
     return res.status(405).json({ error: 'Method not allowed' });

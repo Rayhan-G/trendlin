@@ -21,61 +21,19 @@ import TableHeader from '@tiptap/extension-table-header';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 
-import Toolbar from '../../components/editor/Toolbar';  // ← Fixed: lowercase 'editor'
+import Toolbar from '../../components/Editor/Toolbar';
 import CommentSection from '../../components/frontend/CommentSection';
 import { Heart, MessageCircle, Share2, Clock, Sparkles } from 'lucide-react';
 
-// Category Configuration - Only 7 main categories
+// Category Configuration
 const categoryConfig = {
-  health: {
-    name: 'Health & Wellness',
-    icon: '🌿',
-    gradient: 'from-emerald-500 to-teal-500',
-    bgGradient: 'from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20',
-    description: 'Your journey to better health starts here'
-  },
-  wealth: {
-    name: 'Wealth & Finance',
-    icon: '💰',
-    gradient: 'from-amber-500 to-orange-500',
-    bgGradient: 'from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20',
-    description: 'Build your financial future'
-  },
-  tech: {
-    name: 'Technology',
-    icon: '⚡',
-    gradient: 'from-blue-500 to-cyan-500',
-    bgGradient: 'from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20',
-    description: 'Latest in tech and innovation'
-  },
-  growth: {
-    name: 'Personal Growth',
-    icon: '🌱',
-    gradient: 'from-green-500 to-emerald-500',
-    bgGradient: 'from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20',
-    description: 'Become the best version of yourself'
-  },
-  entertainment: {
-    name: 'Entertainment',
-    icon: '🎬',
-    gradient: 'from-pink-500 to-rose-500',
-    bgGradient: 'from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20',
-    description: 'Your daily dose of entertainment'
-  },
-  world: {
-    name: 'World News',
-    icon: '🌍',
-    gradient: 'from-cyan-500 to-blue-500',
-    bgGradient: 'from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20',
-    description: 'Global perspectives that matter'
-  },
-  lifestyle: {
-    name: 'Lifestyle',
-    icon: '✨',
-    gradient: 'from-orange-500 to-red-500',
-    bgGradient: 'from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20',
-    description: 'Live your best life'
-  }
+  health: { name: 'Health & Wellness', icon: '🌿', gradient: 'from-emerald-500 to-teal-500', bgGradient: 'from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20', description: 'Your journey to better health starts here' },
+  wealth: { name: 'Wealth & Finance', icon: '💰', gradient: 'from-amber-500 to-orange-500', bgGradient: 'from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20', description: 'Build your financial future' },
+  tech: { name: 'Technology', icon: '⚡', gradient: 'from-blue-500 to-cyan-500', bgGradient: 'from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20', description: 'Latest in tech and innovation' },
+  growth: { name: 'Personal Growth', icon: '🌱', gradient: 'from-green-500 to-emerald-500', bgGradient: 'from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20', description: 'Become the best version of yourself' },
+  entertainment: { name: 'Entertainment', icon: '🎬', gradient: 'from-pink-500 to-rose-500', bgGradient: 'from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20', description: 'Your daily dose of entertainment' },
+  world: { name: 'World News', icon: '🌍', gradient: 'from-cyan-500 to-blue-500', bgGradient: 'from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20', description: 'Global perspectives that matter' },
+  lifestyle: { name: 'Lifestyle', icon: '✨', gradient: 'from-orange-500 to-red-500', bgGradient: 'from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20', description: 'Live your best life' }
 };
 
 export default function LivePostPage() {
@@ -95,14 +53,13 @@ export default function LivePostPage() {
   const [grammarlyEnabled, setGrammarlyEnabled] = useState(true);
   
   const timerRef = useRef(null);
-
   const config = categoryConfig[category];
 
   // Initialize TipTap Editor
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
-      Placeholder.configure({ placeholder: 'Write your story here... Share your knowledge, experiences, and insights.' }),
+      Placeholder.configure({ placeholder: 'Write anything... No limits, no rules. Just create.' }),
       TextStyle,
       Color,
       Highlight,
@@ -122,6 +79,7 @@ export default function LivePostPage() {
     editorProps: { attributes: { class: 'prose prose-lg max-w-none focus:outline-none min-h-[400px] px-4 py-6 dark:prose-invert' } },
   });
 
+  // Fetch post
   const fetchPost = useCallback(async () => {
     if (!category) return;
     setLoading(true);
@@ -136,7 +94,7 @@ export default function LivePostPage() {
         if (editor && data.post.content) {
           editor.commands.setContent(data.post.content);
         }
-        if (data.post.comments) setComments(data.post.comments);
+        setComments(data.post.comments || []);
         setLiked(data.post.liked_by?.includes('visitor') || false);
       } else {
         setPost(null);
@@ -176,6 +134,7 @@ export default function LivePostPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [post, fetchPost]);
 
+  // Like handler
   const handleLike = async () => {
     if (!post) return;
     const response = await fetch(`/api/live-posts/${post.id}/like`, {
@@ -190,6 +149,7 @@ export default function LivePostPage() {
     }
   };
 
+  // Share handler
   const handleShare = async () => {
     if (!post) return;
     await fetch(`/api/live-posts/${post.id}/share`, { method: 'POST' });
@@ -197,6 +157,7 @@ export default function LivePostPage() {
     alert('Post shared!');
   };
 
+  // Save draft - NO validation, anything goes
   const handleSave = async () => {
     if (!editor) return;
     const content = editor.getHTML();
@@ -207,8 +168,8 @@ export default function LivePostPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         category,
-        title: title || 'Untitled',
-        content: content,
+        title: title || null,
+        content: content || null,
         status: 'draft'
       })
     });
@@ -224,6 +185,7 @@ export default function LivePostPage() {
     setSaving(false);
   };
 
+  // Publish - NO validation, anything goes
   const handlePublish = async () => {
     if (!editor) return;
     const content = editor.getHTML();
@@ -234,8 +196,8 @@ export default function LivePostPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         category,
-        title: title || 'Untitled',
-        content: content,
+        title: title || null,
+        content: content || null,
         status: 'published'
       })
     });
@@ -260,7 +222,7 @@ export default function LivePostPage() {
     previewWindow.document.write(`
       <html>
         <head>
-          <title>Preview: ${title}</title>
+          <title>Preview: ${title || 'Untitled'}</title>
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
           <script src="https://cdn.tailwindcss.com"></script>
         </head>
@@ -272,6 +234,7 @@ export default function LivePostPage() {
     previewWindow.document.close();
   };
 
+  // Simple word count (just for display, no validation)
   const getWordCount = () => {
     const text = editor?.getText() || post?.content?.replace(/<[^>]*>/g, '') || '';
     return text.trim().split(/\s+/).filter(w => w.length > 0).length;
@@ -280,15 +243,6 @@ export default function LivePostPage() {
   const getReadingTime = () => {
     const words = getWordCount();
     return Math.max(1, Math.ceil(words / 200));
-  };
-
-  const getSeoScore = () => {
-    let score = 0;
-    if (title && title.length > 0) score += 30;
-    if (editor?.getText().length > 500 || post?.content?.length > 500) score += 40;
-    if (editor?.getHTML()?.includes('<img') || post?.content?.includes('<img')) score += 15;
-    if (editor?.getHTML()?.includes('<h2') || post?.content?.includes('<h2')) score += 15;
-    return Math.min(100, score);
   };
 
   const isUrgent = timeLeft && timeLeft.includes('h') && parseInt(timeLeft) < 1;
@@ -317,7 +271,7 @@ export default function LivePostPage() {
     <>
       <Head>
         <title>{post?.title || config.name} | ÉCLAT</title>
-        <meta name="description" content={post?.content?.substring(0, 160) || config.description} />
+        <meta name="description" content="Create anything you want. No limits. No rules." />
       </Head>
 
       <div className={`min-h-screen bg-gradient-to-br ${config.bgGradient} transition-colors duration-300`}>
@@ -325,9 +279,7 @@ export default function LivePostPage() {
         <div className={`bg-gradient-to-r ${config.gradient} text-white`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <Link href="/">
-              <button className="mb-6 flex items-center gap-2 text-white/80 hover:text-white transition">
-                ← Back to Home
-              </button>
+              <button className="mb-6 flex items-center gap-2 text-white/80 hover:text-white transition">← Back to Home</button>
             </Link>
             <div className="flex items-center gap-4">
               <span className="text-6xl">{config.icon}</span>
@@ -342,9 +294,8 @@ export default function LivePostPage() {
         {/* Main Content */}
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {post && !isEditing ? (
-            // View Mode - Display Post
+            // VIEW MODE - Display existing post
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
-              {/* Post Header */}
               <div className="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                   <div className="flex items-center gap-2">
@@ -353,23 +304,22 @@ export default function LivePostPage() {
                   </div>
                   {post.expires_at && (
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono ${isUrgent ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
-                      <Clock size={14} />
-                      <span>{timeLeft}</span>
+                      <Clock size={14} /> <span>{timeLeft}</span>
                     </div>
                   )}
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">{post.title}</h1>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">{post.title || 'Untitled'}</h1>
                 <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                  <span>📅 {new Date(post.published_at).toLocaleDateString()}</span>
+                  <span>📅 {post.published_at ? new Date(post.published_at).toLocaleDateString() : 'Not published'}</span>
                   <span>📖 {getWordCount()} words</span>
                   <span>⏱️ {getReadingTime()} min read</span>
                 </div>
               </div>
 
-              {/* Post Content */}
-              <div className="p-6 md:p-8 prose prose-gray dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: post.content || '<p class="text-gray-500 italic">No content yet.</p>' }} />
+              {/* Post Content - Rendered HTML */}
+              <div className="p-6 md:p-8 prose prose-gray dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: post.content || '<p class="text-gray-500 italic">No content yet. Click Edit to add something.</p>' }} />
 
-              {/* Media Carousel */}
+              {/* Media Carousel - if media exists */}
               {post.media_items?.length > 0 && (
                 <div className="relative bg-black mx-6 md:mx-8 rounded-xl overflow-hidden">
                   <div className="relative h-[400px]">
@@ -413,11 +363,10 @@ export default function LivePostPage() {
                 </button>
               </div>
 
-              {/* Comments Section */}
               <CommentSection postId={post.id} currentUser={{ id: 'visitor', name: 'Guest' }} isAdmin={true} />
             </div>
           ) : isEditing ? (
-            // Edit/Create Mode with Full Toolbar
+            // EDIT/CREATE MODE - Full Toolbar with ALL media modals
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
               <div className="p-6 border-b border-gray-200 dark:border-gray-800">
                 <div className="flex items-center gap-3 mb-4">
@@ -428,11 +377,12 @@ export default function LivePostPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Post Title..."
+                  placeholder="Post Title (optional)..."
                   className="w-full text-3xl md:text-4xl font-bold bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-gray-300 dark:placeholder-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
 
+              {/* FULL TOOLBAR with ALL media modals integrated */}
               <Toolbar
                 editor={editor}
                 onSave={handleSave}
@@ -441,13 +391,14 @@ export default function LivePostPage() {
                 onPreview={handlePreview}
                 wordCount={getWordCount()}
                 readingTime={getReadingTime()}
-                seoScore={getSeoScore()}
+                seoScore={0}
                 showRightBlock={showRightBlock}
                 onToggleRightBlock={() => setShowRightBlock(!showRightBlock)}
                 grammarlyEnabled={grammarlyEnabled}
                 onToggleGrammarly={() => setGrammarlyEnabled(!grammarlyEnabled)}
               />
 
+              {/* EDITOR CONTENT - Write anything, no limits */}
               <EditorContent editor={editor} className="min-h-[500px]" />
 
               <div className="p-6 border-t border-gray-200 dark:border-gray-800 flex gap-3">
@@ -463,12 +414,12 @@ export default function LivePostPage() {
               </div>
             </div>
           ) : (
-            // No Post - Create New
+            // NO POST - Create First Post
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-12 text-center">
               <div className="text-7xl mb-4">{config.icon}</div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No Active Post</h2>
               <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
-                {config.name} doesn't have an active 24-hour post right now. Be the first to share!
+                Create anything you want. A single word. An image. A video. Or nothing at all.
               </p>
               <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:opacity-90 transition">
                 <Sparkles size={18} />
