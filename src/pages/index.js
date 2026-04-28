@@ -1,18 +1,21 @@
-// src/pages/index.js
+// src/pages/index.js (UPDATED with Live Posts)
 import { useState, useEffect } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
+import LivePostCarousel from '../components/frontend/LivePostCarousel'
 import { supabase } from '../lib/supabase'
 
 export default function Home() {
   const [todayPosts, setTodayPosts] = useState([])
   const [popularPosts, setPopularPosts] = useState([])
   const [editorsPicks, setEditorsPicks] = useState([])
+  const [livePosts, setLivePosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     fetchPosts()
+    fetchLivePosts()
   }, [])
 
   const fetchPosts = async () => {
@@ -27,7 +30,7 @@ export default function Home() {
       const currentMonth = today.getMonth() + 1
       const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
 
-      // Fetch all published posts
+      // Fetch all published posts from main posts table
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
@@ -72,6 +75,24 @@ export default function Home() {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchLivePosts = async () => {
+    try {
+      // Fetch all active live posts (24-hour posts)
+      const { data: live, error: liveError } = await supabase
+        .from('live_posts')
+        .select('*')
+        .eq('status', 'active')
+        .gt('expires_at', new Date().toISOString())
+        .order('published_at', { ascending: false })
+
+      if (!liveError && live && live.length > 0) {
+        setLivePosts(live)
+      }
+    } catch (error) {
+      console.error('Error fetching live posts:', error)
     }
   }
 
@@ -145,7 +166,7 @@ export default function Home() {
     )
   }
 
-  const hasPosts = todayPosts.length > 0 || popularPosts.length > 0 || editorsPicks.length > 0
+  const hasPosts = todayPosts.length > 0 || popularPosts.length > 0 || editorsPicks.length > 0 || livePosts.length > 0
 
   if (!hasPosts) {
     return (
@@ -175,6 +196,22 @@ export default function Home() {
       <HeroSection />
       
       <div className="home-container">
+        {/* Live Posts Banner - 24H Premium Section */}
+        {livePosts.length > 0 && (
+          <div className="live-section">
+            <div className="section-header">
+              <div className="live-badge">
+                <span className="live-dot"></span>
+                LIVE NOW • 24H POSTS
+              </div>
+              <h2 className="section-title">✨ ÉCLAT — Fresh Daily</h2>
+              <p className="section-subtitle">One post per category. Expires in 24 hours.</p>
+            </div>
+            <LivePostCarousel posts={livePosts} />
+          </div>
+        )}
+
+        {/* Regular Posts Sections */}
         {editorsPicks.length > 0 && (
           <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
         )}
@@ -194,8 +231,64 @@ export default function Home() {
           margin: 0 auto;
           padding: 0 2rem 4rem 2rem;
         }
+        
+        .live-section {
+          margin-bottom: 3rem;
+        }
+        
+        .section-header {
+          margin-bottom: 1.5rem;
+        }
+        
+        .live-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.25rem 0.75rem;
+          background: linear-gradient(135deg, #8b5cf6, #ec4899);
+          border-radius: 40px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          letter-spacing: 1px;
+          color: white;
+          margin-bottom: 1rem;
+        }
+        
+        .live-dot {
+          width: 8px;
+          height: 8px;
+          background: #22c55e;
+          border-radius: 50%;
+          animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        
+        .section-title {
+          font-size: 1.8rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, #fff, #a78bfa);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          margin-bottom: 0.5rem;
+        }
+        
+        .section-subtitle {
+          color: #64748b;
+          font-size: 0.9rem;
+        }
+        
         @media (max-width: 768px) {
-          .home-container { padding: 0 1rem 3rem 1rem; }
+          .home-container {
+            padding: 0 1rem 3rem 1rem;
+          }
+          .section-title {
+            font-size: 1.4rem;
+          }
         }
       `}</style>
     </>

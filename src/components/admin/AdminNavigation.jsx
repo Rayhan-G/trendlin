@@ -1,11 +1,11 @@
-// src/components/admin/AdminNavigation.jsx
+// src/components/admin/AdminNavigation.jsx (UPDATED with Live Posts)
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import {
   LayoutDashboard, FileText, Calendar, Link as LinkIcon,
   DollarSign, BarChart3, Home, Sparkles, Tv, Plus, Menu, X,
-  TrendingUp, FolderOpen, Award, Activity, BarChart2
+  TrendingUp, FolderOpen, Award, Activity, BarChart2, Clock
 } from 'lucide-react';
 
 const AdminNavigation = ({ children }) => {
@@ -54,6 +54,9 @@ const AdminNavigation = ({ children }) => {
     { path: '/admin/posts-manager', name: 'All Posts', icon: FileText, section: 'main' },
     { path: '/admin/posts/create', name: 'Create New Post', icon: Plus, section: 'main' },
     
+    // Live Posts Section (NEW)
+    { path: '/admin/live-posts', name: 'Live Posts (24H)', icon: Clock, section: 'live', badge: '24H' },
+    
     // Content Section
     { path: '/admin/content-calendar', name: 'Content Calendar', icon: Calendar, section: 'content' },
     { path: '/admin/post-analytics', name: 'Post Analytics', icon: TrendingUp, section: 'content' },
@@ -70,6 +73,7 @@ const AdminNavigation = ({ children }) => {
 
   const sections = {
     main: { title: 'Main', items: navItems.filter(item => item.section === 'main') },
+    live: { title: 'Live Posts', items: navItems.filter(item => item.section === 'live') },
     content: { title: 'Content', items: navItems.filter(item => item.section === 'content') },
     monetization: { title: 'Monetization', items: navItems.filter(item => item.section === 'monetization') },
     analytics: { title: 'Analytics', items: navItems.filter(item => item.section === 'analytics') },
@@ -79,6 +83,7 @@ const AdminNavigation = ({ children }) => {
     if (path === '/admin/posts/create') return router.pathname === '/admin/posts/create';
     if (path === '/admin/posts-manager') return router.pathname === '/admin/posts-manager' || router.pathname.startsWith('/admin/posts/edit/');
     if (path === '/admin/polls') return router.pathname === '/admin/polls';
+    if (path === '/admin/live-posts') return router.pathname === '/admin/live-posts';
     return router.pathname === path;
   };
 
@@ -133,6 +138,9 @@ const AdminNavigation = ({ children }) => {
                   >
                     <span className="nav-icon"><Icon size={isMobile ? 18 : 20} /></span>
                     <span className="nav-text">{item.name}</span>
+                    {item.badge && (
+                      <span className="nav-badge">{item.badge}</span>
+                    )}
                     {isActive(item.path) && <span className="active-indicator" />}
                   </Link>
                 );
@@ -360,6 +368,16 @@ const AdminNavigation = ({ children }) => {
           height: 4px;
           background: #3b82f6;
           border-radius: 50%;
+        }
+
+        .nav-badge {
+          background: linear-gradient(135deg, #8b5cf6, #ec4899);
+          padding: 2px 6px;
+          border-radius: 12px;
+          font-size: 0.6rem;
+          font-weight: 600;
+          color: white;
+          margin-left: auto;
         }
 
         .logout-link:hover {
