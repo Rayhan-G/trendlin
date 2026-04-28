@@ -1,592 +1,483 @@
 // src/pages/live-posts/[category].js
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/router'
-import Head from 'next/head'
-import Link from 'next/link'
-import { supabase } from '../../lib/supabase'
-import CommentSection from '../../components/frontend/CommentSection'
-import { Heart, MessageCircle, Share2, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/router';
+import Head from 'next/head';
+import Link from 'next/link';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Placeholder from '@tiptap/extension-placeholder';
+import TextStyle from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import Highlight from '@tiptap/extension-highlight';
+import Typography from '@tiptap/extension-typography';
+import TextAlign from '@tiptap/extension-text-align';
+import Underline from '@tiptap/extension-underline';
+import LinkExtension from '@tiptap/extension-link';
+import Image from '@tiptap/extension-image';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 
+import Toolbar from '../../components/Editor/Toolbar';
+import CommentSection from '../../components/frontend/CommentSection';
+import { Heart, MessageCircle, Share2, Clock, Sparkles } from 'lucide-react';
+
+// Category Configuration - Only 7 main categories
 const categoryConfig = {
-  tech: { name: 'Technology', icon: '⚡', gradient: 'from-blue-500 to-cyan-500', description: 'Latest tech innovations and insights' },
-  health: { name: 'Wellness', icon: '🌿', gradient: 'from-emerald-500 to-teal-500', description: 'Health, wellness & mindfulness' },
-  entertainment: { name: 'Culture', icon: '🎭', gradient: 'from-pink-500 to-rose-500', description: 'Entertainment & cultural trends' },
-  wealth: { name: 'Capital', icon: '💰', gradient: 'from-amber-500 to-orange-500', description: 'Finance, investing & wealth' },
-  world: { name: 'Horizons', icon: '🌍', gradient: 'from-cyan-500 to-blue-500', description: 'Global perspectives' },
-  lifestyle: { name: 'Aesthetic', icon: '✨', gradient: 'from-orange-500 to-red-500', description: 'Lifestyle & design' },
-  growth: { name: 'Evolution', icon: '🌱', gradient: 'from-purple-500 to-violet-500', description: 'Personal development' }
-}
+  health: {
+    name: 'Health & Wellness',
+    icon: '🌿',
+    gradient: 'from-emerald-500 to-teal-500',
+    bgGradient: 'from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20',
+    description: 'Your journey to better health starts here'
+  },
+  wealth: {
+    name: 'Wealth & Finance',
+    icon: '💰',
+    gradient: 'from-amber-500 to-orange-500',
+    bgGradient: 'from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20',
+    description: 'Build your financial future'
+  },
+  tech: {
+    name: 'Technology',
+    icon: '⚡',
+    gradient: 'from-blue-500 to-cyan-500',
+    bgGradient: 'from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20',
+    description: 'Latest in tech and innovation'
+  },
+  growth: {
+    name: 'Personal Growth',
+    icon: '🌱',
+    gradient: 'from-green-500 to-emerald-500',
+    bgGradient: 'from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20',
+    description: 'Become the best version of yourself'
+  },
+  entertainment: {
+    name: 'Entertainment',
+    icon: '🎬',
+    gradient: 'from-pink-500 to-rose-500',
+    bgGradient: 'from-pink-50 to-rose-50 dark:from-pink-950/20 dark:to-rose-950/20',
+    description: 'Your daily dose of entertainment'
+  },
+  world: {
+    name: 'World News',
+    icon: '🌍',
+    gradient: 'from-cyan-500 to-blue-500',
+    bgGradient: 'from-cyan-50 to-blue-50 dark:from-cyan-950/20 dark:to-blue-950/20',
+    description: 'Global perspectives that matter'
+  },
+  lifestyle: {
+    name: 'Lifestyle',
+    icon: '✨',
+    gradient: 'from-orange-500 to-red-500',
+    bgGradient: 'from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20',
+    description: 'Live your best life'
+  }
+};
 
 export default function LivePostPage() {
-  const router = useRouter()
-  const { category } = router.query
+  const router = useRouter();
+  const { category } = router.query;
   
-  const [post, setPost] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [liked, setLiked] = useState(false)
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [timeLeft, setTimeLeft] = useState('')
-  const [comments, setComments] = useState([])
+  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [liked, setLiked] = useState(false);
+  const [comments, setComments] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [title, setTitle] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [timeLeft, setTimeLeft] = useState('');
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [showRightBlock, setShowRightBlock] = useState(false);
+  const [grammarlyEnabled, setGrammarlyEnabled] = useState(true);
   
-  const timerRef = useRef(null)
-  const currentUser = { id: 'visitor', name: 'Guest', isAdmin: false }
-  
-  const config = categoryConfig[category] || { name: category, icon: '📁', gradient: 'from-gray-500 to-gray-700', description: '' }
+  const timerRef = useRef(null);
 
-  // Fetch post
+  const config = categoryConfig[category];
+
+  // Initialize TipTap Editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ codeBlock: false }),
+      Placeholder.configure({ placeholder: 'Write your story here... Share your knowledge, experiences, and insights.' }),
+      TextStyle,
+      Color,
+      Highlight,
+      Typography,
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      LinkExtension.configure({ openOnClick: false, HTMLAttributes: { target: '_blank', rel: 'noopener noreferrer' } }),
+      Image.configure({ inline: true, allowBase64: true }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
+      TaskList,
+      TaskItem.configure({ nested: true }),
+    ],
+    content: '',
+    editorProps: { attributes: { class: 'prose prose-lg max-w-none focus:outline-none min-h-[400px] px-4 py-6 dark:prose-invert' } },
+  });
+
   const fetchPost = useCallback(async () => {
-    if (!category) return
-    setLoading(true)
+    if (!category) return;
+    setLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('live_posts')
-        .select('*')
-        .eq('category', category)
-        .eq('status', 'active')
-        .gt('expires_at', new Date().toISOString())
-        .single()
+      const response = await fetch(`/api/live-posts?category=${category}`);
+      const data = await response.json();
       
-      if (!error && data) {
-        setPost(data)
-        
-        // Fetch comments
-        const { data: commentsData } = await supabase
-          .from('live_post_comments')
-          .select('*')
-          .eq('live_post_id', data.id)
-          .eq('status', 'approved')
-          .order('created_at', { ascending: false })
-        
-        setComments(commentsData || [])
+      if (data.post) {
+        setPost(data.post);
+        setTitle(data.post.title || '');
+        if (editor && data.post.content) {
+          editor.commands.setContent(data.post.content);
+        }
+        if (data.post.comments) setComments(data.post.comments);
+        setLiked(data.post.liked_by?.includes('visitor') || false);
       } else {
-        setPost(null)
+        setPost(null);
+        if (editor) editor.commands.setContent('');
+        setTitle('');
       }
     } catch (error) {
-      console.error('Error fetching post:', error)
-      setPost(null)
+      console.error('Error fetching post:', error);
+      setPost(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [category])
+  }, [category, editor]);
 
   useEffect(() => {
-    fetchPost()
-  }, [fetchPost])
+    fetchPost();
+  }, [fetchPost]);
 
   // Timer countdown
   useEffect(() => {
-    if (!post?.expires_at) return
+    if (!post?.expires_at) return;
     
     const updateTimer = () => {
-      const diff = new Date(post.expires_at) - new Date()
+      const diff = new Date(post.expires_at) - new Date();
       if (diff <= 0) {
-        setTimeLeft('Expired')
-        fetchPost()
+        setTimeLeft('Expired');
+        fetchPost();
       } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60))
-        const minutes = Math.floor((diff % (3600000)) / 60000)
-        setTimeLeft(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`)
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (3600000)) / 60000);
+        setTimeLeft(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`);
       }
-    }
+    };
     
-    updateTimer()
-    timerRef.current = setInterval(updateTimer, 60000)
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [post, fetchPost])
+    updateTimer();
+    timerRef.current = setInterval(updateTimer, 60000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [post, fetchPost]);
 
-  // Like handler
   const handleLike = async () => {
-    if (!post) return
-    
-    const hasLiked = post.liked_by?.includes(currentUser.id)
-    
-    const { error } = await supabase
-      .from('live_posts')
-      .update({
-        likes: hasLiked ? (post.likes - 1) : (post.likes + 1),
-        liked_by: hasLiked 
-          ? post.liked_by.filter(id => id !== currentUser.id)
-          : [...(post.liked_by || []), currentUser.id]
-      })
-      .eq('id', post.id)
-    
-    if (!error) {
-      setPost(prev => ({
-        ...prev,
-        likes: hasLiked ? prev.likes - 1 : prev.likes + 1,
-        liked_by: hasLiked
-          ? prev.liked_by.filter(id => id !== currentUser.id)
-          : [...(prev.liked_by || []), currentUser.id]
-      }))
-      setLiked(!hasLiked)
+    if (!post) return;
+    const response = await fetch(`/api/live-posts/${post.id}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: 'visitor' })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      setLiked(data.liked);
+      setPost(prev => ({ ...prev, likes: data.likes }));
     }
-  }
+  };
 
-  // Share handler
   const handleShare = async () => {
-    if (!post) return
-    
-    await supabase
-      .from('live_posts')
-      .update({ shares: (post.shares || 0) + 1 })
-      .eq('id', post.id)
-    
-    setPost(prev => ({ ...prev, shares: (prev.shares || 0) + 1 }))
-    alert('Post shared!')
-  }
+    if (!post) return;
+    await fetch(`/api/live-posts/${post.id}/share`, { method: 'POST' });
+    setPost(prev => ({ ...prev, shares: (prev.shares || 0) + 1 }));
+    alert('Post shared!');
+  };
 
-  const isUrgent = timeLeft && timeLeft.includes('h') && parseInt(timeLeft) < 1
+  const handleSave = async () => {
+    if (!editor) return;
+    const content = editor.getHTML();
+    
+    setSaving(true);
+    const response = await fetch(isEditing ? `/api/live-posts/${post.id}` : '/api/live-posts', {
+      method: isEditing ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category,
+        title: title || 'Untitled',
+        content: content,
+        status: 'draft'
+      })
+    });
+    
+    if (response.ok) {
+      alert(isEditing ? 'Post saved!' : 'Draft created!');
+      setIsEditing(false);
+      fetchPost();
+    } else {
+      const error = await response.json();
+      alert(error.error || 'Failed to save');
+    }
+    setSaving(false);
+  };
+
+  const handlePublish = async () => {
+    if (!editor) return;
+    const content = editor.getHTML();
+    
+    setSaving(true);
+    const response = await fetch(isEditing ? `/api/live-posts/${post.id}` : '/api/live-posts', {
+      method: isEditing ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category,
+        title: title || 'Untitled',
+        content: content,
+        status: 'published'
+      })
+    });
+    
+    if (response.ok) {
+      alert('Post published! Will expire in 24 hours');
+      setIsEditing(false);
+      fetchPost();
+    } else {
+      const error = await response.json();
+      alert(error.error || 'Failed to publish');
+    }
+    setSaving(false);
+  };
+
+  const handleSchedule = () => {
+    alert('Schedule feature - pick date/time for publishing');
+  };
+
+  const handlePreview = () => {
+    const previewWindow = window.open('', '_blank');
+    previewWindow.document.write(`
+      <html>
+        <head>
+          <title>Preview: ${title}</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body style="font-family: Inter, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 20px;">
+          ${editor?.getHTML() || ''}
+        </body>
+      </html>
+    `);
+    previewWindow.document.close();
+  };
+
+  const getWordCount = () => {
+    const text = editor?.getText() || post?.content?.replace(/<[^>]*>/g, '') || '';
+    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  };
+
+  const getReadingTime = () => {
+    const words = getWordCount();
+    return Math.max(1, Math.ceil(words / 200));
+  };
+
+  const getSeoScore = () => {
+    let score = 0;
+    if (title && title.length > 0) score += 30;
+    if (editor?.getText().length > 500 || post?.content?.length > 500) score += 40;
+    if (editor?.getHTML()?.includes('<img') || post?.content?.includes('<img')) score += 15;
+    if (editor?.getHTML()?.includes('<h2') || post?.content?.includes('<h2')) score += 15;
+    return Math.min(100, score);
+  };
+
+  const isUrgent = timeLeft && timeLeft.includes('h') && parseInt(timeLeft) < 1;
+
+  if (!config) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl mb-4">🔍</div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Category Not Found</h1>
+          <Link href="/" className="text-purple-600 hover:underline">← Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="spinner"></div>
-        <style jsx>{`
-          .loading-container {
-            min-height: 60vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-          .spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid #1e293b;
-            border-top-color: #8b5cf6;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-          }
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
-    )
-  }
-
-  if (!post) {
-    return (
-      <>
-        <Head>
-          <title>{config.name} | ÉCLAT Live Post</title>
-        </Head>
-        <div className="empty-container">
-          <div className="empty-card">
-            <span className="empty-icon">📭</span>
-            <h2>No Active Post</h2>
-            <p>{config.name} doesn't have an active 24-hour post right now.</p>
-            <Link href="/">
-              <button className="back-btn">← Back to Home</button>
-            </Link>
-          </div>
-        </div>
-        <style jsx>{`
-          .empty-container {
-            min-height: 60vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-          }
-          .empty-card {
-            text-align: center;
-            background: #0f0f0f;
-            border: 1px solid #1e293b;
-            border-radius: 32px;
-            padding: 3rem;
-            max-width: 500px;
-          }
-          .empty-icon { font-size: 64px; display: block; margin-bottom: 1rem; }
-          .empty-card h2 { font-size: 24px; margin-bottom: 0.5rem; color: white; }
-          .empty-card p { color: #64748b; margin-bottom: 1.5rem; }
-          .back-btn { padding: 0.75rem 1.5rem; background: #8b5cf6; border: none; border-radius: 40px; color: white; cursor: pointer; }
-        `}</style>
-      </>
-    )
+    );
   }
 
   return (
     <>
       <Head>
-        <title>{post.title} | {config.name} • ÉCLAT</title>
-        <meta name="description" content={post.description?.substring(0, 160)} />
+        <title>{post?.title || config.name} | ÉCLAT</title>
+        <meta name="description" content={post?.content?.substring(0, 160) || config.description} />
       </Head>
 
-      <div className="post-page">
-        <div className="post-container">
-          {/* Header */}
-          <div className="post-header">
+      <div className={`min-h-screen bg-gradient-to-br ${config.bgGradient} transition-colors duration-300`}>
+        {/* Header Banner */}
+        <div className={`bg-gradient-to-r ${config.gradient} text-white`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <Link href="/">
-              <button className="back-button">← Back to Home</button>
+              <button className="mb-6 flex items-center gap-2 text-white/80 hover:text-white transition">
+                ← Back to Home
+              </button>
             </Link>
-            <div className="header-info">
-              <div className="category-badge">
-                <span>{config.icon}</span>
-                <span>{config.name}</span>
-              </div>
-              <div className={`time-badge ${isUrgent ? 'urgent' : ''}`}>
-                <Clock size={14} />
-                <span>{timeLeft}</span>
+            <div className="flex items-center gap-4">
+              <span className="text-6xl">{config.icon}</span>
+              <div>
+                <h1 className="text-4xl md:text-5xl font-bold">{config.name}</h1>
+                <p className="text-white/80 mt-2 text-lg">{config.description}</p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Title */}
-          <h1 className="post-title">{post.title}</h1>
-
-          {/* Description with quotes */}
-          <div className="post-description">
-            <span className="quote-start">"</span>
-            {post.description}
-            <span className="quote-end">"</span>
-          </div>
-          <div className="word-count">{post.description?.split(/\s+/).length} words</div>
-
-          {/* Media Carousel */}
-          {post.media_items?.length > 0 && (
-            <div className="media-carousel">
-              <div className="carousel-container">
-                <div className="carousel-slides">
-                  {post.media_items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className={`carousel-slide ${idx === currentSlide ? 'active' : ''}`}
-                    >
-                      {item.type === 'image' ? (
-                        <img src={item.url} alt={`Slide ${idx + 1}`} />
-                      ) : (
-                        <video src={item.url} controls />
-                      )}
-                      {post.overlay_headline && idx === currentSlide && (
-                        <div className="media-overlay">
-                          <h3>{post.overlay_headline}</h3>
-                        </div>
-                      )}
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {post && !isEditing ? (
+            // View Mode - Display Post
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
+              {/* Post Header */}
+              <div className="p-6 md:p-8 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{config.icon}</span>
+                    <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">{config.name}</span>
+                  </div>
+                  {post.expires_at && (
+                    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono ${isUrgent ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
+                      <Clock size={14} />
+                      <span>{timeLeft}</span>
                     </div>
-                  ))}
+                  )}
                 </div>
-                
-                {post.media_items.length > 1 && (
-                  <>
-                    <button
-                      className="carousel-nav prev"
-                      onClick={() => setCurrentSlide((currentSlide - 1 + post.media_items.length) % post.media_items.length)}
-                    >
-                      <ChevronLeft size={24} />
-                    </button>
-                    <button
-                      className="carousel-nav next"
-                      onClick={() => setCurrentSlide((currentSlide + 1) % post.media_items.length)}
-                    >
-                      <ChevronRight size={24} />
-                    </button>
-                    <div className="carousel-dots">
-                      {post.media_items.map((_, idx) => (
-                        <button
-                          key={idx}
-                          className={`dot ${idx === currentSlide ? 'active' : ''}`}
-                          onClick={() => setCurrentSlide(idx)}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">{post.title}</h1>
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  <span>📅 {new Date(post.published_at).toLocaleDateString()}</span>
+                  <span>📖 {getWordCount()} words</span>
+                  <span>⏱️ {getReadingTime()} min read</span>
+                </div>
               </div>
+
+              {/* Post Content */}
+              <div className="p-6 md:p-8 prose prose-gray dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: post.content || '<p class="text-gray-500 italic">No content yet.</p>' }} />
+
+              {/* Media Carousel */}
+              {post.media_items?.length > 0 && (
+                <div className="relative bg-black mx-6 md:mx-8 rounded-xl overflow-hidden">
+                  <div className="relative h-[400px]">
+                    {post.media_items.map((item, idx) => (
+                      <div key={idx} className={`absolute inset-0 transition-opacity duration-500 ${idx === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
+                        {item.type === 'image' && <img src={item.url} alt="" className="w-full h-full object-contain" />}
+                        {item.type === 'video' && <video src={item.url} controls className="w-full h-full object-contain" />}
+                        {item.type === 'audio' && <audio src={item.url} controls className="w-full absolute bottom-0" />}
+                      </div>
+                    ))}
+                  </div>
+                  {post.media_items.length > 1 && (
+                    <>
+                      <button onClick={() => setCurrentSlide((currentSlide - 1 + post.media_items.length) % post.media_items.length)} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-purple-600 transition">←</button>
+                      <button onClick={() => setCurrentSlide((currentSlide + 1) % post.media_items.length)} className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 text-white hover:bg-purple-600 transition">→</button>
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                        {post.media_items.map((_, idx) => (
+                          <button key={idx} onClick={() => setCurrentSlide(idx)} className={`w-2 h-2 rounded-full transition ${idx === currentSlide ? 'w-6 bg-purple-500' : 'bg-white/50'}`} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Engagement Section */}
+              <div className="p-6 md:p-8 border-t border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-6 mb-6">
+                  <button onClick={handleLike} className={`flex items-center gap-2 transition ${liked ? 'text-red-500' : 'text-gray-600 dark:text-gray-400 hover:text-red-500'}`}>
+                    <Heart size={20} fill={liked ? 'currentColor' : 'none'} /> {post.likes || 0}
+                  </button>
+                  <button className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-purple-500 transition">
+                    <MessageCircle size={20} /> {comments.length}
+                  </button>
+                  <button onClick={handleShare} className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-green-500 transition">
+                    <Share2 size={20} /> {post.shares || 0}
+                  </button>
+                </div>
+                <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700 transition">
+                  Edit Post
+                </button>
+              </div>
+
+              {/* Comments Section */}
+              <CommentSection postId={post.id} currentUser={{ id: 'visitor', name: 'Guest' }} isAdmin={true} />
+            </div>
+          ) : isEditing ? (
+            // Edit/Create Mode with Full Toolbar
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">{config.icon}</span>
+                  <span className="text-sm text-purple-600 dark:text-purple-400">{config.name}</span>
+                </div>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Post Title..."
+                  className="w-full text-3xl md:text-4xl font-bold bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-gray-300 dark:placeholder-gray-700 text-gray-900 dark:text-white"
+                />
+              </div>
+
+              <Toolbar
+                editor={editor}
+                onSave={handleSave}
+                onSchedule={handleSchedule}
+                onPublish={handlePublish}
+                onPreview={handlePreview}
+                wordCount={getWordCount()}
+                readingTime={getReadingTime()}
+                seoScore={getSeoScore()}
+                showRightBlock={showRightBlock}
+                onToggleRightBlock={() => setShowRightBlock(!showRightBlock)}
+                grammarlyEnabled={grammarlyEnabled}
+                onToggleGrammarly={() => setGrammarlyEnabled(!grammarlyEnabled)}
+              />
+
+              <EditorContent editor={editor} className="min-h-[500px]" />
+
+              <div className="p-6 border-t border-gray-200 dark:border-gray-800 flex gap-3">
+                <button onClick={() => setIsEditing(false)} className="px-6 py-2 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                  Cancel
+                </button>
+                <button onClick={handleSave} disabled={saving} className="px-6 py-2 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition disabled:opacity-50">
+                  {saving ? 'Saving...' : 'Save Draft'}
+                </button>
+                <button onClick={handlePublish} disabled={saving} className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:opacity-90 transition disabled:opacity-50">
+                  {saving ? 'Publishing...' : 'Publish (24h)'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            // No Post - Create New
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-12 text-center">
+              <div className="text-7xl mb-4">{config.icon}</div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No Active Post</h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">
+                {config.name} doesn't have an active 24-hour post right now. Be the first to share!
+              </p>
+              <button onClick={() => setIsEditing(true)} className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:opacity-90 transition">
+                <Sparkles size={18} />
+                Create Post
+              </button>
             </div>
           )}
-
-          {/* Stats & Actions */}
-          <div className="stats-bar">
-            <span><Heart size={16} /> {post.likes || 0} likes</span>
-            <span><MessageCircle size={16} /> {comments.length} comments</span>
-            <span><Share2 size={16} /> {post.shares || 0} shares</span>
-          </div>
-
-          <div className="action-buttons">
-            <button className={`action-btn like-btn ${liked ? 'liked' : ''}`} onClick={handleLike}>
-              {liked ? '❤️ Liked' : '🤍 Like'}
-            </button>
-            <button className="action-btn" onClick={handleShare}>
-              🔁 Share
-            </button>
-          </div>
-
-          {/* Comments Section */}
-          <CommentSection postId={post.id} currentUser={currentUser} isAdmin={false} />
         </div>
       </div>
-
-      <style jsx>{`
-        .post-page {
-          min-height: 100vh;
-          background: #050505;
-        }
-        
-        .post-container {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 2rem;
-        }
-        
-        .post-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-          flex-wrap: wrap;
-          gap: 1rem;
-        }
-        
-        .back-button {
-          padding: 0.5rem 1rem;
-          background: rgba(255,255,255,0.05);
-          border: 1px solid #1e293b;
-          border-radius: 40px;
-          color: #94a3b8;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .back-button:hover {
-          background: rgba(255,255,255,0.1);
-          color: white;
-        }
-        
-        .header-info {
-          display: flex;
-          gap: 1rem;
-          align-items: center;
-        }
-        
-        .category-badge {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          background: linear-gradient(135deg, #8b5cf6, #6366f1);
-          border-radius: 40px;
-          font-size: 0.875rem;
-          font-weight: 600;
-        }
-        
-        .time-badge {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.5rem 1rem;
-          background: #1e293b;
-          border-radius: 40px;
-          font-size: 0.875rem;
-          font-family: monospace;
-        }
-        
-        .time-badge.urgent {
-          background: #ef4444;
-          animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.7; }
-        }
-        
-        .post-title {
-          font-size: 3rem;
-          font-weight: 700;
-          color: white;
-          margin-bottom: 1.5rem;
-          line-height: 1.2;
-        }
-        
-        .post-description {
-          font-size: 1.25rem;
-          line-height: 1.6;
-          color: #d4d4d8;
-          margin-bottom: 0.5rem;
-          position: relative;
-        }
-        
-        .quote-start, .quote-end {
-          font-size: 3rem;
-          color: #8b5cf6;
-          opacity: 0.5;
-          font-family: serif;
-          line-height: 0;
-          vertical-align: middle;
-        }
-        
-        .quote-start {
-          margin-right: 0.25rem;
-        }
-        
-        .quote-end {
-          margin-left: 0.25rem;
-        }
-        
-        .word-count {
-          text-align: right;
-          font-size: 0.75rem;
-          color: #475569;
-          margin-bottom: 2rem;
-        }
-        
-        .media-carousel {
-          margin: 2rem 0;
-          border-radius: 24px;
-          overflow: hidden;
-          background: #000;
-        }
-        
-        .carousel-container {
-          position: relative;
-        }
-        
-        .carousel-slides {
-          position: relative;
-          height: 500px;
-        }
-        
-        .carousel-slide {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          transition: opacity 0.5s;
-        }
-        
-        .carousel-slide.active {
-          opacity: 1;
-        }
-        
-        .carousel-slide img, .carousel-slide video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-        
-        .media-overlay {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-          padding: 2rem;
-        }
-        
-        .media-overlay h3 {
-          color: white;
-          font-size: 1.5rem;
-          font-weight: 700;
-        }
-        
-        .carousel-nav {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 44px;
-          height: 44px;
-          background: rgba(0,0,0,0.6);
-          backdrop-filter: blur(10px);
-          border: none;
-          border-radius: 50%;
-          color: white;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .carousel-nav:hover {
-          background: #8b5cf6;
-        }
-        
-        .carousel-nav.prev { left: 1rem; }
-        .carousel-nav.next { right: 1rem; }
-        
-        .carousel-dots {
-          position: absolute;
-          bottom: 1rem;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          gap: 0.75rem;
-        }
-        
-        .dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.5);
-          cursor: pointer;
-        }
-        
-        .dot.active {
-          width: 24px;
-          border-radius: 4px;
-          background: #8b5cf6;
-        }
-        
-        .stats-bar {
-          display: flex;
-          gap: 2rem;
-          padding: 1rem 0;
-          border-bottom: 1px solid #1e293b;
-          color: #94a3b8;
-          font-size: 0.875rem;
-        }
-        
-        .stats-bar span {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-        
-        .action-buttons {
-          display: flex;
-          gap: 1rem;
-          padding: 1rem 0;
-          border-bottom: 1px solid #1e293b;
-        }
-        
-        .action-btn {
-          flex: 1;
-          padding: 0.75rem;
-          background: rgba(255,255,255,0.05);
-          border: none;
-          border-radius: 40px;
-          color: #94a3b8;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        
-        .action-btn:hover {
-          background: rgba(255,255,255,0.1);
-          color: white;
-        }
-        
-        .like-btn.liked {
-          background: rgba(239,68,68,0.2);
-          color: #ef4444;
-        }
-        
-        @media (max-width: 768px) {
-          .post-container {
-            padding: 1rem;
-          }
-          .post-title {
-            font-size: 1.75rem;
-          }
-          .post-description {
-            font-size: 1rem;
-          }
-          .carousel-slides {
-            height: 300px;
-          }
-        }
-      `}</style>
     </>
-  )
+  );
 }

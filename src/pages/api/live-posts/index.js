@@ -1,3 +1,4 @@
+// pages/api/live-posts/index.js
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -6,84 +7,115 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-    // GET: Fetch active post for a category or all active posts
+    // GET: Fetch active post for a category
     if (req.method === 'GET') {
         const { category } = req.query;
         
-        if (category) {
-            // Get single category post
-            const { data, error } = await supabase
-                .from('live_posts')
-                .select('*, comments:live_post_comments(*)')
-                .eq('category', category)
-                .eq('status', 'active')
-                .gt('expires_at', new Date().toISOString())
-                .order('published_at', { ascending: false })
-                .limit(1)
-                .single();
-            
-            if (error && error.code !== 'PGRST116') {
-                return res.status(500).json({ error: error.message });
-            }
-            return res.status(200).json({ post: data || null });
-        } else {
-            // Get all active posts
-            const { data, error } = await supabase
-                .from('live_posts')
-                .select('*')
-                .eq('status', 'active')
-                .gt('expires_at', new Date().toISOString())
-                .order('published_at', { ascending: false });
-            
-            if (error) return res.status(500).json({ error: error.message });
-            return res.status(200).json({ posts: data || [] });
+        const { data, error } = await supabase
+            .from('live_posts')
+            .select('*')
+            .eq('status', 'published')
+            .eq('category', category)
+            .gt('expires_at', new Date().toISOString())
+            .order('published_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        
+        if (error && error.code !== 'PGRST116') {
+            return res.status(500).json({ error: error.message });
         }
+        
+        return res.status(200).json({ post: data || null });
     }
     
-    // POST: Create new live post
+    // POST: Create new post
     if (req.method === 'POST') {
-        const { category, title, description, overlay_headline, media_items } = req.body;
+        const { category, title, content, status, media_items } = req.body;
         
-        // Validation
-        if (!category || !title || !description || !media_items?.length) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        if (!category) {
+            return res.status(400).json({ error: 'Category is required' });
         }
         
-        // Check if category already has active post
-        const { data: existing } = await supabase
-            .from('live_posts')
-            .select('id')
-            .eq('category', category)
-            .eq('status', 'active')
-            .gt('expires_at', new Date().toISOString())
-            .single();
-        
-        if (existing) {
-            return res.status(400).json({ error: 'Category already has an active post' });
+        // Check if category already has active published post
+        if (status === 'published') {
+            const { data: existing } = await supabase
+                .from('live_posts')
+                .select('id')
+                .eq('category', category)
+                .eq('status', 'published')
+                .gt('expires_at', new Date().toISOString())
+                .maybeSingle();
+            
+            if (existing) {
+                return res.status(400).json({ error: 'This category already has an active post' });
+            }
         }
         
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
         
+        const postData = {
+            category,
+            title: title || null,
+            content: content || null,
+            media_items: media_items || [],
+            status: status || 'draft',
+            published_at: status === 'published' ? new Date().toISOString() : null,
+            expires_at: status === 'published' ? expiresAt.toISOString() : null,
+            likes: 0,
+            shares: 0,
+            liked_by: []
+        };
+        
         const { data, error } = await supabase
             .from('live_posts')
-            .insert([{
-                category,
-                title,
-                description,
-                overlay_headline,
-                media_items,
-                expires_at: expiresAt.toISOString(),
-                published_at: new Date().toISOString(),
-                status: 'active',
-                likes: 0,
-                shares: 0,
-                liked_by: []
-            }])
+            .insert([postData])
             .select()
             .single();
         
         if (error) return res.status(500).json({ error: error.message });
         return res.status(201).json({ post: data });
+    }
+    
+    // PUT: Update existing post
+    if (req.method === 'PUT') {
+        const { id } = req.query;
+        const { title, content, status, media_items } = req.body;
+        
+        const updateData = {
+            title: title || null,
+            content: content || null,
+            media_items: media_items || [],
+            updated_at: new Date().toISOString()
+        };
+        
+        if (status === 'published') {
+            updateData.status = 'published';
+            updateData.published_at = new Date().toISOString();
+            updateData.expires_at = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        }
+        
+        const { data, error } = await supabase
+            .from('live_posts')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+        
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ post: data });
+    }
+    
+    // DELETE: Delete a post
+    if (req.method === 'DELETE') {
+        const { id } = req.query;
+        
+        const { error } = await supabase
+            .from('live_posts')
+            .delete()
+            .eq('id', id);
+        
+        if (error) return res.status(500).json({ error: error.message });
+        return res.status(200).json({ success: true });
     }
     
     return res.status(405).json({ error: 'Method not allowed' });

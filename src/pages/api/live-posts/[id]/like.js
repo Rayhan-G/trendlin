@@ -1,3 +1,4 @@
+// pages/api/live-posts/[id]/like.js
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -13,10 +14,6 @@ export default async function handler(req, res) {
     const { id } = req.query;
     const { user_id } = req.body;
     
-    if (!id || !user_id) {
-        return res.status(400).json({ error: 'Missing post id or user id' });
-    }
-    
     // Get current post
     const { data: post, error: fetchError } = await supabase
         .from('live_posts')
@@ -30,7 +27,6 @@ export default async function handler(req, res) {
     
     let result;
     if (hasLiked) {
-        // Unlike
         result = await supabase
             .from('live_posts')
             .update({
@@ -39,7 +35,6 @@ export default async function handler(req, res) {
             })
             .eq('id', id);
     } else {
-        // Like
         result = await supabase
             .from('live_posts')
             .update({
