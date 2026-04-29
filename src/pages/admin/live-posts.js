@@ -1,4 +1,4 @@
-// src/pages/admin/live-posts.js
+// src/pages/admin/live-posts.js (COMPLETE WITH EDITOR)
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import Head from 'next/head'
@@ -7,13 +7,18 @@ import dynamic from 'next/dynamic'
 import { 
   Plus, Edit, Trash2, Eye, Clock, Heart, MessageCircle, Share2, X,
   Image, Video, Music, File, Code, LayoutGrid, Upload, Loader2,
-  CheckCircle, AlertCircle, Calendar, Send, Save, RefreshCw
+  Save, Send, RefreshCw, AlertCircle, CheckCircle
 } from 'lucide-react'
 
-// Dynamically import Editor for performance
+// Dynamically import Editor with no SSR
 const Editor = dynamic(() => import('../../components/Editor'), {
   ssr: false,
-  loading: () => <div className="editor-loading">Loading editor...</div>
+  loading: () => (
+    <div className="editor-loading">
+      <Loader2 className="animate-spin" size={32} />
+      <p>Loading editor...</p>
+    </div>
+  )
 })
 
 // Dynamically import Media Modals
@@ -25,13 +30,13 @@ const EmbedModal = dynamic(() => import('../../components/MediaModals/EmbedModal
 const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal'), { ssr: false })
 
 const categories = [
-  { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6' },
-  { id: 'health', name: 'Wellness', icon: '🌿', color: '#10b981' },
-  { id: 'entertainment', name: 'Culture', icon: '🎭', color: '#ec4899' },
-  { id: 'wealth', name: 'Capital', icon: '💰', color: '#f59e0b' },
-  { id: 'world', name: 'Horizons', icon: '🌍', color: '#06b6d4' },
-  { id: 'lifestyle', name: 'Aesthetic', icon: '✨', color: '#f97316' },
-  { id: 'growth', name: 'Evolution', icon: '🌱', color: '#8b5cf6' }
+  { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6', bg: 'bg-blue-500/10' },
+  { id: 'health', name: 'Wellness', icon: '🌿', color: '#10b981', bg: 'bg-emerald-500/10' },
+  { id: 'entertainment', name: 'Culture', icon: '🎭', color: '#ec4899', bg: 'bg-pink-500/10' },
+  { id: 'wealth', name: 'Capital', icon: '💰', color: '#f59e0b', bg: 'bg-amber-500/10' },
+  { id: 'world', name: 'Horizons', icon: '🌍', color: '#06b6d4', bg: 'bg-cyan-500/10' },
+  { id: 'lifestyle', name: 'Aesthetic', icon: '✨', color: '#f97316', bg: 'bg-orange-500/10' },
+  { id: 'growth', name: 'Evolution', icon: '🌱', color: '#8b5cf6', bg: 'bg-purple-500/10' }
 ]
 
 export default function AdminLivePosts() {
@@ -48,6 +53,8 @@ export default function AdminLivePosts() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [showMediaModal, setShowMediaModal] = useState(null)
   const [activeTab, setActiveTab] = useState('content')
+  const [publishSuccess, setPublishSuccess] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
@@ -62,10 +69,15 @@ export default function AdminLivePosts() {
 
   useEffect(() => { fetchPosts() }, [fetchPosts])
 
-  const isActive = (post) => post.status === 'published' && new Date(post.expires_at) > new Date()
+  const isActive = (post) => {
+    if (!post.expires_at) return false
+    return (post.status === 'published' || post.status === 'active') && new Date(post.expires_at) > new Date()
+  }
 
   const savePost = async () => {
     setSaving(true)
+    setErrorMessage('')
+    
     const now = new Date()
     const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
@@ -74,7 +86,7 @@ export default function AdminLivePosts() {
       title: title || null,
       content: content || null,
       media_items: mediaItems,
-      status: status,
+      status: status === 'published' ? 'published' : 'draft',
       updated_at: now.toISOString()
     }
 
@@ -94,12 +106,13 @@ export default function AdminLivePosts() {
     }
 
     if (!result.error) {
-      alert(editingPost ? 'Post updated!' : 'Post created!')
+      setPublishSuccess(true)
+      setTimeout(() => setPublishSuccess(false), 3000)
       setShowCreateModal(false)
       resetForm()
       fetchPosts()
     } else {
-      alert('Error: ' + result.error.message)
+      setErrorMessage(result.error.message)
     }
     setSaving(false)
   }
@@ -126,6 +139,7 @@ export default function AdminLivePosts() {
     setMediaItems([])
     setStatus('draft')
     setActiveTab('content')
+    setErrorMessage('')
   }
 
   const editPost = (post) => {
@@ -140,7 +154,7 @@ export default function AdminLivePosts() {
 
   const handleMediaInsert = (mediaData) => {
     const newMediaItem = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       type: mediaData.type || 'image',
       url: mediaData.src || mediaData.url,
       ...mediaData
@@ -154,6 +168,7 @@ export default function AdminLivePosts() {
   }
 
   const getTimeRemaining = (expiresAt) => {
+    if (!expiresAt) return 'No expiry'
     const diff = new Date(expiresAt) - new Date()
     if (diff <= 0) return 'Expired'
     const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -170,7 +185,7 @@ export default function AdminLivePosts() {
           <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">Live Posts Manager</h1>
-              <p className="text-gray-500">Create 24-hour posts with unlimited images, videos, and media</p>
+              <p className="text-gray-500">Create 24-hour posts with rich text editor and unlimited media</p>
             </div>
             <button 
               onClick={() => { resetForm(); setShowCreateModal(true); }} 
@@ -227,7 +242,7 @@ export default function AdminLivePosts() {
                     <th className="p-4">Engagement</th>
                     <th className="p-4">Time Left</th>
                     <th className="p-4">Actions</th>
-                  </tr>
+                   </tr>
                 </thead>
                 <tbody>
                   {posts.map((post) => {
@@ -245,7 +260,9 @@ export default function AdminLivePosts() {
                           </div>
                         </td>
                         <td className="p-4">
-                          <span className="text-sm">{cat?.icon} {cat?.name}</span>
+                          <span className={`text-sm px-2 py-1 rounded-full ${cat?.bg}`} style={{ color: cat?.color }}>
+                            {cat?.icon} {cat?.name}
+                          </span>
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-1">
@@ -307,36 +324,54 @@ export default function AdminLivePosts() {
         </div>
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* Create/Edit Modal with FULL Editor */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-800">
               <div>
                 <h2 className="text-xl font-bold text-white">{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
-                <p className="text-sm text-gray-500">Unlimited media • 24-hour lifespan • Anything goes</p>
+                <p className="text-sm text-gray-500">Rich text editor • Unlimited media • 24-hour lifespan</p>
               </div>
               <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
 
+            {/* Success Message */}
+            {publishSuccess && (
+              <div className="mx-6 mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg flex items-center gap-2 text-green-500">
+                <CheckCircle size={18} />
+                <span className="text-sm">Post {editingPost ? 'updated' : 'created'} successfully!</span>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="mx-6 mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg flex items-center gap-2 text-red-500">
+                <AlertCircle size={18} />
+                <span className="text-sm">{errorMessage}</span>
+              </div>
+            )}
+
             {/* Tabs */}
             <div className="flex border-b border-gray-800 px-6">
-              {['content', 'media', 'settings'].map(tab => (
+              {[
+                { id: 'content', label: '📝 Content', icon: null },
+                { id: 'media', label: `🖼️ Media (${mediaItems.length})`, icon: null },
+                { id: 'settings', label: '⚙️ Settings', icon: null }
+              ].map(tab => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
                   className={`px-4 py-3 text-sm font-medium transition-all ${
-                    activeTab === tab 
+                    activeTab === tab.id 
                       ? 'text-purple-500 border-b-2 border-purple-500' 
                       : 'text-gray-500 hover:text-gray-300'
                   }`}
                 >
-                  {tab === 'content' && '📝 Content'}
-                  {tab === 'media' && `🖼️ Media (${mediaItems.length})`}
-                  {tab === 'settings' && '⚙️ Settings'}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -365,6 +400,9 @@ export default function AdminLivePosts() {
                       onPublish={() => {}}
                       onPreview={() => {}}
                     />
+                    <p className="text-xs text-gray-500 mt-2">
+                      ✨ Use the toolbar above to add formatting, images, videos, audio, embeds, tables, and more!
+                    </p>
                   </div>
                 </div>
               )}
@@ -392,7 +430,6 @@ export default function AdminLivePosts() {
                     </button>
                   </div>
 
-                  {/* Media Grid */}
                   {mediaItems.length === 0 ? (
                     <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-xl">
                       <Upload size={48} className="text-gray-600 mx-auto mb-3" />
@@ -408,7 +445,8 @@ export default function AdminLivePosts() {
                           )}
                           {item.type === 'video' && (
                             <div className="relative w-full h-32 bg-black flex items-center justify-center">
-                              <Video size={32} className="text-gray-500" />
+                              <video src={item.url} className="w-full h-full object-cover" />
+                              <Video size={32} className="absolute text-white/50" />
                             </div>
                           )}
                           {item.type === 'audio' && (
@@ -442,7 +480,7 @@ export default function AdminLivePosts() {
                             <Trash2 size={12} className="text-white" />
                           </button>
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                            <span className="text-xs text-white/80">{item.type.toUpperCase()}</span>
+                            <span className="text-xs text-white/80 uppercase">{item.type}</span>
                           </div>
                         </div>
                       ))}
