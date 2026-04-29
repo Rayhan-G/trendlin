@@ -1,4 +1,4 @@
-// src/components/Editor/index.jsx
+// src/components/editor/index.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';

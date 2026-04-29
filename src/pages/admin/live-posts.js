@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 
 // Dynamically import Editor with no SSR
-const Editor = dynamic(() => import('../../components/Editor'), {
+const Editor = dynamic(() => import('../../components/editor'), {
   ssr: false,
   loading: () => (
     <div className="editor-loading">
