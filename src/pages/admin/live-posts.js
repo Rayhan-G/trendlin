@@ -1,116 +1,165 @@
 // src/pages/admin/live-posts.js
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import Head from 'next/head';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../../lib/supabase'
+import Head from 'next/head'
+import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { 
-  Plus, Edit, Trash2, Eye, Clock, Heart, MessageCircle, Share2, X
-} from 'lucide-react';
+  Plus, Edit, Trash2, Eye, Clock, Heart, MessageCircle, Share2, X,
+  Image, Video, Music, File, Code, LayoutGrid, Upload, Loader2,
+  CheckCircle, AlertCircle, Calendar, Send, Save, RefreshCw
+} from 'lucide-react'
+
+// Dynamically import Editor for performance
+const Editor = dynamic(() => import('../../components/Editor'), {
+  ssr: false,
+  loading: () => <div className="editor-loading">Loading editor...</div>
+})
+
+// Dynamically import Media Modals
+const ImageModal = dynamic(() => import('../../components/MediaModals/ImageModal'), { ssr: false })
+const VideoModal = dynamic(() => import('../../components/MediaModals/VideoModal'), { ssr: false })
+const AudioModal = dynamic(() => import('../../components/MediaModals/AudioModal'), { ssr: false })
+const PDFModal = dynamic(() => import('../../components/MediaModals/PDFModal'), { ssr: false })
+const EmbedModal = dynamic(() => import('../../components/MediaModals/EmbedModal'), { ssr: false })
+const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal'), { ssr: false })
+
+const categories = [
+  { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6' },
+  { id: 'health', name: 'Wellness', icon: '🌿', color: '#10b981' },
+  { id: 'entertainment', name: 'Culture', icon: '🎭', color: '#ec4899' },
+  { id: 'wealth', name: 'Capital', icon: '💰', color: '#f59e0b' },
+  { id: 'world', name: 'Horizons', icon: '🌍', color: '#06b6d4' },
+  { id: 'lifestyle', name: 'Aesthetic', icon: '✨', color: '#f97316' },
+  { id: 'growth', name: 'Evolution', icon: '🌱', color: '#8b5cf6' }
+]
 
 export default function AdminLivePosts() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingPost, setEditingPost] = useState(null);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState('tech');
-  const [saving, setSaving] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingPost, setEditingPost] = useState(null)
+  const [title, setTitle] = useState('')
+  const [content, setContent] = useState('')
+  const [category, setCategory] = useState('tech')
+  const [mediaItems, setMediaItems] = useState([])
+  const [status, setStatus] = useState('draft')
+  const [saving, setSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
+  const [showMediaModal, setShowMediaModal] = useState(null)
+  const [activeTab, setActiveTab] = useState('content')
 
-  const categories = [
-    { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6' },
-    { id: 'health', name: 'Wellness', icon: '🌿', color: '#10b981' },
-    { id: 'entertainment', name: 'Culture', icon: '🎭', color: '#ec4899' },
-    { id: 'wealth', name: 'Capital', icon: '💰', color: '#f59e0b' },
-    { id: 'world', name: 'Horizons', icon: '🌍', color: '#06b6d4' },
-    { id: 'lifestyle', name: 'Aesthetic', icon: '✨', color: '#f97316' },
-    { id: 'growth', name: 'Evolution', icon: '🌱', color: '#8b5cf6' }
-  ];
-
-  const fetchPosts = async () => {
-    setLoading(true);
+  const fetchPosts = useCallback(async () => {
+    setLoading(true)
     const { data, error } = await supabase
       .from('live_posts')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
 
-    if (!error) setPosts(data || []);
-    setLoading(false);
-  };
+    if (!error) setPosts(data || [])
+    setLoading(false)
+  }, [])
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => { fetchPosts() }, [fetchPosts])
+
+  const isActive = (post) => post.status === 'published' && new Date(post.expires_at) > new Date()
 
   const savePost = async () => {
-    setSaving(true);
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    setSaving(true)
+    const now = new Date()
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
     const postData = {
-      category: category,
+      category,
       title: title || null,
       content: content || null,
-      expires_at: expiresAt.toISOString(),
-      updated_at: now.toISOString(),
-      published_at: now.toISOString(),
-      status: 'active',
-      likes: 0,
-      shares: 0,
-      liked_by: []
-    };
+      media_items: mediaItems,
+      status: status,
+      updated_at: now.toISOString()
+    }
 
-    let result;
+    if (status === 'published') {
+      postData.published_at = now.toISOString()
+      postData.expires_at = expiresAt.toISOString()
+    }
+
+    let result
     if (editingPost) {
       result = await supabase
         .from('live_posts')
         .update(postData)
-        .eq('id', editingPost.id);
+        .eq('id', editingPost.id)
     } else {
-      result = await supabase.from('live_posts').insert([postData]);
+      result = await supabase.from('live_posts').insert([postData])
     }
 
     if (!result.error) {
-      alert(editingPost ? 'Post updated!' : 'Post created!');
-      setShowCreateModal(false);
-      setEditingPost(null);
-      setTitle('');
-      setContent('');
-      setCategory('tech');
-      fetchPosts();
+      alert(editingPost ? 'Post updated!' : 'Post created!')
+      setShowCreateModal(false)
+      resetForm()
+      fetchPosts()
     } else {
-      alert('Error: ' + result.error.message);
+      alert('Error: ' + result.error.message)
     }
-    setSaving(false);
-  };
+    setSaving(false)
+  }
 
   const deletePost = async (id) => {
-    await supabase.from('live_posts').delete().eq('id', id);
-    fetchPosts();
-    setShowDeleteConfirm(null);
-  };
+    await supabase.from('live_posts').delete().eq('id', id)
+    fetchPosts()
+    setShowDeleteConfirm(null)
+  }
 
   const forceExpire = async (id) => {
-    await supabase.from('live_posts').update({ status: 'expired', expires_at: new Date().toISOString() }).eq('id', id);
-    fetchPosts();
-  };
+    await supabase
+      .from('live_posts')
+      .update({ status: 'expired', expires_at: new Date().toISOString() })
+      .eq('id', id)
+    fetchPosts()
+  }
 
-  const getTimeRemaining = (expiresAt) => {
-    const diff = new Date(expiresAt) - new Date();
-    if (diff <= 0) return 'Expired';
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % 3600000) / 60000);
-    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
-  };
+  const resetForm = () => {
+    setEditingPost(null)
+    setTitle('')
+    setContent('')
+    setCategory('tech')
+    setMediaItems([])
+    setStatus('draft')
+    setActiveTab('content')
+  }
 
   const editPost = (post) => {
-    setEditingPost(post);
-    setTitle(post.title || '');
-    setContent(post.content || '');
-    setCategory(post.category);
-    setShowCreateModal(true);
-  };
+    setEditingPost(post)
+    setTitle(post.title || '')
+    setContent(post.content || '')
+    setCategory(post.category)
+    setMediaItems(post.media_items || [])
+    setStatus(post.status || 'draft')
+    setShowCreateModal(true)
+  }
 
-  const isActive = (post) => post.status === 'active' && new Date(post.expires_at) > new Date();
+  const handleMediaInsert = (mediaData) => {
+    const newMediaItem = {
+      id: Date.now(),
+      type: mediaData.type || 'image',
+      url: mediaData.src || mediaData.url,
+      ...mediaData
+    }
+    setMediaItems(prev => [...prev, newMediaItem])
+    setShowMediaModal(null)
+  }
+
+  const removeMedia = (mediaId) => {
+    setMediaItems(prev => prev.filter(m => m.id !== mediaId))
+  }
+
+  const getTimeRemaining = (expiresAt) => {
+    const diff = new Date(expiresAt) - new Date()
+    if (diff <= 0) return 'Expired'
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const minutes = Math.floor((diff % 3600000) / 60000)
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
+  }
 
   return (
     <>
@@ -121,11 +170,11 @@ export default function AdminLivePosts() {
           <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">Live Posts Manager</h1>
-              <p className="text-gray-500">Create 24-hour posts. No limits. Anything goes.</p>
+              <p className="text-gray-500">Create 24-hour posts with unlimited images, videos, and media</p>
             </div>
             <button 
-              onClick={() => { setEditingPost(null); setTitle(''); setContent(''); setCategory('tech'); setShowCreateModal(true); }} 
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+              onClick={() => { resetForm(); setShowCreateModal(true); }} 
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:opacity-90 transition"
             >
               <Plus size={18} /> New Live Post
             </button>
@@ -149,9 +198,9 @@ export default function AdminLivePosts() {
               <div className="text-xs text-gray-500">Total Likes</div>
             </div>
             <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
-              <div className="text-2xl mb-2">💬</div>
-              <div className="text-2xl font-bold text-white">{posts.reduce((sum, p) => sum + (p.comments?.length || 0), 0)}</div>
-              <div className="text-xs text-gray-500">Total Comments</div>
+              <div className="text-2xl mb-2">🖼️</div>
+              <div className="text-2xl font-bold text-white">{posts.reduce((sum, p) => sum + (p.media_items?.length || 0), 0)}</div>
+              <div className="text-xs text-gray-500">Media Items</div>
             </div>
           </div>
 
@@ -163,7 +212,9 @@ export default function AdminLivePosts() {
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">📭</div>
                 <h3 className="text-white text-lg mb-2">No live posts yet</h3>
-                <button onClick={() => setShowCreateModal(true)} className="px-4 py-2 bg-purple-600 text-white rounded-xl">Create Post</button>
+                <button onClick={() => { resetForm(); setShowCreateModal(true); }} className="px-4 py-2 bg-purple-600 text-white rounded-xl">
+                  Create First Post
+                </button>
               </div>
             ) : (
               <table className="w-full">
@@ -171,6 +222,7 @@ export default function AdminLivePosts() {
                   <tr className="text-left text-gray-500 text-sm">
                     <th className="p-4">Post</th>
                     <th className="p-4">Category</th>
+                    <th className="p-4">Media</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Engagement</th>
                     <th className="p-4">Time Left</th>
@@ -179,16 +231,16 @@ export default function AdminLivePosts() {
                 </thead>
                 <tbody>
                   {posts.map((post) => {
-                    const active = isActive(post);
-                    const timeLeft = getTimeRemaining(post.expires_at);
-                    const cat = categories.find(c => c.id === post.category);
+                    const active = isActive(post)
+                    const timeLeft = getTimeRemaining(post.expires_at)
+                    const cat = categories.find(c => c.id === post.category)
                     return (
-                      <tr key={post.id} className="border-b border-gray-800">
+                      <tr key={post.id} className="border-b border-gray-800 hover:bg-gray-900/50 transition">
                         <td className="p-4">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <div className="text-white font-medium">{post.title || 'Untitled'}</div>
-                              <div className="text-xs text-gray-500">{post.content?.substring(0, 60)?.replace(/<[^>]*>/g, '') || 'No content'}</div>
+                          <div className="max-w-xs">
+                            <div className="text-white font-medium truncate">{post.title || 'Untitled'}</div>
+                            <div className="text-xs text-gray-500 truncate">
+                              {post.content?.substring(0, 60)?.replace(/<[^>]*>/g, '') || 'No content'}
                             </div>
                           </div>
                         </td>
@@ -196,8 +248,23 @@ export default function AdminLivePosts() {
                           <span className="text-sm">{cat?.icon} {cat?.name}</span>
                         </td>
                         <td className="p-4">
-                          <span className={`text-xs px-2 py-1 rounded-full ${active ? 'bg-green-500/20 text-green-500' : 'bg-gray-500/20 text-gray-500'}`}>
-                            {active ? '● Active' : '○ Expired'}
+                          <div className="flex items-center gap-1">
+                            {post.media_items?.length > 0 && (
+                              <>
+                                {post.media_items.filter(m => m.type === 'image').length > 0 && <Image size={14} className="text-blue-500" />}
+                                {post.media_items.filter(m => m.type === 'video').length > 0 && <Video size={14} className="text-green-500" />}
+                                {post.media_items.filter(m => m.type === 'audio').length > 0 && <Music size={14} className="text-purple-500" />}
+                                <span className="text-xs text-gray-500 ml-1">{post.media_items.length}</span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            active ? 'bg-green-500/20 text-green-500' : 
+                            post.status === 'draft' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-gray-500/20 text-gray-500'
+                          }`}>
+                            {active ? '● Published' : post.status === 'draft' ? '📝 Draft' : '○ Expired'}
                           </span>
                         </td>
                         <td className="p-4">
@@ -214,14 +281,24 @@ export default function AdminLivePosts() {
                         </td>
                         <td className="p-4">
                           <div className="flex gap-2">
-                            <button onClick={() => window.open(`/live-posts/${post.category}`, '_blank')} className="p-1.5 rounded hover:bg-gray-800"><Eye size={16} className="text-gray-500" /></button>
-                            <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-gray-800"><Edit size={16} className="text-gray-500" /></button>
-                            {active && <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-gray-800"><Clock size={16} className="text-gray-500" /></button>}
-                            <button onClick={() => setShowDeleteConfirm(post.id)} className="p-1.5 rounded hover:bg-gray-800"><Trash2 size={16} className="text-gray-500" /></button>
+                            <Link href={`/live-posts/${post.category}`} target="_blank" className="p-1.5 rounded hover:bg-gray-800 transition">
+                              <Eye size={16} className="text-gray-500" />
+                            </Link>
+                            <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-gray-800 transition">
+                              <Edit size={16} className="text-gray-500" />
+                            </button>
+                            {active && (
+                              <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-gray-800 transition">
+                                <Clock size={16} className="text-gray-500" />
+                              </button>
+                            )}
+                            <button onClick={() => setShowDeleteConfirm(post.id)} className="p-1.5 rounded hover:bg-gray-800 transition">
+                              <Trash2 size={16} className="text-gray-500" />
+                            </button>
                           </div>
                         </td>
                       </tr>
-                    );
+                    )
                   })}
                 </tbody>
               </table>
@@ -230,42 +307,240 @@ export default function AdminLivePosts() {
         </div>
       </div>
 
-      {/* Create/Edit Modal - Simple version without Toolbar */}
+      {/* Create/Edit Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-800">
-              <h2 className="text-xl font-bold text-white">{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white"><X size={20} /></button>
+              <div>
+                <h2 className="text-xl font-bold text-white">{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
+                <p className="text-sm text-gray-500">Unlimited media • 24-hour lifespan • Anything goes</p>
+              </div>
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white transition">
+                <X size={24} />
+              </button>
             </div>
-            
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Category</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white">
-                  {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Title (Optional)</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Any title you want..." className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white" />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Content</label>
-                <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write anything... No limits. Just create." rows={10} className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white resize-none" />
-                <p className="text-xs text-gray-500 mt-2">✨ Write anything. Add images, videos, audio, PDFs, embeds using HTML. No limits. No rules.</p>
-              </div>
+
+            {/* Tabs */}
+            <div className="flex border-b border-gray-800 px-6">
+              {['content', 'media', 'settings'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-3 text-sm font-medium transition-all ${
+                    activeTab === tab 
+                      ? 'text-purple-500 border-b-2 border-purple-500' 
+                      : 'text-gray-500 hover:text-gray-300'
+                  }`}
+                >
+                  {tab === 'content' && '📝 Content'}
+                  {tab === 'media' && `🖼️ Media (${mediaItems.length})`}
+                  {tab === 'settings' && '⚙️ Settings'}
+                </button>
+              ))}
             </div>
-            
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {activeTab === 'content' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Title (Optional)</label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Catchy title for your post..."
+                      className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Content</label>
+                    <Editor
+                      content={content}
+                      onChange={setContent}
+                      onSave={() => {}}
+                      onSchedule={() => {}}
+                      onPublish={() => {}}
+                      onPreview={() => {}}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'media' && (
+                <div>
+                  <div className="flex gap-3 mb-6 flex-wrap">
+                    <button onClick={() => setShowMediaModal('image')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30 transition">
+                      <Image size={16} /> Add Image
+                    </button>
+                    <button onClick={() => setShowMediaModal('video')} className="flex items-center gap-2 px-4 py-2 bg-green-600/20 text-green-400 rounded-xl hover:bg-green-600/30 transition">
+                      <Video size={16} /> Add Video
+                    </button>
+                    <button onClick={() => setShowMediaModal('audio')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 text-purple-400 rounded-xl hover:bg-purple-600/30 transition">
+                      <Music size={16} /> Add Audio
+                    </button>
+                    <button onClick={() => setShowMediaModal('pdf')} className="flex items-center gap-2 px-4 py-2 bg-red-600/20 text-red-400 rounded-xl hover:bg-red-600/30 transition">
+                      <File size={16} /> Add PDF
+                    </button>
+                    <button onClick={() => setShowMediaModal('embed')} className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-xl hover:bg-yellow-600/30 transition">
+                      <Code size={16} /> Embed
+                    </button>
+                    <button onClick={() => setShowMediaModal('gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/20 text-pink-400 rounded-xl hover:bg-pink-600/30 transition">
+                      <LayoutGrid size={16} /> Gallery
+                    </button>
+                  </div>
+
+                  {/* Media Grid */}
+                  {mediaItems.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-xl">
+                      <Upload size={48} className="text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-500">No media added yet</p>
+                      <p className="text-sm text-gray-600">Click any button above to add images, videos, audio, PDFs, embeds, or galleries</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {mediaItems.map(item => (
+                        <div key={item.id} className="group relative bg-gray-900 rounded-xl overflow-hidden">
+                          {item.type === 'image' && (
+                            <img src={item.url} alt={item.alt || ''} className="w-full h-32 object-cover" />
+                          )}
+                          {item.type === 'video' && (
+                            <div className="relative w-full h-32 bg-black flex items-center justify-center">
+                              <Video size={32} className="text-gray-500" />
+                            </div>
+                          )}
+                          {item.type === 'audio' && (
+                            <div className="w-full h-32 bg-purple-900/20 flex flex-col items-center justify-center">
+                              <Music size={32} className="text-purple-400 mb-2" />
+                              <span className="text-xs text-gray-400">{item.title || 'Audio'}</span>
+                            </div>
+                          )}
+                          {item.type === 'pdf' && (
+                            <div className="w-full h-32 bg-red-900/20 flex flex-col items-center justify-center">
+                              <File size={32} className="text-red-400 mb-2" />
+                              <span className="text-xs text-gray-400">{item.title || 'PDF'}</span>
+                            </div>
+                          )}
+                          {item.type === 'embed' && (
+                            <div className="w-full h-32 bg-cyan-900/20 flex flex-col items-center justify-center">
+                              <Code size={32} className="text-cyan-400 mb-2" />
+                              <span className="text-xs text-gray-400">Embed</span>
+                            </div>
+                          )}
+                          {item.type === 'gallery' && (
+                            <div className="w-full h-32 bg-pink-900/20 flex flex-col items-center justify-center">
+                              <LayoutGrid size={32} className="text-pink-400 mb-2" />
+                              <span className="text-xs text-gray-400">Gallery ({item.media?.length || 0} items)</span>
+                            </div>
+                          )}
+                          <button
+                            onClick={() => removeMedia(item.id)}
+                            className="absolute top-2 right-2 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition"
+                          >
+                            <Trash2 size={12} className="text-white" />
+                          </button>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                            <span className="text-xs text-white/80">{item.type.toUpperCase()}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'settings' && (
+                <div className="space-y-6 max-w-md">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Category</label>
+                    <select 
+                      value={category} 
+                      onChange={(e) => setCategory(e.target.value)} 
+                      className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white focus:outline-none focus:border-purple-500"
+                    >
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Posts are displayed per category. Only one active post per category.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Status</label>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setStatus('draft')}
+                        className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition ${
+                          status === 'draft' 
+                            ? 'bg-yellow-600 text-white' 
+                            : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+                        }`}
+                      >
+                        <Save size={16} /> Draft
+                      </button>
+                      <button
+                        onClick={() => setStatus('published')}
+                        className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 transition ${
+                          status === 'published' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-900 text-gray-400 hover:bg-gray-800'
+                        }`}
+                      >
+                        <Send size={16} /> Publish (24h)
+                      </button>
+                    </div>
+                  </div>
+
+                  {status === 'published' && (
+                    <div className="p-4 bg-purple-600/10 rounded-xl border border-purple-600/20">
+                      <div className="flex items-center gap-2 text-purple-400 mb-2">
+                        <Clock size={16} />
+                        <span className="text-sm font-medium">24-Hour Lifespan</span>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        This post will automatically expire 24 hours after publishing.
+                        Expired posts are hidden from the public but remain in your dashboard.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
             <div className="flex gap-3 p-6 border-t border-gray-800">
-              <button onClick={() => setShowCreateModal(false)} className="flex-1 px-6 py-2 border border-gray-700 rounded-xl text-gray-400">Cancel</button>
-              <button onClick={savePost} disabled={saving} className="flex-1 px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl">{saving ? 'Saving...' : (editingPost ? 'Update' : 'Publish (24h)')}</button>
+              <button onClick={() => setShowCreateModal(false)} className="flex-1 px-6 py-2 border border-gray-700 rounded-xl text-gray-400 hover:bg-gray-800 transition">
+                Cancel
+              </button>
+              <button 
+                onClick={savePost} 
+                disabled={saving} 
+                className="flex-1 px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    {editingPost ? 'Update Post' : status === 'published' ? 'Publish Post' : 'Save Draft'}
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Media Modals */}
+      <ImageModal isOpen={showMediaModal === 'image'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
+      <VideoModal isOpen={showMediaModal === 'video'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
+      <AudioModal isOpen={showMediaModal === 'audio'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
+      <PDFModal isOpen={showMediaModal === 'pdf'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
+      <EmbedModal isOpen={showMediaModal === 'embed'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
+      <GalleryModal isOpen={showMediaModal === 'gallery'} onClose={() => setShowMediaModal(null)} onInsert={(data) => handleMediaInsert({ ...data, type: 'gallery' })} />
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (
@@ -273,14 +548,18 @@ export default function AdminLivePosts() {
           <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl p-6 max-w-md text-center" onClick={e => e.stopPropagation()}>
             <div className="text-5xl mb-4">⚠️</div>
             <h3 className="text-xl font-bold text-white mb-2">Delete Post?</h3>
-            <p className="text-gray-500 mb-6">This cannot be undone.</p>
+            <p className="text-gray-500 mb-6">This cannot be undone. The post will be permanently removed.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 px-6 py-2 border border-gray-700 rounded-xl text-gray-400">Cancel</button>
-              <button onClick={() => deletePost(showDeleteConfirm)} className="flex-1 px-6 py-2 bg-red-600 text-white rounded-xl">Delete Forever</button>
+              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 px-6 py-2 border border-gray-700 rounded-xl text-gray-400 hover:bg-gray-800 transition">
+                Cancel
+              </button>
+              <button onClick={() => deletePost(showDeleteConfirm)} className="flex-1 px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition">
+                Delete Forever
+              </button>
             </div>
           </div>
         </div>
       )}
     </>
-  );
+  )
 }
