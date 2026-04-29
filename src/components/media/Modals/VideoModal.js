@@ -1,4 +1,4 @@
-// src/components/MediaModals/VideoModal.jsx - ENHANCED FOR MEDIACONTROLS INTEGRATION
+// src/components/media/Modals/VideoModal.jsx - ENHANCED FOR MEDIACONTROLS INTEGRATION
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { motion, AnimatePresence } from 'framer-motion'

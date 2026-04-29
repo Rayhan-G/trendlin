@@ -1,4 +1,4 @@
-// src/components/MediaModals/AudioModal.jsx
+// src/components/media/Modals/AudioModal.jsx
 import React, { useState, useRef, useEffect } from 'react'
 import { X, Upload, Music, AlignLeft, AlignCenter, AlignRight, Type } from 'lucide-react'
 import { toast } from 'react-toastify'

@@ -1,4 +1,4 @@
-// src/components/MediaModals/PDFModal.jsx - ENHANCED FOR MEDIACONTROLS INTEGRATION
+// src/components/media/Modals/PDFModal.jsx - ENHANCED FOR MEDIACONTROLS INTEGRATION
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Upload, FileText, AlignLeft, AlignCenter, AlignRight, Type, Move, Settings, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'react-toastify'

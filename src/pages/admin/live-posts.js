@@ -1,4 +1,4 @@
-// src/pages/admin/live-posts.js (COMPLETE WITH EDITOR)
+// src/pages/admin/live-posts.js (COMPLETE WITH CORRECTED IMPORTS)
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import Head from 'next/head'
@@ -14,19 +14,19 @@ import {
 const Editor = dynamic(() => import('../../components/editor'), {
   ssr: false,
   loading: () => (
-    <div className="editor-loading">
+    <div className="editor-loading flex items-center justify-center p-8">
       <Loader2 className="animate-spin" size={32} />
-      <p>Loading editor...</p>
+      <p className="ml-2">Loading editor...</p>
     </div>
   )
 })
 
-// Dynamically import Media Modals
-const ImageModal = dynamic(() => import('../../components/MediaModals/ImageModal'), { ssr: false })
-const VideoModal = dynamic(() => import('../../components/MediaModals/VideoModal'), { ssr: false })
-const AudioModal = dynamic(() => import('../../components/MediaModals/AudioModal'), { ssr: false })
-const PDFModal = dynamic(() => import('../../components/MediaModals/PDFModal'), { ssr: false })
-const EmbedModal = dynamic(() => import('../../components/MediaModals/EmbedModal'), { ssr: false })
+// Dynamically import Media Modals - CORRECTED PATHS (lowercase 'media/Modals')
+const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal'), { ssr: false })
+const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal'), { ssr: false })
+const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal'), { ssr: false })
+const PDFModal = dynamic(() => import('../../components/media/Modals/PDFModal'), { ssr: false })
+const EmbedModal = dynamic(() => import('../../components/media/Modals/EmbedModal'), { ssr: false })
 const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal'), { ssr: false })
 
 const categories = [

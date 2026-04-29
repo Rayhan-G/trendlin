@@ -1,4 +1,4 @@
-// src/components/MediaModals/EmbedModal.jsx - ENHANCED FOR MEDIACONTROLS INTEGRATION
+// src/components/media/Modals/EmbedModal.jsx - ENHANCED FOR MEDIACONTROLS INTEGRATION
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
