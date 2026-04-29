@@ -1,4 +1,4 @@
-// src/pages/admin/live-posts.js (COMPLETE WITH CORRECTED IMPORTS)
+// src/pages/admin/live-posts.js - SIMPLIFIED VERSION (Media + Description only)
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import Head from 'next/head'
@@ -7,21 +7,10 @@ import dynamic from 'next/dynamic'
 import { 
   Plus, Edit, Trash2, Eye, Clock, Heart, MessageCircle, Share2, X,
   Image, Video, Music, File, Code, LayoutGrid, Upload, Loader2,
-  Save, Send, RefreshCw, AlertCircle, CheckCircle
+  Save, Send, RefreshCw, AlertCircle, CheckCircle, Type, Move
 } from 'lucide-react'
 
-// Dynamically import Editor with no SSR
-const Editor = dynamic(() => import('../../components/editor'), {
-  ssr: false,
-  loading: () => (
-    <div className="editor-loading flex items-center justify-center p-8">
-      <Loader2 className="animate-spin" size={32} />
-      <p className="ml-2">Loading editor...</p>
-    </div>
-  )
-})
-
-// Dynamically import Media Modals - CORRECTED PATHS (lowercase 'media/Modals')
+// Dynamically import Media Modals
 const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal'), { ssr: false })
 const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal'), { ssr: false })
 const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal'), { ssr: false })
@@ -44,17 +33,20 @@ export default function AdminLivePosts() {
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingPost, setEditingPost] = useState(null)
-  const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+  
+  // SIMPLIFIED: Only two fields
+  const [description, setDescription] = useState('')  // Text on top of media
   const [category, setCategory] = useState('tech')
-  const [mediaItems, setMediaItems] = useState([])
+  const [mediaItems, setMediaItems] = useState([])    // Unlimited media items
   const [status, setStatus] = useState('draft')
+  
   const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
   const [showMediaModal, setShowMediaModal] = useState(null)
-  const [activeTab, setActiveTab] = useState('content')
+  const [activeTab, setActiveTab] = useState('media')  // Start with media tab
   const [publishSuccess, setPublishSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)  // For carousel preview
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
@@ -83,8 +75,7 @@ export default function AdminLivePosts() {
 
     const postData = {
       category,
-      title: title || null,
-      content: content || null,
+      content: description,  // Store description as content
       media_items: mediaItems,
       status: status === 'published' ? 'published' : 'draft',
       updated_at: now.toISOString()
@@ -133,19 +124,18 @@ export default function AdminLivePosts() {
 
   const resetForm = () => {
     setEditingPost(null)
-    setTitle('')
-    setContent('')
+    setDescription('')
     setCategory('tech')
     setMediaItems([])
     setStatus('draft')
-    setActiveTab('content')
+    setActiveTab('media')
     setErrorMessage('')
+    setCurrentMediaIndex(0)
   }
 
   const editPost = (post) => {
     setEditingPost(post)
-    setTitle(post.title || '')
-    setContent(post.content || '')
+    setDescription(post.content || '')
     setCategory(post.category)
     setMediaItems(post.media_items || [])
     setStatus(post.status || 'draft')
@@ -161,10 +151,15 @@ export default function AdminLivePosts() {
     }
     setMediaItems(prev => [...prev, newMediaItem])
     setShowMediaModal(null)
+    // Reset to first media item when adding new
+    setCurrentMediaIndex(0)
   }
 
   const removeMedia = (mediaId) => {
     setMediaItems(prev => prev.filter(m => m.id !== mediaId))
+    if (currentMediaIndex >= mediaItems.length - 1) {
+      setCurrentMediaIndex(Math.max(0, mediaItems.length - 2))
+    }
   }
 
   const getTimeRemaining = (expiresAt) => {
@@ -176,6 +171,18 @@ export default function AdminLivePosts() {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
   }
 
+  const nextMedia = () => {
+    if (currentMediaIndex < mediaItems.length - 1) {
+      setCurrentMediaIndex(currentMediaIndex + 1)
+    }
+  }
+
+  const prevMedia = () => {
+    if (currentMediaIndex > 0) {
+      setCurrentMediaIndex(currentMediaIndex - 1)
+    }
+  }
+
   return (
     <>
       <Head><title>Admin | Live Posts Manager</title></Head>
@@ -185,7 +192,7 @@ export default function AdminLivePosts() {
           <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">Live Posts Manager</h1>
-              <p className="text-gray-500">Create 24-hour posts with rich text editor and unlimited media</p>
+              <p className="text-gray-500">Create 24-hour posts with unlimited media • Text appears on top of media</p>
             </div>
             <button 
               onClick={() => { resetForm(); setShowCreateModal(true); }} 
@@ -235,14 +242,14 @@ export default function AdminLivePosts() {
               <table className="w-full">
                 <thead className="border-b border-gray-800">
                   <tr className="text-left text-gray-500 text-sm">
-                    <th className="p-4">Post</th>
+                    <th className="p-4">Preview</th>
                     <th className="p-4">Category</th>
                     <th className="p-4">Media</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Engagement</th>
                     <th className="p-4">Time Left</th>
                     <th className="p-4">Actions</th>
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody>
                   {posts.map((post) => {
@@ -253,10 +260,20 @@ export default function AdminLivePosts() {
                       <tr key={post.id} className="border-b border-gray-800 hover:bg-gray-900/50 transition">
                         <td className="p-4">
                           <div className="max-w-xs">
-                            <div className="text-white font-medium truncate">{post.title || 'Untitled'}</div>
-                            <div className="text-xs text-gray-500 truncate">
-                              {post.content?.substring(0, 60)?.replace(/<[^>]*>/g, '') || 'No content'}
+                            <div className="text-white text-sm line-clamp-2">
+                              {post.content || 'No description'}
                             </div>
+                            {post.media_items?.[0] && (
+                              <div className="mt-2 w-16 h-16 rounded-lg overflow-hidden bg-gray-800">
+                                {post.media_items[0].type === 'image' ? (
+                                  <img src={post.media_items[0].url} alt="" className="w-full h-full object-cover" />
+                                ) : post.media_items[0].type === 'video' ? (
+                                  <Video size={24} className="w-full h-full p-4 text-gray-500" />
+                                ) : (
+                                  <Music size={24} className="w-full h-full p-4 text-gray-500" />
+                                )}
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="p-4">
@@ -268,10 +285,7 @@ export default function AdminLivePosts() {
                           <div className="flex items-center gap-1">
                             {post.media_items?.length > 0 && (
                               <>
-                                {post.media_items.filter(m => m.type === 'image').length > 0 && <Image size={14} className="text-blue-500" />}
-                                {post.media_items.filter(m => m.type === 'video').length > 0 && <Video size={14} className="text-green-500" />}
-                                {post.media_items.filter(m => m.type === 'audio').length > 0 && <Music size={14} className="text-purple-500" />}
-                                <span className="text-xs text-gray-500 ml-1">{post.media_items.length}</span>
+                                <span className="text-xs text-gray-500">{post.media_items.length} items</span>
                               </>
                             )}
                           </div>
@@ -324,30 +338,28 @@ export default function AdminLivePosts() {
         </div>
       </div>
 
-      {/* Create/Edit Modal with FULL Editor */}
+      {/* Create/Edit Modal - SIMPLIFIED: Media + Description only */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-800">
               <div>
                 <h2 className="text-xl font-bold text-white">{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
-                <p className="text-sm text-gray-500">Rich text editor • Unlimited media • 24-hour lifespan</p>
+                <p className="text-sm text-gray-500">Unlimited media • Text appears on top of media</p>
               </div>
               <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
 
-            {/* Success Message */}
+            {/* Success/Error Messages */}
             {publishSuccess && (
               <div className="mx-6 mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg flex items-center gap-2 text-green-500">
                 <CheckCircle size={18} />
                 <span className="text-sm">Post {editingPost ? 'updated' : 'created'} successfully!</span>
               </div>
             )}
-
-            {/* Error Message */}
             {errorMessage && (
               <div className="mx-6 mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg flex items-center gap-2 text-red-500">
                 <AlertCircle size={18} />
@@ -355,135 +367,214 @@ export default function AdminLivePosts() {
               </div>
             )}
 
-            {/* Tabs */}
+            {/* Simple Tabs - Media & Settings */}
             <div className="flex border-b border-gray-800 px-6">
-              {[
-                { id: 'content', label: '📝 Content', icon: null },
-                { id: 'media', label: `🖼️ Media (${mediaItems.length})`, icon: null },
-                { id: 'settings', label: '⚙️ Settings', icon: null }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-3 text-sm font-medium transition-all ${
-                    activeTab === tab.id 
-                      ? 'text-purple-500 border-b-2 border-purple-500' 
-                      : 'text-gray-500 hover:text-gray-300'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveTab('media')}
+                className={`px-4 py-3 text-sm font-medium transition-all ${
+                  activeTab === 'media' 
+                    ? 'text-purple-500 border-b-2 border-purple-500' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                🖼️ Media ({mediaItems.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`px-4 py-3 text-sm font-medium transition-all ${
+                  activeTab === 'settings' 
+                    ? 'text-purple-500 border-b-2 border-purple-500' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                ⚙️ Settings
+              </button>
             </div>
 
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6">
-              {activeTab === 'content' && (
-                <div className="space-y-4">
+              {activeTab === 'media' && (
+                <div className="space-y-6">
+                  {/* Media Preview Carousel */}
+                  {mediaItems.length > 0 && (
+                    <div className="relative bg-black rounded-2xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                      {mediaItems[currentMediaIndex]?.type === 'image' && (
+                        <img 
+                          src={mediaItems[currentMediaIndex].url} 
+                          alt="" 
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                      {mediaItems[currentMediaIndex]?.type === 'video' && (
+                        <video 
+                          src={mediaItems[currentMediaIndex].url} 
+                          className="w-full h-full object-cover"
+                          controls
+                        />
+                      )}
+                      {mediaItems[currentMediaIndex]?.type === 'audio' && (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/50 to-pink-900/50">
+                          <Music size={64} className="text-purple-400 mb-4" />
+                          <audio src={mediaItems[currentMediaIndex].url} controls className="w-11/12 max-w-md" />
+                          <p className="text-white mt-4">{mediaItems[currentMediaIndex].title || 'Audio'}</p>
+                        </div>
+                      )}
+                      {mediaItems[currentMediaIndex]?.type === 'pdf' && (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-900/50 to-orange-900/50">
+                          <File size={64} className="text-red-400 mb-4" />
+                          <p className="text-white">{mediaItems[currentMediaIndex].title || 'PDF Document'}</p>
+                          <button className="mt-4 px-4 py-2 bg-white/20 rounded-lg text-white">View PDF</button>
+                        </div>
+                      )}
+                      {mediaItems[currentMediaIndex]?.type === 'embed' && (
+                        <div className="w-full h-full">
+                          <div dangerouslySetInnerHTML={{ __html: mediaItems[currentMediaIndex].html || '<iframe class="w-full h-full"></iframe>' }} />
+                        </div>
+                      )}
+                      {mediaItems[currentMediaIndex]?.type === 'gallery' && (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-pink-900/50 to-purple-900/50">
+                          <LayoutGrid size={64} className="text-pink-400 mb-4" />
+                          <p className="text-white">Gallery ({mediaItems[currentMediaIndex].media?.length || 0} items)</p>
+                        </div>
+                      )}
+                      
+                      {/* Navigation arrows for multiple media */}
+                      {mediaItems.length > 1 && (
+                        <>
+                          <button 
+                            onClick={prevMedia}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition"
+                          >
+                            ◀
+                          </button>
+                          <button 
+                            onClick={nextMedia}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70 transition"
+                          >
+                            ▶
+                          </button>
+                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                            {mediaItems.map((_, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => setCurrentMediaIndex(idx)}
+                                className={`w-2 h-2 rounded-full transition ${
+                                  idx === currentMediaIndex ? 'bg-white w-4' : 'bg-white/50'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Text overlay - Description ON TOP of media */}
+                      {description && (
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-8">
+                          <p className="text-white text-xl md:text-2xl font-medium leading-relaxed max-w-3xl">
+                            {description}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Description Input - Text that appears ON TOP of media */}
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">Title (Optional)</label>
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Catchy title for your post..."
-                      className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Content</label>
-                    <Editor
-                      content={content}
-                      onChange={setContent}
-                      onSave={() => {}}
-                      onSchedule={() => {}}
-                      onPublish={() => {}}
-                      onPreview={() => {}}
+                    <label className="block text-sm text-gray-400 mb-2">
+                      📝 Description <span className="text-gray-500">(Appears on top of media)</span>
+                    </label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Write your story, caption, or message here... This text will appear on top of your media."
+                      rows={4}
+                      className="w-full p-4 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 resize-none"
                     />
                     <p className="text-xs text-gray-500 mt-2">
-                      ✨ Use the toolbar above to add formatting, images, videos, audio, embeds, tables, and more!
+                      ✨ This text will be displayed as an overlay on your media. Perfect for storytelling!
                     </p>
                   </div>
-                </div>
-              )}
 
-              {activeTab === 'media' && (
-                <div>
-                  <div className="flex gap-3 mb-6 flex-wrap">
-                    <button onClick={() => setShowMediaModal('image')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30 transition">
-                      <Image size={16} /> Add Image
-                    </button>
-                    <button onClick={() => setShowMediaModal('video')} className="flex items-center gap-2 px-4 py-2 bg-green-600/20 text-green-400 rounded-xl hover:bg-green-600/30 transition">
-                      <Video size={16} /> Add Video
-                    </button>
-                    <button onClick={() => setShowMediaModal('audio')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 text-purple-400 rounded-xl hover:bg-purple-600/30 transition">
-                      <Music size={16} /> Add Audio
-                    </button>
-                    <button onClick={() => setShowMediaModal('pdf')} className="flex items-center gap-2 px-4 py-2 bg-red-600/20 text-red-400 rounded-xl hover:bg-red-600/30 transition">
-                      <File size={16} /> Add PDF
-                    </button>
-                    <button onClick={() => setShowMediaModal('embed')} className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-xl hover:bg-yellow-600/30 transition">
-                      <Code size={16} /> Embed
-                    </button>
-                    <button onClick={() => setShowMediaModal('gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/20 text-pink-400 rounded-xl hover:bg-pink-600/30 transition">
-                      <LayoutGrid size={16} /> Gallery
-                    </button>
+                  {/* Add Media Buttons */}
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">🖼️ Add Media (Unlimited)</label>
+                    <div className="flex gap-3 flex-wrap">
+                      <button onClick={() => setShowMediaModal('image')} className="flex items-center gap-2 px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30 transition">
+                        <Image size={16} /> Image
+                      </button>
+                      <button onClick={() => setShowMediaModal('video')} className="flex items-center gap-2 px-4 py-2 bg-green-600/20 text-green-400 rounded-xl hover:bg-green-600/30 transition">
+                        <Video size={16} /> Video
+                      </button>
+                      <button onClick={() => setShowMediaModal('audio')} className="flex items-center gap-2 px-4 py-2 bg-purple-600/20 text-purple-400 rounded-xl hover:bg-purple-600/30 transition">
+                        <Music size={16} /> Audio
+                      </button>
+                      <button onClick={() => setShowMediaModal('pdf')} className="flex items-center gap-2 px-4 py-2 bg-red-600/20 text-red-400 rounded-xl hover:bg-red-600/30 transition">
+                        <File size={16} /> PDF
+                      </button>
+                      <button onClick={() => setShowMediaModal('embed')} className="flex items-center gap-2 px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-xl hover:bg-yellow-600/30 transition">
+                        <Code size={16} /> Embed
+                      </button>
+                      <button onClick={() => setShowMediaModal('gallery')} className="flex items-center gap-2 px-4 py-2 bg-pink-600/20 text-pink-400 rounded-xl hover:bg-pink-600/30 transition">
+                        <LayoutGrid size={16} /> Gallery
+                      </button>
+                    </div>
                   </div>
 
-                  {mediaItems.length === 0 ? (
-                    <div className="text-center py-12 border-2 border-dashed border-gray-800 rounded-xl">
-                      <Upload size={48} className="text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500">No media added yet</p>
-                      <p className="text-sm text-gray-600">Click any button above to add images, videos, audio, PDFs, embeds, or galleries</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                      {mediaItems.map(item => (
-                        <div key={item.id} className="group relative bg-gray-900 rounded-xl overflow-hidden">
-                          {item.type === 'image' && (
-                            <img src={item.url} alt={item.alt || ''} className="w-full h-32 object-cover" />
-                          )}
-                          {item.type === 'video' && (
-                            <div className="relative w-full h-32 bg-black flex items-center justify-center">
-                              <video src={item.url} className="w-full h-full object-cover" />
-                              <Video size={32} className="absolute text-white/50" />
-                            </div>
-                          )}
-                          {item.type === 'audio' && (
-                            <div className="w-full h-32 bg-purple-900/20 flex flex-col items-center justify-center">
-                              <Music size={32} className="text-purple-400 mb-2" />
-                              <span className="text-xs text-gray-400">{item.title || 'Audio'}</span>
-                            </div>
-                          )}
-                          {item.type === 'pdf' && (
-                            <div className="w-full h-32 bg-red-900/20 flex flex-col items-center justify-center">
-                              <File size={32} className="text-red-400 mb-2" />
-                              <span className="text-xs text-gray-400">{item.title || 'PDF'}</span>
-                            </div>
-                          )}
-                          {item.type === 'embed' && (
-                            <div className="w-full h-32 bg-cyan-900/20 flex flex-col items-center justify-center">
-                              <Code size={32} className="text-cyan-400 mb-2" />
-                              <span className="text-xs text-gray-400">Embed</span>
-                            </div>
-                          )}
-                          {item.type === 'gallery' && (
-                            <div className="w-full h-32 bg-pink-900/20 flex flex-col items-center justify-center">
-                              <LayoutGrid size={32} className="text-pink-400 mb-2" />
-                              <span className="text-xs text-gray-400">Gallery ({item.media?.length || 0} items)</span>
-                            </div>
-                          )}
-                          <button
-                            onClick={() => removeMedia(item.id)}
-                            className="absolute top-2 right-2 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition"
+                  {/* Media List */}
+                  {mediaItems.length > 0 && (
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Media Items ({mediaItems.length})</label>
+                      <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                        {mediaItems.map((item, idx) => (
+                          <div 
+                            key={item.id} 
+                            className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition ${
+                              idx === currentMediaIndex ? 'border-purple-500' : 'border-gray-700'
+                            }`}
+                            onClick={() => setCurrentMediaIndex(idx)}
                           >
-                            <Trash2 size={12} className="text-white" />
-                          </button>
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                            <span className="text-xs text-white/80 uppercase">{item.type}</span>
+                            {item.type === 'image' && (
+                              <img src={item.url} alt="" className="w-full aspect-square object-cover" />
+                            )}
+                            {item.type === 'video' && (
+                              <div className="w-full aspect-square bg-black flex items-center justify-center">
+                                <Video size={24} className="text-gray-500" />
+                              </div>
+                            )}
+                            {item.type === 'audio' && (
+                              <div className="w-full aspect-square bg-purple-900/20 flex items-center justify-center">
+                                <Music size={24} className="text-purple-400" />
+                              </div>
+                            )}
+                            {item.type === 'pdf' && (
+                              <div className="w-full aspect-square bg-red-900/20 flex items-center justify-center">
+                                <File size={24} className="text-red-400" />
+                              </div>
+                            )}
+                            {item.type === 'embed' && (
+                              <div className="w-full aspect-square bg-cyan-900/20 flex items-center justify-center">
+                                <Code size={24} className="text-cyan-400" />
+                              </div>
+                            )}
+                            {item.type === 'gallery' && (
+                              <div className="w-full aspect-square bg-pink-900/20 flex items-center justify-center">
+                                <LayoutGrid size={24} className="text-pink-400" />
+                              </div>
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); removeMedia(item.id); }}
+                              className="absolute top-1 right-1 p-1 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition"
+                            >
+                              <Trash2 size={10} className="text-white" />
+                            </button>
+                            {idx === currentMediaIndex && (
+                              <div className="absolute bottom-1 left-1 right-1 bg-purple-500 text-white text-[10px] text-center py-0.5 rounded">
+                                Active
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -502,7 +593,7 @@ export default function AdminLivePosts() {
                         <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">Posts are displayed per category. Only one active post per category.</p>
+                    <p className="text-xs text-gray-500 mt-1">Only one active post allowed per category</p>
                   </div>
 
                   <div>
@@ -539,7 +630,6 @@ export default function AdminLivePosts() {
                       </div>
                       <p className="text-xs text-gray-400">
                         This post will automatically expire 24 hours after publishing.
-                        Expired posts are hidden from the public but remain in your dashboard.
                       </p>
                     </div>
                   )}
@@ -554,7 +644,7 @@ export default function AdminLivePosts() {
               </button>
               <button 
                 onClick={savePost} 
-                disabled={saving} 
+                disabled={saving || mediaItems.length === 0} 
                 className="flex-1 px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:opacity-90 transition disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {saving ? (
@@ -586,7 +676,7 @@ export default function AdminLivePosts() {
           <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl p-6 max-w-md text-center" onClick={e => e.stopPropagation()}>
             <div className="text-5xl mb-4">⚠️</div>
             <h3 className="text-xl font-bold text-white mb-2">Delete Post?</h3>
-            <p className="text-gray-500 mb-6">This cannot be undone. The post will be permanently removed.</p>
+            <p className="text-gray-500 mb-6">This cannot be undone.</p>
             <div className="flex gap-3">
               <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 px-6 py-2 border border-gray-700 rounded-xl text-gray-400 hover:bg-gray-800 transition">
                 Cancel
