@@ -7,18 +7,17 @@ import ErrorBoundary from '../components/ErrorBoundary'
 import Toast from '../components/ui/Toast'
 import { SubscriptionProvider } from '../contexts/SubscriptionContext'
 
+// IMPORTANT: Add this for styled-jsx to work
+import 'styled-jsx/style'
+
 export default function App({ Component, pageProps }) {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
   
-  // Check if we're on an admin page
   const isAdminRoute = router.pathname.startsWith('/admin')
   
-  // Handle dark mode
   useEffect(() => {
     setMounted(true)
-    
-    // Check for saved theme preference
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark')
@@ -27,11 +26,8 @@ export default function App({ Component, pageProps }) {
     }
   }, [])
   
-  if (!mounted) {
-    return null
-  }
+  if (!mounted) return null
   
-  // Admin routes - no special layout wrapper
   if (isAdminRoute) {
     return (
       <ErrorBoundary>
@@ -43,7 +39,6 @@ export default function App({ Component, pageProps }) {
     )
   }
   
-  // Frontend routes
   return (
     <ErrorBoundary>
       <SubscriptionProvider>
