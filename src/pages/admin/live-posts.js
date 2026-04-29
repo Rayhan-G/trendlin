@@ -1,4 +1,4 @@
-// src/pages/admin/live-posts.js - FIXED PUBLISH OPTION
+// src/pages/admin/live-posts.js
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import Head from 'next/head'
@@ -66,30 +66,32 @@ export default function AdminLivePosts() {
   }
 
   const savePost = async () => {
+    if (mediaItems.length === 0) {
+      setErrorMessage('Please add at least one media item (image, video, etc.)')
+      return
+    }
+
     setSaving(true)
     setErrorMessage('')
     
     const now = new Date()
     const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
-    // Build the data object based on status
     const postData = {
-      category,
-      content: description,
+      category: category,
+      content: description || null,
       media_items: mediaItems,
-      status: status,  // Use the status directly ('draft' or 'published')
+      status: status,
       updated_at: now.toISOString()
     }
 
-    // Only add publish-related fields if status is 'published'
+    // Only add publish fields if status is 'published'
     if (status === 'published') {
       postData.published_at = now.toISOString()
       postData.expires_at = expiresAt.toISOString()
-    } else {
-      // For drafts, set these to null
-      postData.published_at = null
-      postData.expires_at = null
     }
+
+    console.log('Saving post:', postData)
 
     let result
     if (editingPost) {
@@ -120,8 +122,8 @@ export default function AdminLivePosts() {
   }
 
   const deletePost = async (id) => {
-    await supabase.from('live_posts').delete().eq('id', id)
-    fetchPosts()
+    const { error } = await supabase.from('live_posts').delete().eq('id', id)
+    if (!error) fetchPosts()
     setShowDeleteConfirm(null)
   }
 
@@ -162,7 +164,7 @@ export default function AdminLivePosts() {
     }
     setMediaItems(prev => [...prev, newMediaItem])
     setShowMediaModal(null)
-    setCurrentMediaIndex(mediaItems.length) // Go to new item
+    setCurrentMediaIndex(mediaItems.length)
   }
 
   const removeMedia = (mediaId) => {
@@ -173,7 +175,7 @@ export default function AdminLivePosts() {
   }
 
   const getTimeRemaining = (expiresAt) => {
-    if (!expiresAt) return 'Not published'
+    if (!expiresAt) return '—'
     const diff = new Date(expiresAt) - new Date()
     if (diff <= 0) return 'Expired'
     const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -252,14 +254,14 @@ export default function AdminLivePosts() {
               <table className="w-full">
                 <thead className="border-b border-gray-800">
                   <tr className="text-left text-gray-500 text-sm">
-                    <th className="p-4">Post</th>
+                    <th className="p-4">Content</th>
                     <th className="p-4">Category</th>
                     <th className="p-4">Media</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4">Engagement</th>
+                    <th className="p-4">Likes</th>
                     <th className="p-4">Time Left</th>
                     <th className="p-4">Actions</th>
-                  </tr>
+                   </tr>
                 </thead>
                 <tbody>
                   {posts.map((post) => {
@@ -270,9 +272,9 @@ export default function AdminLivePosts() {
                       <tr key={post.id} className="border-b border-gray-800 hover:bg-gray-900/50 transition">
                         <td className="p-4">
                           <div className="max-w-xs">
-                            <div className="text-white text-sm line-clamp-2">
-                              {post.content?.substring(0, 80) || 'No description'}
-                            </div>
+                            <p className="text-white text-sm line-clamp-2">
+                              {post.content || 'No description'}
+                            </p>
                           </div>
                         </td>
                         <td className="p-4">
@@ -281,9 +283,7 @@ export default function AdminLivePosts() {
                           </span>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-500">{post.media_items?.length || 0} items</span>
-                          </div>
+                          <span className="text-xs text-gray-500">{post.media_items?.length || 0} items</span>
                         </td>
                         <td className="p-4">
                           <span className={`text-xs px-2 py-1 rounded-full ${
@@ -294,31 +294,27 @@ export default function AdminLivePosts() {
                           </span>
                         </td>
                         <td className="p-4">
-                          <div className="flex gap-3 text-xs text-gray-500">
-                            <span>❤️ {post.likes || 0}</span>
-                            <span>💬 {post.comments?.length || 0}</span>
-                            <span>🔄 {post.shares || 0}</span>
-                          </div>
+                          <span className="text-sm">❤️ {post.likes || 0}</span>
                         </td>
                         <td className="p-4">
-                          <span className={`text-sm font-mono ${active && new Date(post.expires_at) - new Date() < 3600000 ? 'text-red-500' : 'text-yellow-500'}`}>
+                          <span className={`text-sm font-mono ${active ? 'text-yellow-500' : 'text-gray-500'}`}>
                             {active ? timeLeft : '—'}
                           </span>
                         </td>
                         <td className="p-4">
                           <div className="flex gap-2">
-                            <Link href={`/live-posts/${post.category}`} target="_blank" className="p-1.5 rounded hover:bg-gray-800 transition">
+                            <Link href={`/live-posts/${post.category}`} target="_blank" className="p-1.5 rounded hover:bg-gray-800">
                               <Eye size={16} className="text-gray-500" />
                             </Link>
-                            <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-gray-800 transition">
+                            <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-gray-800">
                               <Edit size={16} className="text-gray-500" />
                             </button>
                             {active && (
-                              <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-gray-800 transition">
+                              <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-gray-800">
                                 <Clock size={16} className="text-gray-500" />
                               </button>
                             )}
-                            <button onClick={() => setShowDeleteConfirm(post.id)} className="p-1.5 rounded hover:bg-gray-800 transition">
+                            <button onClick={() => setShowDeleteConfirm(post.id)} className="p-1.5 rounded hover:bg-gray-800">
                               <Trash2 size={16} className="text-gray-500" />
                             </button>
                           </div>
@@ -337,28 +333,26 @@ export default function AdminLivePosts() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
           <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-            {/* Modal Header */}
+            {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-800">
               <div>
                 <h2 className="text-xl font-bold text-white">{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
-                <p className="text-sm text-gray-500">Unlimited media • 24-hour lifespan when published</p>
+                <p className="text-sm text-gray-500">Add media + description. Publish = 24 hours live</p>
               </div>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white transition">
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white">
                 <X size={24} />
               </button>
             </div>
 
-            {/* Success/Error Messages */}
+            {/* Messages */}
             {publishSuccess && (
-              <div className="mx-6 mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg flex items-center gap-2 text-green-500">
-                <CheckCircle size={18} />
-                <span className="text-sm">Post {editingPost ? 'updated' : 'created'} successfully!</span>
+              <div className="mx-6 mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-500 text-sm">
+                ✅ Post {editingPost ? 'updated' : 'created'} successfully!
               </div>
             )}
             {errorMessage && (
-              <div className="mx-6 mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg flex items-center gap-2 text-red-500">
-                <AlertCircle size={18} />
-                <span className="text-sm">{errorMessage}</span>
+              <div className="mx-6 mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-500 text-sm">
+                ❌ {errorMessage}
               </div>
             )}
 
@@ -366,27 +360,19 @@ export default function AdminLivePosts() {
             <div className="flex border-b border-gray-800 px-6">
               <button
                 onClick={() => setActiveTab('media')}
-                className={`px-4 py-3 text-sm font-medium transition-all ${
-                  activeTab === 'media' 
-                    ? 'text-purple-500 border-b-2 border-purple-500' 
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'media' ? 'text-purple-500 border-b-2 border-purple-500' : 'text-gray-500'}`}
               >
                 🖼️ Media ({mediaItems.length})
               </button>
               <button
                 onClick={() => setActiveTab('settings')}
-                className={`px-4 py-3 text-sm font-medium transition-all ${
-                  activeTab === 'settings' 
-                    ? 'text-purple-500 border-b-2 border-purple-500' 
-                    : 'text-gray-500 hover:text-gray-300'
-                }`}
+                className={`px-4 py-3 text-sm font-medium ${activeTab === 'settings' ? 'text-purple-500 border-b-2 border-purple-500' : 'text-gray-500'}`}
               >
                 ⚙️ Settings
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
               {activeTab === 'media' && (
                 <div className="space-y-6">
@@ -400,27 +386,22 @@ export default function AdminLivePosts() {
                         <video src={mediaItems[currentMediaIndex].url} className="w-full h-full object-cover" controls />
                       )}
                       {mediaItems[currentMediaIndex]?.type === 'audio' && (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/50 to-pink-900/50">
-                          <Music size={64} className="text-purple-400 mb-4" />
-                          <audio src={mediaItems[currentMediaIndex].url} controls className="w-11/12 max-w-md" />
+                        <div className="w-full h-full flex items-center justify-center bg-purple-900/50">
+                          <audio src={mediaItems[currentMediaIndex].url} controls />
                         </div>
                       )}
                       
                       {mediaItems.length > 1 && (
                         <>
-                          <button onClick={prevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70">
-                            ◀
-                          </button>
-                          <button onClick={nextMedia} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70">
-                            ▶
-                          </button>
+                          <button onClick={prevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full">◀</button>
+                          <button onClick={nextMedia} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full">▶</button>
                         </>
                       )}
                       
-                      {/* Text Overlay */}
+                      {/* Description Overlay */}
                       {description && (
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-8">
-                          <p className="text-white text-xl md:text-2xl font-medium">{description}</p>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
+                          <p className="text-white text-xl font-medium">{description}</p>
                         </div>
                       )}
                     </div>
@@ -428,26 +409,26 @@ export default function AdminLivePosts() {
 
                   {/* Description Input */}
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">📝 Description (appears on top of media)</label>
+                    <label className="block text-sm text-gray-400 mb-2">📝 Description (appears on media)</label>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Write your story here... This text will appear on top of your media."
+                      placeholder="Write your story here..."
                       rows={3}
-                      className="w-full p-4 bg-gray-900 border border-gray-800 rounded-xl text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 resize-none"
+                      className="w-full p-4 bg-gray-900 border border-gray-800 rounded-xl text-white focus:outline-none focus:border-purple-500"
                     />
                   </div>
 
-                  {/* Add Media Buttons */}
+                  {/* Add Media */}
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Add Media</label>
                     <div className="flex gap-3 flex-wrap">
-                      <button onClick={() => setShowMediaModal('image')} className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl hover:bg-blue-600/30">📷 Image</button>
-                      <button onClick={() => setShowMediaModal('video')} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-xl hover:bg-green-600/30">🎥 Video</button>
-                      <button onClick={() => setShowMediaModal('audio')} className="px-4 py-2 bg-purple-600/20 text-purple-400 rounded-xl hover:bg-purple-600/30">🎵 Audio</button>
-                      <button onClick={() => setShowMediaModal('pdf')} className="px-4 py-2 bg-red-600/20 text-red-400 rounded-xl hover:bg-red-600/30">📄 PDF</button>
-                      <button onClick={() => setShowMediaModal('embed')} className="px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-xl hover:bg-yellow-600/30">🔗 Embed</button>
-                      <button onClick={() => setShowMediaModal('gallery')} className="px-4 py-2 bg-pink-600/20 text-pink-400 rounded-xl hover:bg-pink-600/30">🖼️ Gallery</button>
+                      <button onClick={() => setShowMediaModal('image')} className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg">📷 Image</button>
+                      <button onClick={() => setShowMediaModal('video')} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg">🎥 Video</button>
+                      <button onClick={() => setShowMediaModal('audio')} className="px-4 py-2 bg-purple-600/20 text-purple-400 rounded-lg">🎵 Audio</button>
+                      <button onClick={() => setShowMediaModal('pdf')} className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg">📄 PDF</button>
+                      <button onClick={() => setShowMediaModal('embed')} className="px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg">🔗 Embed</button>
+                      <button onClick={() => setShowMediaModal('gallery')} className="px-4 py-2 bg-pink-600/20 text-pink-400 rounded-lg">🖼️ Gallery</button>
                     </div>
                   </div>
 
@@ -455,7 +436,11 @@ export default function AdminLivePosts() {
                   {mediaItems.length > 0 && (
                     <div className="flex gap-2 flex-wrap">
                       {mediaItems.map((item, idx) => (
-                        <div key={item.id} className={`relative w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 ${idx === currentMediaIndex ? 'border-purple-500' : 'border-gray-700'}`} onClick={() => setCurrentMediaIndex(idx)}>
+                        <div 
+                          key={item.id} 
+                          className={`relative w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 ${idx === currentMediaIndex ? 'border-purple-500' : 'border-gray-700'}`}
+                          onClick={() => setCurrentMediaIndex(idx)}
+                        >
                           {item.type === 'image' && <img src={item.url} alt="" className="w-full h-full object-cover" />}
                           {item.type === 'video' && <Video size={24} className="w-full h-full p-4 text-gray-500" />}
                           {item.type === 'audio' && <Music size={24} className="w-full h-full p-4 text-gray-500" />}
@@ -483,30 +468,36 @@ export default function AdminLivePosts() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => setStatus('draft')}
-                        className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 ${status === 'draft' ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                        className={`flex-1 py-3 rounded-xl font-medium ${status === 'draft' ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-gray-400'}`}
                       >
-                        <Save size={16} /> Save as Draft
+                        💾 Save Draft
                       </button>
                       <button
                         onClick={() => setStatus('published')}
-                        className={`flex-1 py-3 rounded-xl flex items-center justify-center gap-2 ${status === 'published' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                        className={`flex-1 py-3 rounded-xl font-medium ${status === 'published' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400'}`}
                       >
-                        <Send size={16} /> Publish (24h)
+                        🚀 Publish (24h)
                       </button>
                     </div>
                     {status === 'published' && (
-                      <p className="text-xs text-green-500 mt-2">⚠️ This will publish immediately and expire in 24 hours</p>
+                      <p className="text-xs text-green-500 mt-2">⚠️ Will expire 24 hours after publishing</p>
                     )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Modal Footer */}
+            {/* Footer */}
             <div className="flex gap-3 p-6 border-t border-gray-800">
-              <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-700 rounded-xl text-gray-400">Cancel</button>
-              <button onClick={savePost} disabled={saving || mediaItems.length === 0} className="flex-1 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50">
-                {saving ? 'Saving...' : (status === 'published' ? '🚀 Publish Now' : '💾 Save Draft')}
+              <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-700 rounded-xl text-gray-400">
+                Cancel
+              </button>
+              <button 
+                onClick={savePost} 
+                disabled={saving || mediaItems.length === 0} 
+                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : (status === 'published' ? '📢 Publish Now' : '💾 Save Draft')}
               </button>
             </div>
           </div>
@@ -529,7 +520,7 @@ export default function AdminLivePosts() {
             <h3 className="text-xl font-bold text-white mb-2">Delete Post?</h3>
             <p className="text-gray-500 mb-6">This cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2 border border-gray-700 rounded-xl text-gray-400">Cancel</button>
+              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2 border border-gray-700 rounded-xl">Cancel</button>
               <button onClick={() => deletePost(showDeleteConfirm)} className="flex-1 py-2 bg-red-600 text-white rounded-xl">Delete</button>
             </div>
           </div>
