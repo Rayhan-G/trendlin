@@ -2,10 +2,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
-const SYNC_INTERVAL = 600000 // 10 minutes in milliseconds
+const SYNC_INTERVAL = 600000 // 10 minutes
 const STORAGE_KEY = 'pending_comments_cache'
-const SYNC_RETRY_DELAY = 5000 // 5 seconds retry delay
-const MAX_SYNC_RETRIES = 3
 
 export function useComments(postId, sessionId) {
   const [comments, setComments] = useState([])
@@ -17,10 +15,8 @@ export function useComments(postId, sessionId) {
   const [syncError, setSyncError] = useState(null)
   const syncIntervalRef = useRef(null)
   const pendingQueueRef = useRef([])
-  const retryQueueRef = useRef([])
-  const isMountedRef = useRef(true)
 
-  // Load cached pending comments from localStorage on mount
+  // Load cached pending comments
   useEffect(() => {
     try {
       const cached = localStorage.getItem(`${STORAGE_KEY}_${postId}`)
@@ -29,30 +25,15 @@ export function useComments(postId, sessionId) {
         if (Array.isArray(parsed) && parsed.length > 0) {
           pendingQueueRef.current = parsed
           setPendingComments(parsed)
-          
-          // Merge cached comments into UI
           setComments(prev => [...parsed.filter(c => !prev.find(p => p.id === c.id)), ...prev])
         }
       }
     } catch (err) {
       console.error('Failed to load cached comments:', err)
     }
-    
-    return () => {
-      isMountedRef.current = false
-    }
   }, [postId])
 
-  // Save pending comments to localStorage whenever they change
-  const persistPendingComments = useCallback((comments) => {
-    try {
-      localStorage.setItem(`${STORAGE_KEY}_${postId}`, JSON.stringify(comments))
-    } catch (err) {
-      console.error('Failed to persist comments:', err)
-    }
-  }, [postId])
-
-  // Load initial comments with caching
+  // Load comments from database
   const loadComments = useCallback(async (reset = true) => {
     if (reset) {
       setPage(0)
@@ -60,27 +41,12 @@ export function useComments(postId, sessionId) {
       setLoading(true)
     }
 
-    const currentPage = reset ? 0 : page
-    const from = currentPage * 30
-    const to = from + 29
+    const from = reset ? 0 : page * 20
+    const to = from + 19
 
-    // Try cache first
-    const cacheKey = `comments_${postId}_page_${currentPage}`
-    const cached = sessionStorage.getItem(cacheKey)
-    
-    if (reset && cached) {
-      try {
-        const parsed = JSON.parse(cached)
-        setComments(parsed)
-        setLoading(false)
-      } catch (err) {
-        console.error('Cache parse error:', err)
-      }
-    }
-
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
       .from('live_post_comments')
-      .select('*', { count: 'exact' })
+      .select('*')
       .eq('live_post_id', postId)
       .is('parent_id', null)
       .order('created_at', { ascending: false })
@@ -88,34 +54,26 @@ export function useComments(postId, sessionId) {
 
     if (error) throw error
 
-    // Cache the results
-    if (reset) {
-      sessionStorage.setItem(cacheKey, JSON.stringify(data))
-    }
-
-    setHasMore(data.length === 30)
-    setPage(currentPage + 1)
+    setHasMore(data.length === 20)
+    setPage(prev => prev + 1)
     
     if (reset) {
-      // Merge with pending comments
-      const allComments = [...pendingQueueRef.current, ...(data || [])]
-      setComments(allComments)
+      setComments([...pendingQueueRef.current, ...(data || [])])
     } else {
       setComments(prev => [...prev, ...(data || [])])
     }
     
+    setLoading(false)
     return data
-  }, [postId, page, pendingQueueRef])
+  }, [postId, page])
 
-  // Add comment with persistent queue and retry
+  // Add comment
   const addComment = useCallback(async (content, userName, userEmail = null, parentId = null) => {
-    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`
     
     const optimisticComment = {
       id: tempId,
-      temp_id: tempId,
       live_post_id: postId,
-      user_id: sessionId,
       user_name: userName,
       user_email: userEmail,
       content,
@@ -124,119 +82,87 @@ export function useComments(postId, sessionId) {
       liked_by: [],
       is_edited: false,
       created_at: new Date().toISOString(),
-      is_synced: false,
-      sync_attempts: 0,
-      status: 'pending_sync'
+      is_synced: false
     }
 
-    // Add to UI immediately
     setComments(prev => [optimisticComment, ...prev])
-    
-    // Add to persistent queue
     pendingQueueRef.current.unshift(optimisticComment)
     persistPendingComments(pendingQueueRef.current)
     setPendingComments([...pendingQueueRef.current])
 
-    // Try immediate sync (will fail but queue will retry)
-    attemptSyncComment(optimisticComment)
-
-    return optimisticComment
-  }, [postId, sessionId, persistPendingComments])
-
-  // Individual comment sync with retry logic
-  const attemptSyncComment = useCallback(async (comment, retryCount = 0) => {
     try {
       const { data, error } = await supabase
         .from('live_post_comments')
         .insert([{
-          live_post_id: comment.live_post_id,
-          user_id: comment.user_id,
-          user_name: comment.user_name,
-          user_email: comment.user_email,
-          content: comment.content,
-          parent_id: comment.parent_id,
-          created_at: comment.created_at
+          live_post_id: postId,
+          user_name: userName,
+          user_email: userEmail,
+          content,
+          parent_id: parentId,
+          created_at: new Date().toISOString()
         }])
         .select()
         .single()
 
       if (error) throw error
 
-      if (isMountedRef.current) {
-        // Update comment with real ID
-        setComments(prev => prev.map(c => 
-          c.id === comment.id ? { ...data, is_synced: true } : c
-        ))
-        
-        // Remove from pending queue
-        pendingQueueRef.current = pendingQueueRef.current.filter(c => c.id !== comment.id)
-        persistPendingComments(pendingQueueRef.current)
-        setPendingComments([...pendingQueueRef.current])
-      }
+      setComments(prev => prev.map(c => c.id === tempId ? { ...data, is_synced: true } : c))
+      pendingQueueRef.current = pendingQueueRef.current.filter(c => c.id !== tempId)
+      persistPendingComments(pendingQueueRef.current)
+      setPendingComments([...pendingQueueRef.current])
       
-      return { success: true, data }
-      
-    } catch (error) {
-      console.error(`Sync attempt ${retryCount + 1} failed:`, error)
-      
-      if (retryCount < MAX_SYNC_RETRIES) {
-        // Schedule retry with exponential backoff
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            attemptSyncComment(comment, retryCount + 1)
-          }
-        }, SYNC_RETRY_DELAY * Math.pow(2, retryCount))
-      } else {
-        // Mark as failed but keep in queue
-        setSyncError(`Failed to sync comment after ${MAX_SYNC_RETRIES} attempts`)
-        setTimeout(() => setSyncError(null), 5000)
-      }
-      
-      return { success: false, error }
+      return data
+    } catch (err) {
+      console.error('Add comment error:', err)
+      return null
     }
-  }, [persistPendingComments])
+  }, [postId])
 
-  // Sync all pending comments in batch
-  const syncAllComments = useCallback(async () => {
-    if (pendingQueueRef.current.length === 0 || isSyncing) return
+  // DELETE COMMENT - Complete function
+  const deleteComment = useCallback(async (commentId) => {
+    // Find comment
+    const commentToDelete = comments.find(c => c.id === commentId)
+    if (!commentToDelete) return
 
-    setIsSyncing(true)
-    setSyncError(null)
-    
-    const toSync = [...pendingQueueRef.current]
-    const results = []
-    
-    for (const comment of toSync) {
-      const result = await attemptSyncComment(comment)
-      results.push(result)
-    }
-    
-    setIsSyncing(false)
-    return results
-  }, [isSyncing, attemptSyncComment])
-
-  // Edit comment with optimistic update
-  const editComment = useCallback(async (commentId, newContent) => {
     // Optimistic update
+    setComments(prev => prev.filter(c => c.id !== commentId))
+    
+    // Remove from pending queue if exists
+    if (pendingQueueRef.current.some(c => c.id === commentId)) {
+      pendingQueueRef.current = pendingQueueRef.current.filter(c => c.id !== commentId)
+      persistPendingComments(pendingQueueRef.current)
+      setPendingComments([...pendingQueueRef.current])
+      return
+    }
+
+    // Delete from database
+    try {
+      const { error } = await supabase
+        .from('live_post_comments')
+        .delete()
+        .eq('id', commentId)
+
+      if (error) throw error
+    } catch (err) {
+      console.error('Delete error:', err)
+      // Revert on error
+      setComments(prev => [commentToDelete, ...prev])
+    }
+  }, [comments])
+
+  // EDIT COMMENT
+  const editComment = useCallback(async (commentId, newContent) => {
+    const originalComment = comments.find(c => c.id === commentId)
+    if (!originalComment) return
+
     setComments(prev => prev.map(c => 
       c.id === commentId 
         ? { ...c, content: newContent, is_edited: true, edited_at: new Date().toISOString() }
         : c
     ))
 
-    // If it's a pending comment, update in queue
-    const pendingIndex = pendingQueueRef.current.findIndex(c => c.id === commentId)
-    if (pendingIndex !== -1) {
-      pendingQueueRef.current[pendingIndex].content = newContent
-      pendingQueueRef.current[pendingIndex].is_edited = true
-      persistPendingComments(pendingQueueRef.current)
-      setPendingComments([...pendingQueueRef.current])
-      return
-    }
-
-    // Otherwise update in database
     try {
-      await supabase
+      const { error } = await supabase
         .from('live_post_comments')
         .update({ 
           content: newContent, 
@@ -244,50 +170,21 @@ export function useComments(postId, sessionId) {
           edited_at: new Date().toISOString() 
         })
         .eq('id', commentId)
-        .eq('user_id', sessionId)
+
+      if (error) throw error
     } catch (err) {
-      console.error('Edit failed:', err)
-      setSyncError('Failed to edit comment')
-      setTimeout(() => setSyncError(null), 3000)
+      console.error('Edit error:', err)
+      setComments(prev => prev.map(c => c.id === commentId ? originalComment : c))
     }
-  }, [sessionId, persistPendingComments])
+  }, [comments])
 
-  // Delete comment with optimistic update
-  const deleteComment = useCallback(async (commentId) => {
-    // Optimistic update
-    setComments(prev => prev.filter(c => c.id !== commentId))
-    
-    // Remove from pending queue if exists
-    const wasPending = pendingQueueRef.current.some(c => c.id === commentId)
-    if (wasPending) {
-      pendingQueueRef.current = pendingQueueRef.current.filter(c => c.id !== commentId)
-      persistPendingComments(pendingQueueRef.current)
-      setPendingComments([...pendingQueueRef.current])
-      return
-    }
-
-    // Otherwise delete from database
-    try {
-      await supabase
-        .from('live_post_comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', sessionId)
-    } catch (err) {
-      console.error('Delete failed:', err)
-      setSyncError('Failed to delete comment')
-      setTimeout(() => setSyncError(null), 3000)
-    }
-  }, [sessionId, persistPendingComments])
-
-  // Like comment with optimistic update
+  // LIKE COMMENT
   const likeComment = useCallback(async (commentId) => {
     const comment = comments.find(c => c.id === commentId)
     if (!comment) return
     
     const hasLiked = comment.liked_by?.includes(sessionId)
     
-    // Optimistic update
     setComments(prev => prev.map(c => {
       if (c.id !== commentId) return c
       const newLikedBy = hasLiked 
@@ -300,9 +197,6 @@ export function useComments(postId, sessionId) {
       }
     }))
 
-    // Don't sync likes for pending comments
-    if (comment.is_synced === false) return
-
     try {
       await supabase
         .from('live_post_comments')
@@ -314,63 +208,81 @@ export function useComments(postId, sessionId) {
         })
         .eq('id', commentId)
     } catch (err) {
-      console.error('Like failed:', err)
-      // Revert optimistic update on error
-      setComments(prev => prev.map(c => {
-        if (c.id !== commentId) return c
-        return {
-          ...c,
-          likes: comment.likes,
-          liked_by: comment.liked_by
-        }
-      }))
+      console.error('Like error:', err)
     }
   }, [comments, sessionId])
 
+  const persistPendingComments = (comments) => {
+    try {
+      localStorage.setItem(`${STORAGE_KEY}_${postId}`, JSON.stringify(comments))
+    } catch (err) {
+      console.error('Failed to persist comments:', err)
+    }
+  }
+
+  const syncAllComments = useCallback(async () => {
+    if (pendingQueueRef.current.length === 0 || isSyncing) return
+
+    setIsSyncing(true)
+    setSyncError(null)
+    
+    const toSync = [...pendingQueueRef.current]
+    
+    for (const comment of toSync) {
+      try {
+        const { data, error } = await supabase
+          .from('live_post_comments')
+          .insert([{
+            live_post_id: comment.live_post_id,
+            user_name: comment.user_name,
+            user_email: comment.user_email,
+            content: comment.content,
+            parent_id: comment.parent_id,
+            created_at: comment.created_at
+          }])
+          .select()
+          .single()
+
+        if (error) throw error
+
+        setComments(prev => prev.map(c => c.id === comment.id ? { ...data, is_synced: true } : c))
+        pendingQueueRef.current = pendingQueueRef.current.filter(c => c.id !== comment.id)
+        persistPendingComments(pendingQueueRef.current)
+        setPendingComments([...pendingQueueRef.current])
+      } catch (err) {
+        console.error('Sync error:', err)
+        setSyncError('Failed to sync comments')
+      }
+    }
+    
+    setIsSyncing(false)
+  }, [isSyncing])
+
   // Auto-sync every 10 minutes
   useEffect(() => {
-    // Initial sync of any cached comments
-    if (pendingQueueRef.current.length > 0) {
-      syncAllComments()
-    }
-
-    // Set up periodic sync
-    syncIntervalRef.current = setInterval(() => {
+    const interval = setInterval(() => {
       if (pendingQueueRef.current.length > 0 && !isSyncing) {
         syncAllComments()
       }
     }, SYNC_INTERVAL)
 
-    // Sync before page unload or visibility change
     const handleBeforeUnload = () => {
       if (pendingQueueRef.current.length > 0) {
-        // Synchronous storage is all we can do on unload
         persistPendingComments(pendingQueueRef.current)
-      }
-    }
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && pendingQueueRef.current.length > 0) {
-        persistPendingComments(pendingQueueRef.current)
-        // Try sync but don't wait for result
-        syncAllComments()
       }
     }
     
     window.addEventListener('beforeunload', handleBeforeUnload)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-
     return () => {
-      clearInterval(syncIntervalRef.current)
+      clearInterval(interval)
       window.removeEventListener('beforeunload', handleBeforeUnload)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-      
-      // Final persist on unmount
-      if (pendingQueueRef.current.length > 0) {
-        persistPendingComments(pendingQueueRef.current)
-      }
     }
-  }, [syncAllComments, isSyncing, persistPendingComments])
+  }, [syncAllComments, isSyncing])
+
+  // Initial load
+  useEffect(() => {
+    loadComments()
+  }, [])
 
   return {
     comments,

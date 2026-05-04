@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useInteractions } from '../../hooks/useInteractions'
+import CommentSection from '../comments/CommentSection'
 import { 
   ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, 
   Play, Volume2, VolumeX, Maximize2, CheckCircle,
@@ -13,12 +14,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [isHovering, setIsHovering] = useState(false)
   const [showComments, setShowComments] = useState({})
-  const [comments, setComments] = useState({})
   const [commentCounts, setCommentCounts] = useState({})
-  const [loadingComments, setLoadingComments] = useState({})
-  const [commentName, setCommentName] = useState({})
-  const [commentText, setCommentText] = useState({})
-  const [submitting, setSubmitting] = useState({})
   const [expandedContent, setExpandedContent] = useState({})
   const [errorMsg, setErrorMsg] = useState({})
   const [successMsg, setSuccessMsg] = useState({})
@@ -36,7 +32,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     return id
   }, [sessionId])
 
-  // Load comment counts
+  // Load comment counts for all posts
   useEffect(() => {
     const loadAllCommentCounts = async () => {
       const counts = {}
@@ -75,96 +71,9 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // LOAD COMMENTS
-  const loadComments = async (postId) => {
-    if (showComments[postId]) {
-      setShowComments(prev => ({ ...prev, [postId]: false }))
-      return
-    }
-    
-    if (comments[postId] && comments[postId].length > 0) {
-      setShowComments(prev => ({ ...prev, [postId]: true }))
-      return
-    }
-    
-    setLoadingComments(prev => ({ ...prev, [postId]: true }))
-    
-    try {
-      const { data, error } = await supabase
-        .from('live_post_comments')
-        .select('*')
-        .eq('live_post_id', postId)
-        .order('created_at', { ascending: false })
-        .limit(50)
-      
-      if (error) throw error
-      
-      setComments(prev => ({ ...prev, [postId]: data || [] }))
-      setShowComments(prev => ({ ...prev, [postId]: true }))
-    } catch (err) {
-      console.error('Load comments error:', err)
-    } finally {
-      setLoadingComments(prev => ({ ...prev, [postId]: false }))
-    }
-  }
-
-  // SUBMIT COMMENT - FIXED (removed user_id)
-  const submitComment = async (postId) => {
-    const name = commentName[postId]?.trim()
-    const text = commentText[postId]?.trim()
-    
-    if (!name || !text) return
-    
-    setSubmitting(prev => ({ ...prev, [postId]: true }))
-    
-    const optimisticComment = {
-      id: `temp_${Date.now()}`,
-      user_name: name,
-      content: text,
-      created_at: new Date().toISOString()
-    }
-    
-    setComments(prev => ({
-      ...prev,
-      [postId]: [optimisticComment, ...(prev[postId] || [])]
-    }))
-    setCommentCounts(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
-    setCommentText(prev => ({ ...prev, [postId]: '' }))
-    
-    try {
-      const { data, error } = await supabase
-        .from('live_post_comments')
-        .insert([{
-          live_post_id: postId,
-          user_name: name,
-          content: text,
-          created_at: new Date().toISOString()
-        }])
-        .select()
-        .single()
-      
-      if (error) throw error
-      
-      setComments(prev => ({
-        ...prev,
-        [postId]: prev[postId].map(c => c.id === optimisticComment.id ? data : c)
-      }))
-      
-      setSuccessMsg(prev => ({ ...prev, [postId]: 'Comment posted!' }))
-      setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 2000)
-      
-    } catch (err) {
-      console.error('Submit error:', err)
-      setComments(prev => ({
-        ...prev,
-        [postId]: prev[postId].filter(c => c.id !== optimisticComment.id)
-      }))
-      setCommentCounts(prev => ({ ...prev, [postId]: (prev[postId] || 1) - 1 }))
-      setErrorMsg(prev => ({ ...prev, [postId]: 'Failed to post comment' }))
-      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
-    } finally {
-      setSubmitting(prev => ({ ...prev, [postId]: false }))
-    }
+  // Toggle comments section
+  const toggleComments = (postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }))
   }
 
   // SHARE FUNCTION
@@ -211,16 +120,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     setTimeout(() => setIsAutoPlaying(true), 10000)
   }
 
-  const timeAgo = (date) => {
-    if (!date) return ''
-    const minutes = Math.floor((new Date() - new Date(date)) / 60000)
-    if (minutes < 1) return 'just now'
-    if (minutes < 60) return `${minutes}m`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours}h`
-    return `${Math.floor(hours / 24)}d`
-  }
-
   const formatNumber = (num) => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
@@ -232,7 +131,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const currentPost = posts[currentIndex]
   const isExpanded = expandedContent[currentPost.id]
   const displayContent = isExpanded ? currentPost.content : currentPost.content?.substring(0, 280)
-  const currentComments = comments[currentPost.id] || []
   const isCommentsOpen = showComments[currentPost.id]
   const currentCommentCount = commentCounts[currentPost.id] ?? currentPost.comments_count ?? 0
 
@@ -339,12 +237,18 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
             )}
           </button>
           
-          <button onClick={() => loadComments(currentPost.id)} className={`knot ${isCommentsOpen ? 'active' : ''}`}>
+          <button 
+            onClick={() => toggleComments(currentPost.id)} 
+            className={`knot ${isCommentsOpen ? 'active' : ''}`}
+          >
             <MessageCircle size={16} />
             <span>{formatNumber(currentCommentCount)}</span>
           </button>
           
-          <button onClick={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} className="knot">
+          <button 
+            onClick={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} 
+            className="knot"
+          >
             <Share2 size={16} />
             <span>{formatNumber(liveShares)}</span>
             {pendingShare !== undefined && (
@@ -413,76 +317,16 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </div>
         )}
 
-        {/* Comments Section */}
+        {/* Comments Section - Integrated CommentSection Component */}
         {isCommentsOpen && (
-          <div className="comment-thread">
-            {errorMsg[currentPost.id] && (
-              <div className="error-message"><X size={12} /> {errorMsg[currentPost.id]}</div>
-            )}
-            {successMsg[currentPost.id] && (
-              <div className="success-message"><CheckCircle size={14} /> {successMsg[currentPost.id]}</div>
-            )}
-
-            <div className="comment-input-line">
-              <div className="input-group">
-                <User size={14} className="input-icon" />
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  value={commentName[currentPost.id] || ''}
-                  onChange={(e) => setCommentName(prev => ({ ...prev, [currentPost.id]: e.target.value }))}
-                  className="name-field"
-                />
-              </div>
-              <div className="input-group message-group">
-                <textarea
-                  placeholder="Add to the conversation..."
-                  value={commentText[currentPost.id] || ''}
-                  onChange={(e) => setCommentText(prev => ({ ...prev, [currentPost.id]: e.target.value }))}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      submitComment(currentPost.id)
-                    }
-                  }}
-                  rows="1"
-                />
-                <button 
-                  onClick={() => submitComment(currentPost.id)} 
-                  disabled={submitting[currentPost.id]}
-                  className="send-btn"
-                >
-                  {submitting[currentPost.id] ? <div className="spinner-small" /> : <Send size={14} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="comment-list">
-              {loadingComments[currentPost.id] ? (
-                <div className="comment-placeholder">Loading comments...</div>
-              ) : currentComments.length === 0 ? (
-                <div className="comment-placeholder">No comments yet. Start the conversation.</div>
-              ) : (
-                currentComments.slice(0, 10).map((comment) => (
-                  <div key={comment.id} className="comment-item">
-                    <div className="comment-header">
-                      <span className="comment-author">{comment.user_name}</span>
-                      <span className="comment-time">{timeAgo(comment.created_at)}</span>
-                    </div>
-                    <div className="comment-text">{comment.content}</div>
-                    {comment.admin_reply && (
-                      <div className="admin-reply">
-                        <div className="admin-reply-header">
-                          <span className="admin-badge">✓ Admin Response</span>
-                        </div>
-                        <div className="admin-reply-content">{comment.admin_reply}</div>
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          <CommentSection 
+            postId={currentPost.id}
+            sessionId={getSessionId()}
+            commentCount={currentCommentCount}
+            onCommentCountChange={(newCount) => {
+              setCommentCounts(prev => ({ ...prev, [currentPost.id]: newCount }))
+            }}
+          />
         )}
 
         {/* Navigation */}
@@ -798,176 +642,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           transform: translateX(4px);
         }
 
-        .comment-thread {
-          margin-top: 1rem;
-          padding-top: 1rem;
-          border-top: 1px solid #f1f5f9;
-        }
-
-        .comment-input-line {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          margin-bottom: 1.5rem;
-        }
-
-        .input-group {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .input-icon {
-          position: absolute;
-          left: 0;
-          color: #94a3b8;
-        }
-
-        .name-field {
-          width: 100%;
-          padding: 8px 0 8px 24px;
-          border: none;
-          border-bottom: 1px solid #e2e8f0;
-          font-size: 0.8rem;
-          background: transparent;
-          outline: none;
-        }
-
-        .name-field:focus {
-          border-bottom-color: #8b5cf6;
-        }
-
-        .message-group textarea {
-          width: 100%;
-          padding: 8px 32px 8px 0;
-          border: none;
-          border-bottom: 1px solid #e2e8f0;
-          font-size: 0.8rem;
-          resize: none;
-          background: transparent;
-          outline: none;
-          font-family: inherit;
-        }
-
-        .message-group textarea:focus {
-          border-bottom-color: #8b5cf6;
-        }
-
-        .send-btn {
-          position: absolute;
-          right: 0;
-          bottom: 6px;
-          background: none;
-          border: none;
-          color: #8b5cf6;
-          cursor: pointer;
-          padding: 4px;
-        }
-
-        .send-btn:disabled {
-          opacity: 0.4;
-          cursor: not-allowed;
-        }
-
-        .spinner-small {
-          width: 14px;
-          height: 14px;
-          border: 2px solid #e2e8f0;
-          border-top-color: #8b5cf6;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-        }
-
-        .error-message {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
-          background: #ef444410;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          font-size: 0.7rem;
-          color: #ef4444;
-        }
-
-        .success-message {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
-          background: #22c55e10;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          font-size: 0.7rem;
-          color: #22c55e;
-        }
-
-        .comment-list {
-          max-height: 400px;
-          overflow-y: auto;
-        }
-
-        .comment-placeholder {
-          text-align: center;
-          padding: 1.5rem;
-          color: #94a3b8;
-          font-size: 0.75rem;
-        }
-
-        .comment-item {
-          margin-bottom: 1rem;
-          padding: 0.75rem 0;
-          border-bottom: 1px solid #f8fafc;
-        }
-
-        .comment-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 6px;
-        }
-
-        .comment-author {
-          font-weight: 600;
-          font-size: 0.75rem;
-          color: #1e293b;
-        }
-
-        .comment-time {
-          font-size: 0.65rem;
-          color: #94a3b8;
-        }
-
-        .comment-text {
-          font-size: 0.8rem;
-          color: #475569;
-          line-height: 1.5;
-        }
-
-        .admin-reply {
-          margin-top: 8px;
-          padding: 10px 12px;
-          background: #f0fdf4;
-          border-radius: 12px;
-          border-left: 3px solid #22c55e;
-        }
-
-        .admin-reply-header {
-          margin-bottom: 6px;
-        }
-
-        .admin-badge {
-          font-size: 0.65rem;
-          font-weight: 600;
-          color: #22c55e;
-        }
-
-        .admin-reply-content {
-          font-size: 0.75rem;
-          color: #1e293b;
-          line-height: 1.4;
-        }
-
         .nav-controls {
           display: flex;
           align-items: center;
@@ -1007,7 +681,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .media-node { background: #1e293b; }
           .media-piece { background: #0f172a; }
           .action-knots { border-bottom-color: #1e293b; }
-          .comment-thread { border-top-color: #1e293b; }
           .name-field, .message-group textarea { border-bottom-color: #334155; color: #e2e8f0; }
           .comment-item { border-bottom-color: #1e293b; }
           .comment-author { color: #e2e8f0; }
@@ -1031,12 +704,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .sync-spinner-small {
             border-color: #fbbf24;
             border-top-color: transparent;
-          }
-          .admin-reply {
-            background: #064e3b;
-          }
-          .admin-reply-content {
-            color: #e2e8f0;
           }
         }
 
