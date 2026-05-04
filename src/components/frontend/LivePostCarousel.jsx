@@ -14,6 +14,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const [likedPosts, setLikedPosts] = useState({})
   const [showComments, setShowComments] = useState({})
   const [comments, setComments] = useState({})
+  const [commentCounts, setCommentCounts] = useState({})
   const [loadingComments, setLoadingComments] = useState({})
   const [commentName, setCommentName] = useState({})
   const [commentText, setCommentText] = useState({})
@@ -43,6 +44,28 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       counts[post.id] = post.shares || 0
     })
     setShareCount(counts)
+  }, [posts])
+
+  // Load comment counts for all posts WITHOUT opening comments
+  useEffect(() => {
+    const loadAllCommentCounts = async () => {
+      const counts = {}
+      for (const post of posts) {
+        const { count, error } = await supabase
+          .from('live_post_comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('live_post_id', post.id)
+        
+        if (!error) {
+          counts[post.id] = count || 0
+        }
+      }
+      setCommentCounts(counts)
+    }
+    
+    if (posts.length > 0) {
+      loadAllCommentCounts()
+    }
   }, [posts])
 
   // Set liked state from posts
@@ -98,24 +121,23 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       
       if (!response.ok) {
         setLikedPosts(prev => ({ ...prev, [postId]: false }))
-        setErrorMsg(prev => ({ ...prev, [postId]: data.error || 'Unable to process like' }))
-        setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
       } else if (onLike && data.likes !== undefined) {
         onLike(postId, data.likes)
       }
     } catch (err) {
       setLikedPosts(prev => ({ ...prev, [postId]: false }))
-      console.error('Like error:', err)
     }
   }
 
-  // LOAD COMMENTS - Including admin replies
+  // LOAD COMMENTS (only when clicked)
   const loadComments = async (postId) => {
+    // Toggle off if already open
     if (showComments[postId]) {
       setShowComments(prev => ({ ...prev, [postId]: false }))
       return
     }
     
+    // If we already have comments cached, just show them
     if (comments[postId] && comments[postId].length > 0) {
       setShowComments(prev => ({ ...prev, [postId]: true }))
       return
@@ -134,11 +156,10 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       if (error) throw error
       
       setComments(prev => ({ ...prev, [postId]: data || [] }))
+      setCommentCounts(prev => ({ ...prev, [postId]: data?.length || 0 }))
       setShowComments(prev => ({ ...prev, [postId]: true }))
     } catch (err) {
       console.error('Load comments error:', err)
-      setErrorMsg(prev => ({ ...prev, [postId]: 'Failed to load comments' }))
-      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
     } finally {
       setLoadingComments(prev => ({ ...prev, [postId]: false }))
     }
@@ -149,17 +170,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     const name = commentName[postId]?.trim()
     const text = commentText[postId]?.trim()
     
-    if (!name) {
-      setErrorMsg(prev => ({ ...prev, [postId]: 'Name is required' }))
-      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
-      return
-    }
-    
-    if (!text) {
-      setErrorMsg(prev => ({ ...prev, [postId]: 'Comment cannot be empty' }))
-      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
-      return
-    }
+    if (!name || !text) return
     
     setSubmitting(prev => ({ ...prev, [postId]: true }))
     
@@ -170,15 +181,14 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       user_name: name,
       content: text,
       created_at: new Date().toISOString(),
-      admin_reply: null,
-      admin_replied_at: null
+      admin_reply: null
     }
     
     setComments(prev => ({
       ...prev,
       [postId]: [optimisticComment, ...(prev[postId] || [])]
     }))
-    
+    setCommentCounts(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
     setCommentText(prev => ({ ...prev, [postId]: '' }))
     
     try {
@@ -197,9 +207,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       
       setComments(prev => ({
         ...prev,
-        [postId]: prev[postId].map(c => 
-          c.id === optimisticComment.id ? data : c
-        )
+        [postId]: prev[postId].map(c => c.id === optimisticComment.id ? data : c)
       }))
       
       setSuccessMsg(prev => ({ ...prev, [postId]: 'Comment posted!' }))
@@ -211,36 +219,36 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
         ...prev,
         [postId]: prev[postId].filter(c => c.id !== optimisticComment.id)
       }))
-      setErrorMsg(prev => ({ ...prev, [postId]: 'Failed to post comment' }))
+      setCommentCounts(prev => ({ ...prev, [postId]: (prev[postId] || 1) - 1 }))
+      setErrorMsg(prev => ({ ...prev, [postId]: 'Failed to post' }))
       setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
     } finally {
       setSubmitting(prev => ({ ...prev, [postId]: false }))
     }
   }
 
-  // FIXED SHARE FUNCTION - Opens social media share dialog
-  const handleShareClick = (postId, platform) => {
+  // DIRECT SHARE - No external component
+  const handleShare = (postId, platform) => {
     const url = `${window.location.origin}/live-posts/${postId}`
     const title = encodeURIComponent('Check out this post on Trendlin')
-    let shareWindow
     
     switch (platform) {
       case 'twitter':
-        shareWindow = window.open(
+        window.open(
           `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`,
           '_blank',
           'width=550,height=420,left=300,top=100'
         )
         break
       case 'facebook':
-        shareWindow = window.open(
+        window.open(
           `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
           '_blank',
           'width=550,height=520,left=300,top=100'
         )
         break
       case 'linkedin':
-        shareWindow = window.open(
+        window.open(
           `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
           '_blank',
           'width=550,height=520,left=300,top=100'
@@ -259,21 +267,13 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
         return
     }
     
-    // Close modal and track share if window opened successfully
+    // Update share count
+    setShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
     setShowShareModal(prev => ({ ...prev, [postId]: false }))
     
-    if (shareWindow && platform !== 'copy') {
-      // Increment share count
-      setShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
-      
-      // Track share in background
-      fetch(`/api/live-posts/${postId}/share`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      }).catch(err => console.error('Share track error:', err))
-      
-      if (onShare) onShare(postId)
-    }
+    // Track in background
+    fetch(`/api/live-posts/${postId}/share`, { method: 'POST' }).catch(() => {})
+    if (onShare) onShare(postId)
   }
 
   const goToSlide = (index) => {
@@ -318,7 +318,8 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const displayContent = isExpanded ? currentPost.content : currentPost.content?.substring(0, 280)
   const currentComments = comments[currentPost.id] || []
   const isCommentsOpen = showComments[currentPost.id]
-  const currentShareCount = shareCount[currentPost.id] || currentPost.shares || 0
+  const currentCommentCount = commentCounts[currentPost.id] ?? currentPost.comments_count ?? 0
+  const currentShareCount = shareCount[currentPost.id] ?? currentPost.shares ?? 0
 
   const getTimeLeft = () => {
     if (!currentPost.expires_at) return null
@@ -397,12 +398,11 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions - COMMENT COUNT SHOWS WITHOUT CLICKING */}
         <div className="action-knots">
           <button 
             onClick={() => handleLike(currentPost.id)} 
             className={`knot like ${likedPosts[currentPost.id] ? 'active' : ''}`}
-            aria-label="Like"
           >
             <Heart size={16} fill={likedPosts[currentPost.id] ? '#ef4444' : 'none'} />
             <span>{formatNumber((currentPost.likes || 0) + (likedPosts[currentPost.id] ? 1 : 0))}</span>
@@ -411,23 +411,21 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           <button 
             onClick={() => loadComments(currentPost.id)} 
             className={`knot ${isCommentsOpen ? 'active' : ''}`}
-            aria-label="Comments"
           >
             <MessageCircle size={16} />
-            <span>{formatNumber(currentPost.comments_count || currentComments.length || 0)}</span>
+            <span>{formatNumber(currentCommentCount)}</span>
           </button>
           
           <button 
             onClick={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} 
             className="knot"
-            aria-label="Share"
           >
             <Share2 size={16} />
             <span>{formatNumber(currentShareCount)}</span>
           </button>
         </div>
 
-        {/* Share Modal - FIXED */}
+        {/* Share Modal - Built-in, no external component */}
         {showShareModal[currentPost.id] && (
           <div className="share-modal" ref={shareModalRef}>
             <div className="share-modal-header">
@@ -437,19 +435,19 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
               </button>
             </div>
             <div className="share-buttons">
-              <button onClick={() => handleShareClick(currentPost.id, 'twitter')} className="share-btn twitter">
+              <button onClick={() => handleShare(currentPost.id, 'twitter')} className="share-btn twitter">
                 <Twitter size={18} />
                 <span>Twitter</span>
               </button>
-              <button onClick={() => handleShareClick(currentPost.id, 'facebook')} className="share-btn facebook">
+              <button onClick={() => handleShare(currentPost.id, 'facebook')} className="share-btn facebook">
                 <Facebook size={18} />
                 <span>Facebook</span>
               </button>
-              <button onClick={() => handleShareClick(currentPost.id, 'linkedin')} className="share-btn linkedin">
+              <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-btn linkedin">
                 <Linkedin size={18} />
                 <span>LinkedIn</span>
               </button>
-              <button onClick={() => handleShareClick(currentPost.id, 'copy')} className="share-btn copy">
+              <button onClick={() => handleShare(currentPost.id, 'copy')} className="share-btn copy">
                 <Copy size={18} />
                 <span>Copy link</span>
               </button>
@@ -457,18 +455,14 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </div>
         )}
 
-        {/* Comments Section - WITH ADMIN REPLY */}
+        {/* Comments Section */}
         {isCommentsOpen && (
           <div className="comment-thread">
             {errorMsg[currentPost.id] && (
-              <div className="error-message">
-                <X size={12} /> {errorMsg[currentPost.id]}
-              </div>
+              <div className="error-message"><X size={12} /> {errorMsg[currentPost.id]}</div>
             )}
             {successMsg[currentPost.id] && (
-              <div className="success-message">
-                <CheckCircle size={14} /> {successMsg[currentPost.id]}
-              </div>
+              <div className="success-message"><CheckCircle size={14} /> {successMsg[currentPost.id]}</div>
             )}
 
             <div className="comment-input-line">
@@ -511,35 +505,23 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
               ) : currentComments.length === 0 ? (
                 <div className="comment-placeholder">No comments yet. Start the conversation.</div>
               ) : (
-                <>
-                  {currentComments.slice(0, 10).map((comment) => (
-                    <div key={comment.id} className="comment-item">
-                      <div className="comment-header">
-                        <span className="comment-author">{comment.user_name || comment.author_name}</span>
-                        <span className="comment-time">{timeAgo(comment.created_at)}</span>
-                      </div>
-                      <div className="comment-content-text">{comment.content}</div>
-                      
-                      {/* Admin Reply - FIXED to show */}
-                      {comment.admin_reply && (
-                        <div className="admin-reply">
-                          <div className="admin-reply-header">
-                            <span className="admin-badge">Admin Response</span>
-                            <span className="admin-reply-time">
-                              {comment.admin_replied_at && timeAgo(comment.admin_replied_at)}
-                            </span>
-                          </div>
-                          <div className="admin-reply-content">{comment.admin_reply}</div>
-                        </div>
-                      )}
+                currentComments.slice(0, 10).map((comment) => (
+                  <div key={comment.id} className="comment-item">
+                    <div className="comment-header">
+                      <span className="comment-author">{comment.user_name || comment.author_name}</span>
+                      <span className="comment-time">{timeAgo(comment.created_at)}</span>
                     </div>
-                  ))}
-                  {currentComments.length > 10 && (
-                    <button className="view-more" onClick={() => loadComments(currentPost.id)}>
-                      View all {currentComments.length} comments →
-                    </button>
-                  )}
-                </>
+                    <div className="comment-content-text">{comment.content}</div>
+                    {comment.admin_reply && (
+                      <div className="admin-reply">
+                        <div className="admin-reply-header">
+                          <span className="admin-badge">Admin Response</span>
+                        </div>
+                        <div className="admin-reply-content">{comment.admin_reply}</div>
+                      </div>
+                    )}
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -548,15 +530,9 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
         {/* Navigation */}
         {posts.length > 1 && (
           <div className="nav-controls">
-            <button onClick={prevSlide} className="nav-prev" aria-label="Previous">
-              <ChevronLeft size={20} />
-            </button>
-            <div className="position-mark">
-              {currentIndex + 1} / {posts.length}
-            </div>
-            <button onClick={nextSlide} className="nav-next" aria-label="Next">
-              <ChevronRight size={20} />
-            </button>
+            <button onClick={prevSlide} className="nav-prev"><ChevronLeft size={20} /></button>
+            <div className="position-mark">{currentIndex + 1} / {posts.length}</div>
+            <button onClick={nextSlide} className="nav-next"><ChevronRight size={20} /></button>
           </div>
         )}
       </div>
@@ -678,11 +654,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           background: none;
           border: none;
           cursor: pointer;
-          transition: gap 0.2s;
-        }
-
-        .expand-link:hover {
-          gap: 8px;
         }
 
         .media-node {
@@ -830,7 +801,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           transform: translateX(4px);
         }
 
-        /* Comments Section */
+        /* Comments */
         .comment-thread {
           margin-top: 1rem;
           padding-top: 1rem;
@@ -864,7 +835,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           font-size: 0.8rem;
           background: transparent;
           outline: none;
-          transition: border-color 0.2s;
         }
 
         .name-field:focus {
@@ -982,7 +952,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           line-height: 1.5;
         }
 
-        /* Admin Reply Styles */
         .admin-reply {
           margin-top: 8px;
           padding: 10px 12px;
@@ -996,9 +965,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
         }
 
         .admin-reply-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
           margin-bottom: 6px;
         }
 
@@ -1006,11 +972,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           font-size: 0.65rem;
           font-weight: 600;
           color: #22c55e;
-        }
-
-        .admin-reply-time {
-          font-size: 0.6rem;
-          color: #94a3b8;
         }
 
         .admin-reply-content {
@@ -1021,15 +982,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
 
         :global(body.dark) .admin-reply-content {
           color: #e2e8f0;
-        }
-
-        .view-more {
-          background: none;
-          border: none;
-          color: #8b5cf6;
-          font-size: 0.7rem;
-          cursor: pointer;
-          margin-top: 0.5rem;
         }
 
         .nav-controls {
