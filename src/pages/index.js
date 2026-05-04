@@ -1,4 +1,4 @@
-// src/pages/index.js (FULLY UPGRADED with all live post functionality)
+// src/pages/index.js
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
@@ -14,16 +14,21 @@ export default function Home() {
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [visitorId, setVisitorId] = useState(null)
-  const [likedLivePosts, setLikedLivePosts] = useState({})
 
   // Generate or get visitor ID for anonymous likes
   useEffect(() => {
-    let vid = localStorage.getItem('visitor_id')
-    if (!vid) {
-      vid = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      localStorage.setItem('visitor_id', vid)
+    try {
+      let vid = localStorage.getItem('visitor_id')
+      if (!vid) {
+        vid = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        localStorage.setItem('visitor_id', vid)
+      }
+      setVisitorId(vid)
+    } catch (err) {
+      console.error('Visitor ID error:', err)
+      // Fallback
+      setVisitorId(`fallback_${Date.now()}`)
     }
-    setVisitorId(vid)
   }, [])
 
   const fetchPosts = useCallback(async () => {
@@ -38,37 +43,29 @@ export default function Home() {
       const currentMonth = today.getMonth() + 1
       const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
 
-      // Fetch all published posts from main posts table
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
         .eq('status', 'published')
         .order('created_at', { ascending: false })
+        .limit(100)
 
-      if (postsError) {
-        console.error('Error fetching posts:', postsError)
-        setError('Failed to load posts')
-        setLoading(false)
-        return
-      }
+      if (postsError) throw postsError
 
       if (!posts || posts.length === 0) {
         setLoading(false)
         return
       }
 
-      // Editor's picks (featured posts)
       const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
       setEditorsPicks(picks)
 
-      // Today's posts
       const todayFiltered = posts.filter(post => {
         const publishDate = post.created_at?.split('T')[0]
         return publishDate === todayStr
       })
       setTodayPosts(todayFiltered)
 
-      // Most popular this month
       const popularFiltered = posts
         .filter(post => {
           const publishDate = post.created_at?.split('T')[0] || ''
@@ -78,98 +75,65 @@ export default function Home() {
         .slice(0, 30)
       setPopularPosts(popularFiltered)
       
-    } catch (error) {
-      console.error('Error fetching posts:', error)
-      setError('An unexpected error occurred')
+    } catch (err) {
+      console.error('Error fetching posts:', err)
+      setError('Failed to load posts')
     } finally {
       setLoading(false)
     }
   }, [])
 
   const fetchLivePosts = useCallback(async () => {
+    if (!visitorId) return
+    
     try {
-      // Fetch all active live posts (24-hour posts)
-      // Supports both 'active' and 'published' status
       const { data: live, error: liveError } = await supabase
         .from('live_posts')
         .select('*')
         .in('status', ['active', 'published'])
         .gt('expires_at', new Date().toISOString())
         .order('published_at', { ascending: false })
+        .limit(50)
 
-      if (!liveError && live && live.length > 0) {
-        // Fetch additional data for each live post (comments count, etc.)
+      if (liveError) throw liveError
+
+      if (live && live.length > 0) {
         const postsWithDetails = await Promise.all(live.map(async (post) => {
-          // Get comments count
           const { count: commentsCount } = await supabase
             .from('live_post_comments')
             .select('*', { count: 'exact', head: true })
             .eq('live_post_id', post.id)
             .eq('status', 'approved')
           
-          // Check if current visitor liked this post
-          const hasLiked = post.liked_by?.includes(visitorId) || false
+          const likedBy = post.liked_by || []
+          const hasLiked = likedBy.includes(visitorId)
           
           return {
             ...post,
             comments_count: commentsCount || 0,
+            comments: commentsCount || 0,
             user_has_liked: hasLiked
           }
         }))
         
         setLivePosts(postsWithDetails)
-        
-        // Update liked state
-        const likedState = {}
-        postsWithDetails.forEach(post => {
-          if (post.user_has_liked) {
-            likedState[post.id] = true
-          }
-        })
-        setLikedLivePosts(likedState)
+      } else {
+        setLivePosts([])
       }
-    } catch (error) {
-      console.error('Error fetching live posts:', error)
+    } catch (err) {
+      console.error('Error fetching live posts:', err)
     }
   }, [visitorId])
 
-  const handleLivePostLike = useCallback(async (postId) => {
+  const handleLivePostLike = useCallback(async (postId, newLikesCount) => {
     if (!visitorId) return
     
-    // Optimistic update
-    setLikedLivePosts(prev => ({ ...prev, [postId]: true }))
+    // Optimistic update using the returned count
     setLivePosts(prev => prev.map(post => 
       post.id === postId 
-        ? { ...post, likes: (post.likes || 0) + 1, user_has_liked: true }
+        ? { ...post, likes: newLikesCount, user_has_liked: true }
         : post
     ))
-    
-    try {
-      const response = await fetch(`/api/live-posts/${postId}/like`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: visitorId })
-      })
-      
-      if (!response.ok) {
-        // Revert on error
-        setLikedLivePosts(prev => ({ ...prev, [postId]: false }))
-        setLivePosts(prev => prev.map(post => 
-          post.id === postId 
-            ? { ...post, likes: (post.likes || 1) - 1, user_has_liked: false }
-            : post
-        ))
-      }
-    } catch (error) {
-      console.error('Like failed:', error)
-      // Revert on error
-      setLikedLivePosts(prev => ({ ...prev, [postId]: false }))
-      setLivePosts(prev => prev.map(post => 
-        post.id === postId 
-          ? { ...post, likes: (post.likes || 1) - 1, user_has_liked: false }
-          : post
-      ))
-    }
   }, [visitorId])
 
   const handleLivePostShare = useCallback(async (postId) => {
@@ -180,8 +144,8 @@ export default function Home() {
           ? { ...post, shares: (post.shares || 0) + 1 }
           : post
       ))
-    } catch (error) {
-      console.error('Share tracking failed:', error)
+    } catch (err) {
+      console.error('Share tracking failed:', err)
     }
   }, [])
 
@@ -205,13 +169,12 @@ export default function Home() {
     }
   }, [visitorId, fetchLivePosts])
 
-  // Auto-refresh live posts every minute
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchLivePosts()
+      if (visitorId) fetchLivePosts()
     }, 60000)
     return () => clearInterval(interval)
-  }, [fetchLivePosts])
+  }, [visitorId, fetchLivePosts])
 
   const currentMonthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
 
@@ -230,7 +193,7 @@ export default function Home() {
             width: 48px;
             height: 48px;
             border: 3px solid #e2e8f0;
-            border-top-color: #667eea;
+            border-top-color: #8b5cf6;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
@@ -269,25 +232,19 @@ export default function Home() {
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             border: 1px solid #e5e7eb;
           }
-          :global(body.dark) .error-card {
-            background: #1e293b;
-            border-color: #334155;
-          }
           .error-icon { font-size: 48px; display: block; margin-bottom: 16px; }
           .error-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1e293b; }
-          :global(body.dark) .error-card h2 { color: #f1f5f9; }
           .error-card p { color: #64748b; margin-bottom: 20px; }
           .retry-btn { 
             padding: 10px 24px; 
-            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            background: #8b5cf6;
             color: white; 
             border: none; 
             border-radius: 40px; 
             cursor: pointer; 
             font-weight: 500;
-            transition: transform 0.2s;
           }
-          .retry-btn:hover { transform: scale(1.02); }
+          .retry-btn:hover { background: #7c3aed; }
         `}</style>
       </>
     )
@@ -313,19 +270,13 @@ export default function Home() {
             border-radius: 24px;
             margin: 2rem auto;
             max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-          }
-          :global(body.dark) .empty-state { 
-            background: #1e293b;
-            border: 1px solid #334155;
           }
           .empty-icon { font-size: 64px; margin-bottom: 1rem; }
           .empty-state h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
-          :global(body.dark) .empty-state h3 { color: #f1f5f9; }
           .empty-state p { color: #64748b; margin-bottom: 1.5rem; }
           .refresh-btn {
             padding: 0.75rem 1.5rem;
-            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            background: #8b5cf6;
             color: white;
             border: none;
             border-radius: 40px;
@@ -342,26 +293,25 @@ export default function Home() {
       <HeroSection />
       
       <div className="home-container">
-        {/* Refresh Indicator */}
         {refreshing && (
           <div className="refresh-indicator">
             <div className="refresh-spinner"></div>
-            <span>Refreshing content...</span>
+            <span>Refreshing...</span>
           </div>
         )}
 
-        {/* Live Posts Banner - 24H Premium Section */}
+        {/* Live Posts Section - WITH sessionId passed */}
         {livePosts.length > 0 && (
           <div className="live-section">
             <div className="section-header">
               <div className="live-badge">
                 <span className="live-dot"></span>
                 LIVE NOW • 24H POSTS
-                <button onClick={refreshLivePosts} className="refresh-live" title="Refresh live posts">
+                <button onClick={refreshLivePosts} className="refresh-live" title="Refresh">
                   ⟳
                 </button>
               </div>
-              <h2 className="section-title">✨ ÉCLAT — Fresh Daily</h2>
+              <h2 className="section-title">✨ Fresh Daily</h2>
               <p className="section-subtitle">
                 One post per category. Expires in 24 hours. 
                 <span className="live-count">{livePosts.length} active {livePosts.length === 1 ? 'story' : 'stories'}</span>
@@ -372,36 +322,23 @@ export default function Home() {
               autoPlayInterval={5000}
               onLike={handleLivePostLike}
               onShare={handleLivePostShare}
+              sessionId={visitorId}
             />
           </div>
         )}
 
-        {/* Regular Posts Sections */}
         {editorsPicks.length > 0 && (
-          <HorizontalScroll 
-            title="⭐ Editor's Picks" 
-            posts={editorsPicks} 
-            showRank={false} 
-          />
+          <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
         )}
 
         {todayPosts.length > 0 && (
-          <HorizontalScroll 
-            title="📰 Today's Fresh Posts" 
-            posts={todayPosts} 
-            showRank={false} 
-          />
+          <HorizontalScroll title="📰 Today's Fresh Posts" posts={todayPosts} showRank={false} />
         )}
 
         {popularPosts.length > 0 && (
-          <HorizontalScroll 
-            title={`🔥 Most Popular - ${currentMonthName}`} 
-            posts={popularPosts} 
-            showRank={true} 
-          />
+          <HorizontalScroll title={`🔥 Most Popular - ${currentMonthName}`} posts={popularPosts} showRank={true} />
         )}
 
-        {/* Quick Stats Footer */}
         <div className="stats-footer">
           <div className="stat-item">
             <span className="stat-emoji">⚡</span>
@@ -425,7 +362,7 @@ export default function Home() {
         .home-container {
           max-width: 1400px;
           margin: 0 auto;
-          padding: 0 2rem 4rem 2rem;
+          padding: 0 2rem 4rem;
           position: relative;
         }
         
@@ -433,8 +370,8 @@ export default function Home() {
           position: fixed;
           top: 80px;
           right: 20px;
-          background: rgba(0, 0, 0, 0.8);
- backdrop-filter: blur(10px);
+          background: rgba(0,0,0,0.8);
+          backdrop-filter: blur(10px);
           padding: 0.5rem 1rem;
           border-radius: 40px;
           display: flex;
@@ -447,14 +384,8 @@ export default function Home() {
         }
         
         @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
         }
         
         .refresh-spinner {
@@ -517,17 +448,14 @@ export default function Home() {
         }
         
         @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.8); }
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
         }
         
         .section-title {
           font-size: 1.8rem;
           font-weight: 700;
-          background: linear-gradient(135deg, #fff, #a78bfa);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
+          color: #1e293b;
           margin-bottom: 0.5rem;
         }
         
@@ -542,7 +470,7 @@ export default function Home() {
         
         .live-count {
           padding: 0.25rem 0.75rem;
-          background: rgba(139, 92, 246, 0.15);
+          background: rgba(139,92,246,0.15);
           border-radius: 40px;
           font-size: 0.7rem;
           font-weight: 500;
@@ -555,9 +483,8 @@ export default function Home() {
           gap: 3rem;
           margin-top: 4rem;
           padding: 2rem;
-          background: rgba(255, 255, 255, 0.03);
+          background: #f8fafc;
           border-radius: 2rem;
-          border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         .stat-item {
@@ -574,7 +501,7 @@ export default function Home() {
         .stat-value {
           font-size: 1.5rem;
           font-weight: 700;
-          color: #f1f5f9;
+          color: #1e293b;
         }
         
         .stat-label {
@@ -590,7 +517,7 @@ export default function Home() {
         
         @media (max-width: 768px) {
           .home-container {
-            padding: 0 1rem 3rem 1rem;
+            padding: 0 1rem 3rem;
           }
           .section-title {
             font-size: 1.4rem;
@@ -602,11 +529,12 @@ export default function Home() {
           .stat-value {
             font-size: 1rem;
           }
-          .refresh-indicator {
-            top: 70px;
-            right: 10px;
-            font-size: 0.65rem;
-          }
+        }
+        
+        @media (prefers-color-scheme: dark) {
+          .section-title { color: #f1f5f9; }
+          .stats-footer { background: #1e293b; }
+          .stat-value { color: #f1f5f9; }
         }
       `}</style>
     </>
