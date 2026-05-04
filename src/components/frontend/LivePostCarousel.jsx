@@ -3,8 +3,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { 
   ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, 
   Play, Volume2, VolumeX, Maximize2, CheckCircle,
-  Link2, Zap, User, Send, X, Twitter, Facebook, Linkedin, Copy
+  Zap, User, Send, X
 } from 'lucide-react'
+import ShareButtons from '../blog/ShareButtons'
 
 export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLike, onShare, sessionId }) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -177,39 +178,12 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }
 
-  // Professional Share Function with Counter
-  const handleShare = async (postId, platform = null) => {
-    const url = `${window.location.origin}/live-posts/${postId}`
-    const title = encodeURIComponent('Check out this post on Trendlin')
-    
-    let shareUrl = ''
-    
-    switch (platform) {
-      case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`
-        window.open(shareUrl, '_blank', 'width=600,height=400')
-        break
-      case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
-        window.open(shareUrl, '_blank', 'width=600,height=400')
-        break
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
-        window.open(shareUrl, '_blank', 'width=600,height=400')
-        break
-      case 'copy':
-      default:
-        await navigator.clipboard.writeText(url)
-        setSuccessMsg(prev => ({ ...prev, [postId]: 'Link copied to clipboard' }))
-        setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 2000)
-        break
-    }
-    
-    // Track share count
+  const handleShareCount = async (postId, platform) => {
     try {
       const response = await fetch(`/api/live-posts/${postId}/share`, { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform })
       })
       
       if (response.ok) {
@@ -220,8 +194,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     } catch (err) {
       console.error('Share tracking error:', err)
     }
-    
-    setShowShareModal(prev => ({ ...prev, [postId]: false }))
   }
 
   const goToSlide = (index) => {
@@ -375,33 +347,21 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </button>
         </div>
 
-        {/* Share Modal */}
+        {/* Share Modal with ShareButtons Component */}
         {showShareModal[currentPost.id] && (
           <div className="share-modal" onClick={(e) => e.stopPropagation()}>
             <div className="share-modal-header">
-              <span>Share this post</span>
+              <span>Share this story</span>
               <button onClick={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: false }))}>
                 <X size={16} />
               </button>
             </div>
-            <div className="share-modal-options">
-              <button onClick={() => handleShare(currentPost.id, 'twitter')} className="share-option twitter">
-                <Twitter size={18} />
-                Twitter
-              </button>
-              <button onClick={() => handleShare(currentPost.id, 'facebook')} className="share-option facebook">
-                <Facebook size={18} />
-                Facebook
-              </button>
-              <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-option linkedin">
-                <Linkedin size={18} />
-                LinkedIn
-              </button>
-              <button onClick={() => handleShare(currentPost.id, 'copy')} className="share-option copy">
-                <Copy size={18} />
-                Copy link
-              </button>
-            </div>
+            <ShareButtons 
+              url={`${window.location.origin}/live-posts/${currentPost.id}`}
+              title={currentPost.content?.substring(0, 100)}
+              onShareTrack={(platform) => handleShareCount(currentPost.id, platform)}
+              onClose={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: false }))}
+            />
           </div>
         )}
 
@@ -706,23 +666,23 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           bottom: 100%;
           right: 0;
           background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-          padding: 0.75rem;
-          min-width: 180px;
+          border-radius: 16px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+          padding: 1rem;
           z-index: 20;
           margin-bottom: 8px;
           border: 1px solid #e2e8f0;
+          min-width: 180px;
         }
 
         .share-modal-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding-bottom: 0.5rem;
-          margin-bottom: 0.5rem;
+          padding-bottom: 0.75rem;
+          margin-bottom: 0.75rem;
           border-bottom: 1px solid #e2e8f0;
-          font-size: 0.75rem;
+          font-size: 0.8rem;
           font-weight: 600;
           color: #1e293b;
         }
@@ -733,36 +693,10 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           cursor: pointer;
           color: #64748b;
           padding: 4px;
+          border-radius: 6px;
         }
 
-        .share-modal-options {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .share-option {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 8px 12px;
-          background: none;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 0.75rem;
-          font-weight: 500;
-          transition: all 0.2s;
-          width: 100%;
-          text-align: left;
-        }
-
-        .share-option.twitter { color: #1DA1F2; }
-        .share-option.facebook { color: #4267B2; }
-        .share-option.linkedin { color: #0077B5; }
-        .share-option.copy { color: #64748b; }
-
-        .share-option:hover {
+        .share-modal-header button:hover {
           background: #f1f5f9;
         }
 
@@ -974,9 +908,17 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .comment-author { color: #e2e8f0; }
           .comment-text { color: #94a3b8; }
           .nav-prev, .nav-next { border-color: #334155; color: #94a3b8; }
-          .share-modal { background: #1e293b; border-color: #334155; }
-          .share-modal-header { border-bottom-color: #334155; color: #f1f5f9; }
-          .share-option:hover { background: #334155; }
+          .share-modal {
+            background: #1e293b;
+            border-color: #334155;
+          }
+          .share-modal-header {
+            border-bottom-color: #334155;
+            color: #f1f5f9;
+          }
+          .share-modal-header button:hover {
+            background: #334155;
+          }
         }
 
         /* Responsive */
@@ -984,6 +926,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .connected-carousel { max-width: 100%; margin: 1rem auto; padding-top: 1rem; }
           .action-knots { gap: 1rem; }
           .knot span:not(.count) { display: none; }
+          .share-modal { right: -40px; min-width: 160px; }
         }
       `}</style>
     </div>
