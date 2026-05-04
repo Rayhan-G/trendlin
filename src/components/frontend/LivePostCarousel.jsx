@@ -24,6 +24,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const [showShareModal, setShowShareModal] = useState({})
   const [shareCount, setShareCount] = useState({})
   const autoPlayRef = useRef(null)
+  const shareModalRef = useRef(null)
 
   const getSessionId = useCallback(() => {
     if (sessionId) return sessionId
@@ -68,6 +69,17 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }, [isAutoPlaying, posts.length, autoPlayInterval, isHovering])
 
+  // Close share modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (shareModalRef.current && !shareModalRef.current.contains(event.target)) {
+        setShowShareModal({})
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const handleLike = async (postId) => {
     if (likedPosts[postId]) return
     
@@ -97,7 +109,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }
 
-  // LOAD COMMENTS - Direct Supabase query
+  // LOAD COMMENTS - Including admin replies
   const loadComments = async (postId) => {
     if (showComments[postId]) {
       setShowComments(prev => ({ ...prev, [postId]: false }))
@@ -112,7 +124,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     setLoadingComments(prev => ({ ...prev, [postId]: true }))
     
     try {
-      // Query all comments regardless of status (or use 'approved' if you have moderation)
       const { data, error } = await supabase
         .from('live_post_comments')
         .select('*')
@@ -133,7 +144,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }
 
-  // SUBMIT COMMENT - Fixed to show immediately
+  // SUBMIT COMMENT
   const submitComment = async (postId) => {
     const name = commentName[postId]?.trim()
     const text = commentText[postId]?.trim()
@@ -152,34 +163,31 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     
     setSubmitting(prev => ({ ...prev, [postId]: true }))
     
-    // Create optimistic comment
+    // Optimistic comment
     const optimisticComment = {
       id: `temp_${Date.now()}`,
       live_post_id: postId,
       user_name: name,
       content: text,
       created_at: new Date().toISOString(),
-      status: 'approved'
+      admin_reply: null,
+      admin_replied_at: null
     }
     
-    // Add optimistic comment immediately
     setComments(prev => ({
       ...prev,
       [postId]: [optimisticComment, ...(prev[postId] || [])]
     }))
     
-    // Clear input
     setCommentText(prev => ({ ...prev, [postId]: '' }))
     
     try {
-      // Insert to database
       const { data, error } = await supabase
         .from('live_post_comments')
         .insert([{
           live_post_id: postId,
           user_name: name,
           content: text,
-          status: 'approved', // Make sure this matches your table
           created_at: new Date().toISOString()
         }])
         .select()
@@ -187,7 +195,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       
       if (error) throw error
       
-      // Replace optimistic comment with real one
       setComments(prev => ({
         ...prev,
         [postId]: prev[postId].map(c => 
@@ -200,7 +207,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       
     } catch (err) {
       console.error('Submit error:', err)
-      // Remove optimistic comment on error
       setComments(prev => ({
         ...prev,
         [postId]: prev[postId].filter(c => c.id !== optimisticComment.id)
@@ -212,65 +218,61 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }
 
-  // FIXED SHARE - Only counts when ACTUALLY shared
-  const handleShareClick = async (postId, platform = null) => {
+  // FIXED SHARE FUNCTION - Opens social media share dialog
+  const handleShareClick = (postId, platform) => {
     const url = `${window.location.origin}/live-posts/${postId}`
     const title = encodeURIComponent('Check out this post on Trendlin')
-    
-    let shareSuccess = false
-    let shareUrl = ''
+    let shareWindow
     
     switch (platform) {
       case 'twitter':
-        shareUrl = `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`
-        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
-        shareSuccess = true
+        shareWindow = window.open(
+          `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`,
+          '_blank',
+          'width=550,height=420,left=300,top=100'
+        )
         break
       case 'facebook':
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
-        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
-        shareSuccess = true
+        shareWindow = window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+          '_blank',
+          'width=550,height=520,left=300,top=100'
+        )
         break
       case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
-        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
-        shareSuccess = true
+        shareWindow = window.open(
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+          '_blank',
+          'width=550,height=520,left=300,top=100'
+        )
         break
       case 'copy':
-        await navigator.clipboard.writeText(url)
+        navigator.clipboard.writeText(url)
         setSuccessMsg(prev => ({ ...prev, [postId]: 'Link copied!' }))
         setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 2000)
         setShowShareModal(prev => ({ ...prev, [postId]: false }))
         return
       default:
         if (navigator.share) {
-          try {
-            await navigator.share({ title: 'Check this out!', url })
-            shareSuccess = true
-          } catch (e) {
-            console.log('Share cancelled or failed')
-          }
+          navigator.share({ title: 'Check this out!', url })
         }
-        break
+        return
     }
     
+    // Close modal and track share if window opened successfully
     setShowShareModal(prev => ({ ...prev, [postId]: false }))
     
-    // ONLY increment count if actually shared (not just modal opened)
-    if (shareSuccess) {
-      // Update UI optimistically
+    if (shareWindow && platform !== 'copy') {
+      // Increment share count
       setShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
       
       // Track share in background
-      try {
-        await fetch(`/api/live-posts/${postId}/share`, { 
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        })
-        if (onShare) onShare(postId)
-      } catch (err) {
-        console.error('Share track error:', err)
-      }
+      fetch(`/api/live-posts/${postId}/share`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      }).catch(err => console.error('Share track error:', err))
+      
+      if (onShare) onShare(postId)
     }
   }
 
@@ -425,9 +427,9 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </button>
         </div>
 
-        {/* Share Modal */}
+        {/* Share Modal - FIXED */}
         {showShareModal[currentPost.id] && (
-          <div className="share-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="share-modal" ref={shareModalRef}>
             <div className="share-modal-header">
               <span>Share this story</span>
               <button onClick={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: false }))}>
@@ -455,7 +457,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </div>
         )}
 
-        {/* Comments Section */}
+        {/* Comments Section - WITH ADMIN REPLY */}
         {isCommentsOpen && (
           <div className="comment-thread">
             {errorMsg[currentPost.id] && (
@@ -510,16 +512,29 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
                 <div className="comment-placeholder">No comments yet. Start the conversation.</div>
               ) : (
                 <>
-                  {currentComments.slice(0, 5).map((comment) => (
-                    <div key={comment.id} className="comment-line">
+                  {currentComments.slice(0, 10).map((comment) => (
+                    <div key={comment.id} className="comment-item">
                       <div className="comment-header">
                         <span className="comment-author">{comment.user_name || comment.author_name}</span>
                         <span className="comment-time">{timeAgo(comment.created_at)}</span>
                       </div>
-                      <p className="comment-text">{comment.content}</p>
+                      <div className="comment-content-text">{comment.content}</div>
+                      
+                      {/* Admin Reply - FIXED to show */}
+                      {comment.admin_reply && (
+                        <div className="admin-reply">
+                          <div className="admin-reply-header">
+                            <span className="admin-badge">Admin Response</span>
+                            <span className="admin-reply-time">
+                              {comment.admin_replied_at && timeAgo(comment.admin_replied_at)}
+                            </span>
+                          </div>
+                          <div className="admin-reply-content">{comment.admin_reply}</div>
+                        </div>
+                      )}
                     </div>
                   ))}
-                  {currentComments.length > 5 && (
+                  {currentComments.length > 10 && (
                     <button className="view-more" onClick={() => loadComments(currentPost.id)}>
                       View all {currentComments.length} comments →
                     </button>
@@ -744,6 +759,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           color: #8b5cf6;
         }
 
+        /* Share Modal */
         .share-modal {
           position: absolute;
           bottom: 100%;
@@ -814,6 +830,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           transform: translateX(4px);
         }
 
+        /* Comments Section */
         .comment-thread {
           margin-top: 1rem;
           padding-top: 1rem;
@@ -935,7 +952,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           font-size: 0.75rem;
         }
 
-        .comment-line {
+        .comment-item {
           margin-bottom: 1rem;
           padding: 0.75rem 0;
           border-bottom: 1px solid #f8fafc;
@@ -945,7 +962,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
         }
 
         .comment-author {
@@ -959,10 +976,51 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           color: #94a3b8;
         }
 
-        .comment-text {
+        .comment-content-text {
           font-size: 0.8rem;
           color: #475569;
           line-height: 1.5;
+        }
+
+        /* Admin Reply Styles */
+        .admin-reply {
+          margin-top: 8px;
+          padding: 10px 12px;
+          background: #f0fdf4;
+          border-radius: 12px;
+          border-left: 3px solid #22c55e;
+        }
+
+        :global(body.dark) .admin-reply {
+          background: #064e3b;
+        }
+
+        .admin-reply-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 6px;
+        }
+
+        .admin-badge {
+          font-size: 0.65rem;
+          font-weight: 600;
+          color: #22c55e;
+        }
+
+        .admin-reply-time {
+          font-size: 0.6rem;
+          color: #94a3b8;
+        }
+
+        .admin-reply-content {
+          font-size: 0.75rem;
+          color: #1e293b;
+          line-height: 1.4;
+        }
+
+        :global(body.dark) .admin-reply-content {
+          color: #e2e8f0;
         }
 
         .view-more {
@@ -1015,9 +1073,9 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .action-knots { border-bottom-color: #1e293b; }
           .comment-thread { border-top-color: #1e293b; }
           .name-field, .message-group textarea { border-bottom-color: #334155; color: #e2e8f0; }
-          .comment-line { border-bottom-color: #1e293b; }
+          .comment-item { border-bottom-color: #1e293b; }
           .comment-author { color: #e2e8f0; }
-          .comment-text { color: #94a3b8; }
+          .comment-content-text { color: #94a3b8; }
           .nav-prev, .nav-next { border-color: #334155; color: #94a3b8; }
           .share-modal {
             background: #1e293b;
