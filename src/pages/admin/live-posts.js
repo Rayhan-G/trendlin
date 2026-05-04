@@ -1,555 +1,1240 @@
-// src/pages/admin/live-posts.js
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../lib/supabase'
-import Head from 'next/head'
+// src/components/frontend/LivePostCarousel.jsx
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { 
-  Plus, Edit, Trash2, Eye, Clock, X, Video, Music
+  ChevronLeft, ChevronRight, Clock, Heart, MessageCircle, Share2, 
+  Play, Pause, Volume2, VolumeX, Maximize2, X, CheckCircle,
+  User, Mail, AlertCircle, Send, Bookmark, MoreHorizontal, Eye
 } from 'lucide-react'
 
-// Dynamically import Media Modals with error handling
-const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal').catch(() => () => <div className="text-white p-4">Image modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
-const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal').catch(() => () => <div className="text-white p-4">Video modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
-const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal').catch(() => () => <div className="text-white p-4">Audio modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
-const PDFModal = dynamic(() => import('../../components/media/Modals/PDFModal').catch(() => () => <div className="text-white p-4">PDF modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
-const EmbedModal = dynamic(() => import('../../components/media/Modals/EmbedModal').catch(() => () => <div className="text-white p-4">Embed modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
-const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal').catch(() => () => <div className="text-white p-4">Gallery modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
+export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLike, onShare }) {
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
+  const [timeLeft, setTimeLeft] = useState({})
+  const [isHovering, setIsHovering] = useState(false)
+  const [muted, setMuted] = useState(true)
+  const [likedPosts, setLikedPosts] = useState({})
+  const [showComments, setShowComments] = useState({})
+  const [comments, setComments] = useState({})
+  const [loadingComments, setLoadingComments] = useState({})
+  const [commentName, setCommentName] = useState({})
+  const [commentEmail, setCommentEmail] = useState({})
+  const [commentText, setCommentText] = useState({})
+  const [submittingComment, setSubmittingComment] = useState({})
+  const [showShareMenu, setShowShareMenu] = useState({})
+  const [copySuccess, setCopySuccess] = useState({})
+  const [expandedContent, setExpandedContent] = useState({})
+  const [visitorId, setVisitorId] = useState(null)
+  const videoRefs = useRef({})
+  const autoPlayRef = useRef(null)
 
-const categories = [
-  { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6', bg: 'bg-blue-500/10' },
-  { id: 'health', name: 'Wellness', icon: '🌿', color: '#10b981', bg: 'bg-emerald-500/10' },
-  { id: 'entertainment', name: 'Culture', icon: '🎭', color: '#ec4899', bg: 'bg-pink-500/10' },
-  { id: 'wealth', name: 'Capital', icon: '💰', color: '#f59e0b', bg: 'bg-amber-500/10' },
-  { id: 'world', name: 'Horizons', icon: '🌍', color: '#06b6d4', bg: 'bg-cyan-500/10' },
-  { id: 'lifestyle', name: 'Aesthetic', icon: '✨', color: '#f97316', bg: 'bg-orange-500/10' },
-  { id: 'growth', name: 'Evolution', icon: '🌱', color: '#8b5cf6', bg: 'bg-purple-500/10' }
-]
-
-export default function AdminLivePosts() {
-  const [posts, setPosts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [editingPost, setEditingPost] = useState(null)
-  
-  const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('tech')
-  const [mediaItems, setMediaItems] = useState([])
-  const [status, setStatus] = useState('draft')
-  
-  const [saving, setSaving] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null)
-  const [showMediaModal, setShowMediaModal] = useState(null)
-  const [activeTab, setActiveTab] = useState('media')
-  const [publishSuccess, setPublishSuccess] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
-
-  const fetchPosts = useCallback(async () => {
-    setLoading(true)
-    try {
-      const { data, error } = await supabase
-        .from('live_posts')
-        .select('id,category,content,media_items,status,likes,expires_at,published_at,created_at')
-        .order('created_at', { ascending: false })
-        .limit(100)
-
-      if (error) throw error
-      setPosts(data || [])
-    } catch (err) {
-      console.error('Fetch error:', err)
-      setPosts([])
-    } finally {
-      setLoading(false)
+  // Get visitor ID for anonymous interactions
+  useEffect(() => {
+    let vid = localStorage.getItem('visitor_id')
+    if (!vid) {
+      vid = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      localStorage.setItem('visitor_id', vid)
     }
+    setVisitorId(vid)
   }, [])
 
-  useEffect(() => { 
-    fetchPosts() 
-  }, [fetchPosts])
+  // Set liked posts from props
+  useEffect(() => {
+    const liked = {}
+    posts.forEach(post => {
+      if (post.user_has_liked) {
+        liked[post.id] = true
+      }
+    })
+    setLikedPosts(liked)
+  }, [posts])
 
-  const isActive = (post) => {
-    if (!post?.expires_at) return false
-    return post.status === 'published' && new Date(post.expires_at) > new Date()
+  // Calculate time remaining
+  useEffect(() => {
+    const updateTimers = () => {
+      const newTimeLeft = {}
+      posts.forEach(post => {
+        if (!post.expires_at) return
+        
+        const diff = new Date(post.expires_at) - new Date()
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60))
+          const minutes = Math.floor((diff % 3600000) / 60000)
+          const seconds = Math.floor((diff % 60000) / 1000)
+          
+          if (hours > 0) {
+            newTimeLeft[post.id] = `${hours}h ${minutes}m`
+          } else if (minutes > 0) {
+            newTimeLeft[post.id] = `${minutes}m ${seconds}s`
+          } else {
+            newTimeLeft[post.id] = `${seconds}s`
+          }
+        } else {
+          newTimeLeft[post.id] = 'Expired'
+        }
+      })
+      setTimeLeft(newTimeLeft)
+    }
+
+    updateTimers()
+    const interval = setInterval(updateTimers, 1000)
+    return () => clearInterval(interval)
+  }, [posts])
+
+  // Auto-play carousel
+  useEffect(() => {
+    if (isAutoPlaying && posts.length > 1 && !isHovering) {
+      autoPlayRef.current = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % posts.length)
+      }, autoPlayInterval)
+    }
+    return () => {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current)
+    }
+  }, [isAutoPlaying, posts.length, autoPlayInterval, isHovering])
+
+  // Handle video playback
+  useEffect(() => {
+    Object.values(videoRefs.current).forEach(video => {
+      if (video) video.pause()
+    })
+    
+    const currentPost = posts[currentIndex]
+    const videoKey = `${currentPost?.id}_0`
+    const video = videoRefs.current[videoKey]
+    if (video && !isHovering) {
+      video.play().catch(e => console.log('Autoplay prevented:', e))
+    }
+  }, [currentIndex, posts, isHovering])
+
+  const handleLike = async (postId) => {
+    if (likedPosts[postId] || !visitorId) return
+    
+    // Optimistic update
+    setLikedPosts(prev => ({ ...prev, [postId]: true }))
+    await onLike?.(postId)
   }
 
-  const savePost = async () => {
-    if (mediaItems.length === 0) {
-      setErrorMessage('Please add at least one media item')
+  const loadComments = async (postId) => {
+    if (comments[postId]?.length > 0) {
+      setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }))
       return
     }
-
-    setSaving(true)
-    setErrorMessage('')
     
+    setLoadingComments(prev => ({ ...prev, [postId]: true }))
     try {
-      const now = new Date().toISOString()
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-
-      const cleanMedia = mediaItems.map(item => ({
-        type: item.type,
-        url: item.url,
-        ...(item.thumbnail && { thumbnail: item.thumbnail })
-      }))
-
-      const postData = {
-        category,
-        content: description?.trim() || null,
-        media_items: cleanMedia,
-        status,
-        updated_at: now
-      }
-
-      if (status === 'published') {
-        postData.published_at = now
-        postData.expires_at = expiresAt
-      }
-
-      let result
-      if (editingPost) {
-        result = await supabase
-          .from('live_posts')
-          .update(postData)
-          .eq('id', editingPost.id)
-      } else {
-        result = await supabase
-          .from('live_posts')
-          .insert([postData])
-          .select('id')
-          .single()
-      }
-
-      if (result.error) throw result.error
-
-      setPublishSuccess(true)
-      setTimeout(() => setPublishSuccess(false), 2000)
-      setShowCreateModal(false)
-      resetForm()
-      fetchPosts()
+      const { data, error } = await supabase
+        .from('live_post_comments')
+        .select('*')
+        .eq('live_post_id', postId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: false })
+        .limit(50)
       
+      if (!error && data) {
+        setComments(prev => ({ ...prev, [postId]: data }))
+        setShowComments(prev => ({ ...prev, [postId]: true }))
+      }
     } catch (error) {
-      console.error('Save error:', error)
-      setErrorMessage(error.message || 'Failed to save post')
+      console.error('Error loading comments:', error)
     } finally {
-      setSaving(false)
+      setLoadingComments(prev => ({ ...prev, [postId]: false }))
     }
   }
 
-  const deletePost = async (id) => {
+  const submitComment = async (postId) => {
+    const name = commentName[postId]?.trim()
+    const text = commentText[postId]?.trim()
+    
+    if (!name || !text) return
+    
+    setSubmittingComment(prev => ({ ...prev, [postId]: true }))
     try {
-      const { error } = await supabase
-        .from('live_posts')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-      
-      setPosts(prev => prev.filter(p => p.id !== id))
-      setShowDeleteConfirm(null)
-    } catch (err) {
-      console.error('Delete error:', err)
-      setErrorMessage('Failed to delete post')
-    }
-  }
-
-  const forceExpire = async (id) => {
-    try {
-      const { error } = await supabase
-        .from('live_posts')
-        .update({ 
-          status: 'expired', 
-          expires_at: new Date().toISOString() 
+      const response = await fetch(`/api/live-posts/${postId}/comment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author_name: name,
+          author_email: commentEmail[postId] || null,
+          content: text
         })
-        .eq('id', id)
-
-      if (error) throw error
+      })
       
-      setPosts(prev => prev.map(p => 
-        p.id === id ? { ...p, status: 'expired', expires_at: new Date().toISOString() } : p
-      ))
-    } catch (err) {
-      console.error('Expire error:', err)
+      if (response.ok) {
+        const { comment } = await response.json()
+        setComments(prev => ({
+          ...prev,
+          [postId]: [comment, ...(prev[postId] || [])]
+        }))
+        setCommentText(prev => ({ ...prev, [postId]: '' }))
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error)
+    } finally {
+      setSubmittingComment(prev => ({ ...prev, [postId]: false }))
     }
   }
 
-  const resetForm = () => {
-    setEditingPost(null)
-    setDescription('')
-    setCategory('tech')
-    setMediaItems([])
-    setStatus('draft')
-    setActiveTab('media')
-    setErrorMessage('')
-    setCurrentMediaIndex(0)
-  }
-
-  const editPost = (post) => {
-    setEditingPost(post)
-    setDescription(post.content || '')
-    setCategory(post.category)
-    setMediaItems(post.media_items || [])
-    setStatus(post.status || 'draft')
-    setShowCreateModal(true)
-  }
-
-  const handleMediaInsert = (mediaData) => {
-    const newMediaItem = {
-      id: Date.now() + Math.random(),
-      type: mediaData.type || 'image',
-      url: mediaData.src || mediaData.url,
-      ...mediaData
+  const handleShare = async (postId) => {
+    const url = `${window.location.origin}/live-posts/${postId}`
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Check this out!', url })
+      } catch (e) {}
+    } else {
+      await navigator.clipboard.writeText(url)
+      setCopySuccess(prev => ({ ...prev, [postId]: true }))
+      setTimeout(() => setCopySuccess(prev => ({ ...prev, [postId]: false })), 2000)
     }
-    setMediaItems(prev => [...prev, newMediaItem])
-    setShowMediaModal(null)
-    setCurrentMediaIndex(mediaItems.length)
+    await onShare?.(postId)
   }
 
-  const removeMedia = (mediaId) => {
-    setMediaItems(prev => prev.filter(m => m.id !== mediaId))
-    if (currentMediaIndex >= mediaItems.length - 1) {
-      setCurrentMediaIndex(Math.max(0, mediaItems.length - 2))
+  const toggleMute = (postId, e) => {
+    e.stopPropagation()
+    const videoKey = `${postId}_0`
+    const video = videoRefs.current[videoKey]
+    if (video) {
+      video.muted = !video.muted
+      setMuted(!video.muted)
     }
   }
 
-  const getTimeRemaining = (expiresAt) => {
-    if (!expiresAt) return '—'
-    const diff = new Date(expiresAt) - new Date()
-    if (diff <= 0) return 'Expired'
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % 3600000) / 60000)
-    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`
-  }
-
-  const nextMedia = () => {
-    if (currentMediaIndex < mediaItems.length - 1) {
-      setCurrentMediaIndex(currentMediaIndex + 1)
+  const toggleFullscreen = (postId, e) => {
+    e.stopPropagation()
+    const videoKey = `${postId}_0`
+    const video = videoRefs.current[videoKey]
+    if (video && video.requestFullscreen) {
+      video.requestFullscreen()
     }
   }
 
-  const prevMedia = () => {
-    if (currentMediaIndex > 0) {
-      setCurrentMediaIndex(currentMediaIndex - 1)
-    }
+  const goToSlide = useCallback((index) => {
+    setCurrentIndex(index)
+    setIsAutoPlaying(false)
+    setTimeout(() => setIsAutoPlaying(true), 10000)
+  }, [])
+
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % posts.length)
+    setIsAutoPlaying(false)
+    setTimeout(() => setIsAutoPlaying(true), 10000)
+  }, [posts.length])
+
+  const prevSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev - 1 + posts.length) % posts.length)
+    setIsAutoPlaying(false)
+    setTimeout(() => setIsAutoPlaying(true), 10000)
+  }, [posts.length])
+
+  const timeAgo = (date) => {
+    if (!date) return ''
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000)
+    if (seconds < 60) return `${seconds}s ago`
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
   }
+
+  if (!posts || posts.length === 0) return null
+
+  const currentPost = posts[currentIndex]
+  const isUrgent = currentPost.expires_at && (new Date(currentPost.expires_at) - new Date() < 3600000)
+  const isExpanded = expandedContent[currentPost.id]
+  const displayContent = isExpanded 
+    ? currentPost.content 
+    : currentPost.content?.substring(0, 300)
+
+  const categoryColors = {
+    tech: { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/20', gradient: 'from-blue-500 to-indigo-600' },
+    health: { text: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', gradient: 'from-emerald-500 to-teal-600' },
+    entertainment: { text: 'text-pink-500', bg: 'bg-pink-500/10', border: 'border-pink-500/20', gradient: 'from-pink-500 to-rose-600' },
+    wealth: { text: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/20', gradient: 'from-amber-500 to-orange-600' },
+    world: { text: 'text-cyan-500', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', gradient: 'from-cyan-500 to-blue-600' },
+    lifestyle: { text: 'text-orange-500', bg: 'bg-orange-500/10', border: 'border-orange-500/20', gradient: 'from-orange-500 to-red-600' },
+    growth: { text: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/20', gradient: 'from-purple-500 to-violet-600' }
+  }
+
+  const colors = categoryColors[currentPost.category] || categoryColors.tech
 
   return (
-    <>
-      <Head><title>Admin | Live Posts Manager</title></Head>
-      <div className="min-h-screen bg-[#050505] p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white">Live Posts Manager</h1>
-              <p className="text-gray-500">Create 24-hour posts with unlimited media</p>
+    <div 
+      className="live-carousel"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      {/* Main Card */}
+      <div className="carousel-card">
+        {/* Header */}
+        <div className="card-header">
+          <div className="user-info">
+            <div className={`avatar ${colors.bg}`}>
+              <span className={colors.text}>T</span>
             </div>
-            <button 
-              onClick={() => { resetForm(); setShowCreateModal(true); }} 
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:opacity-90 transition"
-            >
-              <Plus size={18} /> New Live Post
+            <div className="user-details">
+              <div className="user-name">
+                Trendlin
+                <CheckCircle size={14} className="verified" />
+              </div>
+              <div className="post-meta">
+                <span className={`category-badge ${colors.text} ${colors.bg}`}>
+                  {currentPost.category}
+                </span>
+                <span className="dot">•</span>
+                <span className={`time-badge ${isUrgent ? 'urgent' : ''}`}>
+                  <Clock size={12} />
+                  {timeLeft[currentPost.id] || 'Expiring'}
+                </span>
+              </div>
+            </div>
+          </div>
+          <button className="more-btn">
+            <MoreHorizontal size={18} />
+          </button>
+        </div>
+
+        {/* Content Section - TEXT FIRST */}
+        <div className="card-content">
+          {currentPost.content ? (
+            <>
+              <div className="content-text">
+                <div dangerouslySetInnerHTML={{ __html: displayContent }} />
+              </div>
+              {currentPost.content.length > 300 && (
+                <button onClick={() => setExpandedContent(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} className="expand-btn">
+                  {isExpanded ? 'Show less' : 'Show more'}
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="no-content">No description provided</div>
+          )}
+        </div>
+
+        {/* Media Gallery - UNDERNEATH TEXT */}
+        {currentPost.media_items && currentPost.media_items.length > 0 && (
+          <div className={`media-gallery ${currentPost.media_items.length === 1 ? 'single' : 'grid'} media-count-${currentPost.media_items.length}`}>
+            {currentPost.media_items.map((media, idx) => (
+              <div key={idx} className="media-item">
+                {media.type === 'image' || (!media.type && !media.url?.match(/\.(mp4|webm|mov)$/i)) ? (
+                  <img src={media.url} alt="" className="media-img" loading="lazy" />
+                ) : (
+                  <div className="video-container">
+                    <video
+                      ref={el => { if (el) videoRefs.current[`${currentPost.id}_${idx}`] = el }}
+                      src={media.url}
+                      muted={muted}
+                      loop
+                      playsInline
+                      className="video-player"
+                      poster={media.thumbnail}
+                    />
+                    <button 
+                      className="video-play-btn" 
+                      onClick={() => {
+                        const video = videoRefs.current[`${currentPost.id}_${idx}`]
+                        if (video) video.paused ? video.play() : video.pause()
+                      }}
+                    >
+                      <Play size={24} fill="white" />
+                    </button>
+                    <button className="video-mute-btn" onClick={(e) => toggleMute(currentPost.id, e)}>
+                      {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                    </button>
+                    <button className="video-fullscreen-btn" onClick={(e) => toggleFullscreen(currentPost.id, e)}>
+                      <Maximize2 size={16} />
+                    </button>
+                  </div>
+                )}
+                {currentPost.media_items.length > 1 && idx === 0 && (
+                  <div className="media-count-badge">
+                    +{currentPost.media_items.length - 1}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Stats Bar */}
+        <div className="stats-bar">
+          <div className="stats-left">
+            <button className="stat" onClick={() => handleLike(currentPost.id)}>
+              <Heart size={16} fill={likedPosts[currentPost.id] ? '#ef4444' : 'none'} color={likedPosts[currentPost.id] ? '#ef4444' : '#6b7280'} />
+              <span>{((currentPost.likes || 0) + (likedPosts[currentPost.id] ? 1 : 0)).toLocaleString()}</span>
+            </button>
+            <button className="stat" onClick={() => loadComments(currentPost.id)}>
+              <MessageCircle size={16} />
+              <span>{(currentPost.comments_count || 0).toLocaleString()}</span>
+            </button>
+            <button className="stat">
+              <Eye size={16} />
+              <span>{(currentPost.view_count || 0).toLocaleString()}</span>
             </button>
           </div>
+          <button className="save-btn">
+            <Bookmark size={16} />
+          </button>
+        </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
-              <div className="text-2xl mb-2">⚡</div>
-              <div className="text-2xl font-bold text-white">{posts.filter(p => isActive(p)).length}</div>
-              <div className="text-xs text-gray-500">Active Posts</div>
+        {/* Action Buttons */}
+        <div className="action-buttons">
+          <button onClick={() => handleLike(currentPost.id)} className={`action-btn ${likedPosts[currentPost.id] ? 'liked' : ''}`}>
+            <Heart size={20} />
+            <span>Like</span>
+          </button>
+          <button onClick={() => loadComments(currentPost.id)} className="action-btn">
+            <MessageCircle size={20} />
+            <span>Comment</span>
+          </button>
+          <button onClick={() => setShowShareMenu(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} className="action-btn">
+            <Share2 size={20} />
+            <span>Share</span>
+          </button>
+          <button className="action-btn">
+            <Send size={20} />
+            <span>Send</span>
+          </button>
+        </div>
+
+        {/* Comments Section */}
+        {showComments[currentPost.id] && (
+          <div className="comments-section">
+            <div className="comment-input-wrapper">
+              <div className={`comment-avatar ${colors.bg}`}>
+                <span className={colors.text}>?</span>
+              </div>
+              <div className="comment-form">
+                <div className="comment-fields">
+                  <input
+                    type="text"
+                    placeholder="Your name *"
+                    value={commentName[currentPost.id] || ''}
+                    onChange={(e) => setCommentName(prev => ({ ...prev, [currentPost.id]: e.target.value }))}
+                    className="comment-name"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Your email (optional)"
+                    value={commentEmail[currentPost.id] || ''}
+                    onChange={(e) => setCommentEmail(prev => ({ ...prev, [currentPost.id]: e.target.value }))}
+                    className="comment-email"
+                  />
+                </div>
+                <div className="comment-textarea-wrapper">
+                  <textarea
+                    placeholder="Write a comment..."
+                    value={commentText[currentPost.id] || ''}
+                    onChange={(e) => setCommentText(prev => ({ ...prev, [currentPost.id]: e.target.value }))}
+                    className="comment-textarea"
+                    rows="2"
+                  />
+                  <button 
+                    onClick={() => submitComment(currentPost.id)} 
+                    disabled={submittingComment[currentPost.id] || !commentName[currentPost.id] || !commentText[currentPost.id]}
+                    className="comment-submit"
+                  >
+                    {submittingComment[currentPost.id] ? 'Posting...' : 'Post'}
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
-              <div className="text-2xl mb-2">📝</div>
-              <div className="text-2xl font-bold text-white">{posts.length}</div>
-              <div className="text-xs text-gray-500">Total Posts</div>
-            </div>
-            <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
-              <div className="text-2xl mb-2">❤️</div>
-              <div className="text-2xl font-bold text-white">{posts.reduce((sum, p) => sum + (p.likes || 0), 0)}</div>
-              <div className="text-xs text-gray-500">Total Likes</div>
-            </div>
-            <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
-              <div className="text-2xl mb-2">🖼️</div>
-              <div className="text-2xl font-bold text-white">{posts.reduce((sum, p) => sum + (p.media_items?.length || 0), 0)}</div>
-              <div className="text-xs text-gray-500">Media Items</div>
+
+            <div className="comments-list">
+              {loadingComments[currentPost.id] ? (
+                <div className="comments-loading">Loading comments...</div>
+              ) : !comments[currentPost.id] || comments[currentPost.id].length === 0 ? (
+                <div className="no-comments">No comments yet. Be the first!</div>
+              ) : (
+                comments[currentPost.id].map((comment) => (
+                  <div key={comment.id} className="comment-item">
+                    <div className={`comment-avatar-small ${colors.bg}`}>
+                      <span className={colors.text}>
+                        {comment.author_name?.[0]?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                    <div className="comment-content">
+                      <div className="comment-header">
+                        <span className="comment-author">{comment.author_name}</span>
+                        <span className="comment-time">{timeAgo(comment.created_at)}</span>
+                      </div>
+                      <div className="comment-text">{comment.content}</div>
+                      <button className="comment-like-btn">Like</button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
+        )}
 
-          <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl overflow-x-auto">
-            {loading ? (
-              <div className="text-center py-20 text-gray-500">Loading...</div>
-            ) : posts.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-6xl mb-4">📭</div>
-                <h3 className="text-white text-lg mb-2">No live posts yet</h3>
-                <button onClick={() => { resetForm(); setShowCreateModal(true); }} className="px-4 py-2 bg-purple-600 text-white rounded-xl">
-                  Create First Post
-                </button>
+        {/* Share Menu */}
+        {showShareMenu[currentPost.id] && (
+          <div className="share-menu" onClick={(e) => e.stopPropagation()}>
+            <div className="share-header">
+              <span>Share this post</span>
+              <button onClick={() => setShowShareMenu(prev => ({ ...prev, [currentPost.id]: false }))}>
+                <X size={16} />
+              </button>
+            </div>
+            <div className="share-options">
+              <button onClick={() => handleShare(currentPost.id)}>📋 Copy link</button>
+              <button>🐦 Twitter</button>
+              <button>📘 Facebook</button>
+              <button>💬 WhatsApp</button>
+            </div>
+            {copySuccess[currentPost.id] && (
+              <div className="copy-success">
+                <CheckCircle size={14} />
+                Link copied!
               </div>
-            ) : (
-              <table className="w-full">
-                <thead className="border-b border-gray-800">
-                  <tr className="text-left text-gray-500 text-sm">
-                    <th className="p-4">Content</th>
-                    <th className="p-4">Category</th>
-                    <th className="p-4">Media</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4">Likes</th>
-                    <th className="p-4">Time Left</th>
-                    <th className="p-4">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {posts.map((post) => {
-                    const active = isActive(post)
-                    const timeLeft = getTimeRemaining(post.expires_at)
-                    const cat = categories.find(c => c.id === post.category)
-                    return (
-                      <tr key={post.id} className="border-b border-gray-800 hover:bg-gray-900/50 transition">
-                        <td className="p-4">
-                          <div className="max-w-xs">
-                            <p className="text-white text-sm line-clamp-2">
-                              {post.content || 'No description'}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`text-sm px-2 py-1 rounded-full ${cat?.bg}`} style={{ color: cat?.color }}>
-                            {cat?.icon} {cat?.name}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-xs text-gray-500">{post.media_items?.length || 0} items</span>
-                        </td>
-                        <td className="p-4">
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            active ? 'bg-green-500/20 text-green-500' : 
-                            post.status === 'draft' ? 'bg-yellow-500/20 text-yellow-500' : 'bg-gray-500/20 text-gray-500'
-                          }`}>
-                            {active ? '● Published' : post.status === 'draft' ? '📝 Draft' : '○ Expired'}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className="text-sm">❤️ {post.likes || 0}</span>
-                        </td>
-                        <td className="p-4">
-                          <span className={`text-sm font-mono ${active ? 'text-yellow-500' : 'text-gray-500'}`}>
-                            {active ? timeLeft : '—'}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex gap-2">
-                            <Link href={`/live-posts/${post.category}`} target="_blank" className="p-1.5 rounded hover:bg-gray-800">
-                              <Eye size={16} className="text-gray-500" />
-                            </Link>
-                            <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-gray-800">
-                              <Edit size={16} className="text-gray-500" />
-                            </button>
-                            {active && (
-                              <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-gray-800">
-                                <Clock size={16} className="text-gray-500" />
-                              </button>
-                            )}
-                            <button onClick={() => setShowDeleteConfirm(post.id)} className="p-1.5 rounded hover:bg-gray-800">
-                              <Trash2 size={16} className="text-gray-500" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
             )}
           </div>
-        </div>
+        )}
+
+        {/* Read More Link */}
+        <Link href={`/live-posts/${currentPost.category}`} className="read-more-link">
+          Read full story
+          <ChevronRight size={16} />
+        </Link>
       </div>
 
-      {/* Create/Edit Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-6 border-b border-gray-800">
-              <div>
-                <h2 className="text-xl font-bold text-white">{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
-                <p className="text-sm text-gray-500">Add media + description. Publish = 24 hours live</p>
-              </div>
-              <button onClick={() => setShowCreateModal(false)} className="text-gray-500 hover:text-white">
-                <X size={24} />
-              </button>
-            </div>
+      {/* Navigation Buttons */}
+      {posts.length > 1 && (
+        <>
+          <button className="nav-arrow prev" onClick={prevSlide}>
+            <ChevronLeft size={24} />
+          </button>
+          <button className="nav-arrow next" onClick={nextSlide}>
+            <ChevronRight size={24} />
+          </button>
+        </>
+      )}
 
-            {publishSuccess && (
-              <div className="mx-6 mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-500 text-sm">
-                ✅ Post {editingPost ? 'updated' : 'created'} successfully!
-              </div>
-            )}
-            {errorMessage && (
-              <div className="mx-6 mt-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-500 text-sm">
-                ❌ {errorMessage}
-              </div>
-            )}
-
-            <div className="flex border-b border-gray-800 px-6">
-              <button
-                onClick={() => setActiveTab('media')}
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'media' ? 'text-purple-500 border-b-2 border-purple-500' : 'text-gray-500'}`}
-              >
-                🖼️ Media ({mediaItems.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`px-4 py-3 text-sm font-medium ${activeTab === 'settings' ? 'text-purple-500 border-b-2 border-purple-500' : 'text-gray-500'}`}
-              >
-                ⚙️ Settings
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6">
-              {activeTab === 'media' && (
-                <div className="space-y-6">
-                  {mediaItems.length > 0 && (
-                    <div className="relative bg-black rounded-2xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
-                      {mediaItems[currentMediaIndex]?.type === 'image' && (
-                        <img src={mediaItems[currentMediaIndex].url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      )}
-                      {mediaItems[currentMediaIndex]?.type === 'video' && (
-                        <video src={mediaItems[currentMediaIndex].url} className="w-full h-full object-cover" controls />
-                      )}
-                      {mediaItems[currentMediaIndex]?.type === 'audio' && (
-                        <div className="w-full h-full flex items-center justify-center bg-purple-900/50">
-                          <audio src={mediaItems[currentMediaIndex].url} controls />
-                        </div>
-                      )}
-                      
-                      {mediaItems.length > 1 && (
-                        <>
-                          <button onClick={prevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70">◀</button>
-                          <button onClick={nextMedia} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70">▶</button>
-                        </>
-                      )}
-                      
-                      {description && (
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
-                          <p className="text-white text-xl font-medium">{description}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">📝 Description (appears on media)</label>
-                    <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Write your story here..."
-                      rows={3}
-                      className="w-full p-4 bg-gray-900 border border-gray-800 rounded-xl text-white focus:outline-none focus:border-purple-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Add Media</label>
-                    <div className="flex gap-3 flex-wrap">
-                      <button onClick={() => setShowMediaModal('image')} className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30">📷 Image</button>
-                      <button onClick={() => setShowMediaModal('video')} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30">🎥 Video</button>
-                      <button onClick={() => setShowMediaModal('audio')} className="px-4 py-2 bg-purple-600/20 text-purple-400 rounded-lg hover:bg-purple-600/30">🎵 Audio</button>
-                      <button onClick={() => setShowMediaModal('pdf')} className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30">📄 PDF</button>
-                      <button onClick={() => setShowMediaModal('embed')} className="px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg hover:bg-yellow-600/30">🔗 Embed</button>
-                      <button onClick={() => setShowMediaModal('gallery')} className="px-4 py-2 bg-pink-600/20 text-pink-400 rounded-lg hover:bg-pink-600/30">🖼️ Gallery</button>
-                    </div>
-                  </div>
-
-                  {mediaItems.length > 0 && (
-                    <div className="flex gap-2 flex-wrap">
-                      {mediaItems.map((item, idx) => (
-                        <div 
-                          key={item.id} 
-                          className={`relative w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 ${idx === currentMediaIndex ? 'border-purple-500' : 'border-gray-700'}`}
-                          onClick={() => setCurrentMediaIndex(idx)}
-                        >
-                          {item.type === 'image' && <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />}
-                          {item.type === 'video' && <Video size={24} className="w-full h-full p-4 text-gray-500" />}
-                          {item.type === 'audio' && <Music size={24} className="w-full h-full p-4 text-gray-500" />}
-                          <button onClick={(e) => { e.stopPropagation(); removeMedia(item.id); }} className="absolute -top-1 -right-1 p-1 bg-red-500 rounded-full hover:bg-red-600">
-                            <Trash2 size={10} className="text-white" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'settings' && (
-                <div className="space-y-6 max-w-md">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Category</label>
-                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-3 bg-gray-900 border border-gray-800 rounded-xl text-white">
-                      {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Status</label>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setStatus('draft')}
-                        className={`flex-1 py-3 rounded-xl font-medium transition ${status === 'draft' ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                      >
-                        💾 Save Draft
-                      </button>
-                      <button
-                        onClick={() => setStatus('published')}
-                        className={`flex-1 py-3 rounded-xl font-medium transition ${status === 'published' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-                      >
-                        🚀 Publish (24h)
-                      </button>
-                    </div>
-                    {status === 'published' && (
-                      <p className="text-xs text-green-500 mt-2">⚠️ Will expire 24 hours after publishing</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-gray-800">
-              <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-700 rounded-xl text-gray-400 hover:bg-gray-900">
-                Cancel
-              </button>
-              <button 
-                onClick={savePost} 
-                disabled={saving || mediaItems.length === 0} 
-                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium disabled:opacity-50 hover:opacity-90 transition"
-              >
-                {saving ? 'Saving...' : (status === 'published' ? '📢 Publish Now' : '💾 Save Draft')}
-              </button>
-            </div>
-          </div>
+      {/* Progress Bar */}
+      {posts.length > 1 && isAutoPlaying && !isHovering && (
+        <div className="progress-bar-container">
+          <div className="progress-bar" style={{ animationDuration: `${autoPlayInterval}ms` }} onAnimationEnd={nextSlide} />
         </div>
       )}
 
-      {/* Media Modals */}
-      {showMediaModal === 'image' && <ImageModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
-      {showMediaModal === 'video' && <VideoModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
-      {showMediaModal === 'audio' && <AudioModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
-      {showMediaModal === 'pdf' && <PDFModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
-      {showMediaModal === 'embed' && <EmbedModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
-      {showMediaModal === 'gallery' && <GalleryModal isOpen={true} onClose={() => setShowMediaModal(null)} onInsert={(data) => handleMediaInsert({ ...data, type: 'gallery' })} />}
+      {/* Dot Indicators */}
+      <div className="dot-indicators">
+        {posts.map((_, idx) => (
+          <button
+            key={idx}
+            className={`dot ${idx === currentIndex ? 'active' : ''}`}
+            onClick={() => goToSlide(idx)}
+            style={{ background: idx === currentIndex ? '#8b5cf6' : 'rgba(255,255,255,0.3)' }}
+          />
+        ))}
+      </div>
 
-      {/* Delete Confirmation */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50" onClick={() => setShowDeleteConfirm(null)}>
-          <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl p-6 max-w-md text-center">
-            <div className="text-5xl mb-4">⚠️</div>
-            <h3 className="text-xl font-bold text-white mb-2">Delete Post?</h3>
-            <p className="text-gray-500 mb-6">This cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2 border border-gray-700 rounded-xl hover:bg-gray-900">Cancel</button>
-              <button onClick={() => deletePost(showDeleteConfirm)} className="flex-1 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+      <style jsx>{`
+        .live-carousel {
+          position: relative;
+          max-width: 680px;
+          margin: 0 auto;
+        }
+
+        .carousel-card {
+          background: white;
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .carousel-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Header */
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          border-bottom: 1px solid #eef2f6;
+        }
+
+        .user-info {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .avatar {
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          font-weight: 600;
+        }
+
+        .user-details {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .user-name {
+          font-weight: 700;
+          font-size: 15px;
+          color: #1e293b;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .verified {
+          color: #3b82f6;
+        }
+
+        .post-meta {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: #64748b;
+        }
+
+        .category-badge {
+          padding: 2px 8px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 600;
+        }
+
+        .time-badge {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          font-family: monospace;
+        }
+
+        .time-badge.urgent {
+          color: #ef4444;
+          font-weight: 600;
+          animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+
+        .dot {
+          color: #cbd5e1;
+        }
+
+        .more-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: transparent;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+        }
+
+        .more-btn:hover {
+          background: #f1f5f9;
+        }
+
+        /* Content */
+        .card-content {
+          padding: 20px;
+        }
+
+        .content-text {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #1e293b;
+        }
+
+        .no-content {
+          color: #94a3b8;
+          font-style: italic;
+        }
+
+        .expand-btn {
+          margin-top: 8px;
+          color: #8b5cf6;
+          font-size: 13px;
+          font-weight: 500;
+          background: none;
+          border: none;
+          cursor: pointer;
+        }
+
+        /* Media Gallery */
+        .media-gallery {
+          margin: 0 16px 16px;
+          border-radius: 16px;
+          overflow: hidden;
+          background: #0f0f0f;
+        }
+
+        .media-gallery.single {
+          max-height: 500px;
+        }
+
+        .media-gallery.grid {
+          display: grid;
+          gap: 2px;
+        }
+
+        .media-count-2 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .media-count-3, .media-count-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .media-count-3 .media-item:first-child {
+          grid-row: span 2;
+        }
+
+        .media-item {
+          position: relative;
+          background: #000;
+          cursor: pointer;
+        }
+
+        .media-img {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .video-container {
+          position: relative;
+          background: #000;
+          aspect-ratio: 16/9;
+        }
+
+        .video-player {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .video-play-btn {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.7);
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: white;
+          transition: all 0.2s;
+          opacity: 0;
+        }
+
+        .video-container:hover .video-play-btn {
+          opacity: 1;
+        }
+
+        .video-play-btn:hover {
+          transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .video-mute-btn, .video-fullscreen-btn {
+          position: absolute;
+          bottom: 12px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.6);
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: white;
+          backdrop-filter: blur(4px);
+        }
+
+        .video-mute-btn {
+          right: 52px;
+        }
+
+        .video-fullscreen-btn {
+          right: 12px;
+        }
+
+        .media-count-badge {
+          position: absolute;
+          bottom: 12px;
+          right: 12px;
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(8px);
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          color: white;
+          font-weight: 500;
+        }
+
+        /* Stats */
+        .stats-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 20px;
+          border-top: 1px solid #eef2f6;
+          border-bottom: 1px solid #eef2f6;
+        }
+
+        .stats-left {
+          display: flex;
+          gap: 16px;
+        }
+
+        .stat {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: none;
+          border: none;
+          font-size: 13px;
+          color: #64748b;
+          cursor: pointer;
+        }
+
+        .save-btn {
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+          display: flex;
+          justify-content: space-around;
+          padding: 12px 20px;
+        }
+
+        .action-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 20px;
+          background: none;
+          border: none;
+          border-radius: 40px;
+          color: #64748b;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+          background: #f1f5f9;
+        }
+
+        .action-btn.liked {
+          color: #ef4444;
+        }
+
+        /* Comments */
+        .comments-section {
+          padding: 16px 20px;
+          border-top: 1px solid #eef2f6;
+          background: #fafbfc;
+        }
+
+        .comment-input-wrapper {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .comment-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        .comment-form {
+          flex: 1;
+        }
+
+        .comment-fields {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 8px;
+        }
+
+        .comment-name, .comment-email {
+          flex: 1;
+          padding: 8px 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          font-size: 13px;
+          outline: none;
+        }
+
+        .comment-name:focus, .comment-email:focus {
+          border-color: #8b5cf6;
+        }
+
+        .comment-textarea-wrapper {
+          position: relative;
+        }
+
+        .comment-textarea {
+          width: 100%;
+          padding: 10px 80px 10px 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          font-size: 14px;
+          resize: none;
+          outline: none;
+          font-family: inherit;
+        }
+
+        .comment-textarea:focus {
+          border-color: #8b5cf6;
+        }
+
+        .comment-submit {
+          position: absolute;
+          right: 8px;
+          bottom: 8px;
+          padding: 4px 12px;
+          background: #8b5cf6;
+          color: white;
+          border: none;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .comment-submit:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .comments-list {
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        .comments-loading, .no-comments {
+          text-align: center;
+          padding: 20px;
+          color: #94a3b8;
+          font-size: 13px;
+        }
+
+        .comment-item {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .comment-avatar-small {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        .comment-content {
+          flex: 1;
+        }
+
+        .comment-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 4px;
+        }
+
+        .comment-author {
+          font-weight: 600;
+          font-size: 13px;
+          color: #1e293b;
+        }
+
+        .comment-time {
+          font-size: 11px;
+          color: #94a3b8;
+        }
+
+        .comment-text {
+          font-size: 14px;
+          color: #334155;
+          margin-bottom: 4px;
+        }
+
+        .comment-like-btn {
+          background: none;
+          border: none;
+          font-size: 11px;
+          color: #64748b;
+          cursor: pointer;
+        }
+
+        /* Share Menu */
+        .share-menu {
+          position: absolute;
+          bottom: 100%;
+          right: 20px;
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          padding: 12px;
+          min-width: 180px;
+          z-index: 20;
+          margin-bottom: 8px;
+        }
+
+        .share-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: 8px;
+          margin-bottom: 8px;
+          border-bottom: 1px solid #eef2f6;
+          font-weight: 500;
+          font-size: 13px;
+        }
+
+        .share-header button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #64748b;
+        }
+
+        .share-options {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .share-options button {
+          padding: 8px 12px;
+          background: none;
+          border: none;
+          border-radius: 8px;
+          text-align: left;
+          cursor: pointer;
+          font-size: 13px;
+        }
+
+        .share-options button:hover {
+          background: #f1f5f9;
+        }
+
+        .copy-success {
+          margin-top: 8px;
+          padding: 6px;
+          background: #22c55e;
+          color: white;
+          border-radius: 8px;
+          font-size: 11px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+        }
+
+        /* Read More */
+        .read-more-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 16px;
+          text-align: center;
+          color: #8b5cf6;
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 14px;
+          border-top: 1px solid #eef2f6;
+          transition: background 0.2s;
+        }
+
+        .read-more-link:hover {
+          background: rgba(139, 92, 246, 0.05);
+        }
+
+        /* Navigation */
+        .nav-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: white;
+          border: 1px solid #eef2f6;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #1e293b;
+          transition: all 0.2s;
+          z-index: 10;
+        }
+
+        .nav-arrow.prev {
+          left: -20px;
+        }
+
+        .nav-arrow.next {
+          right: -20px;
+        }
+
+        .nav-arrow:hover {
+          background: #8b5cf6;
+          color: white;
+          border-color: #8b5cf6;
+        }
+
+        /* Progress Bar */
+        .progress-bar-container {
+          position: absolute;
+          bottom: -4px;
+          left: 20px;
+          right: 20px;
+          height: 3px;
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #8b5cf6, #ec4899);
+          width: 0%;
+          animation: progress linear forwards;
+        }
+
+        @keyframes progress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+
+        /* Dot Indicators */
+        .dot-indicators {
+          display: flex;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 20px;
+        }
+
+        .dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          border: none;
+          cursor: pointer;
+          transition: all 0.2s;
+          padding: 0;
+        }
+
+        .dot.active {
+          width: 24px;
+          border-radius: 3px;
+        }
+
+        /* Dark Mode */
+        @media (prefers-color-scheme: dark) {
+          .carousel-card {
+            background: #1e1e2e;
+          }
+          .card-header {
+            border-bottom-color: #2d2d3d;
+          }
+          .user-name, .content-text, .comment-author {
+            color: #f1f5f9;
+          }
+          .comment-text {
+            color: #cbd5e1;
+          }
+          .comments-section {
+            background: #16162a;
+            border-top-color: #2d2d3d;
+          }
+          .action-btn:hover, .more-btn:hover {
+            background: #2d2d3d;
+          }
+          .comment-name, .comment-email, .comment-textarea {
+            background: #2d2d3d;
+            border-color: #3d3d4d;
+            color: #f1f5f9;
+          }
+          .share-menu {
+            background: #1e1e2e;
+            border-color: #2d2d3d;
+          }
+          .nav-arrow {
+            background: #1e1e2e;
+            border-color: #2d2d3d;
+            color: #f1f5f9;
+          }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+          .nav-arrow.prev {
+            left: -8px;
+          }
+          .nav-arrow.next {
+            right: -8px;
+          }
+          .nav-arrow {
+            width: 32px;
+            height: 32px;
+          }
+          .action-btn span {
+            display: none;
+          }
+          .action-btn {
+            padding: 8px 12px;
+          }
+          .comment-fields {
+            flex-direction: column;
+          }
+        }
+      `}</style>
+    </div>
   )
 }
