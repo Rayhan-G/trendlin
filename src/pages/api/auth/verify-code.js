@@ -1,5 +1,5 @@
 // pages/api/auth/verify-code.js
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../../../lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,51 +7,47 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: `Method ${req.method} not allowed` })
   }
 
-  const { email, code, verificationId } = req.body
+  const { email, code } = req.body
 
-  if (!email || !code || !verificationId) {
-    return res.status(400).json({ error: 'Email, verification code, and verification ID are required' })
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Email and verification code are required' })
   }
 
+  if (typeof email !== 'string' || typeof code !== 'string') {
+    return res.status(400).json({ error: 'Invalid input format' })
+  }
+
+  const normalizedEmail = email.toLowerCase().trim()
+
   try {
-    // Get verification code from Supabase
-    const { data: record, error: fetchError } = await supabase
-      .from('verification_codes')
-      .select('*')
-      .eq('verification_id', verificationId)
-      .eq('email', email.toLowerCase())
-      .eq('used', false)
-      .single()
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: code,
+      type: 'email'
+    })
 
-    if (fetchError || !record) {
-      return res.status(400).json({ error: 'Invalid or expired verification code. Please request a new one.' })
+    if (error) {
+      if (error.message.includes('OTP expired')) {
+        return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' })
+      }
+      if (error.message.includes('Invalid token')) {
+        return res.status(400).json({ error: 'Invalid verification code. Please check and try again.' })
+      }
+      throw error
     }
-
-    // Check if expired
-    if (new Date(record.expires_at) < new Date()) {
-      // Mark as expired
-      await supabase.from('verification_codes').update({ used: true }).eq('verification_id', verificationId)
-      return res.status(400).json({ error: 'Verification code has expired. Please request a new one.' })
-    }
-
-    // Check if code matches
-    if (record.code !== code) {
-      return res.status(400).json({ error: 'Invalid verification code. Please try again.' })
-    }
-
-    // Mark code as used
-    await supabase
-      .from('verification_codes')
-      .update({ used: true })
-      .eq('verification_id', verificationId)
 
     return res.status(200).json({
       success: true,
-      message: 'Email verified successfully'
+      session: data.session,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        createdAt: data.user.created_at
+      }
     })
 
   } catch (error) {
-    console.error('Verification error:', error)
-    return res.status(500).json({ error: 'An internal server error occurred. Please try again.' })
+    console.error('Verify code error:', error.message)
+    return res.status(500).json({ error: 'Failed to verify code. Please try again.' })
   }
 }

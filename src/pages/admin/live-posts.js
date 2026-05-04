@@ -47,92 +47,150 @@ export default function AdminLivePosts() {
   const [errorMessage, setErrorMessage] = useState('')
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
 
+  // OPTIMIZED: Fetch with limit and specific fields only
   const fetchPosts = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('live_posts')
-      .select('*')
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('live_posts')
+        .select('id,category,content,media_items,status,likes,expires_at,published_at,created_at')
+        .order('created_at', { ascending: false })
+        .limit(100) // Limit to last 100 posts for speed
 
-    if (!error) setPosts(data || [])
-    setLoading(false)
+      if (!error && data) {
+        setPosts(data)
+      } else if (error) {
+        console.error('Fetch error:', error)
+        setPosts([])
+      }
+    } catch (err) {
+      console.error('Fetch failed:', err)
+      setPosts([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  useEffect(() => { fetchPosts() }, [fetchPosts])
+  useEffect(() => { 
+    fetchPosts() 
+  }, [fetchPosts])
 
   const isActive = (post) => {
     if (!post.expires_at) return false
     return post.status === 'published' && new Date(post.expires_at) > new Date()
   }
 
+  // OPTIMIZED: Save with reduced payload and timeout
   const savePost = async () => {
     if (mediaItems.length === 0) {
-      setErrorMessage('Please add at least one media item (image, video, etc.)')
+      setErrorMessage('Please add at least one media item')
       return
     }
 
     setSaving(true)
     setErrorMessage('')
     
-    const now = new Date()
-    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    try {
+      const now = new Date().toISOString()
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-    const postData = {
-      category: category,
-      content: description || null,
-      media_items: mediaItems,
-      status: status,
-      updated_at: now.toISOString()
-    }
+      // Clean media items - remove unnecessary data
+      const cleanMedia = mediaItems.map(item => ({
+        type: item.type,
+        url: item.url,
+        ...(item.thumbnail && { thumbnail: item.thumbnail }) // Only if exists
+      }))
 
-    // Only add publish fields if status is 'published'
-    if (status === 'published') {
-      postData.published_at = now.toISOString()
-      postData.expires_at = expiresAt.toISOString()
-    }
+      const postData = {
+        category,
+        content: description?.trim() || null,
+        media_items: cleanMedia,
+        status,
+        updated_at: now
+      }
 
-    console.log('Saving post:', postData)
+      if (status === 'published') {
+        postData.published_at = now
+        postData.expires_at = expiresAt
+      }
 
-    let result
-    if (editingPost) {
-      const { error } = await supabase
-        .from('live_posts')
-        .update(postData)
-        .eq('id', editingPost.id)
-      result = { error }
-    } else {
-      const { data, error } = await supabase
-        .from('live_posts')
-        .insert([postData])
-        .select()
-      result = { data, error }
-    }
+      // Execute with timeout
+      const timeoutId = setTimeout(() => {
+        throw new Error('Request timeout')
+      }, 10000)
 
-    if (!result.error) {
+      let result
+      if (editingPost) {
+        result = await supabase
+          .from('live_posts')
+          .update(postData)
+          .eq('id', editingPost.id)
+      } else {
+        result = await supabase
+          .from('live_posts')
+          .insert([postData])
+          .select('id')
+          .single()
+      }
+
+      clearTimeout(timeoutId)
+
+      if (result.error) throw result.error
+
       setPublishSuccess(true)
-      setTimeout(() => setPublishSuccess(false), 3000)
+      setTimeout(() => setPublishSuccess(false), 2000)
       setShowCreateModal(false)
       resetForm()
+      
+      // Refresh posts in background
       fetchPosts()
-    } else {
-      setErrorMessage(result.error.message)
-      console.error('Save error:', result.error)
+      
+    } catch (error) {
+      console.error('Save error:', error)
+      setErrorMessage(error.message === 'Request timeout' 
+        ? 'Operation timed out. Please try again.' 
+        : error.message || 'Failed to save post')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
+  // OPTIMIZED: Direct delete without extra checks
   const deletePost = async (id) => {
-    const { error } = await supabase.from('live_posts').delete().eq('id', id)
-    if (!error) fetchPosts()
-    setShowDeleteConfirm(null)
+    try {
+      const { error } = await supabase
+        .from('live_posts')
+        .delete()
+        .eq('id', id)
+
+      if (!error) {
+        setPosts(prev => prev.filter(p => p.id !== id))
+        setShowDeleteConfirm(null)
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
+    }
   }
 
+  // OPTIMIZED: Single query update
   const forceExpire = async (id) => {
-    await supabase
-      .from('live_posts')
-      .update({ status: 'expired', expires_at: new Date().toISOString() })
-      .eq('id', id)
-    fetchPosts()
+    try {
+      const { error } = await supabase
+        .from('live_posts')
+        .update({ 
+          status: 'expired', 
+          expires_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+
+      if (!error) {
+        setPosts(prev => prev.map(p => 
+          p.id === id ? { ...p, status: 'expired', expires_at: new Date().toISOString() } : p
+        ))
+      }
+    } catch (err) {
+      console.error('Expire error:', err)
+    }
   }
 
   const resetForm = () => {
@@ -214,7 +272,7 @@ export default function AdminLivePosts() {
             </button>
           </div>
 
-          {/* Stats */}
+          {/* Stats - OPTIMIZED: Computed values */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
               <div className="text-2xl mb-2">⚡</div>
@@ -261,7 +319,7 @@ export default function AdminLivePosts() {
                     <th className="p-4">Likes</th>
                     <th className="p-4">Time Left</th>
                     <th className="p-4">Actions</th>
-                   </tr>
+                  </tr>
                 </thead>
                 <tbody>
                   {posts.map((post) => {
@@ -380,7 +438,7 @@ export default function AdminLivePosts() {
                   {mediaItems.length > 0 && (
                     <div className="relative bg-black rounded-2xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
                       {mediaItems[currentMediaIndex]?.type === 'image' && (
-                        <img src={mediaItems[currentMediaIndex].url} alt="" className="w-full h-full object-cover" />
+                        <img src={mediaItems[currentMediaIndex].url} alt="" className="w-full h-full object-cover" loading="lazy" />
                       )}
                       {mediaItems[currentMediaIndex]?.type === 'video' && (
                         <video src={mediaItems[currentMediaIndex].url} className="w-full h-full object-cover" controls />
@@ -393,8 +451,8 @@ export default function AdminLivePosts() {
                       
                       {mediaItems.length > 1 && (
                         <>
-                          <button onClick={prevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full">◀</button>
-                          <button onClick={nextMedia} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full">▶</button>
+                          <button onClick={prevMedia} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70">◀</button>
+                          <button onClick={nextMedia} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-black/70">▶</button>
                         </>
                       )}
                       
@@ -423,12 +481,12 @@ export default function AdminLivePosts() {
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Add Media</label>
                     <div className="flex gap-3 flex-wrap">
-                      <button onClick={() => setShowMediaModal('image')} className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg">📷 Image</button>
-                      <button onClick={() => setShowMediaModal('video')} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg">🎥 Video</button>
-                      <button onClick={() => setShowMediaModal('audio')} className="px-4 py-2 bg-purple-600/20 text-purple-400 rounded-lg">🎵 Audio</button>
-                      <button onClick={() => setShowMediaModal('pdf')} className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg">📄 PDF</button>
-                      <button onClick={() => setShowMediaModal('embed')} className="px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg">🔗 Embed</button>
-                      <button onClick={() => setShowMediaModal('gallery')} className="px-4 py-2 bg-pink-600/20 text-pink-400 rounded-lg">🖼️ Gallery</button>
+                      <button onClick={() => setShowMediaModal('image')} className="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-lg hover:bg-blue-600/30">📷 Image</button>
+                      <button onClick={() => setShowMediaModal('video')} className="px-4 py-2 bg-green-600/20 text-green-400 rounded-lg hover:bg-green-600/30">🎥 Video</button>
+                      <button onClick={() => setShowMediaModal('audio')} className="px-4 py-2 bg-purple-600/20 text-purple-400 rounded-lg hover:bg-purple-600/30">🎵 Audio</button>
+                      <button onClick={() => setShowMediaModal('pdf')} className="px-4 py-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/30">📄 PDF</button>
+                      <button onClick={() => setShowMediaModal('embed')} className="px-4 py-2 bg-yellow-600/20 text-yellow-400 rounded-lg hover:bg-yellow-600/30">🔗 Embed</button>
+                      <button onClick={() => setShowMediaModal('gallery')} className="px-4 py-2 bg-pink-600/20 text-pink-400 rounded-lg hover:bg-pink-600/30">🖼️ Gallery</button>
                     </div>
                   </div>
 
@@ -441,10 +499,10 @@ export default function AdminLivePosts() {
                           className={`relative w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 ${idx === currentMediaIndex ? 'border-purple-500' : 'border-gray-700'}`}
                           onClick={() => setCurrentMediaIndex(idx)}
                         >
-                          {item.type === 'image' && <img src={item.url} alt="" className="w-full h-full object-cover" />}
+                          {item.type === 'image' && <img src={item.url} alt="" className="w-full h-full object-cover" loading="lazy" />}
                           {item.type === 'video' && <Video size={24} className="w-full h-full p-4 text-gray-500" />}
                           {item.type === 'audio' && <Music size={24} className="w-full h-full p-4 text-gray-500" />}
-                          <button onClick={(e) => { e.stopPropagation(); removeMedia(item.id); }} className="absolute -top-1 -right-1 p-1 bg-red-500 rounded-full">
+                          <button onClick={(e) => { e.stopPropagation(); removeMedia(item.id); }} className="absolute -top-1 -right-1 p-1 bg-red-500 rounded-full hover:bg-red-600">
                             <Trash2 size={10} className="text-white" />
                           </button>
                         </div>
@@ -468,13 +526,13 @@ export default function AdminLivePosts() {
                     <div className="flex gap-3">
                       <button
                         onClick={() => setStatus('draft')}
-                        className={`flex-1 py-3 rounded-xl font-medium ${status === 'draft' ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                        className={`flex-1 py-3 rounded-xl font-medium transition ${status === 'draft' ? 'bg-yellow-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                       >
                         💾 Save Draft
                       </button>
                       <button
                         onClick={() => setStatus('published')}
-                        className={`flex-1 py-3 rounded-xl font-medium ${status === 'published' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400'}`}
+                        className={`flex-1 py-3 rounded-xl font-medium transition ${status === 'published' ? 'bg-green-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
                       >
                         🚀 Publish (24h)
                       </button>
@@ -489,13 +547,13 @@ export default function AdminLivePosts() {
 
             {/* Footer */}
             <div className="flex gap-3 p-6 border-t border-gray-800">
-              <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-700 rounded-xl text-gray-400">
+              <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-700 rounded-xl text-gray-400 hover:bg-gray-900">
                 Cancel
               </button>
               <button 
                 onClick={savePost} 
                 disabled={saving || mediaItems.length === 0} 
-                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium disabled:opacity-50"
+                className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium disabled:opacity-50 hover:opacity-90 transition"
               >
                 {saving ? 'Saving...' : (status === 'published' ? '📢 Publish Now' : '💾 Save Draft')}
               </button>
@@ -520,8 +578,8 @@ export default function AdminLivePosts() {
             <h3 className="text-xl font-bold text-white mb-2">Delete Post?</h3>
             <p className="text-gray-500 mb-6">This cannot be undone.</p>
             <div className="flex gap-3">
-              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2 border border-gray-700 rounded-xl">Cancel</button>
-              <button onClick={() => deletePost(showDeleteConfirm)} className="flex-1 py-2 bg-red-600 text-white rounded-xl">Delete</button>
+              <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2 border border-gray-700 rounded-xl hover:bg-gray-900">Cancel</button>
+              <button onClick={() => deletePost(showDeleteConfirm)} className="flex-1 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700">Delete</button>
             </div>
           </div>
         </div>

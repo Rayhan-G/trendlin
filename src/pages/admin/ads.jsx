@@ -1,18 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+// src/pages/admin/ads.jsx
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
 import AdminNavigation from '@/components/admin/AdminNavigation';
-import UnifiedAnalytics from '@/components/admin/UnifiedAnalytics';
-import { formatNumber } from '@/utils/formatters';
-
-// Helper function to format currency
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2
-  }).format(amount);
-};
+import AdDisplay from '@/components/ads/AdDisplay';
 
 // Toast Component
 const Toast = ({ message, type, onClose }) => {
@@ -30,101 +20,57 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-// Stat Card Component
-const StatCard = ({ label, value, color = 'default' }) => {
-  const colors = {
-    default: 'bg-gray-50',
-    green: 'bg-emerald-50',
-    blue: 'bg-blue-50',
-    purple: 'bg-purple-50',
-  };
+// Preview Modal
+const PreviewModal = ({ slot, onClose }) => {
+  const previewSessionId = `preview_${Date.now()}`;
   
   return (
-    <div className={`${colors[color]} rounded-xl p-5 border border-gray-100`}>
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-    </div>
-  );
-};
-
-// Modal Component
-const Modal = ({ title, onClose, children, onSave, isEditing }) => {
-  return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center p-5 border-b">
-          <h3 className="font-semibold text-lg">{isEditing ? `Edit ${title}` : `New ${title}`}</h3>
+          <h3 className="font-semibold text-lg">Preview: {slot.name}</h3>
           <button onClick={onClose} className="text-2xl hover:text-gray-500">&times;</button>
         </div>
-        <div className="p-5 space-y-4">{children}</div>
-        <div className="flex gap-3 p-5 border-t">
-          <button onClick={onClose} className="flex-1 py-2.5 border rounded-xl hover:bg-gray-50">Cancel</button>
-          <button onClick={onSave} className="flex-1 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800">
-            {isEditing ? 'Update' : 'Create'}
-          </button>
+        <div className="p-5">
+          <AdDisplay 
+            slotId={slot.id} 
+            postId="preview" 
+            sessionId={previewSessionId}
+          />
         </div>
       </div>
     </div>
   );
 };
 
-const LOCATION_OPTIONS = [
-  { value: 'header', label: 'Header', icon: '📌' },
-  { value: 'sidebar', label: 'Sidebar', icon: '📁' },
-  { value: 'in_content', label: 'In Content', icon: '📝' },
-  { value: 'footer', label: 'Footer', icon: '🔻' },
-];
-
 export default function AdManager() {
   const [loading, setLoading] = useState(true);
   const [slots, setSlots] = useState([]);
   const [codes, setCodes] = useState([]);
-  const [revenueData, setRevenueData] = useState([]);
-  const [showSlotModal, setShowSlotModal] = useState(false);
-  const [showCodeModal, setShowCodeModal] = useState(false);
-  const [editingSlot, setEditingSlot] = useState(null);
-  const [editingCode, setEditingCode] = useState(null);
-  const [dateRange, setDateRange] = useState('30days');
+  const [slotCodes, setSlotCodes] = useState([]);
+  const [previewSlot, setPreviewSlot] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [activeTab, setActiveTab] = useState('slots');
-  const [error, setError] = useState(null);
-
-  const [slotForm, setSlotForm] = useState({
-    name: '', description: '', location: 'sidebar',
-    width: 300, height: 250, priority: 0, is_active: true
-  });
-
-  const [codeForm, setCodeForm] = useState({
-    name: '', description: '', code: '', is_active: true
-  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const showToast = (message, type = 'success') => {
     setToast({ show: true, message, type });
   };
 
-  const getDateFilter = () => {
-    const now = new Date();
-    const startDate = new Date();
-    if (dateRange === '7days') startDate.setDate(now.getDate() - 7);
-    else if (dateRange === '30days') startDate.setDate(now.getDate() - 30);
-    else if (dateRange === '90days') startDate.setDate(now.getDate() - 90);
-    return { start: startDate.toISOString().split('T')[0], end: now.toISOString().split('T')[0] };
-  };
-
   const loadAllData = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    
     try {
-      if (!isSupabaseConfigured()) {
-        throw new Error('Database connection not configured');
+      // Load slots with search
+      let slotsQuery = supabase.from('ad_slots').select('*', { count: 'exact' });
+      if (searchTerm) {
+        slotsQuery = slotsQuery.ilike('name', `%${searchTerm}%`);
       }
-
-      // Load slots
-      const { data: slotsData, error: slotsError } = await supabase
-        .from('ad_slots')
-        .select('*')
-        .order('priority', { ascending: false });
+      
+      const { data: slotsData, error: slotsError } = await slotsQuery
+        .order('priority', { ascending: false })
+        .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1);
       
       if (slotsError) throw slotsError;
       setSlots(slotsData || []);
@@ -138,95 +84,63 @@ export default function AdManager() {
       if (codesError) throw codesError;
       setCodes(codesData || []);
 
-      // Load revenue data
-      const { start, end } = getDateFilter();
-      const { data: revenueData, error: revenueError } = await supabase
-        .from('ad_revenue')
-        .select('*')
-        .gte('revenue_date', start)
-        .lte('revenue_date', end)
-        .order('revenue_date', { ascending: true });
+      // Load slot-code relationships
+      const { data: slotCodesData, error: slotCodesError } = await supabase
+        .from('ad_slot_codes')
+        .select('*, ad_slots(*), ad_codes(*)')
+        .eq('is_active', true);
       
-      if (revenueError) throw revenueError;
-      setRevenueData(revenueData || []);
+      if (slotCodesError) throw slotCodesError;
+      setSlotCodes(slotCodesData || []);
 
     } catch (err) {
       console.error('Error loading data:', err);
-      setError(err.message);
-      showToast('Failed to load data: ' + err.message, 'error');
+      showToast('Failed to load data', 'error');
     } finally {
       setLoading(false);
     }
-  }, [dateRange]);
+  }, [searchTerm, currentPage]);
 
   useEffect(() => {
     loadAllData();
   }, [loadAllData]);
 
-  const saveSlot = async () => {
-    if (!slotForm.name.trim()) {
-      showToast('Slot name is required', 'error');
-      return;
-    }
-
-    const slug = slotForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const data = { ...slotForm, slug, updated_at: new Date().toISOString() };
-    
+  const assignCodeToSlot = async (slotId, codeId) => {
     try {
-      if (editingSlot) {
-        const { error } = await supabase.from('ad_slots').update(data).eq('id', editingSlot.id);
-        if (error) throw error;
-        showToast('Slot updated');
-      } else {
-        const { error } = await supabase.from('ad_slots').insert([{ ...data, created_at: new Date().toISOString() }]);
-        if (error) throw error;
-        showToast('Slot created');
-      }
+      const { error } = await supabase
+        .from('ad_slot_codes')
+        .insert([{ slot_id: slotId, code_id: codeId }]);
       
-      setShowSlotModal(false);
-      setEditingSlot(null);
-      setSlotForm({ name: '', description: '', location: 'sidebar', width: 300, height: 250, priority: 0, is_active: true });
+      if (error) throw error;
+      showToast('Code assigned to slot');
       loadAllData();
     } catch (err) {
-      showToast('Error saving slot: ' + err.message, 'error');
+      showToast('Error assigning code', 'error');
     }
   };
 
-  const saveCode = async () => {
-    if (!codeForm.name.trim()) {
-      showToast('Code name is required', 'error');
-      return;
-    }
-    if (!codeForm.code.trim()) {
-      showToast('Ad code is required', 'error');
-      return;
-    }
-
-    const data = { ...codeForm, updated_at: new Date().toISOString() };
-    
+  const removeCodeFromSlot = async (slotCodeId) => {
     try {
-      if (editingCode) {
-        const { error } = await supabase.from('ad_codes').update(data).eq('id', editingCode.id);
-        if (error) throw error;
-        showToast('Code updated');
-      } else {
-        const { error } = await supabase.from('ad_codes').insert([{ ...data, created_at: new Date().toISOString() }]);
-        if (error) throw error;
-        showToast('Code created');
-      }
+      const { error } = await supabase
+        .from('ad_slot_codes')
+        .delete()
+        .eq('id', slotCodeId);
       
-      setShowCodeModal(false);
-      setEditingCode(null);
-      setCodeForm({ name: '', description: '', code: '', is_active: true });
+      if (error) throw error;
+      showToast('Code removed from slot');
       loadAllData();
     } catch (err) {
-      showToast('Error saving code: ' + err.message, 'error');
+      showToast('Error removing code', 'error');
     }
   };
 
-  const toggleSlot = async (slot) => {
+  const toggleSlotStatus = async (slot) => {
     try {
-      const { error } = await supabase.from('ad_slots').update({ is_active: !slot.is_active }).eq('id', slot.id);
+      const { error } = await supabase
+        .from('ad_slots')
+        .update({ is_active: !slot.is_active })
+        .eq('id', slot.id);
+      
       if (error) throw error;
       showToast(`${slot.name} ${!slot.is_active ? 'activated' : 'deactivated'}`);
       loadAllData();
@@ -235,76 +149,10 @@ export default function AdManager() {
     }
   };
 
-  const toggleCode = async (code) => {
-    try {
-      const { error } = await supabase.from('ad_codes').update({ is_active: !code.is_active }).eq('id', code.id);
-      if (error) throw error;
-      showToast(`${code.name} ${!code.is_active ? 'activated' : 'deactivated'}`);
-      loadAllData();
-    } catch (err) {
-      showToast('Error updating code', 'error');
-    }
+  // Get assigned codes for a slot
+  const getAssignedCodes = (slotId) => {
+    return slotCodes.filter(sc => sc.slot_id === slotId);
   };
-
-  const deleteSlot = async (id) => {
-    if (!confirm('Delete this ad slot?')) return;
-    try {
-      const { error } = await supabase.from('ad_slots').delete().eq('id', id);
-      if (error) throw error;
-      showToast('Slot deleted');
-      loadAllData();
-    } catch (err) {
-      showToast('Error deleting slot', 'error');
-    }
-  };
-
-  const deleteCode = async (id) => {
-    if (!confirm('Delete this ad code?')) return;
-    try {
-      const { error } = await supabase.from('ad_codes').delete().eq('id', id);
-      if (error) throw error;
-      showToast('Code deleted');
-      loadAllData();
-    } catch (err) {
-      showToast('Error deleting code', 'error');
-    }
-  };
-
-  const totalImpressions = revenueData.reduce((sum, r) => sum + (r.impressions || 0), 0);
-  const totalClicks = revenueData.reduce((sum, r) => sum + (r.clicks || 0), 0);
-  const totalRevenue = revenueData.reduce((sum, r) => sum + (r.revenue || 0), 0);
-  const avgCTR = totalImpressions > 0 ? (totalClicks / totalImpressions * 100).toFixed(2) : '0.00';
-
-  const tabs = [
-    { id: 'slots', label: '📍 Ad Slots' },
-    { id: 'codes', label: '💻 Ad Codes' },
-    { id: 'analytics', label: '📊 Analytics' },
-  ];
-
-  if (loading) {
-    return (
-      <AdminNavigation>
-        <div className="flex justify-center items-center min-h-[400px]">
-          <div className="w-10 h-10 border-2 border-gray-200 border-t-black rounded-full animate-spin" />
-        </div>
-      </AdminNavigation>
-    );
-  }
-
-  if (error) {
-    return (
-      <AdminNavigation>
-        <div className="p-6 text-center">
-          <div className="bg-red-50 rounded-xl p-8 max-w-md mx-auto">
-            <p className="text-red-600 mb-4">{error}</p>
-            <button onClick={loadAllData} className="px-4 py-2 bg-black text-white rounded-lg">
-              Retry
-            </button>
-          </div>
-        </div>
-      </AdminNavigation>
-    );
-  }
 
   return (
     <AdminNavigation>
@@ -313,73 +161,151 @@ export default function AdManager() {
           <Toast message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
         )}
 
-        <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">🎨 Ad Manager</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage ad slots, codes, and track performance</p>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => { setEditingSlot(null); setSlotForm({ name: '', description: '', location: 'sidebar', width: 300, height: 250, priority: 0, is_active: true }); setShowSlotModal(true); }} className="px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl text-sm hover:bg-gray-200">+ New Ad Slot</button>
-            <button onClick={() => { setEditingCode(null); setCodeForm({ name: '', description: '', code: '', is_active: true }); setShowCodeModal(true); }} className="px-4 py-2 bg-black text-white rounded-xl text-sm font-medium hover:bg-gray-800">+ New Ad Code</button>
-          </div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Ad Manager</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage ad slots, assign codes, and preview ads</p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total Impressions" value={formatNumber(totalImpressions)} />
-          <StatCard label="Total Clicks" value={formatNumber(totalClicks)} />
-          <StatCard label="Total Revenue" value={formatCurrency(totalRevenue)} color="green" />
-          <StatCard label="CTR" value={`${avgCTR}%`} color="purple" />
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div className="flex gap-2">
-            {['7days', '30days', '90days'].map(range => (
-              <button key={range} onClick={() => setDateRange(range)} className={`px-4 py-2 rounded-full text-sm ${dateRange === range ? 'bg-black text-white' : 'bg-gray-100 hover:bg-gray-200'}`}>
-                {range === '7days' ? '7 Days' : range === '30days' ? '30 Days' : '90 Days'}
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* Tabs */}
         <div className="flex gap-2 border-b border-gray-200 mb-6">
-          {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-5 py-3 text-sm font-medium ${activeTab === tab.id ? 'text-black border-b-2 border-black' : 'text-gray-500 hover:text-gray-700'}`}>
-              {tab.label}
-            </button>
-          ))}
+          <button
+            onClick={() => setActiveTab('slots')}
+            className={`px-5 py-3 text-sm font-medium ${activeTab === 'slots' ? 'text-black border-b-2 border-black' : 'text-gray-500'}`}
+          >
+            Ad Slots
+          </button>
+          <button
+            onClick={() => setActiveTab('codes')}
+            className={`px-5 py-3 text-sm font-medium ${activeTab === 'codes' ? 'text-black border-b-2 border-black' : 'text-gray-500'}`}
+          >
+            Ad Codes
+          </button>
         </div>
 
+        {/* Slots Tab */}
         {activeTab === 'slots' && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {slots.map(slot => (
-              <div key={slot.id} className="bg-white rounded-xl border border-gray-100 p-5">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="font-semibold">{slot.name}</h4>
-                    <p className="text-xs text-gray-500">{slot.location} • {slot.width}x{slot.height}</p>
+          <div>
+            {/* Search Bar */}
+            <div className="mb-4">
+              <input
+                type="search"
+                placeholder="Search slots..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full md:w-96 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+
+            {/* Slots Grid */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {slots.map(slot => (
+                <div key={slot.id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-lg">{slot.name}</h4>
+                      <p className="text-xs text-gray-500">{slot.location} • {slot.width}x{slot.height}</p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${slot.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                      {slot.is_active ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                  <span className={`text-xs px-2 py-1 rounded-full ${slot.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                    {slot.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                  
+                  {slot.description && (
+                    <p className="text-sm text-gray-600 mb-3">{slot.description}</p>
+                  )}
+
+                  {/* Assigned Codes */}
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-gray-500 mb-2">Assigned Codes:</p>
+                    {getAssignedCodes(slot.id).length === 0 ? (
+                      <p className="text-xs text-gray-400">No codes assigned</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {getAssignedCodes(slot.id).map(sc => (
+                          <div key={sc.id} className="flex justify-between items-center text-xs bg-gray-50 p-2 rounded">
+                            <span>{sc.ad_codes.name}</span>
+                            <button
+                              onClick={() => removeCodeFromSlot(sc.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Assign New Code */}
+                  <div className="mb-3">
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          assignCodeToSlot(slot.id, e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full p-2 text-sm border border-gray-200 rounded-lg"
+                      defaultValue=""
+                    >
+                      <option value="">Assign a code...</option>
+                      {codes.filter(code => 
+                        code.is_active && !getAssignedCodes(slot.id).some(sc => sc.code_id === code.id)
+                      ).map(code => (
+                        <option key={code.id} value={code.id}>{code.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex gap-3 pt-3 border-t">
+                    <button
+                      onClick={() => setPreviewSlot(slot)}
+                      className="text-sm text-blue-600 hover:text-blue-700"
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => toggleSlotStatus(slot)}
+                      className="text-sm text-amber-600 hover:text-amber-700"
+                    >
+                      {slot.is_active ? 'Disable' : 'Enable'}
+                    </button>
+                  </div>
                 </div>
-                {slot.description && <p className="text-sm text-gray-600 mb-3">{slot.description}</p>}
-                <div className="flex gap-3 pt-3 border-t">
-                  <button onClick={() => { setEditingSlot(slot); setSlotForm(slot); setShowSlotModal(true); }} className="text-sm text-blue-600">Edit</button>
-                  <button onClick={() => toggleSlot(slot)} className="text-sm text-amber-600">{slot.is_active ? 'Disable' : 'Enable'}</button>
-                  <button onClick={() => deleteSlot(slot.id)} className="text-sm text-red-600">Delete</button>
-                </div>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {slots.length === itemsPerPage && (
+              <div className="flex justify-center gap-3 mt-6">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border rounded-lg disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span className="px-4 py-2">Page {currentPage}</span>
+                <button
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  className="px-4 py-2 border rounded-lg"
+                >
+                  Next
+                </button>
               </div>
-            ))}
+            )}
           </div>
         )}
 
+        {/* Codes Tab */}
         {activeTab === 'codes' && (
           <div className="grid md:grid-cols-2 gap-4">
             {codes.map(code => (
-              <div key={code.id} className="bg-white rounded-xl border border-gray-100 p-5">
+              <div key={code.id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
                 <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h4 className="font-semibold">{code.name}</h4>
+                    <h4 className="font-semibold text-lg">{code.name}</h4>
                     {code.description && <p className="text-xs text-gray-500">{code.description}</p>}
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${code.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
@@ -387,46 +313,24 @@ export default function AdManager() {
                   </span>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-lg mb-3 overflow-x-auto">
-                  <code className="text-xs break-all">{code.code?.substring(0, 150)}...</code>
-                </div>
-                <div className="flex gap-3 pt-3 border-t">
-                  <button onClick={() => { setEditingCode(code); setCodeForm(code); setShowCodeModal(true); }} className="text-sm text-blue-600">Edit</button>
-                  <button onClick={() => toggleCode(code)} className="text-sm text-amber-600">{code.is_active ? 'Disable' : 'Enable'}</button>
-                  <button onClick={() => deleteCode(code.id)} className="text-sm text-red-600">Delete</button>
+                  <code className="text-xs break-all">{code.code?.substring(0, 100)}...</code>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {activeTab === 'analytics' && (
-          <UnifiedAnalytics defaultSource="ads" showSourceSelector={false} />
+        {/* Preview Modal */}
+        {previewSlot && (
+          <PreviewModal slot={previewSlot} onClose={() => setPreviewSlot(null)} />
         )}
 
-        {showSlotModal && (
-          <Modal title="Ad Slot" onClose={() => setShowSlotModal(false)} onSave={saveSlot} isEditing={!!editingSlot}>
-            <input type="text" placeholder="Slot Name *" value={slotForm.name} onChange={(e) => setSlotForm({...slotForm, name: e.target.value})} className="w-full p-3 border rounded-lg" />
-            <textarea placeholder="Description" value={slotForm.description} onChange={(e) => setSlotForm({...slotForm, description: e.target.value})} rows={2} className="w-full p-3 border rounded-lg" />
-            <select value={slotForm.location} onChange={(e) => setSlotForm({...slotForm, location: e.target.value})} className="w-full p-3 border rounded-lg">
-              {LOCATION_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.icon} {opt.label}</option>)}
-            </select>
-            <div className="flex gap-3">
-              <input type="number" placeholder="Width" value={slotForm.width} onChange={(e) => setSlotForm({...slotForm, width: parseInt(e.target.value) || 0})} className="flex-1 p-3 border rounded-lg" />
-              <input type="number" placeholder="Height" value={slotForm.height} onChange={(e) => setSlotForm({...slotForm, height: parseInt(e.target.value) || 0})} className="flex-1 p-3 border rounded-lg" />
-            </div>
-            <input type="number" placeholder="Priority" value={slotForm.priority} onChange={(e) => setSlotForm({...slotForm, priority: parseInt(e.target.value) || 0})} className="w-full p-3 border rounded-lg" />
-            <label className="flex items-center gap-2"><input type="checkbox" checked={slotForm.is_active} onChange={(e) => setSlotForm({...slotForm, is_active: e.target.checked})} /> Active</label>
-          </Modal>
-        )}
-
-        {showCodeModal && (
-          <Modal title="Ad Code" onClose={() => setShowCodeModal(false)} onSave={saveCode} isEditing={!!editingCode}>
-            <input type="text" placeholder="Code Name *" value={codeForm.name} onChange={(e) => setCodeForm({...codeForm, name: e.target.value})} className="w-full p-3 border rounded-lg" />
-            <textarea placeholder="Description" value={codeForm.description} onChange={(e) => setCodeForm({...codeForm, description: e.target.value})} rows={2} className="w-full p-3 border rounded-lg" />
-            <textarea placeholder="Ad Code (HTML/JavaScript) *" value={codeForm.code} onChange={(e) => setCodeForm({...codeForm, code: e.target.value})} rows={5} className="w-full p-3 font-mono text-xs border rounded-lg" />
-            <label className="flex items-center gap-2"><input type="checkbox" checked={codeForm.is_active} onChange={(e) => setCodeForm({...codeForm, is_active: e.target.checked})} /> Active</label>
-          </Modal>
-        )}
+        {/* CSS for loading animation */}
+        <style jsx global>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     </AdminNavigation>
   );

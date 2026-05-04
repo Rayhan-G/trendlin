@@ -17,4 +17,49 @@
   "git": {
     "deploymentEnabled": true
   }
+
+
+// vercel.json
+{
+  "functions": {
+    "app/api/ads/**/*.js": {
+      "runtime": "edge",
+      "maxDuration": 10,
+      "regions": ["iad1", "cdg1", "hnd1", "syd1"]
+    },
+    "app/api/content/**/*.js": {
+      "runtime": "edge",
+      "maxDuration": 10,
+      "regions": ["iad1", "cdg1", "hnd1", "syd1"]
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "s-maxage=1, stale-while-revalidate=59" },
+        { "key": "CDN-Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/_next/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

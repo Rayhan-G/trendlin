@@ -1,6 +1,5 @@
-// pages/api/auth/send-verification.js (you already have this)
-import { randomBytes } from 'crypto'
-import { supabase } from '../../../lib/supabase'
+// pages/api/auth/send-verification.js
+import { supabaseAdmin } from '../../../lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,45 +9,46 @@ export default async function handler(req, res) {
 
   const { email } = req.body
 
-  if (!email) {
-    return res.status(400).json({ error: 'Email address is required' })
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'Valid email address is required' })
   }
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString()
-  const verificationId = randomBytes(32).toString('hex') + Date.now()
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' })
+  }
+
+  const normalizedEmail = email.toLowerCase().trim()
 
   try {
-    const { error: insertError } = await supabase
-      .from('verification_codes')
-      .insert({
-        verification_id: verificationId,
-        email: email.toLowerCase(),
-        code: code,
-        expires_at: expiresAt.toISOString(),
-        used: false
-      })
+    const { data: existingUser, error: fetchError } = await supabaseAdmin.auth.admin.getUserByEmail(normalizedEmail)
 
-    if (insertError) {
-      console.error('Insert error:', insertError)
-      return res.status(500).json({ error: 'Failed to store verification code' })
+    if (fetchError && fetchError.message !== 'User not found') {
+      throw fetchError
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('\n🔐 VERIFICATION CODE:')
-      console.log(`📧 Email: ${email}`)
-      console.log(`🔢 Code: ${code}`)
-      console.log(`🆔 ID: ${verificationId}\n`)
+    if (existingUser?.user) {
+      return res.status(400).json({ error: 'Email already registered' })
     }
+
+    const { data, error } = await supabaseAdmin.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+      }
+    })
+
+    if (error) throw error
 
     return res.status(200).json({
       success: true,
-      verificationId,
-      message: process.env.NODE_ENV === 'development' ? 'Check console for code' : 'Verification code sent'
+      message: 'Verification code sent to your email',
+      expiresIn: 300
     })
 
   } catch (error) {
-    console.error('Error:', error)
-    return res.status(500).json({ error: 'An unexpected error occurred' })
+    console.error('Send verification error:', error.message)
+    return res.status(500).json({ error: 'Failed to send verification code. Please try again.' })
   }
 }

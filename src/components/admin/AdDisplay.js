@@ -1,90 +1,128 @@
-// src/components/admin/AdDisplay.js
-import { useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+// components/ads/AdDisplay.js
+import { useEffect, useRef, useState, useCallback } from 'react'
+import DOMPurify from 'dompurify'
 
-export default function AdDisplay({ slotId, postId, sessionId }) {
-  const adContainerRef = useRef(null)
+const adCache = new Map()
+
+export default function AdDisplay({ slotId, position, className = '' }) {
+  const containerRef = useRef(null)
+  const [loading, setLoading] = useState(true)
+  const [adBlocked, setAdBlocked] = useState(false)
+
+  const loadAd = useCallback(async () => {
+    setLoading(true)
+    
+    try {
+      // Check browser cache
+      const cached = adCache.get(slotId)
+      if (cached && Date.now() - cached.timestamp < 300000) {
+        renderAd(cached.html)
+        setLoading(false)
+        return
+      }
+      
+      // Fetch from edge API (goes to CDN then Redis then DB)
+      const response = await fetch(`/api/ads/${slotId}`, {
+        headers: { 'X-Position': position }
+      })
+      
+      if (!response.ok) throw new Error('Ad not found')
+      
+      const data = await response.json()
+      
+      // Cache in memory
+      adCache.set(slotId, {
+        html: data.html,
+        timestamp: Date.now(),
+        codeId: data.codeId
+      })
+      
+      renderAd(data.html)
+      
+      // Track impression asynchronously (fire and forget)
+      navigator.sendBeacon('/api/track-impression', JSON.stringify({
+        slotId,
+        codeId: data.codeId,
+        position
+      }))
+      
+    } catch (err) {
+      console.error('Ad load error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [slotId, position])
+
+  const renderAd = (html) => {
+    if (!containerRef.current) return
+    
+    const sanitized = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['div', 'img', 'a', 'iframe', 'button', 'span', 'p', 'br'],
+      ALLOWED_ATTR: ['src', 'href', 'class', 'id', 'style', 'alt', 'target', 'rel', 'width', 'height']
+    })
+    
+    containerRef.current.innerHTML = sanitized
+    
+    // Optimize iframes
+    containerRef.current.querySelectorAll('iframe').forEach(iframe => {
+      iframe.setAttribute('loading', 'lazy')
+      iframe.style.maxWidth = '100%'
+    })
+    
+    // Optimize images
+    containerRef.current.querySelectorAll('img').forEach(img => {
+      img.setAttribute('loading', 'lazy')
+      img.style.maxWidth = '100%'
+      img.style.height = 'auto'
+    })
+  }
+
+  const checkAdBlocker = useCallback(() => {
+    const test = document.createElement('div')
+    test.className = 'adsbox'
+    test.style.cssText = 'position:absolute;width:1px;height:1px'
+    document.body.appendChild(test)
+    
+    setTimeout(() => {
+      if (test.offsetHeight === 0) {
+        setAdBlocked(true)
+      }
+      test.remove()
+    }, 100)
+  }, [])
 
   useEffect(() => {
-    // Fetch ad code for this slot
-    const fetchAd = async () => {
-      try {
-        const { data: slotCode, error } = await supabase
-          .from('ad_slot_codes')
-          .select('code_id, ad_codes(code)')
-          .eq('slot_id', slotId)
-          .eq('is_active', true)
-          .single()
-        
-        if (error) throw error
-        
-        if (slotCode && adContainerRef.current) {
-          // Track impression
-          await supabase.rpc('track_ad_impression', {
-            p_slot_id: slotId,
-            p_code_id: slotCode.code_id,
-            p_post_id: postId,
-            p_session_id: sessionId,
-            p_ip_address: '',
-            p_user_agent: navigator.userAgent
-          })
-          
-          // Render ad with mobile optimizations
-          const adHtml = slotCode.ad_codes.code
-          
-          // Check if ad needs responsive wrapper
-          const responsiveAd = `
-            <div class="ad-responsive-wrapper" style="
-              max-width: 100%;
-              overflow-x: auto;
-              -webkit-overflow-scrolling: touch;
-              margin: 0 auto;
-            ">
-              ${adHtml}
-            </div>
-          `
-          
-          adContainerRef.current.innerHTML = responsiveAd
-          
-          // Force responsive iframes
-          const iframes = adContainerRef.current.querySelectorAll('iframe')
-          iframes.forEach(iframe => {
-            iframe.style.maxWidth = '100%'
-            iframe.style.height = 'auto'
-            iframe.style.width = '100%'
-          })
-          
-          // Force responsive images
-          const images = adContainerRef.current.querySelectorAll('img')
-          images.forEach(img => {
-            img.style.maxWidth = '100%'
-            img.style.height = 'auto'
-          })
-        }
-      } catch (error) {
-        console.error('Error loading ad:', error)
+    checkAdBlocker()
+    loadAd()
+    
+    return () => {
+      if (containerRef.current) {
+        containerRef.current.innerHTML = ''
       }
     }
-    
-    fetchAd()
-  }, [slotId, postId, sessionId])
-  
+  }, [loadAd, checkAdBlocker])
+
+  if (adBlocked) {
+    return (
+      <div className={`text-center p-3 text-gray-500 text-xs ${className}`}>
+        Please disable ad blocker
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className={`flex items-center justify-center h-[90px] bg-gray-50 ${className}`}>
+        <div className="w-6 h-6 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   return (
-    <div 
-      ref={adContainerRef}
-      id={`ad-${slotId}`}
-      className="ad-container"
-      style={{
-        width: '100%',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: '10px auto',
-        position: 'relative',
-        clear: 'both'
-      }}
+    <div
+      ref={containerRef}
+      className={`ad-container ${className}`}
+      style={{ width: '100%', overflow: 'hidden', textAlign: 'center' }}
     />
   )
 }
