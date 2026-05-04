@@ -14,6 +14,7 @@ export default function Home() {
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [visitorId, setVisitorId] = useState(null)
+  const [debug, setDebug] = useState({})
 
   // Generate or get visitor ID for anonymous likes
   useEffect(() => {
@@ -26,7 +27,6 @@ export default function Home() {
       setVisitorId(vid)
     } catch (err) {
       console.error('Visitor ID error:', err)
-      // Fallback
       setVisitorId(`fallback_${Date.now()}`)
     }
   }, [])
@@ -36,6 +36,18 @@ export default function Home() {
     setError(null)
     
     try {
+      // Check if posts table exists first
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('posts')
+        .select('count', { count: 'exact', head: true })
+      
+      if (tableError) {
+        console.log('Posts table might not exist:', tableError.message)
+        setDebug(prev => ({ ...prev, postsTableError: tableError.message }))
+        setLoading(false)
+        return
+      }
+      
       const today = new Date()
       const todayStr = today.toISOString().split('T')[0]
       
@@ -77,25 +89,49 @@ export default function Home() {
       
     } catch (err) {
       console.error('Error fetching posts:', err)
-      setError('Failed to load posts')
+      setDebug(prev => ({ ...prev, postsError: err.message }))
     } finally {
       setLoading(false)
     }
   }, [])
 
   const fetchLivePosts = useCallback(async () => {
-    if (!visitorId) return
+    if (!visitorId) {
+      console.log('Waiting for visitorId...')
+      return
+    }
+    
+    console.log('Fetching live posts...')
     
     try {
+      const now = new Date().toISOString()
+      console.log('Current time (ISO):', now)
+      
+      // First, let's check what posts exist without filters
+      const { data: allLive, error: allError } = await supabase
+        .from('live_posts')
+        .select('id, category, status, expires_at, published_at')
+        .limit(10)
+      
+      console.log('All live posts (no filters):', allLive)
+      if (allError) console.error('Error fetching all:', allError)
+      
+      // Now fetch with filters
       const { data: live, error: liveError } = await supabase
         .from('live_posts')
         .select('*')
-        .in('status', ['active', 'published'])
-        .gt('expires_at', new Date().toISOString())
+        .gt('expires_at', now)
         .order('published_at', { ascending: false })
         .limit(50)
 
-      if (liveError) throw liveError
+      if (liveError) {
+        console.error('Live posts error:', liveError)
+        setDebug(prev => ({ ...prev, liveError: liveError.message }))
+        throw liveError
+      }
+      
+      console.log('Filtered live posts:', live)
+      console.log('Number of posts found:', live?.length || 0)
 
       if (live && live.length > 0) {
         const postsWithDetails = await Promise.all(live.map(async (post) => {
@@ -103,7 +139,6 @@ export default function Home() {
             .from('live_post_comments')
             .select('*', { count: 'exact', head: true })
             .eq('live_post_id', post.id)
-            .eq('status', 'approved')
           
           const likedBy = post.liked_by || []
           const hasLiked = likedBy.includes(visitorId)
@@ -111,24 +146,24 @@ export default function Home() {
           return {
             ...post,
             comments_count: commentsCount || 0,
-            comments: commentsCount || 0,
             user_has_liked: hasLiked
           }
         }))
         
         setLivePosts(postsWithDetails)
       } else {
+        console.log('No live posts found - check if any posts exist with future expires_at')
         setLivePosts([])
       }
     } catch (err) {
-      console.error('Error fetching live posts:', err)
+      console.error('Error in fetchLivePosts:', err)
+      setDebug(prev => ({ ...prev, fetchError: err.message }))
     }
   }, [visitorId])
 
   const handleLivePostLike = useCallback(async (postId, newLikesCount) => {
     if (!visitorId) return
     
-    // Optimistic update using the returned count
     setLivePosts(prev => prev.map(post => 
       post.id === postId 
         ? { ...post, likes: newLikesCount, user_has_liked: true }
@@ -178,6 +213,9 @@ export default function Home() {
 
   const currentMonthName = new Date().toLocaleString('default', { month: 'long', year: 'numeric' })
 
+  // Show debug info in development
+  const showDebug = process.env.NODE_ENV === 'development' && Object.keys(debug).length > 0
+
   if (loading) {
     return (
       <div className="loading-container">
@@ -214,6 +252,11 @@ export default function Home() {
             <span className="error-icon">⚠️</span>
             <h2>Something went wrong</h2>
             <p>{error}</p>
+            {showDebug && (
+              <pre style={{ fontSize: '10px', textAlign: 'left', overflow: 'auto' }}>
+                {JSON.stringify(debug, null, 2)}
+              </pre>
+            )}
             <button onClick={handleRefreshAll} className="retry-btn">Try Again</button>
           </div>
         </div>
@@ -228,7 +271,7 @@ export default function Home() {
             background: white;
             border-radius: 24px;
             padding: 2rem;
-            max-width: 400px;
+            max-width: 500px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             border: 1px solid #e5e7eb;
           }
@@ -250,7 +293,7 @@ export default function Home() {
     )
   }
 
-  const hasPosts = todayPosts.length > 0 || popularPosts.length > 0 || editorsPicks.length > 0 || livePosts.length > 0
+  const hasPosts = livePosts.length > 0 || todayPosts.length > 0 || popularPosts.length > 0 || editorsPicks.length > 0
 
   if (!hasPosts) {
     return (
@@ -260,6 +303,11 @@ export default function Home() {
           <div className="empty-icon">📭</div>
           <h3>No posts yet</h3>
           <p>Check back soon for fresh content!</p>
+          {showDebug && (
+            <pre style={{ fontSize: '10px', textAlign: 'left', marginTop: '20px', padding: '10px', background: '#f1f5f9', borderRadius: '8px' }}>
+              {JSON.stringify(debug, null, 2)}
+            </pre>
+          )}
           <button onClick={handleRefreshAll} className="refresh-btn">⟳ Refresh</button>
         </div>
         <style jsx>{`
@@ -300,7 +348,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live Posts Section - WITH sessionId passed */}
+        {/* Live Posts Section */}
         {livePosts.length > 0 && (
           <div className="live-section">
             <LivePostCarousel 
@@ -387,82 +435,6 @@ export default function Home() {
           margin-bottom: 4rem;
         }
         
-        .section-header {
-          margin-bottom: 1.5rem;
-        }
-        
-        .live-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.25rem 0.75rem;
-          background: linear-gradient(135deg, #8b5cf6, #ec4899);
-          border-radius: 40px;
-          font-size: 0.7rem;
-          font-weight: 600;
-          letter-spacing: 1px;
-          color: white;
-          margin-bottom: 1rem;
-        }
-        
-        .refresh-live {
-          background: rgba(255,255,255,0.2);
-          border: none;
-          color: white;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          cursor: pointer;
-          font-size: 0.7rem;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          transition: transform 0.2s;
-        }
-        
-        .refresh-live:hover {
-          transform: rotate(180deg);
-          background: rgba(255,255,255,0.3);
-        }
-        
-        .live-dot {
-          width: 8px;
-          height: 8px;
-          background: #22c55e;
-          border-radius: 50%;
-          animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        
-        .section-title {
-          font-size: 1.8rem;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 0.5rem;
-        }
-        
-        .section-subtitle {
-          color: #64748b;
-          font-size: 0.9rem;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          flex-wrap: wrap;
-        }
-        
-        .live-count {
-          padding: 0.25rem 0.75rem;
-          background: rgba(139,92,246,0.15);
-          border-radius: 40px;
-          font-size: 0.7rem;
-          font-weight: 500;
-          color: #8b5cf6;
-        }
-        
         .stats-footer {
           display: flex;
           justify-content: center;
@@ -505,9 +477,6 @@ export default function Home() {
           .home-container {
             padding: 0 1rem 3rem;
           }
-          .section-title {
-            font-size: 1.4rem;
-          }
           .stats-footer {
             gap: 1rem;
             padding: 1rem;
@@ -518,7 +487,6 @@ export default function Home() {
         }
         
         @media (prefers-color-scheme: dark) {
-          .section-title { color: #f1f5f9; }
           .stats-footer { background: #1e293b; }
           .stat-value { color: #f1f5f9; }
         }
