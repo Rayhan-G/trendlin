@@ -15,7 +15,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false)
   const [visitorId, setVisitorId] = useState(null)
 
-  // Generate or get visitor ID for anonymous likes
+  // Generate visitor ID for anonymous interactions
   useEffect(() => {
     try {
       let vid = localStorage.getItem('visitor_id')
@@ -35,20 +35,17 @@ export default function Home() {
     try {
       const today = new Date()
       const todayStr = today.toISOString().split('T')[0]
-      
-      const currentYear = today.getFullYear()
-      const currentMonth = today.getMonth() + 1
-      const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
+      const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
         .eq('status', 'published')
-        .order('created_at', { ascending: false })
+        .order('published_at', { ascending: false, nullsLast: true })
         .limit(100)
 
       if (postsError) {
-        console.error('Posts table error:', postsError)
+        console.error('Posts table error:', postsError.message)
         return
       }
 
@@ -60,7 +57,7 @@ export default function Home() {
 
       // Today's posts
       const todayFiltered = posts.filter(post => {
-        const publishDate = post.created_at?.split('T')[0]
+        const publishDate = post.published_at?.split('T')[0]
         return publishDate === todayStr
       })
       setTodayPosts(todayFiltered)
@@ -68,7 +65,7 @@ export default function Home() {
       // Most popular this month
       const popularFiltered = posts
         .filter(post => {
-          const publishDate = post.created_at?.split('T')[0] || ''
+          const publishDate = post.published_at?.split('T')[0] || ''
           return publishDate.startsWith(currentMonthStr)
         })
         .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -95,7 +92,10 @@ export default function Home() {
         .order('published_at', { ascending: false })
         .limit(50)
 
-      if (liveError) throw liveError
+      if (liveError) {
+        console.error('Live posts error:', liveError.message)
+        return
+      }
 
       if (live && live.length > 0) {
         const postsWithDetails = await Promise.all(live.map(async (post) => {
@@ -111,7 +111,6 @@ export default function Home() {
           return {
             ...post,
             comments_count: commentsCount || 0,
-            comments: commentsCount || 0,
             user_has_liked: hasLiked,
             content: post.content || post.description || null
           }
@@ -159,9 +158,10 @@ export default function Home() {
     setRefreshing(false)
   }, [fetchRegularPosts, fetchLivePosts])
 
-  // Initial fetch for both types
+  // Load all data
   useEffect(() => {
-    Promise.all([fetchRegularPosts(), fetchLivePosts()]).finally(() => setLoading(false))
+    Promise.all([fetchRegularPosts(), fetchLivePosts()])
+      .finally(() => setLoading(false))
   }, [fetchRegularPosts, fetchLivePosts])
 
   // Auto-refresh live posts every minute
@@ -296,7 +296,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live Posts Banner - 24H Premium Section */}
+        {/* Live Posts Section - 24H Premium */}
         {livePosts.length > 0 && (
           <div className="live-section">
             <div className="section-header">
@@ -323,7 +323,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Regular Posts Sections - Horizontal Scroll */}
+        {/* Regular Posts Sections */}
         {editorsPicks.length > 0 && (
           <HorizontalScroll 
             title="⭐ Editor's Picks" 
@@ -348,7 +348,7 @@ export default function Home() {
           />
         )}
 
-        {/* Quick Stats Footer */}
+        {/* Stats Footer */}
         <div className="stats-footer">
           <div className="stat-item">
             <span className="stat-emoji">⚡</span>
