@@ -1,4 +1,4 @@
-// src/components/frontend/LivePostCarousel.jsx (Complete with Interactions)
+// components/frontend/LivePostCarousel.jsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useInteractions } from '../../hooks/useInteractions'
@@ -108,7 +108,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }
 
-  // SUBMIT COMMENT
+  // SUBMIT COMMENT - FIXED (removed user_id)
   const submitComment = async (postId) => {
     const name = commentName[postId]?.trim()
     const text = commentText[postId]?.trim()
@@ -138,7 +138,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           live_post_id: postId,
           user_name: name,
           content: text,
-          user_id: getSessionId(),
           created_at: new Date().toISOString()
         }])
         .select()
@@ -155,11 +154,14 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 2000)
       
     } catch (err) {
+      console.error('Submit error:', err)
       setComments(prev => ({
         ...prev,
         [postId]: prev[postId].filter(c => c.id !== optimisticComment.id)
       }))
       setCommentCounts(prev => ({ ...prev, [postId]: (prev[postId] || 1) - 1 }))
+      setErrorMsg(prev => ({ ...prev, [postId]: 'Failed to post comment' }))
+      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
     } finally {
       setSubmitting(prev => ({ ...prev, [postId]: false }))
     }
@@ -730,7 +732,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           to { transform: rotate(360deg); }
         }
 
-        /* Share Modal */
         .share-modal {
           position: absolute;
           bottom: 100%;
@@ -797,7 +798,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           transform: translateX(4px);
         }
 
-        /* Comments */
         .comment-thread {
           margin-top: 1rem;
           padding-top: 1rem;
