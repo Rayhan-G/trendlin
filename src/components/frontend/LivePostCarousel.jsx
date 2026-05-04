@@ -1,7 +1,13 @@
 // src/components/frontend/LivePostCarousel.jsx
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Clock, Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Maximize2 } from 'lucide-react'
+import { 
+  ChevronLeft, ChevronRight, Clock, Heart, MessageCircle, Share2, 
+  Play, Pause, Volume2, VolumeX, Maximize2, Bookmark, Flag, 
+  TrendingUp, Sparkles, Eye, Send, MoreHorizontal, User, 
+  Verified, Repeat2, Twitter, Facebook, Youtube, Instagram,
+  Music, Image as ImageIcon, Film, Smile, Gift, MapPin
+} from 'lucide-react'
 
 export default function LivePostCarousel({ posts, autoPlayInterval = 5000 }) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -10,20 +16,24 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000 }) {
   const [isHovering, setIsHovering] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [likedPosts, setLikedPosts] = useState({})
+  const [savedPosts, setSavedPosts] = useState({})
+  const [showComments, setShowComments] = useState({})
+  const [commentText, setCommentText] = useState({})
+  const [expandedContent, setExpandedContent] = useState({})
   const videoRefs = useRef({})
   const autoPlayRef = useRef(null)
 
   const categories = {
-    tech: { name: 'Technology', icon: '⚡', color: '#3b82f6', gradient: 'from-blue-500/20 to-blue-600/10' },
-    health: { name: 'Wellness', icon: '🌿', color: '#10b981', gradient: 'from-emerald-500/20 to-emerald-600/10' },
-    entertainment: { name: 'Culture', icon: '🎭', color: '#ec4899', gradient: 'from-pink-500/20 to-pink-600/10' },
-    wealth: { name: 'Capital', icon: '💰', color: '#f59e0b', gradient: 'from-amber-500/20 to-amber-600/10' },
-    world: { name: 'Horizons', icon: '🌍', color: '#06b6d4', gradient: 'from-cyan-500/20 to-cyan-600/10' },
-    lifestyle: { name: 'Aesthetic', icon: '✨', color: '#f97316', gradient: 'from-orange-500/20 to-orange-600/10' },
-    growth: { name: 'Evolution', icon: '🌱', color: '#8b5cf6', gradient: 'from-purple-500/20 to-purple-600/10' }
+    tech: { name: 'Technology', icon: '⚡', color: '#3b82f6', gradient: 'from-blue-500 via-blue-600 to-indigo-700', bg: 'bg-blue-500/10' },
+    health: { name: 'Wellness', icon: '🌿', color: '#10b981', gradient: 'from-emerald-500 via-green-500 to-teal-700', bg: 'bg-emerald-500/10' },
+    entertainment: { name: 'Culture', icon: '🎭', color: '#ec4899', gradient: 'from-pink-500 via-rose-500 to-fuchsia-700', bg: 'bg-pink-500/10' },
+    wealth: { name: 'Capital', icon: '💰', color: '#f59e0b', gradient: 'from-amber-500 via-yellow-500 to-orange-700', bg: 'bg-amber-500/10' },
+    world: { name: 'Horizons', icon: '🌍', color: '#06b6d4', gradient: 'from-cyan-500 via-sky-500 to-blue-700', bg: 'bg-cyan-500/10' },
+    lifestyle: { name: 'Aesthetic', icon: '✨', color: '#f97316', gradient: 'from-orange-500 via-amber-500 to-red-700', bg: 'bg-orange-500/10' },
+    growth: { name: 'Evolution', icon: '🌱', color: '#8b5cf6', gradient: 'from-purple-500 via-violet-500 to-indigo-700', bg: 'bg-purple-500/10' }
   }
 
-  // Calculate time remaining for each post
+  // Calculate time remaining
   useEffect(() => {
     const updateTimers = () => {
       const newTimeLeft = {}
@@ -64,42 +74,23 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000 }) {
     }
   }, [isAutoPlaying, posts.length, autoPlayInterval, isHovering])
 
-  // Handle video playback when slide changes
-  useEffect(() => {
-    // Pause all videos
-    Object.values(videoRefs.current).forEach(video => {
-      if (video) video.pause()
-    })
-    
-    // Play video in current slide if it's a video
-    const currentPost = posts[currentIndex]
-    if (currentPost?.media_items?.[0]?.type === 'video') {
-      const video = videoRefs.current[currentPost.id]
-      if (video && !isHovering) {
-        video.play().catch(e => console.log('Autoplay prevented:', e))
-      }
-    }
-  }, [currentIndex, posts, isHovering])
-
-  const handleLike = async (postId, currentLikes) => {
-    if (likedPosts[postId]) return
-    
-    try {
-      const res = await fetch(`/api/live-posts/${postId}/like`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: 'anonymous_' + Date.now() })
-      })
-      if (res.ok) {
-        setLikedPosts(prev => ({ ...prev, [postId]: true }))
-      }
-    } catch (error) {
-      console.error('Like failed:', error)
+  const handleLike = async (postId) => {
+    if (likedPosts[postId]) {
+      setLikedPosts(prev => ({ ...prev, [postId]: false }))
+    } else {
+      setLikedPosts(prev => ({ ...prev, [postId]: true }))
+      try {
+        await fetch(`/api/live-posts/${postId}/like`, { method: 'POST' })
+      } catch (error) {}
     }
   }
 
+  const handleSave = (postId) => {
+    setSavedPosts(prev => ({ ...prev, [postId]: !prev[postId] }))
+  }
+
   const handleShare = async (postId) => {
-    const url = `${window.location.origin}/live-posts/${posts.find(p => p.id === postId)?.category}`
+    const url = window.location.href
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Check this out!', url })
@@ -108,10 +99,22 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000 }) {
       navigator.clipboard.writeText(url)
       alert('Link copied!')
     }
-    
-    try {
-      await fetch(`/api/live-posts/${postId}/share`, { method: 'POST' })
-    } catch (error) {}
+  }
+
+  const handleComment = (postId) => {
+    if (commentText[postId]?.trim()) {
+      // Add comment logic here
+      setCommentText(prev => ({ ...prev, [postId]: '' }))
+      setShowComments(prev => ({ ...prev, [postId]: true }))
+    }
+  }
+
+  const toggleComments = (postId) => {
+    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }))
+  }
+
+  const toggleExpand = (postId) => {
+    setExpandedContent(prev => ({ ...prev, [postId]: !prev[postId] }))
   }
 
   const goToSlide = useCallback((index) => {
@@ -132,443 +135,769 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000 }) {
     setTimeout(() => setIsAutoPlaying(true), 10000)
   }, [posts.length])
 
-  const toggleMute = (postId, e) => {
-    e.stopPropagation()
-    const video = videoRefs.current[postId]
-    if (video) {
-      video.muted = !video.muted
-      setIsMuted(!video.muted)
-    }
-  }
-
-  const toggleFullscreen = (postId, e) => {
-    e.stopPropagation()
-    const video = videoRefs.current[postId]
-    if (video) {
-      if (video.requestFullscreen) video.requestFullscreen()
-    }
-  }
-
   if (!posts || posts.length === 0) return null
 
   const currentPost = posts[currentIndex]
-  const category = categories[currentPost.category] || { name: currentPost.category, icon: '📁', color: '#6b7280', gradient: 'from-gray-500/20 to-gray-600/10' }
+  const category = categories[currentPost.category] || { 
+    name: currentPost.category, 
+    icon: '📁', 
+    color: '#6b7280', 
+    gradient: 'from-gray-500 via-gray-600 to-gray-700',
+    bg: 'bg-gray-500/10'
+  }
   const isUrgent = new Date(currentPost.expires_at) - new Date() < 3600000
-  const isVideo = currentPost.media_items?.[0]?.type === 'video'
-  const mediaUrl = currentPost.media_items?.[0]?.url
+  const isExpanded = expandedContent[currentPost.id]
+  const displayContent = isExpanded ? currentPost.content : currentPost.content?.substring(0, 300)
 
   return (
-    <div 
-      className="live-carousel"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-    >
-      {/* Main Slide */}
-      <div className="carousel-main">
-        <div className="carousel-slide">
-          {/* Background Media */}
-          <div className="carousel-background">
-            {mediaUrl && (
-              isVideo ? (
-                <video
-                  ref={el => { if (el) videoRefs.current[currentPost.id] = el }}
-                  src={mediaUrl}
-                  autoPlay={!isHovering}
-                  muted={isMuted}
-                  loop
-                  playsInline
-                  className="background-video"
-                />
-              ) : (
-                <img src={mediaUrl} alt={currentPost.title} className="background-image" />
-              )
-            )}
-            <div className={`carousel-overlay bg-gradient-to-t ${category.gradient}`}></div>
-          </div>
-
-          {/* Category Label */}
-          <div className="category-label" style={{ background: `${category.color}20`, color: category.color }}>
-            <span className="category-icon">{category.icon}</span>
-            <span className="category-name">{category.name}</span>
-          </div>
-
-          {/* Content Overlay */}
-          <div className="carousel-content">
-            <div className="content-wrapper">
-              <div className="post-meta">
-                <div className={`time-badge ${isUrgent ? 'urgent' : ''}`}>
-                  <Clock size={14} />
-                  <span>{timeLeft[currentPost.id] || 'Expiring'}</span>
+    <div className="live-carousel" onMouseEnter={() => setIsHovering(true)} onMouseLeave={() => setIsHovering(false)}>
+      {/* Main Card */}
+      <div className="carousel-container">
+        <div className="carousel-card">
+          {/* Header - Twitter-like */}
+          <div className="card-header">
+            <div className="user-info">
+              <div className="avatar" style={{ background: `linear-gradient(135deg, ${category.color}, ${category.color}dd)` }}>
+                {category.icon}
+              </div>
+              <div className="user-details">
+                <div className="user-name">
+                  Trendlin
+                  <Verified size={14} className="verified-badge" />
                 </div>
-                <div className="view-count">👁️ {(currentPost.view_count || 0).toLocaleString()} views</div>
+                <div className="post-meta">
+                  <span className="category-badge" style={{ color: category.color }}>
+                    {category.icon} {category.name}
+                  </span>
+                  <span className="dot-separator">•</span>
+                  <span className={`time-badge ${isUrgent ? 'urgent' : ''}`}>
+                    <Clock size={12} />
+                    {timeLeft[currentPost.id] || 'Expiring'}
+                  </span>
+                </div>
               </div>
+            </div>
+            <button className="more-btn">
+              <MoreHorizontal size={18} />
+            </button>
+          </div>
 
-              {currentPost.title && (
-                <h2 className="post-title">{currentPost.title}</h2>
-              )}
-              
-              {currentPost.content && (
-                <div 
-                  className="post-description"
-                  dangerouslySetInnerHTML={{ 
-                    __html: currentPost.content.length > 200 
-                      ? currentPost.content.substring(0, 200) + '...' 
-                      : currentPost.content 
-                  }}
-                />
-              )}
+          {/* Content - Facebook/Twitter hybrid */}
+          <div className="card-content">
+            <div 
+              className={`content-text ${!isExpanded && currentPost.content?.length > 300 ? 'collapsed' : ''}`}
+              dangerouslySetInnerHTML={{ __html: displayContent || 'No description' }}
+            />
+            {currentPost.content?.length > 300 && (
+              <button onClick={() => toggleExpand(currentPost.id)} className="expand-btn">
+                {isExpanded ? 'Show less' : 'Show more'}
+              </button>
+            )}
+          </div>
 
-              <div className="post-stats">
-                <button 
-                  onClick={() => handleLike(currentPost.id, currentPost.likes)}
-                  className={`stat-btn ${likedPosts[currentPost.id] ? 'liked' : ''}`}
-                >
-                  <Heart size={18} fill={likedPosts[currentPost.id] ? '#ef4444' : 'none'} />
-                  <span>{currentPost.likes || 0}</span>
-                </button>
-                <button className="stat-btn">
-                  <MessageCircle size={18} />
-                  <span>{currentPost.comments?.length || 0}</span>
-                </button>
-                <button onClick={() => handleShare(currentPost.id)} className="stat-btn">
-                  <Share2 size={18} />
-                  <span>{currentPost.shares || 0}</span>
-                </button>
-                {isVideo && (
-                  <>
-                    <button onClick={(e) => toggleMute(currentPost.id, e)} className="stat-btn">
-                      {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                    </button>
-                    <button onClick={(e) => toggleFullscreen(currentPost.id, e)} className="stat-btn">
-                      <Maximize2 size={18} />
-                    </button>
-                  </>
-                )}
+          {/* Media Gallery - YouTube/Instagram style */}
+          {currentPost.media_items && currentPost.media_items.length > 0 && (
+            <div className={`media-gallery media-count-${currentPost.media_items.length}`}>
+              {currentPost.media_items.map((media, idx) => (
+                <div key={idx} className="media-item" onClick={() => {
+                  if (media.type === 'video') {
+                    const video = videoRefs.current[`${currentPost.id}-${idx}`]
+                    if (video) video.paused ? video.play() : video.pause()
+                  }
+                }}>
+                  {media.type === 'image' && (
+                    <img src={media.url} alt="" className="media-image" loading="lazy" />
+                  )}
+                  {media.type === 'video' && (
+                    <div className="video-wrapper">
+                      <video
+                        ref={el => { if (el) videoRefs.current[`${currentPost.id}-${idx}`] = el }}
+                        src={media.url}
+                        muted={isMuted}
+                        loop
+                        playsInline
+                        className="media-video"
+                        poster={media.thumbnail}
+                      />
+                      <div className="video-overlay">
+                        <button className="play-pause-btn" onClick={(e) => {
+                          e.stopPropagation()
+                          const video = videoRefs.current[`${currentPost.id}-${idx}`]
+                          if (video) video.paused ? video.play() : video.pause()
+                        }}>
+                          <Play size={24} fill="white" />
+                        </button>
+                      </div>
+                      <div className="video-controls">
+                        <button onClick={(e) => {
+                          e.stopPropagation()
+                          const video = videoRefs.current[`${currentPost.id}-${idx}`]
+                          if (video) video.muted = !video.muted
+                          setIsMuted(!video?.muted)
+                        }}>
+                          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {media.type === 'audio' && (
+                    <div className="audio-wrapper">
+                      <div className="audio-art" style={{ background: `linear-gradient(135deg, ${category.color}, ${category.color}80)` }}>
+                        <Music size={32} />
+                      </div>
+                      <audio src={media.url} controls className="media-audio" />
+                    </div>
+                  )}
+                  {currentPost.media_items.length > 1 && (
+                    <div className="media-count-badge">
+                      +{currentPost.media_items.length - 1} more
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Stats - Instagram/Facebook style */}
+          <div className="card-stats">
+            <div className="stats-left">
+              <div className="stat">
+                <Heart size={16} fill={likedPosts[currentPost.id] ? '#ef4444' : 'none'} color={likedPosts[currentPost.id] ? '#ef4444' : '#6b7280'} />
+                <span>{((currentPost.likes || 0) + (likedPosts[currentPost.id] ? 1 : 0)).toLocaleString()}</span>
               </div>
-
-              <Link href={`/live-posts/${currentPost.category}`}>
-                <button className="read-more-btn">
-                  Read Full Story
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </button>
-              </Link>
+              <div className="stat">
+                <MessageCircle size={16} />
+                <span>{(currentPost.comments?.length || 0).toLocaleString()}</span>
+              </div>
+              <div className="stat">
+                <Repeat2 size={16} />
+                <span>{(currentPost.shares || 0).toLocaleString()}</span>
+              </div>
+              <div className="stat">
+                <Eye size={16} />
+                <span>{(currentPost.view_count || 0).toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="stats-right">
+              <button onClick={() => handleSave(currentPost.id)} className={`save-btn ${savedPosts[currentPost.id] ? 'saved' : ''}`}>
+                <Bookmark size={16} fill={savedPosts[currentPost.id] ? '#8b5cf6' : 'none'} />
+              </button>
             </div>
           </div>
+
+          {/* Action Bar - Twitter style */}
+          <div className="action-bar">
+            <button onClick={() => handleLike(currentPost.id)} className={`action-btn ${likedPosts[currentPost.id] ? 'liked' : ''}`}>
+              <Heart size={20} />
+              <span>Like</span>
+            </button>
+            <button onClick={() => toggleComments(currentPost.id)} className="action-btn">
+              <MessageCircle size={20} />
+              <span>Comment</span>
+            </button>
+            <button onClick={() => handleShare(currentPost.id)} className="action-btn">
+              <Share2 size={20} />
+              <span>Share</span>
+            </button>
+            <button className="action-btn">
+              <Send size={20} />
+              <span>Send</span>
+            </button>
+          </div>
+
+          {/* Comments Section - Facebook style */}
+          {showComments[currentPost.id] && (
+            <div className="comments-section">
+              <div className="comment-input-wrapper">
+                <div className="comment-avatar" style={{ background: `linear-gradient(135deg, ${category.color}, ${category.color}dd)` }}>
+                  U
+                </div>
+                <div className="comment-input-container">
+                  <input
+                    type="text"
+                    placeholder="Write a comment..."
+                    value={commentText[currentPost.id] || ''}
+                    onChange={(e) => setCommentText(prev => ({ ...prev, [currentPost.id]: e.target.value }))}
+                    onKeyPress={(e) => e.key === 'Enter' && handleComment(currentPost.id)}
+                    className="comment-input"
+                  />
+                  <div className="comment-actions">
+                    <button><ImageIcon size={18} /></button>
+                    <button><Gift size={18} /></button>
+                    <button><Smile size={18} /></button>
+                    <button><MapPin size={18} /></button>
+                  </div>
+                </div>
+              </div>
+              <div className="comments-list">
+                {/* Sample comments - replace with real data */}
+                <div className="comment-item">
+                  <div className="comment-avatar small">A</div>
+                  <div className="comment-content">
+                    <div className="comment-author">Alex Chen</div>
+                    <div className="comment-text">This is amazing! 🔥</div>
+                    <div className="comment-meta">2h ago • Like</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Read More Link */}
+          <Link href={`/live-posts/${currentPost.category}`} className="read-more-link">
+            Read full story
+            <ChevronRight size={16} />
+          </Link>
         </div>
 
-        {/* Navigation Buttons */}
+        {/* Navigation Arrows */}
         {posts.length > 1 && (
           <>
-            <button className="carousel-nav prev" onClick={prevSlide} aria-label="Previous">
+            <button className="nav-arrow prev" onClick={prevSlide}>
               <ChevronLeft size={24} />
             </button>
-            <button className="carousel-nav next" onClick={nextSlide} aria-label="Next">
+            <button className="nav-arrow next" onClick={nextSlide}>
               <ChevronRight size={24} />
             </button>
           </>
         )}
 
-        {/* Progress Bar */}
+        {/* Progress indicator */}
         {posts.length > 1 && isAutoPlaying && !isHovering && (
-          <div className="progress-bar-container">
-            <div 
-              className="progress-bar" 
-              style={{ animationDuration: `${autoPlayInterval}ms` }}
-              onAnimationEnd={nextSlide}
-            />
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ animationDuration: `${autoPlayInterval}ms` }} onAnimationEnd={nextSlide} />
           </div>
         )}
 
-        {/* Dots Indicator */}
-        <div className="carousel-dots">
+        {/* Dot indicators */}
+        <div className="dot-indicators">
           {posts.map((_, idx) => (
             <button
               key={idx}
               className={`dot ${idx === currentIndex ? 'active' : ''}`}
               onClick={() => goToSlide(idx)}
-              aria-label={`Go to slide ${idx + 1}`}
+              style={{ background: idx === currentIndex ? category.color : 'rgba(255,255,255,0.3)' }}
             />
           ))}
         </div>
       </div>
 
-      {/* Thumbnail Strip */}
-      {posts.length > 1 && (
-        <div className="thumbnail-strip">
-          {posts.map((post, idx) => (
-            <div
-              key={post.id}
-              className={`thumbnail ${idx === currentIndex ? 'active' : ''}`}
-              onClick={() => goToSlide(idx)}
-            >
-              {post.media_items?.[0] && (
-                post.media_items[0].type === 'video' ? (
-                  <video src={post.media_items[0].url} muted className="thumbnail-media" />
-                ) : (
-                  <img src={post.media_items[0].url} alt={post.title} className="thumbnail-media" />
-                )
-              )}
-              <div className="thumbnail-overlay"></div>
-              <div className="thumbnail-title">{post.title?.substring(0, 30) || 'Untitled'}...</div>
-              {timeLeft[post.id] && timeLeft[post.id] !== 'Expired' && (
-                <div className="thumbnail-time">{timeLeft[post.id]}</div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
       <style jsx>{`
         .live-carousel {
-          margin-bottom: 2rem;
+          max-width: 680px;
+          margin: 0 auto 2rem;
           position: relative;
         }
 
-        .carousel-main {
+        .carousel-container {
           position: relative;
-          border-radius: 28px;
+        }
+
+        .carousel-card {
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border-radius: 24px;
           overflow: hidden;
-          background: #0a0a0a;
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+          transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .carousel-slide {
-          position: relative;
-          height: 560px;
-          overflow: hidden;
+        .carousel-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
         }
 
-        @media (max-width: 768px) {
-          .carousel-slide {
-            height: 500px;
-          }
+        /* Header */
+        .card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .carousel-background {
-          position: absolute;
-          inset: 0;
+        .user-info {
+          display: flex;
+          gap: 12px;
+          align-items: center;
         }
 
-        .background-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .background-video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .carousel-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.5) 40%, rgba(0, 0, 0, 0.2) 100%);
-        }
-
-        .category-label {
-          position: absolute;
-          top: 24px;
-          left: 24px;
-          z-index: 10;
+        .avatar {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 6px 14px;
-          border-radius: 40px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          backdrop-filter: blur(8px);
+          justify-content: center;
+          font-size: 24px;
+          color: white;
         }
 
-        .category-icon {
-          font-size: 1rem;
-        }
-
-        .carousel-content {
-          position: relative;
-          height: 100%;
+        .user-details {
           display: flex;
-          align-items: flex-end;
-          padding: 3rem;
-          z-index: 5;
+          flex-direction: column;
+          gap: 4px;
         }
 
-        @media (max-width: 768px) {
-          .carousel-content {
-            padding: 1.5rem;
-          }
+        .user-name {
+          font-weight: 700;
+          font-size: 15px;
+          color: #1e293b;
+          display: flex;
+          align-items: center;
+          gap: 4px;
         }
 
-        .content-wrapper {
-          max-width: 600px;
+        .verified-badge {
+          color: #3b82f6;
         }
 
         .post-meta {
           display: flex;
-          gap: 1rem;
           align-items: center;
-          margin-bottom: 1rem;
-          flex-wrap: wrap;
+          gap: 6px;
+          font-size: 13px;
+          color: #64748b;
+        }
+
+        .category-badge {
+          font-weight: 500;
+        }
+
+        .dot-separator {
+          color: #cbd5e1;
         }
 
         .time-badge {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 0.375rem 1rem;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(10px);
-          border-radius: 40px;
-          font-size: 0.75rem;
-          font-weight: 500;
-          color: #fbbf24;
+          gap: 4px;
           font-family: monospace;
         }
 
         .time-badge.urgent {
-          background: #ef4444;
-          color: white;
-          animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.85; transform: scale(1.02); }
-        }
-
-        .view-count {
-          display: flex;
-          align-items: center;
-          gap: 0.25rem;
-          padding: 0.375rem 1rem;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(10px);
-          border-radius: 40px;
-          font-size: 0.75rem;
-          color: #a1a1aa;
-        }
-
-        .post-title {
-          font-size: 3rem;
-          font-weight: 800;
-          color: white;
-          margin-bottom: 1rem;
-          line-height: 1.2;
-          text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
-
-        @media (max-width: 768px) {
-          .post-title {
-            font-size: 1.75rem;
-          }
-        }
-
-        .post-description {
-          color: #e4e4e7;
-          font-size: 1rem;
-          line-height: 1.6;
-          margin-bottom: 1.5rem;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
-
-        .post-stats {
-          display: flex;
-          gap: 1.5rem;
-          margin-bottom: 1.5rem;
-        }
-
-        .stat-btn {
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-          background: rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(10px);
-          padding: 0.5rem 1rem;
-          border-radius: 40px;
-          color: white;
-          font-size: 0.875rem;
-          border: none;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .stat-btn:hover {
-          background: rgba(255, 255, 255, 0.2);
-          transform: scale(1.05);
-        }
-
-        .stat-btn.liked {
-          background: #ef4444;
-          color: white;
-        }
-
-        .read-more-btn {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.75rem;
-          background: linear-gradient(135deg, #8b5cf6, #6366f1);
-          border: none;
-          border-radius: 40px;
-          color: white;
+          color: #ef4444;
           font-weight: 600;
-          cursor: pointer;
-          transition: all 0.2s;
         }
 
-        .read-more-btn:hover {
-          transform: translateX(4px);
-          gap: 0.75rem;
-        }
-
-        .carousel-nav {
-          position: absolute;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 48px;
-          height: 48px;
-          background: rgba(0, 0, 0, 0.5);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+        .more-btn {
+          width: 32px;
+          height: 32px;
           border-radius: 50%;
-          color: white;
-          cursor: pointer;
-          transition: all 0.2s;
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 20;
+          background: transparent;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          transition: all 0.2s;
         }
 
-        .carousel-nav:hover {
-          background: #8b5cf6;
+        .more-btn:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Content */
+        .card-content {
+          padding: 20px;
+        }
+
+        .content-text {
+          font-size: 16px;
+          line-height: 1.6;
+          color: #1e293b;
+        }
+
+        .content-text.collapsed {
+          max-height: 150px;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .expand-btn {
+          margin-top: 8px;
+          color: #8b5cf6;
+          font-size: 14px;
+          font-weight: 500;
+          background: none;
+          border: none;
+          cursor: pointer;
+        }
+
+        /* Media Gallery */
+        .media-gallery {
+          display: grid;
+          gap: 2px;
+          background: #000;
+          margin: 0 20px 20px;
+          border-radius: 16px;
+          overflow: hidden;
+        }
+
+        .media-count-1 {
+          grid-template-columns: 1fr;
+        }
+
+        .media-count-2 {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .media-count-3 {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .media-count-3 .media-item:first-child {
+          grid-row: span 2;
+        }
+
+        .media-count-4 {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .media-item {
+          position: relative;
+          aspect-ratio: 16/9;
+          cursor: pointer;
+          background: #0f0f0f;
+        }
+
+        .media-image, .media-video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .video-wrapper {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        .video-overlay {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0, 0, 0, 0.3);
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .video-wrapper:hover .video-overlay {
+          opacity: 1;
+        }
+
+        .play-pause-btn {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.7);
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+
+        .play-pause-btn:hover {
+          transform: scale(1.1);
+        }
+
+        .video-controls {
+          position: absolute;
+          bottom: 12px;
+          right: 12px;
+          display: flex;
+          gap: 8px;
+        }
+
+        .video-controls button {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.6);
+          border: none;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          backdrop-filter: blur(4px);
+        }
+
+        .audio-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          height: 100%;
+          background: linear-gradient(135deg, #1e1b4b, #2e1065);
+          padding: 20px;
+        }
+
+        .audio-art {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+        }
+
+        .media-audio {
+          width: 100%;
+        }
+
+        .media-count-badge {
+          position: absolute;
+          bottom: 12px;
+          right: 12px;
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(8px);
+          padding: 4px 10px;
+          border-radius: 20px;
+          font-size: 12px;
+          color: white;
+          font-weight: 500;
+        }
+
+        /* Stats */
+        .card-stats {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 20px;
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .stats-left {
+          display: flex;
+          gap: 16px;
+        }
+
+        .stat {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          color: #64748b;
+        }
+
+        .save-btn {
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+
+        .save-btn.saved {
+          color: #8b5cf6;
+        }
+
+        /* Action Bar */
+        .action-bar {
+          display: flex;
+          justify-content: space-around;
+          padding: 8px 20px;
+        }
+
+        .action-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          background: none;
+          border: none;
+          border-radius: 40px;
+          color: #64748b;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+          background: rgba(0, 0, 0, 0.05);
+        }
+
+        .action-btn.liked {
+          color: #ef4444;
+        }
+
+        /* Comments */
+        .comments-section {
+          padding: 0 20px 20px;
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          margin-top: 8px;
+        }
+
+        .comment-input-wrapper {
+          display: flex;
+          gap: 12px;
+          padding: 16px 0;
+        }
+
+        .comment-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 14px;
+          font-weight: 600;
+          flex-shrink: 0;
+        }
+
+        .comment-avatar.small {
+          width: 32px;
+          height: 32px;
+          font-size: 12px;
+        }
+
+        .comment-input-container {
+          flex: 1;
+          position: relative;
+        }
+
+        .comment-input {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 24px;
+          font-size: 14px;
+          outline: none;
+          transition: border-color 0.2s;
+        }
+
+        .comment-input:focus {
           border-color: #8b5cf6;
+        }
+
+        .comment-actions {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          gap: 8px;
+        }
+
+        .comment-actions button {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+        }
+
+        .comments-list {
+          max-height: 300px;
+          overflow-y: auto;
+        }
+
+        .comment-item {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .comment-content {
+          flex: 1;
+        }
+
+        .comment-author {
+          font-weight: 600;
+          font-size: 13px;
+          color: #1e293b;
+        }
+
+        .comment-text {
+          font-size: 14px;
+          color: #334155;
+          margin: 4px 0;
+        }
+
+        .comment-meta {
+          font-size: 11px;
+          color: #94a3b8;
+        }
+
+        /* Read More Link */
+        .read-more-link {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 16px;
+          text-align: center;
+          color: #8b5cf6;
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 14px;
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          transition: background 0.2s;
+        }
+
+        .read-more-link:hover {
+          background: rgba(139, 92, 246, 0.05);
+        }
+
+        /* Navigation Arrows */
+        .nav-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: white;
+          border: none;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #1e293b;
+          transition: all 0.2s;
+          z-index: 10;
+        }
+
+        .nav-arrow.prev {
+          left: -20px;
+        }
+
+        .nav-arrow.next {
+          right: -20px;
+        }
+
+        .nav-arrow:hover {
+          background: #8b5cf6;
+          color: white;
           transform: translateY(-50%) scale(1.1);
         }
 
-        .carousel-nav.prev {
-          left: 1.5rem;
-        }
-
-        .carousel-nav.next {
-          right: 1.5rem;
-        }
-
-        .progress-bar-container {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
-          background: rgba(255, 255, 255, 0.3);
-          z-index: 15;
-        }
-
+        /* Progress Bar */
         .progress-bar {
+          position: absolute;
+          bottom: -4px;
+          left: 20px;
+          right: 20px;
+          height: 3px;
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .progress-fill {
           height: 100%;
           background: linear-gradient(90deg, #8b5cf6, #ec4899);
           width: 0%;
@@ -580,127 +909,67 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000 }) {
           to { width: 100%; }
         }
 
-        .carousel-dots {
-          position: absolute;
-          bottom: 1.5rem;
-          left: 50%;
-          transform: translateX(-50%);
+        /* Dot Indicators */
+        .dot-indicators {
           display: flex;
-          gap: 0.75rem;
-          z-index: 15;
+          justify-content: center;
+          gap: 8px;
+          margin-top: 20px;
         }
 
         .dot {
-          width: 8px;
-          height: 8px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.5);
+          border: none;
           cursor: pointer;
           transition: all 0.2s;
-          border: none;
           padding: 0;
         }
 
         .dot.active {
-          width: 28px;
-          border-radius: 4px;
-          background: #8b5cf6;
+          width: 24px;
+          border-radius: 3px;
         }
 
-        .thumbnail-strip {
-          display: flex;
-          gap: 0.75rem;
-          margin-top: 1rem;
-          overflow-x: auto;
-          padding: 0.5rem;
-          scrollbar-width: thin;
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+          .carousel-card {
+            background: linear-gradient(135deg, #1e1e2e 0%, #1a1a2e 100%);
+          }
+          .user-name, .content-text, .comment-author {
+            color: #f1f5f9;
+          }
+          .comment-text {
+            color: #cbd5e1;
+          }
+          .nav-arrow {
+            background: #1e1e2e;
+            color: #f1f5f9;
+          }
+          .comment-input {
+            background: #2d2d3d;
+            border-color: #3d3d4d;
+            color: #f1f5f9;
+          }
         }
 
-        .thumbnail-strip::-webkit-scrollbar {
-          height: 4px;
-        }
-
-        .thumbnail-strip::-webkit-scrollbar-track {
-          background: #1a1a1a;
-          border-radius: 4px;
-        }
-
-        .thumbnail-strip::-webkit-scrollbar-thumb {
-          background: #8b5cf6;
-          border-radius: 4px;
-        }
-
-        .thumbnail {
-          position: relative;
-          width: 140px;
-          height: 90px;
-          border-radius: 16px;
-          overflow: hidden;
-          cursor: pointer;
-          flex-shrink: 0;
-          border: 2px solid transparent;
-          transition: all 0.2s;
-        }
-
-        .thumbnail.active {
-          border-color: #8b5cf6;
-          transform: scale(1.02);
-          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-        }
-
-        .thumbnail-media {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-        }
-
-        .thumbnail-overlay {
-          position: absolute;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.4);
-          transition: background 0.2s;
-        }
-
-        .thumbnail:hover .thumbnail-overlay {
-          background: rgba(139, 92, 246, 0.3);
-        }
-
-        .thumbnail.active .thumbnail-overlay {
-          background: rgba(139, 92, 246, 0.2);
-        }
-
-        .thumbnail-title {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          padding: 0.5rem;
-          background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
-          font-size: 0.7rem;
-          color: white;
-          text-align: center;
-          font-weight: 500;
-        }
-
-        .thumbnail-time {
-          position: absolute;
-          top: 0.5rem;
-          right: 0.5rem;
-          background: rgba(0, 0, 0, 0.7);
-          padding: 0.125rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.65rem;
-          color: #fbbf24;
-          font-family: monospace;
-        }
-
+        /* Responsive */
         @media (max-width: 768px) {
-          .thumbnail-strip {
+          .live-carousel {
+            margin: 0 12px 1rem;
+          }
+          .nav-arrow.prev {
+            left: -8px;
+          }
+          .nav-arrow.next {
+            right: -8px;
+          }
+          .action-btn span {
             display: none;
           }
-          .carousel-nav {
-            width: 36px;
-            height: 36px;
+          .media-count-2, .media-count-3, .media-count-4 {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
