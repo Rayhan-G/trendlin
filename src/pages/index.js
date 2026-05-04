@@ -300,7 +300,18 @@ export default function Home() {
           </div>
         )}
 
-        
+        {/* Live Posts Section - WITH sessionId passed */}
+        {livePosts.length > 0 && (
+          <div className="live-section">
+            <LivePostCarousel 
+              posts={livePosts}
+              autoPlayInterval={5000}
+              onLike={handleLivePostLike}
+              onShare={handleLivePostShare}
+              sessionId={visitorId}
+            />
+          </div>
+        )}
 
         {editorsPicks.length > 0 && (
           <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
