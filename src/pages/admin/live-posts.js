@@ -5,18 +5,16 @@ import Head from 'next/head'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { 
-  Plus, Edit, Trash2, Eye, Clock, Heart, MessageCircle, Share2, X,
-  Image, Video, Music, File, Code, LayoutGrid, Upload, Loader2,
-  Save, Send, RefreshCw, AlertCircle, CheckCircle
+  Plus, Edit, Trash2, Eye, Clock, X, Video, Music
 } from 'lucide-react'
 
-// Dynamically import Media Modals with proper error handling
-const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
-const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
-const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
-const PDFModal = dynamic(() => import('../../components/media/Modals/PDFModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
-const EmbedModal = dynamic(() => import('../../components/media/Modals/EmbedModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
-const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
+// Dynamically import Media Modals with error handling
+const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal').catch(() => () => <div className="text-white p-4">Image modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
+const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal').catch(() => () => <div className="text-white p-4">Video modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
+const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal').catch(() => () => <div className="text-white p-4">Audio modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
+const PDFModal = dynamic(() => import('../../components/media/Modals/PDFModal').catch(() => () => <div className="text-white p-4">PDF modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
+const EmbedModal = dynamic(() => import('../../components/media/Modals/EmbedModal').catch(() => () => <div className="text-white p-4">Embed modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
+const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal').catch(() => () => <div className="text-white p-4">Gallery modal failed to load</div>), { ssr: false, loading: () => <div className="text-white p-4">Loading...</div> })
 
 const categories = [
   { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6', bg: 'bg-blue-500/10' },
@@ -47,7 +45,6 @@ export default function AdminLivePosts() {
   const [errorMessage, setErrorMessage] = useState('')
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
 
-  // Optimized fetch with error handling
   const fetchPosts = useCallback(async () => {
     setLoading(true)
     try {
@@ -76,7 +73,6 @@ export default function AdminLivePosts() {
     return post.status === 'published' && new Date(post.expires_at) > new Date()
   }
 
-  // Optimized save with timeout
   const savePost = async () => {
     if (mediaItems.length === 0) {
       setErrorMessage('Please add at least one media item')
@@ -90,7 +86,6 @@ export default function AdminLivePosts() {
       const now = new Date().toISOString()
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-      // Clean media items
       const cleanMedia = mediaItems.map(item => ({
         type: item.type,
         url: item.url,
@@ -110,27 +105,18 @@ export default function AdminLivePosts() {
         postData.expires_at = expiresAt
       }
 
-      // Timeout promise
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
-      )
-
       let result
       if (editingPost) {
-        const updatePromise = supabase
+        result = await supabase
           .from('live_posts')
           .update(postData)
           .eq('id', editingPost.id)
-        
-        result = await Promise.race([updatePromise, timeoutPromise])
       } else {
-        const insertPromise = supabase
+        result = await supabase
           .from('live_posts')
           .insert([postData])
           .select('id')
           .single()
-        
-        result = await Promise.race([insertPromise, timeoutPromise])
       }
 
       if (result.error) throw result.error
@@ -143,9 +129,7 @@ export default function AdminLivePosts() {
       
     } catch (error) {
       console.error('Save error:', error)
-      setErrorMessage(error.message === 'Request timeout' 
-        ? 'Operation timed out. Please try again.' 
-        : error.message || 'Failed to save post')
+      setErrorMessage(error.message || 'Failed to save post')
     } finally {
       setSaving(false)
     }
@@ -253,7 +237,6 @@ export default function AdminLivePosts() {
       <Head><title>Admin | Live Posts Manager</title></Head>
       <div className="min-h-screen bg-[#050505] p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
           <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">Live Posts Manager</h1>
@@ -267,7 +250,6 @@ export default function AdminLivePosts() {
             </button>
           </div>
 
-          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
               <div className="text-2xl mb-2">⚡</div>
@@ -291,7 +273,6 @@ export default function AdminLivePosts() {
             </div>
           </div>
 
-          {/* Posts Table */}
           <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl overflow-x-auto">
             {loading ? (
               <div className="text-center py-20 text-gray-500">Loading...</div>
@@ -314,7 +295,7 @@ export default function AdminLivePosts() {
                     <th className="p-4">Likes</th>
                     <th className="p-4">Time Left</th>
                     <th className="p-4">Actions</th>
-                   </>
+                  </tr>
                 </thead>
                 <tbody>
                   {posts.map((post) => {
@@ -329,15 +310,15 @@ export default function AdminLivePosts() {
                               {post.content || 'No description'}
                             </p>
                           </div>
-                         </>
+                        </td>
                         <td className="p-4">
                           <span className={`text-sm px-2 py-1 rounded-full ${cat?.bg}`} style={{ color: cat?.color }}>
                             {cat?.icon} {cat?.name}
                           </span>
-                         </>
+                        </td>
                         <td className="p-4">
                           <span className="text-xs text-gray-500">{post.media_items?.length || 0} items</span>
-                         </>
+                        </td>
                         <td className="p-4">
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             active ? 'bg-green-500/20 text-green-500' : 
@@ -345,15 +326,15 @@ export default function AdminLivePosts() {
                           }`}>
                             {active ? '● Published' : post.status === 'draft' ? '📝 Draft' : '○ Expired'}
                           </span>
-                         </>
+                        </td>
                         <td className="p-4">
                           <span className="text-sm">❤️ {post.likes || 0}</span>
-                         </>
+                        </td>
                         <td className="p-4">
                           <span className={`text-sm font-mono ${active ? 'text-yellow-500' : 'text-gray-500'}`}>
                             {active ? timeLeft : '—'}
                           </span>
-                         </>
+                        </td>
                         <td className="p-4">
                           <div className="flex gap-2">
                             <Link href={`/live-posts/${post.category}`} target="_blank" className="p-1.5 rounded hover:bg-gray-800">
@@ -371,8 +352,8 @@ export default function AdminLivePosts() {
                               <Trash2 size={16} className="text-gray-500" />
                             </button>
                           </div>
-                         </>
-                       </>
+                        </td>
+                      </tr>
                     )
                   })}
                 </tbody>
@@ -386,7 +367,6 @@ export default function AdminLivePosts() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
           <div className="bg-[#0f0f0f] border border-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-            {/* Header */}
             <div className="flex justify-between items-center p-6 border-b border-gray-800">
               <div>
                 <h2 className="text-xl font-bold text-white">{editingPost ? 'Edit Post' : 'Create New Post'}</h2>
@@ -397,7 +377,6 @@ export default function AdminLivePosts() {
               </button>
             </div>
 
-            {/* Messages */}
             {publishSuccess && (
               <div className="mx-6 mt-4 p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-500 text-sm">
                 ✅ Post {editingPost ? 'updated' : 'created'} successfully!
@@ -409,7 +388,6 @@ export default function AdminLivePosts() {
               </div>
             )}
 
-            {/* Tabs */}
             <div className="flex border-b border-gray-800 px-6">
               <button
                 onClick={() => setActiveTab('media')}
@@ -425,11 +403,9 @@ export default function AdminLivePosts() {
               </button>
             </div>
 
-            {/* Body */}
             <div className="flex-1 overflow-y-auto p-6">
               {activeTab === 'media' && (
                 <div className="space-y-6">
-                  {/* Media Preview */}
                   {mediaItems.length > 0 && (
                     <div className="relative bg-black rounded-2xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
                       {mediaItems[currentMediaIndex]?.type === 'image' && (
@@ -451,7 +427,6 @@ export default function AdminLivePosts() {
                         </>
                       )}
                       
-                      {/* Description Overlay */}
                       {description && (
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-8">
                           <p className="text-white text-xl font-medium">{description}</p>
@@ -460,7 +435,6 @@ export default function AdminLivePosts() {
                     </div>
                   )}
 
-                  {/* Description Input */}
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">📝 Description (appears on media)</label>
                     <textarea
@@ -472,7 +446,6 @@ export default function AdminLivePosts() {
                     />
                   </div>
 
-                  {/* Add Media */}
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Add Media</label>
                     <div className="flex gap-3 flex-wrap">
@@ -485,7 +458,6 @@ export default function AdminLivePosts() {
                     </div>
                   </div>
 
-                  {/* Media Thumbnails */}
                   {mediaItems.length > 0 && (
                     <div className="flex gap-2 flex-wrap">
                       {mediaItems.map((item, idx) => (
@@ -540,7 +512,6 @@ export default function AdminLivePosts() {
               )}
             </div>
 
-            {/* Footer */}
             <div className="flex gap-3 p-6 border-t border-gray-800">
               <button onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-gray-700 rounded-xl text-gray-400 hover:bg-gray-900">
                 Cancel
