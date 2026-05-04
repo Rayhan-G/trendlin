@@ -30,10 +30,8 @@ export default function Home() {
     }
   }, [])
 
-  const fetchPosts = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    
+  // Fetch regular posts from 'posts' table
+  const fetchRegularPosts = useCallback(async () => {
     try {
       const today = new Date()
       const todayStr = today.toISOString().split('T')[0]
@@ -42,41 +40,19 @@ export default function Home() {
       const currentMonth = today.getMonth() + 1
       const currentMonthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`
 
-      // Try to fetch from posts table, if it fails, just use live_posts
-      let posts = []
-      let postsError = null
-      
-      try {
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('status', 'published')
-          .order('created_at', { ascending: false })
-          .limit(100)
-        
-        if (!error) {
-          posts = data || []
-        } else {
-          postsError = error
-          console.log('Posts table not found, using only live_posts')
-        }
-      } catch (err) {
-        console.log('Posts table error:', err.message)
-      }
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(100)
 
-      // If posts table doesn't exist or is empty, use live_posts as fallback
-      if (posts.length === 0 && livePosts.length > 0) {
-        posts = livePosts.map(post => ({
-          ...post,
-          created_at: post.published_at,
-          views: post.view_count || 0
-        }))
-      }
-
-      if (posts.length === 0) {
-        setLoading(false)
+      if (postsError) {
+        console.error('Posts table error:', postsError)
         return
       }
+
+      if (!posts || posts.length === 0) return
 
       // Editor's picks (featured posts)
       const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
@@ -100,16 +76,11 @@ export default function Home() {
       setPopularPosts(popularFiltered)
       
     } catch (err) {
-      console.error('Error fetching posts:', err)
-      // Don't set error if we have live posts
-      if (livePosts.length === 0) {
-        setError('Failed to load posts')
-      }
-    } finally {
-      setLoading(false)
+      console.error('Error fetching regular posts:', err)
     }
-  }, [livePosts])
+  }, [])
 
+  // Fetch live posts from 'live_posts' table
   const fetchLivePosts = useCallback(async () => {
     if (!visitorId) return
     
@@ -184,20 +155,16 @@ export default function Home() {
 
   const handleRefreshAll = useCallback(async () => {
     setRefreshing(true)
-    await Promise.all([fetchPosts(), fetchLivePosts()])
+    await Promise.all([fetchRegularPosts(), fetchLivePosts()])
     setRefreshing(false)
-  }, [fetchPosts, fetchLivePosts])
+  }, [fetchRegularPosts, fetchLivePosts])
 
+  // Initial fetch for both types
   useEffect(() => {
-    fetchPosts()
-  }, [fetchPosts])
+    Promise.all([fetchRegularPosts(), fetchLivePosts()]).finally(() => setLoading(false))
+  }, [fetchRegularPosts, fetchLivePosts])
 
-  useEffect(() => {
-    if (visitorId) {
-      fetchLivePosts()
-    }
-  }, [visitorId, fetchLivePosts])
-
+  // Auto-refresh live posts every minute
   useEffect(() => {
     const interval = setInterval(() => {
       if (visitorId) fetchLivePosts()
@@ -356,7 +323,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Regular Posts Sections */}
+        {/* Regular Posts Sections - Horizontal Scroll */}
         {editorsPicks.length > 0 && (
           <HorizontalScroll 
             title="⭐ Editor's Picks" 
