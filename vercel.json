@@ -16,11 +16,7 @@
   },
   "git": {
     "deploymentEnabled": true
-  }
-
-
-// vercel.json
-{
+  },
   "functions": {
     "app/api/ads/**/*.js": {
       "runtime": "edge",
@@ -48,18 +44,4 @@
       ]
     }
   ]
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
