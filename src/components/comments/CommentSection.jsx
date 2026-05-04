@@ -33,7 +33,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
     syncAllComments
   } = useComments(postId, sessionId)
 
-  // Show retry modal on sync error
   useEffect(() => {
     if (syncError) {
       setShowRetryModal(true)
@@ -54,10 +53,10 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
     }
     
     setIsSubmitting(true)
-    await addComment(newComment, name, userEmail || null, replyingTo)
+    const newCommentObj = await addComment(newComment, name, userEmail || null, replyingTo)
     setNewComment('')
     setReplyingTo(null)
-    if (onCommentCountChange) onCommentCountChange(comments.length + 1)
+    if (onCommentCountChange && newCommentObj) onCommentCountChange(comments.length + 1)
     setIsSubmitting(false)
   }
 
@@ -87,6 +86,17 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
     setShowRetryModal(false)
   }
 
+  // FIXED: Check if comment belongs to current user
+  const isOwnComment = (comment) => {
+    // Primary check: user_id matches sessionId
+    if (comment.user_id && sessionId) {
+      return comment.user_id === sessionId
+    }
+    // Secondary check: user_name matches stored name
+    const currentUserName = localStorage.getItem('comment_name')
+    return currentUserName && comment.user_name === currentUserName
+  }
+
   const formatTimeAgo = (date) => {
     const minutes = Math.floor((new Date() - new Date(date)) / 60000)
     if (minutes < 1) return 'just now'
@@ -102,8 +112,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
     return num.toString()
   }
 
-  const isOwnComment = (comment) => comment.user_id === sessionId
-
   return (
     <div className="comment-section">
       {/* Retry Modal */}
@@ -112,7 +120,7 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           <div className="retry-modal-content">
             <AlertCircle size={32} color="#ef4444" />
             <h4>Sync Issue Detected</h4>
-            <p>Some comments couldn't be saved. Your comments are saved locally and will be retried.</p>
+            <p>Some comments couldn't be saved. They will be retried automatically.</p>
             <div className="retry-actions">
               <button onClick={() => setShowRetryModal(false)} className="retry-later">
                 Later
@@ -206,7 +214,7 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           ) : (
             <>
               <Clock size={14} />
-              <span>{pendingComments.length} comment{pendingComments.length > 1 ? 's' : ''} will be saved in background</span>
+              <span>{pendingComments.length} comment{pendingComments.length > 1 ? 's' : ''} will be saved</span>
               <button onClick={syncAllComments} className="sync-now-btn">
                 Save now
               </button>
@@ -235,7 +243,7 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
                     <div className="comment-author">
                       {comment.user_name}
                       {!comment.is_synced && (
-                        <span className="pending-badge" title="Will be saved automatically">
+                        <span className="pending-badge">
                           <Clock size={10} /> Saving...
                         </span>
                       )}
@@ -244,12 +252,13 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
                     <div className="comment-time">
                       {formatTimeAgo(comment.created_at)}
                     </div>
+                    {/* EDIT and DELETE buttons - now working */}
                     {isOwnComment(comment) && (
                       <div className="comment-actions-dropdown">
-                        <button onClick={() => handleEdit(comment)} title="Edit">
+                        <button onClick={() => handleEdit(comment)} title="Edit comment">
                           <Edit2 size={14} />
                         </button>
-                        <button onClick={() => deleteComment(comment.id)} title="Delete">
+                        <button onClick={() => deleteComment(comment.id)} title="Delete comment">
                           <Trash2 size={14} />
                         </button>
                       </div>
@@ -317,7 +326,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           border-top: 1px solid #e2e8f0;
         }
 
-        /* Retry Modal */
         .retry-modal {
           position: fixed;
           bottom: 20px;
@@ -380,7 +388,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           gap: 6px;
         }
 
-        /* Name Modal */
         .name-modal {
           position: fixed;
           top: 0;
@@ -438,7 +445,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           cursor: not-allowed;
         }
 
-        /* Comment Input */
         .comment-input-wrapper {
           display: flex;
           gap: 12px;
@@ -470,12 +476,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           border-radius: 8px;
           font-size: 0.75rem;
           margin-bottom: 8px;
-        }
-
-        .replying-badge button {
-          background: none;
-          border: none;
-          cursor: pointer;
         }
 
         .comment-input-container textarea {
@@ -529,7 +529,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           cursor: not-allowed;
         }
 
-        /* Sync Status */
         .sync-status {
           display: flex;
           align-items: center;
@@ -569,7 +568,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           to { transform: rotate(360deg); }
         }
 
-        /* Comments List */
         .comments-list {
           max-height: 500px;
           overflow-y: auto;
@@ -669,6 +667,13 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           cursor: pointer;
           color: #94a3b8;
           padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+
+        .comment-actions-dropdown button:hover {
+          background: #f1f5f9;
+          color: #ef4444;
         }
 
         .comment-text {
@@ -743,7 +748,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           color: #ef4444;
         }
 
-        /* Admin Reply */
         .admin-reply {
           margin-top: 10px;
           padding: 10px 12px;
@@ -788,39 +792,22 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
         }
 
         @media (prefers-color-scheme: dark) {
-          .comment-section {
-            border-top-color: #334155;
-          }
-          .comment-author {
-            color: #e2e8f0;
-          }
-          .comment-text {
-            color: #94a3b8;
-          }
-          .name-modal-content {
-            background: #1e293b;
-          }
-          .name-input, .email-input {
-            background: #334155;
-            border-color: #475569;
-            color: white;
-          }
-          .replying-badge {
-            background: #334155;
-          }
-          .like-btn:hover, .reply-btn:hover {
-            background: #334155;
-          }
-          .admin-reply {
-            background: #064e3b;
-          }
-          .admin-reply-content {
-            color: #e2e8f0;
-          }
-          .retry-modal-content {
-            background: #1e293b;
-            border-color: #7f1d1d;
-          }
+          .comment-section { border-top-color: #334155; }
+          .comment-author { color: #e2e8f0; }
+          .comment-text { color: #94a3b8; }
+          .name-modal-content { background: #1e293b; }
+          .name-input, .email-input { background: #334155; border-color: #475569; color: white; }
+          .replying-badge { background: #334155; color: #e2e8f0; }
+          .like-btn:hover, .reply-btn:hover { background: #334155; }
+          .admin-reply { background: #064e3b; }
+          .admin-reply-content { color: #e2e8f0; }
+          .retry-modal-content { background: #1e293b; border-color: #7f1d1d; color: #e2e8f0; }
+          .comment-actions-dropdown button:hover { background: #334155; }
+        }
+
+        @media (max-width: 640px) {
+          .comment-input-wrapper { gap: 8px; }
+          .comment-actions { flex-direction: column; align-items: flex-end; gap: 8px; }
         }
       `}</style>
     </div>
