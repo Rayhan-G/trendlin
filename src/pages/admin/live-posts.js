@@ -10,13 +10,13 @@ import {
   Save, Send, RefreshCw, AlertCircle, CheckCircle
 } from 'lucide-react'
 
-// Dynamically import Media Modals
-const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal'), { ssr: false })
-const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal'), { ssr: false })
-const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal'), { ssr: false })
-const PDFModal = dynamic(() => import('../../components/media/Modals/PDFModal'), { ssr: false })
-const EmbedModal = dynamic(() => import('../../components/media/Modals/EmbedModal'), { ssr: false })
-const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal'), { ssr: false })
+// Dynamically import Media Modals with proper error handling
+const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
+const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
+const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
+const PDFModal = dynamic(() => import('../../components/media/Modals/PDFModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
+const EmbedModal = dynamic(() => import('../../components/media/Modals/EmbedModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
+const GalleryModal = dynamic(() => import('../../components/media/Modals/GalleryModal').catch(() => () => <div>Failed to load</div>), { ssr: false })
 
 const categories = [
   { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6', bg: 'bg-blue-500/10' },
@@ -47,7 +47,7 @@ export default function AdminLivePosts() {
   const [errorMessage, setErrorMessage] = useState('')
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0)
 
-  // OPTIMIZED: Fetch with limit and specific fields only
+  // Optimized fetch with error handling
   const fetchPosts = useCallback(async () => {
     setLoading(true)
     try {
@@ -55,16 +55,12 @@ export default function AdminLivePosts() {
         .from('live_posts')
         .select('id,category,content,media_items,status,likes,expires_at,published_at,created_at')
         .order('created_at', { ascending: false })
-        .limit(100) // Limit to last 100 posts for speed
+        .limit(100)
 
-      if (!error && data) {
-        setPosts(data)
-      } else if (error) {
-        console.error('Fetch error:', error)
-        setPosts([])
-      }
+      if (error) throw error
+      setPosts(data || [])
     } catch (err) {
-      console.error('Fetch failed:', err)
+      console.error('Fetch error:', err)
       setPosts([])
     } finally {
       setLoading(false)
@@ -76,11 +72,11 @@ export default function AdminLivePosts() {
   }, [fetchPosts])
 
   const isActive = (post) => {
-    if (!post.expires_at) return false
+    if (!post?.expires_at) return false
     return post.status === 'published' && new Date(post.expires_at) > new Date()
   }
 
-  // OPTIMIZED: Save with reduced payload and timeout
+  // Optimized save with timeout
   const savePost = async () => {
     if (mediaItems.length === 0) {
       setErrorMessage('Please add at least one media item')
@@ -94,11 +90,11 @@ export default function AdminLivePosts() {
       const now = new Date().toISOString()
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-      // Clean media items - remove unnecessary data
+      // Clean media items
       const cleanMedia = mediaItems.map(item => ({
         type: item.type,
         url: item.url,
-        ...(item.thumbnail && { thumbnail: item.thumbnail }) // Only if exists
+        ...(item.thumbnail && { thumbnail: item.thumbnail })
       }))
 
       const postData = {
@@ -114,26 +110,28 @@ export default function AdminLivePosts() {
         postData.expires_at = expiresAt
       }
 
-      // Execute with timeout
-      const timeoutId = setTimeout(() => {
-        throw new Error('Request timeout')
-      }, 10000)
+      // Timeout promise
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 15000)
+      )
 
       let result
       if (editingPost) {
-        result = await supabase
+        const updatePromise = supabase
           .from('live_posts')
           .update(postData)
           .eq('id', editingPost.id)
+        
+        result = await Promise.race([updatePromise, timeoutPromise])
       } else {
-        result = await supabase
+        const insertPromise = supabase
           .from('live_posts')
           .insert([postData])
           .select('id')
           .single()
+        
+        result = await Promise.race([insertPromise, timeoutPromise])
       }
-
-      clearTimeout(timeoutId)
 
       if (result.error) throw result.error
 
@@ -141,8 +139,6 @@ export default function AdminLivePosts() {
       setTimeout(() => setPublishSuccess(false), 2000)
       setShowCreateModal(false)
       resetForm()
-      
-      // Refresh posts in background
       fetchPosts()
       
     } catch (error) {
@@ -155,7 +151,6 @@ export default function AdminLivePosts() {
     }
   }
 
-  // OPTIMIZED: Direct delete without extra checks
   const deletePost = async (id) => {
     try {
       const { error } = await supabase
@@ -163,16 +158,16 @@ export default function AdminLivePosts() {
         .delete()
         .eq('id', id)
 
-      if (!error) {
-        setPosts(prev => prev.filter(p => p.id !== id))
-        setShowDeleteConfirm(null)
-      }
+      if (error) throw error
+      
+      setPosts(prev => prev.filter(p => p.id !== id))
+      setShowDeleteConfirm(null)
     } catch (err) {
       console.error('Delete error:', err)
+      setErrorMessage('Failed to delete post')
     }
   }
 
-  // OPTIMIZED: Single query update
   const forceExpire = async (id) => {
     try {
       const { error } = await supabase
@@ -183,11 +178,11 @@ export default function AdminLivePosts() {
         })
         .eq('id', id)
 
-      if (!error) {
-        setPosts(prev => prev.map(p => 
-          p.id === id ? { ...p, status: 'expired', expires_at: new Date().toISOString() } : p
-        ))
-      }
+      if (error) throw error
+      
+      setPosts(prev => prev.map(p => 
+        p.id === id ? { ...p, status: 'expired', expires_at: new Date().toISOString() } : p
+      ))
     } catch (err) {
       console.error('Expire error:', err)
     }
@@ -272,7 +267,7 @@ export default function AdminLivePosts() {
             </button>
           </div>
 
-          {/* Stats - OPTIMIZED: Computed values */}
+          {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-[#0f0f0f] border border-gray-800 rounded-xl p-4">
               <div className="text-2xl mb-2">⚡</div>
@@ -319,7 +314,7 @@ export default function AdminLivePosts() {
                     <th className="p-4">Likes</th>
                     <th className="p-4">Time Left</th>
                     <th className="p-4">Actions</th>
-                  </tr>
+                   </>
                 </thead>
                 <tbody>
                   {posts.map((post) => {
@@ -334,15 +329,15 @@ export default function AdminLivePosts() {
                               {post.content || 'No description'}
                             </p>
                           </div>
-                        </td>
+                         </>
                         <td className="p-4">
                           <span className={`text-sm px-2 py-1 rounded-full ${cat?.bg}`} style={{ color: cat?.color }}>
                             {cat?.icon} {cat?.name}
                           </span>
-                        </td>
+                         </>
                         <td className="p-4">
                           <span className="text-xs text-gray-500">{post.media_items?.length || 0} items</span>
-                        </td>
+                         </>
                         <td className="p-4">
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             active ? 'bg-green-500/20 text-green-500' : 
@@ -350,15 +345,15 @@ export default function AdminLivePosts() {
                           }`}>
                             {active ? '● Published' : post.status === 'draft' ? '📝 Draft' : '○ Expired'}
                           </span>
-                        </td>
+                         </>
                         <td className="p-4">
                           <span className="text-sm">❤️ {post.likes || 0}</span>
-                        </td>
+                         </>
                         <td className="p-4">
                           <span className={`text-sm font-mono ${active ? 'text-yellow-500' : 'text-gray-500'}`}>
                             {active ? timeLeft : '—'}
                           </span>
-                        </td>
+                         </>
                         <td className="p-4">
                           <div className="flex gap-2">
                             <Link href={`/live-posts/${post.category}`} target="_blank" className="p-1.5 rounded hover:bg-gray-800">
@@ -376,8 +371,8 @@ export default function AdminLivePosts() {
                               <Trash2 size={16} className="text-gray-500" />
                             </button>
                           </div>
-                        </td>
-                      </tr>
+                         </>
+                       </>
                     )
                   })}
                 </tbody>
@@ -563,12 +558,12 @@ export default function AdminLivePosts() {
       )}
 
       {/* Media Modals */}
-      <ImageModal isOpen={showMediaModal === 'image'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
-      <VideoModal isOpen={showMediaModal === 'video'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
-      <AudioModal isOpen={showMediaModal === 'audio'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
-      <PDFModal isOpen={showMediaModal === 'pdf'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
-      <EmbedModal isOpen={showMediaModal === 'embed'} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />
-      <GalleryModal isOpen={showMediaModal === 'gallery'} onClose={() => setShowMediaModal(null)} onInsert={(data) => handleMediaInsert({ ...data, type: 'gallery' })} />
+      {showMediaModal === 'image' && <ImageModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
+      {showMediaModal === 'video' && <VideoModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
+      {showMediaModal === 'audio' && <AudioModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
+      {showMediaModal === 'pdf' && <PDFModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
+      {showMediaModal === 'embed' && <EmbedModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={handleMediaInsert} />}
+      {showMediaModal === 'gallery' && <GalleryModal isOpen={true} onClose={() => setShowMediaModal(null)} onInsert={(data) => handleMediaInsert({ ...data, type: 'gallery' })} />}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (
