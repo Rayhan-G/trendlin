@@ -1,4 +1,4 @@
-// src/utils/slugify.js
+// utils/slugify.js
 // This is a UTILITY file - no React hooks allowed here!
 
 /**
@@ -69,6 +69,9 @@ export async function createUniqueSlug(supabaseClient, title, excludeId = null) 
   
   return slug
 }
+
+// Alias for createUniqueSlug (for compatibility with existing imports)
+export const ensureUniqueSlug = createUniqueSlug
 
 /**
  * Validate slug format

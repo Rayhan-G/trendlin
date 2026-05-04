@@ -10,10 +10,10 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
-import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -30,18 +30,24 @@ import {
 // Portal Dropdown Component
 const PortalDropdown = ({ isOpen, onClose, children, anchorRef }) => {
   const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (isOpen && anchorRef?.current) {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && anchorRef?.current && mounted) {
       const rect = anchorRef.current.getBoundingClientRect();
       setPosition({
         top: rect.bottom + window.scrollY + 5,
         left: rect.left + window.scrollX,
       });
     }
-  }, [isOpen, anchorRef]);
+  }, [isOpen, anchorRef, mounted]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   return createPortal(
     <>
@@ -84,16 +90,28 @@ const MenuBar = ({ editor }) => {
 
   const addLink = () => {
     if (linkUrl) {
-      editor.chain().focus().setLink({ href: linkUrl }).run();
+      // Validate URL
+      let url = linkUrl;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      editor.chain().focus().setLink({ href: url }).run();
       setLinkUrl('');
       setShowLinkModal(false);
     }
   };
 
+  const removeLink = () => {
+    editor.chain().focus().unsetLink().run();
+    setShowLinkModal(false);
+  };
+
   const addImage = () => {
     const url = window.prompt('Enter image URL:');
-    if (url) {
+    if (url && (url.startsWith('http') || url.startsWith('/'))) {
       editor.chain().focus().setImage({ src: url }).run();
+    } else if (url) {
+      alert('Please enter a valid URL');
     }
   };
 
@@ -109,6 +127,7 @@ const MenuBar = ({ editor }) => {
           disabled={!editor.can().undo()}
           className="toolbar-btn"
           title="Undo"
+          type="button"
         >
           <Undo size={16} />
         </button>
@@ -117,6 +136,7 @@ const MenuBar = ({ editor }) => {
           disabled={!editor.can().redo()}
           className="toolbar-btn"
           title="Redo"
+          type="button"
         >
           <Redo size={16} />
         </button>
@@ -129,6 +149,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           className={`toolbar-btn ${editor.isActive('heading', { level: 1 }) ? 'active' : ''}`}
           title="Heading 1"
+          type="button"
         >
           <Heading1 size={16} />
         </button>
@@ -136,6 +157,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className={`toolbar-btn ${editor.isActive('heading', { level: 2 }) ? 'active' : ''}`}
           title="Heading 2"
+          type="button"
         >
           <Heading2 size={16} />
         </button>
@@ -143,6 +165,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           className={`toolbar-btn ${editor.isActive('heading', { level: 3 }) ? 'active' : ''}`}
           title="Heading 3"
+          type="button"
         >
           <Heading3 size={16} />
         </button>
@@ -155,6 +178,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={`toolbar-btn ${editor.isActive('bold') ? 'active' : ''}`}
           title="Bold"
+          type="button"
         >
           <Bold size={16} />
         </button>
@@ -162,6 +186,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={`toolbar-btn ${editor.isActive('italic') ? 'active' : ''}`}
           title="Italic"
+          type="button"
         >
           <Italic size={16} />
         </button>
@@ -169,6 +194,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           className={`toolbar-btn ${editor.isActive('underline') ? 'active' : ''}`}
           title="Underline"
+          type="button"
         >
           <UnderlineIcon size={16} />
         </button>
@@ -176,6 +202,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleStrike().run()}
           className={`toolbar-btn ${editor.isActive('strike') ? 'active' : ''}`}
           title="Strikethrough"
+          type="button"
         >
           <Strikethrough size={16} />
         </button>
@@ -188,6 +215,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={`toolbar-btn ${editor.isActive('bulletList') ? 'active' : ''}`}
           title="Bullet List"
+          type="button"
         >
           <List size={16} />
         </button>
@@ -195,6 +223,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={`toolbar-btn ${editor.isActive('orderedList') ? 'active' : ''}`}
           title="Numbered List"
+          type="button"
         >
           <ListOrdered size={16} />
         </button>
@@ -202,6 +231,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleTaskList().run()}
           className={`toolbar-btn ${editor.isActive('taskList') ? 'active' : ''}`}
           title="Task List"
+          type="button"
         >
           <CheckSquare size={16} />
         </button>
@@ -214,6 +244,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().setTextAlign('left').run()}
           className={`toolbar-btn ${editor.isActive({ textAlign: 'left' }) ? 'active' : ''}`}
           title="Align Left"
+          type="button"
         >
           <AlignLeft size={16} />
         </button>
@@ -221,6 +252,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().setTextAlign('center').run()}
           className={`toolbar-btn ${editor.isActive({ textAlign: 'center' }) ? 'active' : ''}`}
           title="Align Center"
+          type="button"
         >
           <AlignCenter size={16} />
         </button>
@@ -228,6 +260,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().setTextAlign('right').run()}
           className={`toolbar-btn ${editor.isActive({ textAlign: 'right' }) ? 'active' : ''}`}
           title="Align Right"
+          type="button"
         >
           <AlignRight size={16} />
         </button>
@@ -235,6 +268,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().setTextAlign('justify').run()}
           className={`toolbar-btn ${editor.isActive({ textAlign: 'justify' }) ? 'active' : ''}`}
           title="Justify"
+          type="button"
         >
           <AlignJustify size={16} />
         </button>
@@ -248,6 +282,7 @@ const MenuBar = ({ editor }) => {
             onClick={() => setShowColorPicker(!showColorPicker)}
             className="toolbar-btn"
             title="Text Color"
+            type="button"
           >
             <Palette size={16} />
           </button>
@@ -257,13 +292,13 @@ const MenuBar = ({ editor }) => {
             anchorRef={colorPickerRef}
           >
             <div className="color-picker-dropdown">
-              <button onClick={() => editor.chain().focus().setColor('#000000').run()} className="color-option black">Black</button>
-              <button onClick={() => editor.chain().focus().setColor('#ef4444').run()} className="color-option red">Red</button>
-              <button onClick={() => editor.chain().focus().setColor('#3b82f6').run()} className="color-option blue">Blue</button>
-              <button onClick={() => editor.chain().focus().setColor('#10b981').run()} className="color-option green">Green</button>
-              <button onClick={() => editor.chain().focus().setColor('#f59e0b').run()} className="color-option orange">Orange</button>
-              <button onClick={() => editor.chain().focus().setColor('#8b5cf6').run()} className="color-option purple">Purple</button>
-              <button onClick={() => editor.chain().focus().unsetColor().run()} className="color-option reset">Reset</button>
+              <button onClick={() => editor.chain().focus().setColor('#000000').run()} className="color-option black" type="button">Black</button>
+              <button onClick={() => editor.chain().focus().setColor('#ef4444').run()} className="color-option red" type="button">Red</button>
+              <button onClick={() => editor.chain().focus().setColor('#3b82f6').run()} className="color-option blue" type="button">Blue</button>
+              <button onClick={() => editor.chain().focus().setColor('#10b981').run()} className="color-option green" type="button">Green</button>
+              <button onClick={() => editor.chain().focus().setColor('#f59e0b').run()} className="color-option orange" type="button">Orange</button>
+              <button onClick={() => editor.chain().focus().setColor('#8b5cf6').run()} className="color-option purple" type="button">Purple</button>
+              <button onClick={() => editor.chain().focus().unsetColor().run()} className="color-option reset" type="button">Reset</button>
             </div>
           </PortalDropdown>
         </div>
@@ -271,6 +306,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleHighlight().run()}
           className={`toolbar-btn ${editor.isActive('highlight') ? 'active' : ''}`}
           title="Highlight"
+          type="button"
         >
           <Highlighter size={16} />
         </button>
@@ -278,6 +314,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={`toolbar-btn ${editor.isActive('blockquote') ? 'active' : ''}`}
           title="Quote"
+          type="button"
         >
           <Quote size={16} />
         </button>
@@ -285,6 +322,7 @@ const MenuBar = ({ editor }) => {
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           className="toolbar-btn"
           title="Divider"
+          type="button"
         >
           <Minus size={16} />
         </button>
@@ -298,6 +336,7 @@ const MenuBar = ({ editor }) => {
             onClick={() => setShowLinkModal(!showLinkModal)}
             className={`toolbar-btn ${editor.isActive('link') ? 'active' : ''}`}
             title="Add Link"
+            type="button"
           >
             <LinkIcon size={16} />
           </button>
@@ -314,8 +353,11 @@ const MenuBar = ({ editor }) => {
                 onChange={(e) => setLinkUrl(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addLink()}
               />
-              <button onClick={addLink}>Add</button>
-              <button onClick={() => setShowLinkModal(false)}>Cancel</button>
+              <button onClick={addLink} type="button">Add</button>
+              {editor.isActive('link') && (
+                <button onClick={removeLink} type="button">Remove</button>
+              )}
+              <button onClick={() => setShowLinkModal(false)} type="button">Cancel</button>
             </div>
           </PortalDropdown>
         </div>
@@ -323,6 +365,7 @@ const MenuBar = ({ editor }) => {
           onClick={addImage}
           className="toolbar-btn"
           title="Add Image"
+          type="button"
         >
           <ImageIcon size={16} />
         </button>
@@ -330,6 +373,7 @@ const MenuBar = ({ editor }) => {
           onClick={addTable}
           className="toolbar-btn"
           title="Add Table"
+          type="button"
         >
           <TableIcon size={16} />
         </button>
