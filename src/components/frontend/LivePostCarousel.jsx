@@ -1,11 +1,11 @@
 // src/components/frontend/LivePostCarousel.jsx
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { supabase } from '../../lib/supabase'
 import { 
   ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, 
   Play, Volume2, VolumeX, Maximize2, CheckCircle,
-  Zap, User, Send, X
+  Zap, User, Send, X, Twitter, Facebook, Linkedin, Copy
 } from 'lucide-react'
-import ShareButtons from '../blog/ShareButtons'
 
 export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLike, onShare, sessionId }) {
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -97,13 +97,14 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }
 
+  // LOAD COMMENTS - Direct Supabase query
   const loadComments = async (postId) => {
     if (showComments[postId]) {
       setShowComments(prev => ({ ...prev, [postId]: false }))
       return
     }
     
-    if (comments[postId]?.length > 0) {
+    if (comments[postId] && comments[postId].length > 0) {
       setShowComments(prev => ({ ...prev, [postId]: true }))
       return
     }
@@ -111,88 +112,165 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     setLoadingComments(prev => ({ ...prev, [postId]: true }))
     
     try {
-      const response = await fetch(`/api/live-posts/${postId}/comments`)
-      const data = await response.json()
+      // Query all comments regardless of status (or use 'approved' if you have moderation)
+      const { data, error } = await supabase
+        .from('live_post_comments')
+        .select('*')
+        .eq('live_post_id', postId)
+        .order('created_at', { ascending: false })
+        .limit(50)
       
-      if (response.ok) {
-        setComments(prev => ({ ...prev, [postId]: data.comments || [] }))
-        setShowComments(prev => ({ ...prev, [postId]: true }))
-      } else {
-        setErrorMsg(prev => ({ ...prev, [postId]: 'Unable to load comments' }))
-      }
+      if (error) throw error
+      
+      setComments(prev => ({ ...prev, [postId]: data || [] }))
+      setShowComments(prev => ({ ...prev, [postId]: true }))
     } catch (err) {
-      console.error('Load error:', err)
-      setErrorMsg(prev => ({ ...prev, [postId]: 'Network error' }))
+      console.error('Load comments error:', err)
+      setErrorMsg(prev => ({ ...prev, [postId]: 'Failed to load comments' }))
+      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
     } finally {
       setLoadingComments(prev => ({ ...prev, [postId]: false }))
     }
   }
 
+  // SUBMIT COMMENT - Fixed to show immediately
   const submitComment = async (postId) => {
     const name = commentName[postId]?.trim()
     const text = commentText[postId]?.trim()
     
     if (!name) {
       setErrorMsg(prev => ({ ...prev, [postId]: 'Name is required' }))
+      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
       return
     }
     
     if (!text) {
       setErrorMsg(prev => ({ ...prev, [postId]: 'Comment cannot be empty' }))
+      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
       return
     }
     
     setSubmitting(prev => ({ ...prev, [postId]: true }))
-    setErrorMsg(prev => ({ ...prev, [postId]: null }))
+    
+    // Create optimistic comment
+    const optimisticComment = {
+      id: `temp_${Date.now()}`,
+      live_post_id: postId,
+      user_name: name,
+      content: text,
+      created_at: new Date().toISOString(),
+      status: 'approved'
+    }
+    
+    // Add optimistic comment immediately
+    setComments(prev => ({
+      ...prev,
+      [postId]: [optimisticComment, ...(prev[postId] || [])]
+    }))
+    
+    // Clear input
+    setCommentText(prev => ({ ...prev, [postId]: '' }))
     
     try {
-      const response = await fetch(`/api/live-posts/${postId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      // Insert to database
+      const { data, error } = await supabase
+        .from('live_post_comments')
+        .insert([{
+          live_post_id: postId,
           user_name: name,
           content: text,
-          user_email: null,
-          user_avatar: null
-        })
-      })
+          status: 'approved', // Make sure this matches your table
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single()
       
-      const data = await response.json()
+      if (error) throw error
       
-      if (response.ok && data.comment) {
-        setComments(prev => ({
-          ...prev,
-          [postId]: [data.comment, ...(prev[postId] || [])]
-        }))
-        setCommentText(prev => ({ ...prev, [postId]: '' }))
-        setSuccessMsg(prev => ({ ...prev, [postId]: 'Comment posted successfully' }))
-        setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 3000)
-      } else {
-        setErrorMsg(prev => ({ ...prev, [postId]: data.error || 'Unable to post comment' }))
-      }
+      // Replace optimistic comment with real one
+      setComments(prev => ({
+        ...prev,
+        [postId]: prev[postId].map(c => 
+          c.id === optimisticComment.id ? data : c
+        )
+      }))
+      
+      setSuccessMsg(prev => ({ ...prev, [postId]: 'Comment posted!' }))
+      setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 2000)
+      
     } catch (err) {
       console.error('Submit error:', err)
-      setErrorMsg(prev => ({ ...prev, [postId]: 'Network error. Please try again.' }))
+      // Remove optimistic comment on error
+      setComments(prev => ({
+        ...prev,
+        [postId]: prev[postId].filter(c => c.id !== optimisticComment.id)
+      }))
+      setErrorMsg(prev => ({ ...prev, [postId]: 'Failed to post comment' }))
+      setTimeout(() => setErrorMsg(prev => ({ ...prev, [postId]: null })), 3000)
     } finally {
       setSubmitting(prev => ({ ...prev, [postId]: false }))
     }
   }
 
-  const handleShareCount = async (postId, platform) => {
-    try {
-      const response = await fetch(`/api/live-posts/${postId}/share`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform })
-      })
+  // FIXED SHARE - Only counts when ACTUALLY shared
+  const handleShareClick = async (postId, platform = null) => {
+    const url = `${window.location.origin}/live-posts/${postId}`
+    const title = encodeURIComponent('Check out this post on Trendlin')
+    
+    let shareSuccess = false
+    let shareUrl = ''
+    
+    switch (platform) {
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`
+        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
+        shareSuccess = true
+        break
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
+        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
+        shareSuccess = true
+        break
+      case 'linkedin':
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+        window.open(shareUrl, '_blank', 'width=600,height=400,noopener,noreferrer')
+        shareSuccess = true
+        break
+      case 'copy':
+        await navigator.clipboard.writeText(url)
+        setSuccessMsg(prev => ({ ...prev, [postId]: 'Link copied!' }))
+        setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 2000)
+        setShowShareModal(prev => ({ ...prev, [postId]: false }))
+        return
+      default:
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'Check this out!', url })
+            shareSuccess = true
+          } catch (e) {
+            console.log('Share cancelled or failed')
+          }
+        }
+        break
+    }
+    
+    setShowShareModal(prev => ({ ...prev, [postId]: false }))
+    
+    // ONLY increment count if actually shared (not just modal opened)
+    if (shareSuccess) {
+      // Update UI optimistically
+      setShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
       
-      if (response.ok) {
-        const data = await response.json()
-        setShareCount(prev => ({ ...prev, [postId]: data.shares || (shareCount[postId] || 0) + 1 }))
+      // Track share in background
+      try {
+        await fetch(`/api/live-posts/${postId}/share`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
         if (onShare) onShare(postId)
+      } catch (err) {
+        console.error('Share track error:', err)
       }
-    } catch (err) {
-      console.error('Share tracking error:', err)
     }
   }
 
@@ -218,11 +296,11 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     if (!date) return ''
     const minutes = Math.floor((new Date() - new Date(date)) / 60000)
     if (minutes < 1) return 'just now'
-    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
+    if (minutes < 60) return `${minutes}m`
     const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    if (hours < 24) return `${hours}h`
     const days = Math.floor(hours / 24)
-    return `${days} day${days > 1 ? 's' : ''} ago`
+    return `${days}d`
   }
 
   const formatNumber = (num) => {
@@ -347,7 +425,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </button>
         </div>
 
-        {/* Share Modal with ShareButtons Component */}
+        {/* Share Modal */}
         {showShareModal[currentPost.id] && (
           <div className="share-modal" onClick={(e) => e.stopPropagation()}>
             <div className="share-modal-header">
@@ -356,12 +434,24 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
                 <X size={16} />
               </button>
             </div>
-            <ShareButtons 
-              url={`${window.location.origin}/live-posts/${currentPost.id}`}
-              title={currentPost.content?.substring(0, 100)}
-              onShareTrack={(platform) => handleShareCount(currentPost.id, platform)}
-              onClose={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: false }))}
-            />
+            <div className="share-buttons">
+              <button onClick={() => handleShareClick(currentPost.id, 'twitter')} className="share-btn twitter">
+                <Twitter size={18} />
+                <span>Twitter</span>
+              </button>
+              <button onClick={() => handleShareClick(currentPost.id, 'facebook')} className="share-btn facebook">
+                <Facebook size={18} />
+                <span>Facebook</span>
+              </button>
+              <button onClick={() => handleShareClick(currentPost.id, 'linkedin')} className="share-btn linkedin">
+                <Linkedin size={18} />
+                <span>LinkedIn</span>
+              </button>
+              <button onClick={() => handleShareClick(currentPost.id, 'copy')} className="share-btn copy">
+                <Copy size={18} />
+                <span>Copy link</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -464,7 +554,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           padding-top: 2rem;
         }
 
-        /* Connection Thread */
         .connection-thread {
           position: absolute;
           top: 0;
@@ -509,7 +598,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           transform: scale(1.2);
         }
 
-        /* Content Node */
         .content-node {
           animation: fadeSlide 0.4s ease;
         }
@@ -519,7 +607,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Category */
         .category-marker {
           display: flex;
           align-items: center;
@@ -551,7 +638,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           font-size: 0.7rem;
         }
 
-        /* Content */
         .content-block {
           margin-bottom: 2rem;
         }
@@ -584,7 +670,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           gap: 8px;
         }
 
-        /* Media */
         .media-node {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
@@ -624,7 +709,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           font-weight: 500;
         }
 
-        /* Actions */
         .action-knots {
           display: flex;
           gap: 2rem;
@@ -660,7 +744,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           color: #8b5cf6;
         }
 
-        /* Share Modal */
         .share-modal {
           position: absolute;
           bottom: 100%;
@@ -700,7 +783,37 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           background: #f1f5f9;
         }
 
-        /* Comments */
+        .share-buttons {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .share-btn {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 12px;
+          background: none;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          transition: all 0.2s;
+          width: 100%;
+          text-align: left;
+        }
+
+        .share-btn.twitter { color: #1DA1F2; }
+        .share-btn.facebook { color: #4267B2; }
+        .share-btn.linkedin { color: #0077B5; }
+        .share-btn.copy { color: #64748b; }
+
+        .share-btn:hover {
+          background: #f1f5f9;
+          transform: translateX(4px);
+        }
+
         .comment-thread {
           margin-top: 1rem;
           padding-top: 1rem;
@@ -861,7 +974,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           margin-top: 0.5rem;
         }
 
-        /* Navigation */
         .nav-controls {
           display: flex;
           align-items: center;
@@ -896,7 +1008,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           font-family: monospace;
         }
 
-        /* Dark Mode */
         @media (prefers-color-scheme: dark) {
           .content-text { color: #e2e8f0; }
           .media-node { background: #1e293b; }
@@ -916,16 +1027,14 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
             border-bottom-color: #334155;
             color: #f1f5f9;
           }
-          .share-modal-header button:hover {
+          .share-btn:hover {
             background: #334155;
           }
         }
 
-        /* Responsive */
         @media (max-width: 640px) {
           .connected-carousel { max-width: 100%; margin: 1rem auto; padding-top: 1rem; }
           .action-knots { gap: 1rem; }
-          .knot span:not(.count) { display: none; }
           .share-modal { right: -40px; min-width: 160px; }
         }
       `}</style>

@@ -1,11 +1,12 @@
-// src/components/admin/AdminNavigation.jsx (UPDATED with Live Posts)
+// src/components/admin/AdminNavigation.jsx (UPDATED with Live Posts & Comments)
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import {
   LayoutDashboard, FileText, Calendar, Link as LinkIcon,
   DollarSign, BarChart3, Home, Sparkles, Tv, Plus, Menu, X,
-  TrendingUp, FolderOpen, Award, Activity, BarChart2, Clock
+  TrendingUp, FolderOpen, Award, Activity, BarChart2, Clock,
+  MessageCircle, Heart, Reply, Trash2
 } from 'lucide-react';
 
 const AdminNavigation = ({ children }) => {
@@ -54,8 +55,9 @@ const AdminNavigation = ({ children }) => {
     { path: '/admin/posts-manager', name: 'All Posts', icon: FileText, section: 'main' },
     { path: '/admin/posts/create', name: 'Create New Post', icon: Plus, section: 'main' },
     
-    // Live Posts Section (NEW)
-    { path: '/admin/live-posts', name: 'Live Posts (24H)', icon: Clock, section: 'live', badge: '24H' },
+    // Live Posts Section
+    { path: '/admin/live-posts', name: 'Live Posts', icon: Clock, section: 'live', badge: '24H' },
+    { path: '/admin/comments', name: 'Comments', icon: MessageCircle, section: 'live', badge: 'Manage' },
     
     // Content Section
     { path: '/admin/content-calendar', name: 'Content Calendar', icon: Calendar, section: 'content' },
@@ -84,6 +86,7 @@ const AdminNavigation = ({ children }) => {
     if (path === '/admin/posts-manager') return router.pathname === '/admin/posts-manager' || router.pathname.startsWith('/admin/posts/edit/');
     if (path === '/admin/polls') return router.pathname === '/admin/polls';
     if (path === '/admin/live-posts') return router.pathname === '/admin/live-posts';
+    if (path === '/admin/comments') return router.pathname === '/admin/comments';
     return router.pathname === path;
   };
 

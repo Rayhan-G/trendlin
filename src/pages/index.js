@@ -300,36 +300,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live Posts Section */}
-{livePosts.length > 0 && (
-  <div className="live-section">
-    <div className="section-header">
-      <div className="live-badge">
-        <span className="live-dot"></span>
-        <span>LIVE</span>
-        <span className="badge-separator">•</span>
-        <span>24H Posts</span>
-      </div>
-      <h2 className="section-title">Fresh Daily</h2>
-      <p className="section-subtitle">
-        {livePosts.length} featured {livePosts.length === 1 ? 'story' : 'stories'} — automatically expires in 24 hours
-      </p>
-      <button onClick={refreshLivePosts} className="refresh-button" title="Refresh feed">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M23 4v6h-6M1 20v-6h6" />
-          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-        </svg>
-      </button>
-    </div>
-    <LivePostCarousel 
-      posts={livePosts}
-      autoPlayInterval={5000}
-      onLike={handleLivePostLike}
-      onShare={handleLivePostShare}
-      sessionId={visitorId}
-    />
-  </div>
-)}
+        
 
         {editorsPicks.length > 0 && (
           <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
