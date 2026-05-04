@@ -6,12 +6,10 @@
   "regions": ["iad1"],
   "functions": {
     "app/api/ads/**/*.js": {
-      "runtime": "edge",
       "maxDuration": 10,
       "regions": ["iad1", "cdg1", "hnd1", "syd1"]
     },
     "app/api/content/**/*.js": {
-      "runtime": "edge",
       "maxDuration": 10,
       "regions": ["iad1", "cdg1", "hnd1", "syd1"]
     }
