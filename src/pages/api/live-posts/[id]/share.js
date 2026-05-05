@@ -1,5 +1,5 @@
 // pages/api/live-posts/[id]/share.js
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../../../../lib/supabase'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -10,11 +10,14 @@ export default async function handler(req, res) {
   const { platform } = req.body
   
   try {
+    // Convert id to number if needed (since your live_posts uses bigint)
+    const postId = parseInt(id, 10)
+    
     // Get current shares
     const { data: post, error: fetchError } = await supabase
       .from('live_posts')
       .select('shares')
-      .eq('id', id)
+      .eq('id', postId)
       .single()
     
     if (fetchError) throw fetchError
@@ -25,18 +28,23 @@ export default async function handler(req, res) {
     const { error: updateError } = await supabase
       .from('live_posts')
       .update({ shares: newShares })
-      .eq('id', id)
+      .eq('id', postId)
     
     if (updateError) throw updateError
     
-    // Log share for analytics (optional)
-    await supabase
-      .from('share_logs')
-      .insert([{
-        post_id: id,
-        platform: platform || 'unknown',
-        shared_at: new Date().toISOString()
-      }])
+    // Optional: Log share for analytics (skip if table doesn't exist)
+    try {
+      await supabase
+        .from('share_logs')
+        .insert([{
+          post_id: postId,
+          platform: platform || 'unknown',
+          shared_at: new Date().toISOString()
+        }])
+    } catch (logError) {
+      // Silently fail - analytics are optional
+      console.log('Analytics log skipped')
+    }
     
     return res.status(200).json({ success: true, shares: newShares })
     
