@@ -10,63 +10,44 @@ const nextConfig = {
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   },
   
-  // INCREASE PAYLOAD SIZE LIMIT - FIXES 413 ERROR
-  api: {
-    responseLimit: false, // Disable response size limit
-    bodyParser: {
-      sizeLimit: '10mb', // Increase from default 4mb to 10mb for post content
-    },
-  },
-  
-  // For serverless functions (Vercel deployment)
-  serverRuntimeConfig: {
-    maxBodySize: '10mb',
-  },
-  
   // Enable response compression
   compress: true,
   
   // Increase timeout for large uploads
   staticPageGenerationTimeout: 120,
   
-  // Configure for both webpack and turbopack
+  // ✅ ADD THIS: Turbopack configuration (required when you have webpack config)
+  turbopack: {
+    // Empty config to silence the warning
+    // Add custom resolve alias to match webpack
+    resolveAlias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  
+  // Webpack configuration (kept for production builds)
   webpack: (config, { isServer }) => {
-    // Keep your webpack config for production builds
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, './src'),
     }
-    
-    // Add size limit warning for large chunks
-    if (!isServer) {
-      config.performance = {
-        ...config.performance,
-        maxAssetSize: 500000, // 500KB
-        maxEntrypointSize: 1000000, // 1MB
-      }
-    }
-    
     return config
   },
   
-  // Add turbopack config to silence the warning
-  turbopack: {
-    resolveAlias: {
-      '@': './src',
-    },
-  },
-  
-  // Images optimization
+  // Images optimization - using remotePatterns (not domains)
   images: {
-    domains: process.env.NEXT_PUBLIC_SUPABASE_URL 
-      ? [process.env.NEXT_PUBLIC_SUPABASE_URL.replace('https://', '')]
-      : [],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256],
     formats: ['image/webp'],
   },
   
-  // Headers for security and performance
+  // Headers for security
   async headers() {
     return [
       {
@@ -82,4 +63,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig;
+module.exports = nextConfig

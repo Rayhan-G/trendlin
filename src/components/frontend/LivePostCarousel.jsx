@@ -1,16 +1,19 @@
 // components/frontend/LivePostCarousel.jsx
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../../lib/supabase'
 import { useInteractions } from '../../hooks/useInteractions'
 import CommentSection from '../comments/CommentSection'
 import { 
   ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, 
   Play, Volume2, VolumeX, Maximize2, CheckCircle,
-  Zap, User, Send, X, Clock, Copy, Twitter, Facebook, Linkedin
+  Zap, User, Send, X, Clock, Copy
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLike, onShare, sessionId }) {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [direction, setDirection] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [isHovering, setIsHovering] = useState(false)
   const [showComments, setShowComments] = useState({})
@@ -20,8 +23,9 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const [successMsg, setSuccessMsg] = useState({})
   const [showShareOptions, setShowShareOptions] = useState({})
   const [localShareCount, setLocalShareCount] = useState({})
+  const [shareMenuPosition, setShareMenuPosition] = useState({ top: 0, left: 0, direction: 'up' })
   const autoPlayRef = useRef(null)
-  const shareMenuRef = useRef(null)
+  const shareButtonRef = useRef({})
 
   const getSessionId = useCallback(() => {
     if (sessionId) return sessionId
@@ -62,6 +66,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   useEffect(() => {
     if (isAutoPlaying && posts.length > 1 && !isHovering) {
       autoPlayRef.current = setInterval(() => {
+        setDirection(1)
         setCurrentIndex((prev) => (prev + 1) % posts.length)
       }, autoPlayInterval)
     }
@@ -73,96 +78,94 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   // Close share menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
-        setShowShareOptions({})
-      }
+      const isOutside = Object.keys(shareButtonRef.current).every(postId => {
+        const button = shareButtonRef.current[postId]
+        const menu = document.getElementById(`share-menu-portal-${postId}`)
+        return button && !button.contains(event.target) && menu && !menu.contains(event.target)
+      })
+      if (isOutside) setShowShareOptions({})
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const toggleComments = (postId) => {
-    setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }))
-  }
+  const toggleComments = (postId) => setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }))
 
-  // WORKING SHARE FUNCTION
   const handleShare = async (postId, platform) => {
-    const url = `${window.location.origin}/live-posts/${postId}`
-    const title = encodeURIComponent(currentPost?.content?.substring(0, 100) || 'Check out this post')
+    const currentPostData = posts.find(p => p.id === postId)
+    if (!currentPostData) return
     
-    let shareWindow = null
+    const url = `${window.location.origin}/live-posts/${postId}`
+    const title = encodeURIComponent(currentPostData?.content?.substring(0, 100) || 'Check out this post')
+    const text = encodeURIComponent(currentPostData?.content?.substring(0, 200) || 'Check out this post on Trendlin')
     
     switch (platform) {
       case 'twitter':
-        shareWindow = window.open(
-          `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`,
-          '_blank',
-          'width=550,height=420,left=300,top=100'
-        )
+        window.open(`https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`, '_blank', 'width=550,height=420,left=300,top=100')
         break
       case 'facebook':
-        shareWindow = window.open(
-          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-          '_blank',
-          'width=550,height=520,left=300,top=100'
-        )
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=550,height=520,left=300,top=100')
         break
       case 'linkedin':
-        shareWindow = window.open(
-          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-          '_blank',
-          'width=550,height=520,left=300,top=100'
-        )
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank', 'width=550,height=520,left=300,top=100')
+        break
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${title}%20${encodeURIComponent(url)}`, '_blank', 'width=550,height=420,left=300,top=100')
+        break
+      case 'telegram':
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${title}`, '_blank', 'width=550,height=420,left=300,top=100')
+        break
+      case 'email':
+        window.location.href = `mailto:?subject=${title}&body=${text}%0A%0A${encodeURIComponent(url)}`
         break
       case 'copy':
         await navigator.clipboard.writeText(url)
-        setSuccessMsg(prev => ({ ...prev, [postId]: 'Link copied to clipboard!' }))
+        setSuccessMsg(prev => ({ ...prev, [postId]: 'Link copied!' }))
         setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 3000)
-        break
-      case 'native':
-        if (navigator.share) {
-          try {
-            await navigator.share({ title: decodeURIComponent(title), url })
-          } catch (e) {}
-        }
-        break
+        setShowShareOptions(prev => ({ ...prev, [postId]: false }))
+        return
       default:
         return
     }
     
-    // Update share count (only for successful shares)
-    if (platform !== 'native' || (platform === 'native' && !shareWindow)) {
-      setLocalShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
-      
-      // Track in background (silent, don't wait)
-      try {
-        await fetch(`/api/live-posts/${postId}/share`, { 
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ platform })
-        }).catch(() => {})
-        if (onShare) onShare(postId)
-      } catch (err) {
-        // Silent fail - UI already updated
-      }
-    }
-    
+    setLocalShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
+    try { await fetch(`/api/live-posts/${postId}/share`, { method: 'POST' }).catch(() => {}) } catch (err) {}
     setShowShareOptions(prev => ({ ...prev, [postId]: false }))
   }
 
-  const goToSlide = (index) => {
+  const openShareMenu = (postId) => {
+    const button = shareButtonRef.current[postId]
+    if (button) {
+      const rect = button.getBoundingClientRect()
+      const spaceAbove = rect.top
+      const spaceBelow = window.innerHeight - rect.bottom
+      const direction = spaceAbove > spaceBelow ? 'up' : 'down'
+      
+      setShareMenuPosition({
+        top: direction === 'up' ? rect.top - 10 : rect.bottom + 10,
+        left: rect.right - 180,
+        direction
+      })
+    }
+    setShowShareOptions(prev => ({ ...prev, [postId]: true }))
+  }
+
+  const goToSlide = (index, dir = index > currentIndex ? 1 : -1) => {
+    setDirection(dir)
     setCurrentIndex(index)
     setIsAutoPlaying(false)
     setTimeout(() => setIsAutoPlaying(true), 10000)
   }
 
   const nextSlide = () => {
+    setDirection(1)
     setCurrentIndex((prev) => (prev + 1) % posts.length)
     setIsAutoPlaying(false)
     setTimeout(() => setIsAutoPlaying(true), 10000)
   }
 
   const prevSlide = () => {
+    setDirection(-1)
     setCurrentIndex((prev) => (prev - 1 + posts.length) % posts.length)
     setIsAutoPlaying(false)
     setTimeout(() => setIsAutoPlaying(true), 10000)
@@ -184,7 +187,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const currentShareCount = localShareCount[currentPost.id] ?? currentPost.shares ?? 0
   const isShareMenuOpen = showShareOptions[currentPost.id]
 
-  // Use interactions hook for likes only
   const {
     likes: liveLikes,
     hasLiked: userHasLiked,
@@ -203,508 +205,455 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     return `${minutes}m`
   }
 
+  const slideVariants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 400 : -400,
+      opacity: 0,
+      scale: 0.95
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
+    },
+    exit: (direction) => ({
+      x: direction > 0 ? -400 : 400,
+      opacity: 0,
+      scale: 0.95,
+      transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
+    })
+  }
+
   return (
-    <div 
-      className="connected-carousel"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-    >
-      <div className="connection-thread">
-        <div className="thread-line"></div>
-        <div className="thread-dots">
-          {posts.map((_, idx) => (
-            <div 
-              key={idx} 
-              className={`thread-dot ${idx === currentIndex ? 'active' : ''}`}
-              onClick={() => goToSlide(idx)}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="content-node">
-        {/* Category Header */}
-        <div className="category-marker">
-          <span className="category-dot" />
-          <span className="category-name">{currentPost.category}</span>
-          {getTimeLeft() && (
-            <span className="time-mark">
-              <Zap size={10} />
-              {getTimeLeft()} remaining
-            </span>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="content-block">
-          {currentPost.content ? (
-            <>
-              <div className="content-text">
-                <div dangerouslySetInnerHTML={{ __html: displayContent || currentPost.content }} />
+    <div className="million-dollar-carousel">
+      {/* Main Carousel */}
+      <div className="carousel-viewport">
+        <AnimatePresence initial={false} custom={direction} mode="wait">
+          <motion.div
+            key={currentIndex}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            className="carousel-slide"
+          >
+            <div className="premium-card">
+              {/* Category Badge */}
+              <div className="category-badge">
+                <span className="badge-dot" />
+                <span className="badge-text">{currentPost.category}</span>
+                {getTimeLeft() && (
+                  <div className="time-chip">
+                    <Zap size={10} />
+                    <span>{getTimeLeft()}</span>
+                  </div>
+                )}
               </div>
-              {currentPost.content.length > 280 && (
-                <button onClick={() => setExpandedContent(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} className="expand-link">
-                  {isExpanded ? 'Show less' : 'Continue reading'}
-                  <ChevronRight size={14} />
+
+              {/* Content */}
+              <div className="content-area">
+                {currentPost.content ? (
+                  <>
+                    <div className="rich-content">
+                      <div dangerouslySetInnerHTML={{ __html: displayContent || currentPost.content }} />
+                    </div>
+                    {currentPost.content.length > 280 && (
+                      <button onClick={() => setExpandedContent(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} className="read-more">
+                        {isExpanded ? 'Show less' : 'Read more'}
+                        <ChevronRight size={14} className="read-more-icon" />
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <p className="empty-state">No description provided</p>
+                )}
+              </div>
+
+              {/* Media Grid */}
+              {currentPost.media_items && currentPost.media_items.length > 0 && (
+                <div className={`media-grid ${currentPost.media_items.length === 1 ? 'single' : 'grid-2'}`}>
+                  {currentPost.media_items.slice(0, 2).map((media, idx) => (
+                    <div key={idx} className="media-frame">
+                      <img src={media.url} alt="" loading="lazy" />
+                      {currentPost.media_items.length > 2 && idx === 0 && (
+                        <div className="media-overlay">
+                          <span>+{currentPost.media_items.length - 2}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Action Bar */}
+              <div className="action-bar-premium">
+                <button 
+                  onClick={toggleLike} 
+                  className={`action-premium like ${userHasLiked ? 'active' : ''}`}
+                  disabled={isSyncingInteractions}
+                >
+                  <Heart size={18} fill={userHasLiked ? '#ef4444' : 'none'} />
+                  <span>{formatNumber(liveLikes)}</span>
                 </button>
-              )}
-            </>
-          ) : (
-            <p className="empty-content">No description provided</p>
-          )}
-        </div>
-
-        {/* Media */}
-        {currentPost.media_items && currentPost.media_items.length > 0 && (
-          <div className="media-node">
-            {currentPost.media_items.slice(0, 2).map((media, idx) => (
-              <div key={idx} className={`media-piece ${currentPost.media_items.length === 1 ? 'single' : 'pair'}`}>
-                <img src={media.url} alt="" loading="lazy" />
+                
+                <button 
+                  onClick={() => toggleComments(currentPost.id)} 
+                  className={`action-premium comment ${isCommentsOpen ? 'active' : ''}`}
+                >
+                  <MessageCircle size={18} />
+                  <span>{formatNumber(currentCommentCount)}</span>
+                </button>
+                
+                <div className="share-wrapper">
+                  <button 
+                    ref={el => shareButtonRef.current[currentPost.id] = el}
+                    onClick={() => openShareMenu(currentPost.id)} 
+                    className="action-premium share"
+                  >
+                    <Share2 size={18} />
+                    <span>{formatNumber(currentShareCount)}</span>
+                  </button>
+                </div>
               </div>
-            ))}
-            {currentPost.media_items.length > 2 && (
-              <div className="media-more">+{currentPost.media_items.length - 2}</div>
-            )}
-          </div>
-        )}
 
-        {/* Actions */}
-        <div className="action-knots">
-          <button 
-            onClick={toggleLike} 
-            className={`knot like ${userHasLiked ? 'active' : ''}`}
-            disabled={isSyncingInteractions}
-          >
-            <Heart size={16} fill={userHasLiked ? '#ef4444' : 'none'} />
-            <span>{formatNumber(liveLikes)}</span>
-            {pendingLike !== undefined && (
-              <span className="pending-indicator" title="Will be saved soon">
-                <Clock size={10} />
-              </span>
-            )}
+              {/* Status Messages */}
+              {successMsg[currentPost.id] && (
+                <div className="status-chip success">
+                  <CheckCircle size={12} />
+                  {successMsg[currentPost.id]}
+                </div>
+              )}
+              {errorMsg[currentPost.id] && (
+                <div className="status-chip error">
+                  <X size={12} />
+                  {errorMsg[currentPost.id]}
+                </div>
+              )}
+
+              {/* Comments Section */}
+              <AnimatePresence>
+                {isCommentsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="comments-wrapper"
+                  >
+                    <CommentSection 
+                      postId={currentPost.id}
+                      sessionId={getSessionId()}
+                      commentCount={currentCommentCount}
+                      onCommentCountChange={(newCount) => {
+                        setCommentCounts(prev => ({ ...prev, [currentPost.id]: newCount }))
+                      }}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Navigation */}
+      {posts.length > 1 && (
+        <div className="nav-premium">
+          <button onClick={prevSlide} className="nav-btn-premium prev">
+            <ChevronLeft size={20} />
           </button>
-          
-          <button 
-            onClick={() => toggleComments(currentPost.id)} 
-            className={`knot ${isCommentsOpen ? 'active' : ''}`}
-          >
-            <MessageCircle size={16} />
-            <span>{formatNumber(currentCommentCount)}</span>
-          </button>
-          
-          <button 
-            onClick={() => setShowShareOptions(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} 
-            className="knot"
-          >
-            <Share2 size={16} />
-            <span>{formatNumber(currentShareCount)}</span>
+          <div className="nav-dots">
+            {posts.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => goToSlide(idx, idx > currentIndex ? 1 : -1)}
+                className={`nav-dot ${idx === currentIndex ? 'active' : ''}`}
+              />
+            ))}
+          </div>
+          <button onClick={nextSlide} className="nav-btn-premium next">
+            <ChevronRight size={20} />
           </button>
         </div>
+      )}
 
-        {/* Share Options Dropdown */}
-        {isShareMenuOpen && (
-          <div className="share-dropdown" ref={shareMenuRef}>
-            <button onClick={() => handleShare(currentPost.id, 'native')} className="share-option mobile-only">
-              📱 Share via...
-            </button>
-            <button onClick={() => handleShare(currentPost.id, 'copy')} className="share-option">
-              <Copy size={14} />
-              Copy link
-            </button>
-            <button onClick={() => handleShare(currentPost.id, 'twitter')} className="share-option twitter">
-              <Twitter size={14} />
-              Twitter
-            </button>
-            <button onClick={() => handleShare(currentPost.id, 'facebook')} className="share-option facebook">
-              <Facebook size={14} />
-              Facebook
-            </button>
-            <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-option linkedin">
-              <Linkedin size={14} />
-              LinkedIn
-            </button>
-          </div>
-        )}
-
-        {/* Sync Status */}
-        {pendingLike !== undefined && (
-          <div className="sync-status-bar">
-            <div className="sync-status-content">
-              {isSyncingInteractions ? (
-                <>
-                  <div className="sync-spinner-small" />
-                  <span>Saving your interaction...</span>
-                </>
-              ) : (
-                <>
-                  <Clock size={12} />
-                  <span>Will be saved in background</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Success/Error Messages */}
-        {successMsg[currentPost.id] && (
-          <div className="success-message">
-            <CheckCircle size={14} />
-            {successMsg[currentPost.id]}
-          </div>
-        )}
-        {errorMsg[currentPost.id] && (
-          <div className="error-message">
-            <X size={12} />
-            {errorMsg[currentPost.id]}
-          </div>
-        )}
-
-        {/* Comments Section */}
-        {isCommentsOpen && (
-          <CommentSection 
-            postId={currentPost.id}
-            sessionId={getSessionId()}
-            commentCount={currentCommentCount}
-            onCommentCountChange={(newCount) => {
-              setCommentCounts(prev => ({ ...prev, [currentPost.id]: newCount }))
-            }}
-          />
-        )}
-
-        {/* Navigation */}
-        {posts.length > 1 && (
-          <div className="nav-controls">
-            <button onClick={prevSlide} className="nav-prev"><ChevronLeft size={20} /></button>
-            <div className="position-mark">{currentIndex + 1} / {posts.length}</div>
-            <button onClick={nextSlide} className="nav-next"><ChevronRight size={20} /></button>
-          </div>
-        )}
-      </div>
+      {/* Portal Share Menu - Renders at body level, never gets cut off */}
+      {isShareMenuOpen && typeof document !== 'undefined' && createPortal(
+        <motion.div 
+          id={`share-menu-portal-${currentPost.id}`}
+          className={`share-menu-portal ${shareMenuPosition.direction}`}
+          style={{
+            position: 'fixed',
+            top: shareMenuPosition.top,
+            left: shareMenuPosition.left,
+            zIndex: 99999,
+          }}
+          initial={{ opacity: 0, scale: 0.95, y: shareMenuPosition.direction === 'up' ? 10 : -10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: shareMenuPosition.direction === 'up' ? 10 : -10 }}
+          transition={{ duration: 0.15 }}
+        >
+          <div className="share-menu-arrow" />
+          <button onClick={() => handleShare(currentPost.id, 'copy')} className="share-option-portal">
+            <Copy size={14} />
+            <span>Copy link</span>
+          </button>
+          <button onClick={() => handleShare(currentPost.id, 'twitter')} className="share-option-portal">
+            <span>🐦</span>
+            <span>Twitter</span>
+          </button>
+          <button onClick={() => handleShare(currentPost.id, 'facebook')} className="share-option-portal">
+            <span>📘</span>
+            <span>Facebook</span>
+          </button>
+          <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-option-portal">
+            <span>🔗</span>
+            <span>LinkedIn</span>
+          </button>
+          <button onClick={() => handleShare(currentPost.id, 'whatsapp')} className="share-option-portal">
+            <span>💬</span>
+            <span>WhatsApp</span>
+          </button>
+          <button onClick={() => handleShare(currentPost.id, 'telegram')} className="share-option-portal">
+            <span>✈️</span>
+            <span>Telegram</span>
+          </button>
+          <button onClick={() => handleShare(currentPost.id, 'email')} className="share-option-portal">
+            <span>📧</span>
+            <span>Email</span>
+          </button>
+        </motion.div>,
+        document.body
+      )}
 
       <style jsx>{`
-        .connected-carousel {
+        .million-dollar-carousel {
+          width: 100%;
+          max-width: 720px;
+          margin: 0 auto;
           position: relative;
-          max-width: 580px;
-          margin: 2rem auto;
-          padding-top: 2rem;
         }
 
-        .connection-thread {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-        }
-
-        .thread-line {
-          position: absolute;
-          top: 8px;
-          left: 10%;
-          right: 10%;
-          height: 1px;
-          background: repeating-linear-gradient(90deg, #8b5cf6 0px, #8b5cf6 4px, transparent 4px, transparent 12px);
-        }
-
-        .thread-dots {
-          display: flex;
-          justify-content: center;
-          gap: 12px;
+        .carousel-viewport {
           position: relative;
-          z-index: 2;
+          overflow: hidden;
+          border-radius: 32px;
         }
 
-        .thread-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #cbd5e1;
-          cursor: pointer;
-          transition: all 0.3s ease;
+        .carousel-slide {
+          width: 100%;
         }
 
-        .thread-dot.active {
-          width: 24px;
-          border-radius: 3px;
-          background: #8b5cf6;
+        .premium-card {
+          background: rgba(255, 255, 255, 0.98);
+          border-radius: 32px;
+          overflow: hidden;
+          box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.02);
+          transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.4, 1);
         }
 
-        .content-node {
-          animation: fadeSlide 0.4s ease;
+        .premium-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(139, 92, 246, 0.15);
         }
 
-        @keyframes fadeSlide {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        .category-marker {
+        .category-badge {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin-bottom: 1.5rem;
-          font-size: 0.75rem;
+          padding: 20px 24px 0 24px;
         }
 
-        .category-dot {
+        .badge-dot {
           width: 8px;
           height: 8px;
           border-radius: 50%;
           background: #8b5cf6;
         }
 
-        .category-name {
-          color: #64748b;
-          text-transform: uppercase;
+        .badge-text {
+          font-size: 12px;
           font-weight: 600;
-          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          color: #64748b;
         }
 
-        .time-mark {
+        .time-chip {
           display: flex;
           align-items: center;
           gap: 4px;
-          color: #94a3b8;
+          margin-left: 12px;
+          padding: 2px 8px;
+          background: #f1f5f9;
+          border-radius: 20px;
+          font-size: 10px;
           font-family: monospace;
-          font-size: 0.7rem;
+          color: #475569;
         }
 
-        .content-block {
-          margin-bottom: 2rem;
+        .content-area {
+          padding: 12px 24px;
         }
 
-        .content-text {
-          font-size: 1rem;
-          line-height: 1.7;
+        .rich-content {
+          font-size: 15px;
+          line-height: 1.6;
           color: #1e293b;
         }
 
-        .empty-content {
+        .empty-state {
           color: #94a3b8;
           font-style: italic;
         }
 
-        .expand-link {
-          margin-top: 0.75rem;
+        .read-more {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
+          margin-top: 12px;
+          font-size: 13px;
+          font-weight: 500;
           color: #8b5cf6;
-          font-size: 0.8rem;
           background: none;
           border: none;
           cursor: pointer;
+          transition: gap 0.2s;
         }
 
-        .media-node {
+        .read-more:hover {
+          gap: 10px;
+        }
+
+        .media-grid {
+          margin: 0 24px 16px 24px;
+          border-radius: 20px;
+          overflow: hidden;
+          background: #f1f5f9;
+        }
+
+        .media-grid.single {
+          display: block;
+        }
+
+        .media-grid.grid-2 {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 1px;
-          background: #f1f5f9;
-          border-radius: 16px;
-          overflow: hidden;
-          margin-bottom: 2rem;
+          gap: 2px;
         }
 
-        .media-piece {
-          background: #f8fafc;
+        .media-frame {
+          position: relative;
           aspect-ratio: 16/9;
           overflow: hidden;
+          background: #f8fafc;
         }
 
-        .media-piece.single {
-          grid-column: span 2;
-        }
-
-        .media-piece img {
+        .media-frame img {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          transition: transform 0.5s ease;
         }
 
-        .media-more {
+        .media-frame:hover img {
+          transform: scale(1.03);
+        }
+
+        .media-overlay {
           position: absolute;
           bottom: 12px;
           right: 12px;
-          background: rgba(0,0,0,0.7);
+          background: rgba(0, 0, 0, 0.7);
           backdrop-filter: blur(8px);
           padding: 4px 10px;
           border-radius: 20px;
-          font-size: 0.7rem;
-          color: white;
+          font-size: 12px;
           font-weight: 500;
+          color: white;
         }
 
-        .action-knots {
-          display: flex;
-          gap: 2rem;
-          margin-bottom: 1rem;
-          padding-bottom: 1rem;
-          border-bottom: 1px solid #f1f5f9;
-        }
-
-        .knot {
+        .action-bar-premium {
           display: flex;
           align-items: center;
-          gap: 6px;
-          background: none;
+          gap: 8px;
+          padding: 8px 24px 20px 24px;
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .action-premium {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          background: transparent;
           border: none;
-          color: #94a3b8;
-          font-size: 0.8rem;
+          border-radius: 40px;
+          font-size: 14px;
+          font-weight: 500;
+          color: #64748b;
           cursor: pointer;
-          transition: all 0.2s;
-          padding: 4px 8px;
-          border-radius: 8px;
-          position: relative;
+          transition: all 0.2s cubic-bezier(0.2, 0.8, 0.4, 1);
         }
 
-        .knot:hover {
-          color: #8b5cf6;
-          background: rgba(139, 92, 246, 0.05);
+        .action-premium:hover {
+          background: #f8fafc;
+          color: #1e293b;
         }
 
-        .knot.like.active {
+        .action-premium.like.active {
           color: #ef4444;
         }
 
-        .knot.active {
+        .action-premium.comment.active {
           color: #8b5cf6;
         }
 
-        .knot:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
+        .share-wrapper {
+          position: relative;
+          margin-left: auto;
         }
 
-        .pending-indicator {
+        .status-chip {
           display: inline-flex;
-          margin-left: 2px;
-          color: #f59e0b;
-          animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-
-        /* Share Dropdown */
-        .share-dropdown {
-          position: absolute;
-          right: 0;
-          top: 100%;
-          margin-top: 8px;
-          background: white;
-          border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-          padding: 0.5rem;
-          min-width: 160px;
-          z-index: 30;
-          border: 1px solid #eef2f6;
-        }
-
-        .share-option {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          width: 100%;
-          padding: 0.5rem 0.75rem;
-          background: none;
-          border: none;
-          border-radius: 10px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          color: #1e293b;
-          transition: all 0.2s;
-        }
-
-        .share-option:hover {
-          background: #f1f5f9;
-        }
-
-        .share-option.twitter:hover { color: #1da1f2; }
-        .share-option.facebook:hover { color: #1877f2; }
-        .share-option.linkedin:hover { color: #0077b5; }
-
-        .mobile-only {
-          display: none;
-        }
-
-        @media (max-width: 768px) {
-          .mobile-only {
-            display: flex;
-          }
-        }
-
-        /* Sync Status */
-        .sync-status-bar {
-          margin: 8px 0;
-          padding: 6px 12px;
-          background: #fef3c7;
-          border-radius: 8px;
-          font-size: 0.7rem;
-          color: #d97706;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .sync-status-content {
-          display: flex;
           align-items: center;
           gap: 8px;
+          margin: 0 24px 16px 24px;
+          padding: 8px 14px;
+          border-radius: 40px;
+          font-size: 12px;
         }
 
-        .sync-spinner-small {
-          width: 12px;
-          height: 12px;
-          border: 2px solid #d97706;
-          border-top-color: transparent;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        /* Messages */
-        .success-message {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
+        .status-chip.success {
           background: #22c55e10;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          font-size: 0.7rem;
           color: #22c55e;
         }
 
-        .error-message {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 12px;
+        .status-chip.error {
           background: #ef444410;
-          border-radius: 8px;
-          margin-bottom: 1rem;
-          font-size: 0.7rem;
           color: #ef4444;
         }
 
-        /* Navigation */
-        .nav-controls {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-top: 1.5rem;
+        .comments-wrapper {
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          margin-top: 8px;
         }
 
-        .nav-prev, .nav-next {
-          width: 36px;
-          height: 36px;
+        .nav-premium {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 20px;
+          margin-top: 24px;
+        }
+
+        .nav-btn-premium {
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
-          background: transparent;
+          background: white;
           border: 1px solid #e2e8f0;
           display: flex;
           align-items: center;
@@ -714,49 +663,192 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           transition: all 0.2s;
         }
 
-        .nav-prev:hover, .nav-next:hover {
+        .nav-btn-premium:hover {
           background: #8b5cf6;
           border-color: #8b5cf6;
           color: white;
           transform: scale(1.05);
         }
 
-        .position-mark {
-          font-size: 0.7rem;
-          color: #94a3b8;
-          font-family: monospace;
+        .nav-dots {
+          display: flex;
+          gap: 10px;
+        }
+
+        .nav-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #cbd5e1;
+          border: none;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+
+        .nav-dot.active {
+          width: 24px;
+          border-radius: 3px;
+          background: #8b5cf6;
         }
 
         @media (prefers-color-scheme: dark) {
-          .content-text { color: #e2e8f0; }
-          .media-node { background: #1e293b; }
-          .media-piece { background: #0f172a; }
-          .action-knots { border-bottom-color: #1e293b; }
-          .nav-prev, .nav-next { border-color: #334155; color: #94a3b8; }
-          .share-dropdown {
+          .premium-card {
+            background: rgba(30, 41, 59, 0.98);
+          }
+          .rich-content {
+            color: #e2e8f0;
+          }
+          .action-premium:hover {
+            background: #334155;
+            color: #f1f5f9;
+          }
+          .time-chip {
+            background: #334155;
+            color: #cbd5e1;
+          }
+          .nav-btn-premium {
+            background: #1e293b;
+            border-color: #334155;
+            color: #94a3b8;
+          }
+          .action-bar-premium {
+            border-top-color: rgba(255, 255, 255, 0.05);
+          }
+          .media-grid {
+            background: #334155;
+          }
+          .media-frame {
+            background: #0f172a;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .million-dollar-carousel {
+            padding: 0 12px;
+          }
+          .premium-card {
+            border-radius: 24px;
+          }
+          .category-badge {
+            padding: 16px 20px 0 20px;
+          }
+          .content-area {
+            padding: 8px 20px;
+          }
+          .rich-content {
+            font-size: 14px;
+          }
+          .media-grid {
+            margin: 0 20px 12px 20px;
+          }
+          .action-bar-premium {
+            padding: 6px 20px 16px 20px;
+          }
+          .action-premium {
+            padding: 6px 12px;
+          }
+          .nav-premium {
+            margin-top: 16px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .action-premium span:first-child {
+            display: none;
+          }
+          .action-premium {
+            gap: 4px;
+            padding: 6px 10px;
+          }
+        }
+      `}</style>
+
+      <style jsx global>{`
+        .share-menu-portal {
+          background: white;
+          border-radius: 20px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+          padding: 8px;
+          min-width: 170px;
+          border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .share-menu-portal.up .share-menu-arrow {
+          position: absolute;
+          bottom: -6px;
+          right: 20px;
+          width: 12px;
+          height: 12px;
+          background: white;
+          border-right: 1px solid rgba(0, 0, 0, 0.05);
+          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+          transform: rotate(45deg);
+        }
+
+        .share-menu-portal.down .share-menu-arrow {
+          position: absolute;
+          top: -6px;
+          right: 20px;
+          width: 12px;
+          height: 12px;
+          background: white;
+          border-left: 1px solid rgba(0, 0, 0, 0.05);
+          border-top: 1px solid rgba(0, 0, 0, 0.05);
+          transform: rotate(45deg);
+        }
+
+        .share-option-portal {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 10px 14px;
+          background: none;
+          border: none;
+          border-radius: 14px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: 500;
+          color: #1e293b;
+          transition: all 0.2s ease;
+          text-align: left;
+        }
+
+        .share-option-portal:hover {
+          background: #f1f5f9;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          .share-menu-portal {
             background: #1e293b;
             border-color: #334155;
           }
-          .share-option {
+          .share-menu-portal.up .share-menu-arrow {
+            background: #1e293b;
+            border-right-color: #334155;
+            border-bottom-color: #334155;
+          }
+          .share-menu-portal.down .share-menu-arrow {
+            background: #1e293b;
+            border-left-color: #334155;
+            border-top-color: #334155;
+          }
+          .share-option-portal {
             color: #e2e8f0;
           }
-          .share-option:hover {
+          .share-option-portal:hover {
             background: #334155;
-          }
-          .sync-status-bar {
-            background: #451a03;
-            color: #fbbf24;
-          }
-          .sync-spinner-small {
-            border-color: #fbbf24;
-            border-top-color: transparent;
           }
         }
 
         @media (max-width: 640px) {
-          .connected-carousel { max-width: 100%; margin: 1rem auto; padding-top: 1rem; }
-          .action-knots { gap: 1rem; }
-          .share-dropdown { right: -20px; min-width: 150px; }
+          .share-menu-portal {
+            min-width: 150px;
+          }
+          .share-option-portal {
+            padding: 8px 12px;
+            font-size: 13px;
+          }
         }
       `}</style>
     </div>

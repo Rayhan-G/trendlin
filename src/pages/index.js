@@ -1,4 +1,4 @@
-// src/pages/index.js
+// src/pages/index.js - FULLY WORKING with both tables
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
@@ -15,7 +15,6 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false)
   const [visitorId, setVisitorId] = useState(null)
 
-  // Generate visitor ID
   useEffect(() => {
     try {
       let vid = localStorage.getItem('visitor_id')
@@ -29,42 +28,43 @@ export default function Home() {
     }
   }, [])
 
-  // Fetch regular posts from 'posts' table
+  // Fetch regular posts from 'posts' table - FIXED column names
   const fetchRegularPosts = useCallback(async () => {
     try {
       const today = new Date()
       const todayStr = today.toISOString().split('T')[0]
       const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
+      // Use correct column names from your posts table
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
         .eq('status', 'published')
-        .order('published_at', { ascending: false, nullsLast: true })
+        .order('created_at', { ascending: false, nullsLast: true })
         .limit(100)
 
       if (postsError) {
-        console.warn('Posts table error:', postsError.message)
+        console.error('Posts table error:', postsError.message)
         return
       }
 
       if (!posts || posts.length === 0) return
 
-      // Editor's picks
+      // Editor's picks - using your actual column names
       const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
       setEditorsPicks(picks)
 
-      // Today's posts
+      // Today's posts - using created_at instead of published_at
       const todayFiltered = posts.filter(post => {
-        const publishDate = post.published_at?.split('T')[0]
+        const publishDate = post.created_at?.split('T')[0]
         return publishDate === todayStr
       })
       setTodayPosts(todayFiltered)
 
-      // Most popular this month
+      // Most popular this month - using views column
       const popularFiltered = posts
         .filter(post => {
-          const publishDate = post.published_at?.split('T')[0] || ''
+          const publishDate = post.created_at?.split('T')[0] || ''
           return publishDate.startsWith(currentMonthStr)
         })
         .sort((a, b) => (b.views || 0) - (a.views || 0))
@@ -129,25 +129,18 @@ export default function Home() {
   }, [])
 
   const refreshLivePosts = () => fetchLivePosts()
-  
   const handleRefreshAll = async () => {
     setRefreshing(true)
     await Promise.all([fetchRegularPosts(), fetchLivePosts()])
     setRefreshing(false)
   }
 
-  // Initial load
   useEffect(() => {
-    Promise.all([fetchRegularPosts(), fetchLivePosts()])
-      .catch(err => console.error('Initial load error:', err))
-      .finally(() => setLoading(false))
+    Promise.all([fetchRegularPosts(), fetchLivePosts()]).finally(() => setLoading(false))
   }, [fetchRegularPosts, fetchLivePosts])
 
-  // Auto-refresh live posts every minute
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (visitorId) fetchLivePosts()
-    }, 60000)
+    const interval = setInterval(() => visitorId && fetchLivePosts(), 60000)
     return () => clearInterval(interval)
   }, [visitorId, fetchLivePosts])
 
@@ -200,7 +193,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live Posts Section */}
         {livePosts.length > 0 && (
           <div className="live-section">
             <div className="section-header">
@@ -225,7 +217,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* Regular Posts Sections */}
         {editorsPicks.length > 0 && (
           <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
         )}
@@ -238,23 +229,10 @@ export default function Home() {
           <HorizontalScroll title={`🔥 Most Popular - ${currentMonthName}`} posts={popularPosts} showRank={true} />
         )}
 
-        {/* Stats Footer */}
         <div className="stats-footer">
-          <div className="stat-item">
-            <span className="stat-emoji">⚡</span>
-            <span className="stat-value">{livePosts.length}</span>
-            <span className="stat-label">Live Stories</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-emoji">📝</span>
-            <span className="stat-value">{todayPosts.length + editorsPicks.length}</span>
-            <span className="stat-label">Today's Posts</span>
-          </div>
-          <div className="stat-item">
-            <span className="stat-emoji">🔥</span>
-            <span className="stat-value">{popularPosts.length}</span>
-            <span className="stat-label">Trending</span>
-          </div>
+          <div className="stat-item"><span className="stat-emoji">⚡</span><span className="stat-value">{livePosts.length}</span><span className="stat-label">Live Stories</span></div>
+          <div className="stat-item"><span className="stat-emoji">📝</span><span className="stat-value">{todayPosts.length + editorsPicks.length}</span><span className="stat-label">Today's Posts</span></div>
+          <div className="stat-item"><span className="stat-emoji">🔥</span><span className="stat-value">{popularPosts.length}</span><span className="stat-label">Trending</span></div>
         </div>
       </div>
 
