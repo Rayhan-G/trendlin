@@ -1,17 +1,80 @@
 // src/pages/admin/live-posts.js
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../../lib/supabase'  // ✅ Fixed path (3 levels up)
+import { supabase } from '../../../lib/supabase'  // ✅ Correct path
 import Head from 'next/head'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { 
   Plus, Edit, Trash2, Eye, Clock, X, Video, Music, 
-  Image, CheckCircle, AlertCircle
+  CheckCircle, AlertCircle
 } from 'lucide-react'
 
-const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal'), { ssr: false })
-const VideoModal = dynamic(() => import('../../components/media/Modals/VideoModal'), { ssr: false })
-const AudioModal = dynamic(() => import('../../components/media/Modals/AudioModal'), { ssr: false })
+// Simple image upload modal (no external dependency)
+const ImageModal = dynamic(() => Promise.resolve(({ onUpload, onClose }) => {
+  const [url, setUrl] = useState('')
+  return (
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0f0f0f] rounded-2xl p-6 w-full max-w-md">
+        <h3 className="text-white text-lg mb-4">Add Image URL</h3>
+        <input
+          type="text"
+          placeholder="https://example.com/image.jpg"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white mb-4"
+        />
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2 border border-white/10 rounded-xl text-gray-400">Cancel</button>
+          <button onClick={() => { if(url) onUpload({ type: 'image', url }); onClose(); }} className="flex-1 py-2 bg-white text-black rounded-xl">Add</button>
+        </div>
+      </div>
+    </div>
+  )
+}), { ssr: false })
+
+const VideoModal = dynamic(() => Promise.resolve(({ onUpload, onClose }) => {
+  const [url, setUrl] = useState('')
+  return (
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0f0f0f] rounded-2xl p-6 w-full max-w-md">
+        <h3 className="text-white text-lg mb-4">Add Video URL</h3>
+        <input
+          type="text"
+          placeholder="https://example.com/video.mp4"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white mb-4"
+        />
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2 border border-white/10 rounded-xl text-gray-400">Cancel</button>
+          <button onClick={() => { if(url) onUpload({ type: 'video', url }); onClose(); }} className="flex-1 py-2 bg-white text-black rounded-xl">Add</button>
+        </div>
+      </div>
+    </div>
+  )
+}), { ssr: false })
+
+const AudioModal = dynamic(() => Promise.resolve(({ onUpload, onClose }) => {
+  const [url, setUrl] = useState('')
+  return (
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#0f0f0f] rounded-2xl p-6 w-full max-w-md">
+        <h3 className="text-white text-lg mb-4">Add Audio URL</h3>
+        <input
+          type="text"
+          placeholder="https://example.com/audio.mp3"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white mb-4"
+        />
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2 border border-white/10 rounded-xl text-gray-400">Cancel</button>
+          <button onClick={() => { if(url) onUpload({ type: 'audio', url }); onClose(); }} className="flex-1 py-2 bg-white text-black rounded-xl">Add</button>
+        </div>
+      </div>
+    </div>
+  )
+}), { ssr: false })
 
 const categories = [
   { id: 'tech', name: 'Technology', icon: '⚡', color: '#3b82f6' },
@@ -43,9 +106,10 @@ export default function AdminLivePosts() {
     try {
       const { data, error } = await supabase
         .from('live_posts')
-        .select('id, category, content, media_items, status, likes, expires_at, published_at')
+        .select('*')
         .order('created_at', { ascending: false })
-        .limit(50)
+      
+      console.log('Fetched posts:', data)
       
       if (error) throw error
       setPosts(data || [])
@@ -56,7 +120,9 @@ export default function AdminLivePosts() {
     }
   }, [])
 
-  useEffect(() => { fetchPosts() }, [fetchPosts])
+  useEffect(() => { 
+    fetchPosts() 
+  }, [fetchPosts])
 
   const isActive = (post) => {
     return post.status === 'published' && new Date(post.expires_at) > new Date()
@@ -85,36 +151,29 @@ export default function AdminLivePosts() {
         updated_at: now
       }
 
+      console.log('Saving post:', postData)
+
       let result
       
       if (editingPost) {
-        // UPDATE existing post
         result = await supabase
           .from('live_posts')
           .update(postData)
           .eq('id', editingPost.id)
           .select()
-        
-        if (result.error) throw result.error
-        
-        console.log('Post updated:', result.data)
       } else {
-        // INSERT new post
         result = await supabase
           .from('live_posts')
           .insert([postData])
           .select()
-        
-        if (result.error) throw result.error
-        
-        console.log('Post created:', result.data)
       }
 
-      // Show success
+      if (result.error) throw result.error
+      
+      console.log('Save result:', result.data)
+
       setSuccess(true)
       setTimeout(() => setSuccess(false), 2000)
-      
-      // Close modal and refresh
       setModalOpen(false)
       resetForm()
       await fetchPosts()
@@ -260,7 +319,7 @@ export default function AdminLivePosts() {
                             <div className="max-w-xs">
                               <p className="text-white text-sm line-clamp-1">{post.content || 'Untitled'}</p>
                             </div>
-                           </td>
+                          </table>
                           <td className="p-4">
                             <span className="text-sm" style={{ color: cat?.color }}>{cat?.icon} {cat?.name}</span>
                           </td>
@@ -277,11 +336,6 @@ export default function AdminLivePosts() {
                           </td>
                           <td className="p-4">
                             <div className="flex gap-2">
-                              <Link href={`/live-posts/${post.category}`} target="_blank">
-                                <button className="p-1.5 rounded hover:bg-white/10">
-                                  <Eye size={14} className="text-gray-400" />
-                                </button>
-                              </Link>
                               <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-white/10">
                                 <Edit size={14} className="text-gray-400" />
                               </button>
@@ -306,7 +360,7 @@ export default function AdminLivePosts() {
         </div>
       </div>
 
-      {/* Create/Edit Modal */}
+      {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setModalOpen(false)}>
           <div className="bg-[#0f0f0f] rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -329,19 +383,17 @@ export default function AdminLivePosts() {
                 </div>
               )}
 
-              {/* Category */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">CATEGORY</label>
                 <select 
                   value={category} 
                   onChange={(e) => setCategory(e.target.value)} 
-                  className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-white/20"
+                  className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm"
                 >
                   {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>)}
                 </select>
               </div>
 
-              {/* Content */}
               <div>
                 <label className="block text-xs text-gray-500 mb-1">STORY</label>
                 <textarea
@@ -349,11 +401,10 @@ export default function AdminLivePosts() {
                   onChange={(e) => setContent(e.target.value)}
                   placeholder="What's happening?"
                   rows={3}
-                  className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none focus:outline-none focus:border-white/20"
+                  className="w-full p-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm resize-none"
                 />
               </div>
 
-              {/* Media */}
               <div>
                 <label className="block text-xs text-gray-500 mb-2">MEDIA</label>
                 <div className="flex gap-2 mb-3">
@@ -379,13 +430,11 @@ export default function AdminLivePosts() {
             </div>
 
             <div className="p-5 border-t border-white/10 flex gap-3">
-              <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-white/10 rounded-xl text-gray-400 text-sm hover:bg-white/5">
-                Cancel
-              </button>
+              <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-white/10 rounded-xl text-gray-400 text-sm">Cancel</button>
               <button 
                 onClick={savePost} 
                 disabled={saving || media.length === 0} 
-                className="flex-1 py-2.5 bg-white text-black rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 py-2.5 bg-white text-black rounded-xl text-sm font-medium disabled:opacity-50"
               >
                 {saving ? 'Publishing...' : editingPost ? 'Update' : 'Publish'}
               </button>
@@ -395,9 +444,9 @@ export default function AdminLivePosts() {
       )}
 
       {/* Media Modals */}
-      {showMediaModal === 'image' && <ImageModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />}
-      {showMediaModal === 'video' && <VideoModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />}
-      {showMediaModal === 'audio' && <AudioModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />}
+      {showMediaModal === 'image' && <ImageModal onUpload={addMedia} onClose={() => setShowMediaModal(null)} />}
+      {showMediaModal === 'video' && <VideoModal onUpload={addMedia} onClose={() => setShowMediaModal(null)} />}
+      {showMediaModal === 'audio' && <AudioModal onUpload={addMedia} onClose={() => setShowMediaModal(null)} />}
     </>
   )
 }
