@@ -1,6 +1,6 @@
 // src/pages/admin/live-posts.js
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../lib/supabase'
+import { supabase } from '../../../lib/supabase'  // ✅ Fixed path (3 levels up)
 import Head from 'next/head'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
