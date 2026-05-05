@@ -1,4 +1,4 @@
-// pages/index.js
+// src/pages/index.js
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
@@ -15,6 +15,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false)
   const [visitorId, setVisitorId] = useState(null)
 
+  // Generate visitor ID
   useEffect(() => {
     try {
       let vid = localStorage.getItem('visitor_id')
@@ -28,6 +29,7 @@ export default function Home() {
     }
   }, [])
 
+  // Fetch regular posts from 'posts' table
   const fetchRegularPosts = useCallback(async () => {
     try {
       const today = new Date()
@@ -41,21 +43,40 @@ export default function Home() {
         .order('published_at', { ascending: false, nullsLast: true })
         .limit(100)
 
-      if (postsError) throw postsError
+      if (postsError) {
+        console.warn('Posts table error:', postsError.message)
+        return
+      }
+
       if (!posts || posts.length === 0) return
 
-      setEditorsPicks(posts.filter(post => post.is_featured === true).slice(0, 6))
-      setTodayPosts(posts.filter(post => post.published_at?.split('T')[0] === todayStr))
-      setPopularPosts(posts
-        .filter(post => post.published_at?.split('T')[0]?.startsWith(currentMonthStr))
+      // Editor's picks
+      const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
+      setEditorsPicks(picks)
+
+      // Today's posts
+      const todayFiltered = posts.filter(post => {
+        const publishDate = post.published_at?.split('T')[0]
+        return publishDate === todayStr
+      })
+      setTodayPosts(todayFiltered)
+
+      // Most popular this month
+      const popularFiltered = posts
+        .filter(post => {
+          const publishDate = post.published_at?.split('T')[0] || ''
+          return publishDate.startsWith(currentMonthStr)
+        })
         .sort((a, b) => (b.views || 0) - (a.views || 0))
-        .slice(0, 30))
+        .slice(0, 30)
+      setPopularPosts(popularFiltered)
       
     } catch (err) {
       console.error('Error fetching regular posts:', err)
     }
   }, [])
 
+  // Fetch live posts from 'live_posts' table
   const fetchLivePosts = useCallback(async () => {
     if (!visitorId) return
     
@@ -77,11 +98,13 @@ export default function Home() {
             .from('live_post_comments')
             .select('*', { count: 'exact', head: true })
             .eq('live_post_id', post.id)
+            .eq('status', 'approved')
           
           return {
             ...post,
             comments_count: commentsCount || 0,
-            user_has_liked: (post.liked_by || []).includes(visitorId)
+            user_has_liked: (post.liked_by || []).includes(visitorId),
+            content: post.content || post.description || null
           }
         }))
         setLivePosts(postsWithDetails)
@@ -100,29 +123,31 @@ export default function Home() {
   }, [])
 
   const handleLivePostShare = useCallback(async (postId) => {
-    try {
-      await fetch(`/api/live-posts/${postId}/share`, { method: 'POST' })
-      setLivePosts(prev => prev.map(post => 
-        post.id === postId ? { ...post, shares: (post.shares || 0) + 1 } : post
-      ))
-    } catch (err) {
-      console.error('Share tracking failed:', err)
-    }
+    setLivePosts(prev => prev.map(post => 
+      post.id === postId ? { ...post, shares: (post.shares || 0) + 1 } : post
+    ))
   }, [])
 
   const refreshLivePosts = () => fetchLivePosts()
+  
   const handleRefreshAll = async () => {
     setRefreshing(true)
     await Promise.all([fetchRegularPosts(), fetchLivePosts()])
     setRefreshing(false)
   }
 
+  // Initial load
   useEffect(() => {
-    Promise.all([fetchRegularPosts(), fetchLivePosts()]).finally(() => setLoading(false))
+    Promise.all([fetchRegularPosts(), fetchLivePosts()])
+      .catch(err => console.error('Initial load error:', err))
+      .finally(() => setLoading(false))
   }, [fetchRegularPosts, fetchLivePosts])
 
+  // Auto-refresh live posts every minute
   useEffect(() => {
-    const interval = setInterval(() => visitorId && fetchLivePosts(), 60000)
+    const interval = setInterval(() => {
+      if (visitorId) fetchLivePosts()
+    }, 60000)
     return () => clearInterval(interval)
   }, [visitorId, fetchLivePosts])
 
@@ -138,31 +163,6 @@ export default function Home() {
           @keyframes spin { to { transform: rotate(360deg); } }
         `}</style>
       </div>
-    )
-  }
-
-  if (error && livePosts.length === 0 && todayPosts.length === 0) {
-    return (
-      <>
-        <HeroSection />
-        <div className="error-container">
-          <div className="error-card">
-            <span className="error-icon">⚠️</span>
-            <h2>Something went wrong</h2>
-            <p>{error}</p>
-            <button onClick={handleRefreshAll} className="retry-btn">Try Again</button>
-          </div>
-        </div>
-        <style jsx>{`
-          .error-container { display: flex; justify-content: center; padding: 2rem; }
-          .error-card { text-align: center; background: white; border-radius: 24px; padding: 2rem; max-width: 400px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
-          .error-icon { font-size: 48px; display: block; margin-bottom: 16px; }
-          .error-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1e293b; }
-          .error-card p { color: #64748b; margin-bottom: 20px; }
-          .retry-btn { padding: 10px 24px; background: #8b5cf6; color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; }
-          .retry-btn:hover { background: #7c3aed; }
-        `}</style>
-      </>
     )
   }
 
@@ -200,6 +200,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* Live Posts Section */}
         {livePosts.length > 0 && (
           <div className="live-section">
             <div className="section-header">
@@ -224,6 +225,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* Regular Posts Sections */}
         {editorsPicks.length > 0 && (
           <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
         )}
@@ -236,10 +238,23 @@ export default function Home() {
           <HorizontalScroll title={`🔥 Most Popular - ${currentMonthName}`} posts={popularPosts} showRank={true} />
         )}
 
+        {/* Stats Footer */}
         <div className="stats-footer">
-          <div className="stat-item"><span className="stat-emoji">⚡</span><span className="stat-value">{livePosts.length}</span><span className="stat-label">Live Stories</span></div>
-          <div className="stat-item"><span className="stat-emoji">📝</span><span className="stat-value">{todayPosts.length + editorsPicks.length}</span><span className="stat-label">Today's Posts</span></div>
-          <div className="stat-item"><span className="stat-emoji">🔥</span><span className="stat-value">{popularPosts.length}</span><span className="stat-label">Trending</span></div>
+          <div className="stat-item">
+            <span className="stat-emoji">⚡</span>
+            <span className="stat-value">{livePosts.length}</span>
+            <span className="stat-label">Live Stories</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-emoji">📝</span>
+            <span className="stat-value">{todayPosts.length + editorsPicks.length}</span>
+            <span className="stat-label">Today's Posts</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-emoji">🔥</span>
+            <span className="stat-value">{popularPosts.length}</span>
+            <span className="stat-label">Trending</span>
+          </div>
         </div>
       </div>
 
