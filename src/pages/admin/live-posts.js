@@ -1,6 +1,6 @@
 // src/pages/admin/live-posts.js
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../../../lib/supabase'  // ✅ Correct path
+import { supabase } from '../../../lib/supabase'
 import Head from 'next/head'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
@@ -9,7 +9,6 @@ import {
   CheckCircle, AlertCircle
 } from 'lucide-react'
 
-// Simple image upload modal (no external dependency)
 const ImageModal = dynamic(() => Promise.resolve(({ onUpload, onClose }) => {
   const [url, setUrl] = useState('')
   return (
@@ -109,8 +108,6 @@ export default function AdminLivePosts() {
         .select('*')
         .order('created_at', { ascending: false })
       
-      console.log('Fetched posts:', data)
-      
       if (error) throw error
       setPosts(data || [])
     } catch (err) {
@@ -151,8 +148,6 @@ export default function AdminLivePosts() {
         updated_at: now
       }
 
-      console.log('Saving post:', postData)
-
       let result
       
       if (editingPost) {
@@ -169,8 +164,6 @@ export default function AdminLivePosts() {
       }
 
       if (result.error) throw result.error
-      
-      console.log('Save result:', result.data)
 
       setSuccess(true)
       setTimeout(() => setSuccess(false), 2000)
@@ -306,7 +299,7 @@ export default function AdminLivePosts() {
                       <th className="p-4">Status</th>
                       <th className="p-4">Likes</th>
                       <th className="p-4">Time Left</th>
-                      <th className="p-4"></th>
+                      <th className="p-4" />
                     </tr>
                   </thead>
                   <tbody>
@@ -319,7 +312,7 @@ export default function AdminLivePosts() {
                             <div className="max-w-xs">
                               <p className="text-white text-sm line-clamp-1">{post.content || 'Untitled'}</p>
                             </div>
-                          </table>
+                          </td>
                           <td className="p-4">
                             <span className="text-sm" style={{ color: cat?.color }}>{cat?.icon} {cat?.name}</span>
                           </td>
