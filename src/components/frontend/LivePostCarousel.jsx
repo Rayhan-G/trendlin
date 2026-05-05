@@ -3,11 +3,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useInteractions } from '../../hooks/useInteractions'
 import CommentSection from '../comments/CommentSection'
-import ShareModal from '../shared/ShareModal'
 import { 
   ChevronLeft, ChevronRight, Heart, MessageCircle, Share2, 
   Play, Volume2, VolumeX, Maximize2, CheckCircle,
-  Zap, User, Send, X, Clock
+  Zap, User, Send, X, Clock, Copy, Twitter, Facebook, Linkedin
 } from 'lucide-react'
 
 export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLike, onShare, sessionId }) {
@@ -19,9 +18,10 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const [expandedContent, setExpandedContent] = useState({})
   const [errorMsg, setErrorMsg] = useState({})
   const [successMsg, setSuccessMsg] = useState({})
-  const [showShareModal, setShowShareModal] = useState({})
+  const [showShareOptions, setShowShareOptions] = useState({})
   const [localShareCount, setLocalShareCount] = useState({})
   const autoPlayRef = useRef(null)
+  const shareMenuRef = useRef(null)
 
   const getSessionId = useCallback(() => {
     if (sessionId) return sessionId
@@ -33,7 +33,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     return id
   }, [sessionId])
 
-  // Load comment counts for all posts
+  // Load comment counts
   useEffect(() => {
     const loadAllCommentCounts = async () => {
       const counts = {}
@@ -49,7 +49,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     if (posts.length > 0) loadAllCommentCounts()
   }, [posts])
 
-  // Initialize local share counts from posts
+  // Initialize share counts
   useEffect(() => {
     const counts = {}
     posts.forEach(post => {
@@ -70,8 +70,84 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     }
   }, [isAutoPlaying, posts.length, autoPlayInterval, isHovering])
 
+  // Close share menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
+        setShowShareOptions({})
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const toggleComments = (postId) => {
     setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }))
+  }
+
+  // WORKING SHARE FUNCTION
+  const handleShare = async (postId, platform) => {
+    const url = `${window.location.origin}/live-posts/${postId}`
+    const title = encodeURIComponent(currentPost?.content?.substring(0, 100) || 'Check out this post')
+    
+    let shareWindow = null
+    
+    switch (platform) {
+      case 'twitter':
+        shareWindow = window.open(
+          `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`,
+          '_blank',
+          'width=550,height=420,left=300,top=100'
+        )
+        break
+      case 'facebook':
+        shareWindow = window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+          '_blank',
+          'width=550,height=520,left=300,top=100'
+        )
+        break
+      case 'linkedin':
+        shareWindow = window.open(
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+          '_blank',
+          'width=550,height=520,left=300,top=100'
+        )
+        break
+      case 'copy':
+        await navigator.clipboard.writeText(url)
+        setSuccessMsg(prev => ({ ...prev, [postId]: 'Link copied to clipboard!' }))
+        setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 3000)
+        break
+      case 'native':
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: decodeURIComponent(title), url })
+          } catch (e) {}
+        }
+        break
+      default:
+        return
+    }
+    
+    // Update share count (only for successful shares)
+    if (platform !== 'native' || (platform === 'native' && !shareWindow)) {
+      setLocalShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
+      
+      // Track in background (silent, don't wait)
+      try {
+        await fetch(`/api/live-posts/${postId}/share`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ platform })
+        }).catch(() => {})
+        if (onShare) onShare(postId)
+      } catch (err) {
+        // Silent fail - UI already updated
+      }
+    }
+    
+    setShowShareOptions(prev => ({ ...prev, [postId]: false }))
   }
 
   const goToSlide = (index) => {
@@ -106,8 +182,9 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const isCommentsOpen = showComments[currentPost.id]
   const currentCommentCount = commentCounts[currentPost.id] ?? currentPost.comments_count ?? 0
   const currentShareCount = localShareCount[currentPost.id] ?? currentPost.shares ?? 0
+  const isShareMenuOpen = showShareOptions[currentPost.id]
 
-  // Use the interactions hook for likes only
+  // Use interactions hook for likes only
   const {
     likes: liveLikes,
     hasLiked: userHasLiked,
@@ -216,13 +293,38 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </button>
           
           <button 
-            onClick={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: true }))} 
+            onClick={() => setShowShareOptions(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} 
             className="knot"
           >
             <Share2 size={16} />
             <span>{formatNumber(currentShareCount)}</span>
           </button>
         </div>
+
+        {/* Share Options Dropdown */}
+        {isShareMenuOpen && (
+          <div className="share-dropdown" ref={shareMenuRef}>
+            <button onClick={() => handleShare(currentPost.id, 'native')} className="share-option mobile-only">
+              📱 Share via...
+            </button>
+            <button onClick={() => handleShare(currentPost.id, 'copy')} className="share-option">
+              <Copy size={14} />
+              Copy link
+            </button>
+            <button onClick={() => handleShare(currentPost.id, 'twitter')} className="share-option twitter">
+              <Twitter size={14} />
+              Twitter
+            </button>
+            <button onClick={() => handleShare(currentPost.id, 'facebook')} className="share-option facebook">
+              <Facebook size={14} />
+              Facebook
+            </button>
+            <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-option linkedin">
+              <Linkedin size={14} />
+              LinkedIn
+            </button>
+          </div>
+        )}
 
         {/* Sync Status */}
         {pendingLike !== undefined && (
@@ -243,30 +345,18 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </div>
         )}
 
-        {/* Share Modal - UPDATED with ShareModal component */}
-        {showShareModal[currentPost.id] && (
-          <ShareModal
-            isOpen={showShareModal[currentPost.id]}
-            onClose={() => setShowShareModal(prev => ({ ...prev, [currentPost.id]: false }))}
-            url={`${window.location.origin}/live-posts/${currentPost.id}`}
-            title={currentPost.content?.substring(0, 100) || 'Check out this post'}
-            onShareTrack={async (platform) => {
-              // Update share count instantly
-              setLocalShareCount(prev => ({ ...prev, [currentPost.id]: (prev[currentPost.id] || 0) + 1 }))
-              
-              // Track in background
-              try {
-                await fetch(`/api/live-posts/${currentPost.id}/share`, { 
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ platform })
-                })
-                if (onShare) onShare(currentPost.id)
-              } catch (err) {
-                console.error('Share tracking error:', err)
-              }
-            }}
-          />
+        {/* Success/Error Messages */}
+        {successMsg[currentPost.id] && (
+          <div className="success-message">
+            <CheckCircle size={14} />
+            {successMsg[currentPost.id]}
+          </div>
+        )}
+        {errorMsg[currentPost.id] && (
+          <div className="error-message">
+            <X size={12} />
+            {errorMsg[currentPost.id]}
+          </div>
         )}
 
         {/* Comments Section */}
@@ -497,6 +587,55 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           50% { opacity: 0.5; }
         }
 
+        /* Share Dropdown */
+        .share-dropdown {
+          position: absolute;
+          right: 0;
+          top: 100%;
+          margin-top: 8px;
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          padding: 0.5rem;
+          min-width: 160px;
+          z-index: 30;
+          border: 1px solid #eef2f6;
+        }
+
+        .share-option {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 0.5rem 0.75rem;
+          background: none;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 0.8rem;
+          color: #1e293b;
+          transition: all 0.2s;
+        }
+
+        .share-option:hover {
+          background: #f1f5f9;
+        }
+
+        .share-option.twitter:hover { color: #1da1f2; }
+        .share-option.facebook:hover { color: #1877f2; }
+        .share-option.linkedin:hover { color: #0077b5; }
+
+        .mobile-only {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .mobile-only {
+            display: flex;
+          }
+        }
+
+        /* Sync Status */
         .sync-status-bar {
           margin: 8px 0;
           padding: 6px 12px;
@@ -528,6 +667,32 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           to { transform: rotate(360deg); }
         }
 
+        /* Messages */
+        .success-message {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          background: #22c55e10;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          font-size: 0.7rem;
+          color: #22c55e;
+        }
+
+        .error-message {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          background: #ef444410;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          font-size: 0.7rem;
+          color: #ef4444;
+        }
+
+        /* Navigation */
         .nav-controls {
           display: flex;
           align-items: center;
@@ -568,6 +733,16 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .media-piece { background: #0f172a; }
           .action-knots { border-bottom-color: #1e293b; }
           .nav-prev, .nav-next { border-color: #334155; color: #94a3b8; }
+          .share-dropdown {
+            background: #1e293b;
+            border-color: #334155;
+          }
+          .share-option {
+            color: #e2e8f0;
+          }
+          .share-option:hover {
+            background: #334155;
+          }
           .sync-status-bar {
             background: #451a03;
             color: #fbbf24;
@@ -575,12 +750,13 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .sync-spinner-small {
             border-color: #fbbf24;
             border-top-color: transparent;
-          }s
+          }
         }
 
         @media (max-width: 640px) {
           .connected-carousel { max-width: 100%; margin: 1rem auto; padding-top: 1rem; }
           .action-knots { gap: 1rem; }
+          .share-dropdown { right: -20px; min-width: 150px; }
         }
       `}</style>
     </div>
