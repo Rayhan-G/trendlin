@@ -19,6 +19,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const [errorMsg, setErrorMsg] = useState({})
   const [successMsg, setSuccessMsg] = useState({})
   const [showShareModal, setShowShareModal] = useState({})
+  const [localShareCount, setLocalShareCount] = useState({})
   const autoPlayRef = useRef(null)
   const shareModalRef = useRef(null)
 
@@ -46,6 +47,15 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
       setCommentCounts(counts)
     }
     if (posts.length > 0) loadAllCommentCounts()
+  }, [posts])
+
+  // Initialize local share counts from posts
+  useEffect(() => {
+    const counts = {}
+    posts.forEach(post => {
+      counts[post.id] = post.shares || 0
+    })
+    setLocalShareCount(counts)
   }, [posts])
 
   // Auto-play
@@ -76,30 +86,68 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     setShowComments(prev => ({ ...prev, [postId]: !prev[postId] }))
   }
 
-  // SHARE FUNCTION
-  const handleShareClick = (postId, platform) => {
+  // FIXED SHARE FUNCTION - Properly updates count and tracks share
+  const handleShareClick = async (postId, platform) => {
     const url = `${window.location.origin}/live-posts/${postId}`
     const title = encodeURIComponent('Check out this post on Trendlin')
+    let shareWindow = null
     
     switch (platform) {
       case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`, '_blank', 'width=550,height=420')
+        shareWindow = window.open(
+          `https://twitter.com/intent/tweet?text=${title}&url=${encodeURIComponent(url)}`, 
+          '_blank', 
+          'width=550,height=420,left=300,top=100'
+        )
         break
       case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank', 'width=550,height=520')
+        shareWindow = window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, 
+          '_blank', 
+          'width=550,height=520,left=300,top=100'
+        )
         break
       case 'linkedin':
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank', 'width=550,height=520')
+        shareWindow = window.open(
+          `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, 
+          '_blank', 
+          'width=550,height=520,left=300,top=100'
+        )
         break
       case 'copy':
-        navigator.clipboard.writeText(url)
+        await navigator.clipboard.writeText(url)
         setSuccessMsg(prev => ({ ...prev, [postId]: 'Link copied!' }))
         setTimeout(() => setSuccessMsg(prev => ({ ...prev, [postId]: null })), 2000)
         setShowShareModal(prev => ({ ...prev, [postId]: false }))
         return
+      default:
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'Check this out!', url })
+          } catch (e) {}
+        }
+        return
     }
     
+    // Close modal
     setShowShareModal(prev => ({ ...prev, [postId]: false }))
+    
+    // Only increment count if share window opened successfully
+    if (shareWindow || platform === 'copy') {
+      // Update local count immediately
+      setLocalShareCount(prev => ({ ...prev, [postId]: (prev[postId] || 0) + 1 }))
+      
+      // Track share in background - don't wait for response
+      try {
+        await fetch(`/api/live-posts/${postId}/share`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        if (onShare) onShare(postId)
+      } catch (err) {
+        console.error('Share tracking error:', err)
+      }
+    }
   }
 
   const goToSlide = (index) => {
@@ -133,17 +181,15 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const displayContent = isExpanded ? currentPost.content : currentPost.content?.substring(0, 280)
   const isCommentsOpen = showComments[currentPost.id]
   const currentCommentCount = commentCounts[currentPost.id] ?? currentPost.comments_count ?? 0
+  const currentShareCount = localShareCount[currentPost.id] ?? currentPost.shares ?? 0
 
   // Use the interactions hook for the current post
   const {
     likes: liveLikes,
-    shares: liveShares,
     hasLiked: userHasLiked,
     pendingLike,
-    pendingShare,
     isSyncing: isSyncingInteractions,
     toggleLike,
-    incrementShare
   } = useInteractions(currentPost.id, getSessionId())
 
   const getTimeLeft = () => {
@@ -250,17 +296,12 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
             className="knot"
           >
             <Share2 size={16} />
-            <span>{formatNumber(liveShares)}</span>
-            {pendingShare !== undefined && (
-              <span className="pending-indicator" title="Will be saved soon">
-                <Clock size={10} />
-              </span>
-            )}
+            <span>{formatNumber(currentShareCount)}</span>
           </button>
         </div>
 
         {/* Sync Status */}
-        {(pendingLike !== undefined || pendingShare !== undefined) && (
+        {pendingLike !== undefined && (
           <div className="sync-status-bar">
             <div className="sync-status-content">
               {isSyncingInteractions ? (
@@ -288,24 +329,15 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
               </button>
             </div>
             <div className="share-buttons">
-              <button onClick={() => {
-                incrementShare()
-                handleShareClick(currentPost.id, 'twitter')
-              }} className="share-btn twitter">
+              <button onClick={() => handleShareClick(currentPost.id, 'twitter')} className="share-btn twitter">
                 <Twitter size={18} />
                 <span>Twitter</span>
               </button>
-              <button onClick={() => {
-                incrementShare()
-                handleShareClick(currentPost.id, 'facebook')
-              }} className="share-btn facebook">
+              <button onClick={() => handleShareClick(currentPost.id, 'facebook')} className="share-btn facebook">
                 <Facebook size={18} />
                 <span>Facebook</span>
               </button>
-              <button onClick={() => {
-                incrementShare()
-                handleShareClick(currentPost.id, 'linkedin')
-              }} className="share-btn linkedin">
+              <button onClick={() => handleShareClick(currentPost.id, 'linkedin')} className="share-btn linkedin">
                 <Linkedin size={18} />
                 <span>LinkedIn</span>
               </button>
@@ -317,7 +349,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           </div>
         )}
 
-        {/* Comments Section - Integrated CommentSection Component */}
+        {/* Comments Section */}
         {isCommentsOpen && (
           <CommentSection 
             postId={currentPost.id}
@@ -681,10 +713,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .media-node { background: #1e293b; }
           .media-piece { background: #0f172a; }
           .action-knots { border-bottom-color: #1e293b; }
-          .name-field, .message-group textarea { border-bottom-color: #334155; color: #e2e8f0; }
-          .comment-item { border-bottom-color: #1e293b; }
-          .comment-author { color: #e2e8f0; }
-          .comment-text { color: #94a3b8; }
           .nav-prev, .nav-next { border-color: #334155; color: #94a3b8; }
           .share-modal {
             background: #1e293b;

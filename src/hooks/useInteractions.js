@@ -1,4 +1,6 @@
-// hooks/useInteractions.js
+// Updated useInteractions.js with share tracking removed from hook
+// hooks/useInteractions.js - Share tracking removed (handled in component)
+
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 
@@ -7,27 +9,24 @@ const STORAGE_KEY = 'pending_interactions'
 
 export function useInteractions(postId, sessionId) {
   const [likes, setLikes] = useState(0)
-  const [shares, setShares] = useState(0)
   const [hasLiked, setHasLiked] = useState(false)
   const [pendingLike, setPendingLike] = useState(null)
-  const [pendingShare, setPendingShare] = useState(null)
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncError, setSyncError] = useState(null)
   const syncIntervalRef = useRef(null)
-  const pendingQueueRef = useRef({ like: undefined, share: undefined })
+  const pendingQueueRef = useRef({ like: undefined })
 
-  // Load initial data from post
+  // Load initial data
   const loadInitialData = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('live_posts')
-        .select('likes, shares, liked_by')
+        .select('likes, liked_by')
         .eq('id', postId)
         .single()
 
       if (!error && data) {
         setLikes(data.likes || 0)
-        setShares(data.shares || 0)
         setHasLiked(data.liked_by?.includes(sessionId) || false)
       }
     } catch (err) {
@@ -35,9 +34,9 @@ export function useInteractions(postId, sessionId) {
     }
   }, [postId, sessionId])
 
-  // Load pending interactions from localStorage
+  // Load pending from localStorage
   useEffect(() => {
-    const loadPendingInteractions = () => {
+    const loadPending = () => {
       try {
         const cached = localStorage.getItem(`${STORAGE_KEY}_${postId}`)
         if (cached) {
@@ -53,45 +52,31 @@ export function useInteractions(postId, sessionId) {
               setLikes(prev => Math.max(0, prev - 1))
             }
           }
-          if (parsed.share !== undefined) {
-            pendingQueueRef.current.share = parsed.share
-            setPendingShare(parsed.share)
-            if (parsed.share === true) {
-              setShares(prev => prev + 1)
-            }
-          }
         }
       } catch (err) {
-        console.error('Failed to load pending interactions:', err)
+        console.error('Failed to load pending:', err)
       }
     }
     
     loadInitialData()
-    loadPendingInteractions()
+    loadPending()
   }, [loadInitialData, postId])
 
-  // Save pending interactions to localStorage
   const persistPending = useCallback(() => {
     try {
-      const toStore = {
-        like: pendingQueueRef.current.like,
-        share: pendingQueueRef.current.share
-      }
-      localStorage.setItem(`${STORAGE_KEY}_${postId}`, JSON.stringify(toStore))
+      localStorage.setItem(`${STORAGE_KEY}_${postId}`, JSON.stringify({ like: pendingQueueRef.current.like }))
     } catch (err) {
-      console.error('Failed to persist interactions:', err)
+      console.error('Failed to persist:', err)
     }
   }, [postId])
 
-  // Like/Unlike with optimistic update
+  // Toggle like
   const toggleLike = useCallback(async () => {
     const newLikedState = !hasLiked
     
-    // Optimistic update
     setHasLiked(newLikedState)
     setLikes(prev => newLikedState ? prev + 1 : Math.max(0, prev - 1))
     
-    // Store pending action
     pendingQueueRef.current.like = newLikedState
     setPendingLike(newLikedState)
     persistPending()
@@ -99,27 +84,12 @@ export function useInteractions(postId, sessionId) {
     setSyncError(null)
   }, [hasLiked, persistPending])
 
-  // Share with optimistic update
-  const incrementShare = useCallback(async () => {
-    // Optimistic update
-    setShares(prev => prev + 1)
-    
-    // Store pending action
-    pendingQueueRef.current.share = true
-    setPendingShare(true)
-    persistPending()
-    
-    setSyncError(null)
-  }, [persistPending])
-
-  // Sync all pending interactions to database
-  const syncInteractions = useCallback(async () => {
+  // Sync likes to database
+  const syncLikes = useCallback(async () => {
     if (isSyncing) return
     
     const pendingLikeState = pendingQueueRef.current.like
-    const pendingShareState = pendingQueueRef.current.share
-    
-    if (pendingLikeState === undefined && pendingShareState === undefined) return
+    if (pendingLikeState === undefined) return
     
     setIsSyncing(true)
     setSyncError(null)
@@ -127,50 +97,40 @@ export function useInteractions(postId, sessionId) {
     try {
       const { data: current, error: fetchError } = await supabase
         .from('live_posts')
-        .select('likes, shares, liked_by')
+        .select('likes, liked_by')
         .eq('id', postId)
         .single()
       
       if (fetchError) throw fetchError
       
       let newLikes = current.likes || 0
-      let newShares = current.shares || 0
       let newLikedBy = current.liked_by || []
       
-      if (pendingLikeState !== undefined) {
-        const currentlyLiked = newLikedBy.includes(sessionId)
-        
-        if (pendingLikeState === true && !currentlyLiked) {
-          newLikes += 1
-          newLikedBy.push(sessionId)
-        } else if (pendingLikeState === false && currentlyLiked) {
-          newLikes = Math.max(0, newLikes - 1)
-          newLikedBy = newLikedBy.filter(id => id !== sessionId)
-        }
-      }
+      const currentlyLiked = newLikedBy.includes(sessionId)
       
-      if (pendingShareState === true) {
-        newShares += 1
+      if (pendingLikeState === true && !currentlyLiked) {
+        newLikes += 1
+        newLikedBy.push(sessionId)
+      } else if (pendingLikeState === false && currentlyLiked) {
+        newLikes = Math.max(0, newLikes - 1)
+        newLikedBy = newLikedBy.filter(id => id !== sessionId)
       }
       
       const { error: updateError } = await supabase
         .from('live_posts')
         .update({
           likes: newLikes,
-          shares: newShares,
           liked_by: newLikedBy
         })
         .eq('id', postId)
       
       if (updateError) throw updateError
       
-      pendingQueueRef.current = { like: undefined, share: undefined }
+      pendingQueueRef.current = { like: undefined }
       setPendingLike(null)
-      setPendingShare(null)
       persistPending()
       
       setLikes(newLikes)
-      setShares(newShares)
       setHasLiked(newLikedBy.includes(sessionId))
       
     } catch (err) {
@@ -178,8 +138,8 @@ export function useInteractions(postId, sessionId) {
       setSyncError(err.message)
       
       setTimeout(() => {
-        if (pendingQueueRef.current.like !== undefined || pendingQueueRef.current.share !== undefined) {
-          syncInteractions()
+        if (pendingQueueRef.current.like !== undefined) {
+          syncLikes()
         }
       }, 5000)
     } finally {
@@ -190,22 +150,21 @@ export function useInteractions(postId, sessionId) {
   // Auto-sync every 10 minutes
   useEffect(() => {
     syncIntervalRef.current = setInterval(() => {
-      if (pendingQueueRef.current.like !== undefined || pendingQueueRef.current.share !== undefined) {
-        syncInteractions()
+      if (pendingQueueRef.current.like !== undefined) {
+        syncLikes()
       }
     }, SYNC_INTERVAL)
 
     const handleBeforeUnload = () => {
-      if (pendingQueueRef.current.like !== undefined || pendingQueueRef.current.share !== undefined) {
+      if (pendingQueueRef.current.like !== undefined) {
         persistPending()
       }
     }
     
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && 
-          (pendingQueueRef.current.like !== undefined || pendingQueueRef.current.share !== undefined)) {
+      if (document.visibilityState === 'hidden' && pendingQueueRef.current.like !== undefined) {
         persistPending()
-        syncInteractions()
+        syncLikes()
       }
     }
     
@@ -217,22 +176,19 @@ export function useInteractions(postId, sessionId) {
       window.removeEventListener('beforeunload', handleBeforeUnload)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
       
-      if (pendingQueueRef.current.like !== undefined || pendingQueueRef.current.share !== undefined) {
+      if (pendingQueueRef.current.like !== undefined) {
         persistPending()
       }
     }
-  }, [syncInteractions, persistPending])
+  }, [syncLikes, persistPending])
 
   return {
     likes,
-    shares,
     hasLiked,
     pendingLike,
-    pendingShare,
     isSyncing,
     syncError,
     toggleLike,
-    incrementShare,
-    syncInteractions
+    syncLikes
   }
 }
