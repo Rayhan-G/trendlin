@@ -6,7 +6,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { 
   Plus, Edit, Trash2, Eye, Clock, X, Video, Music, 
-  Image, CheckCircle, AlertCircle, Send
+  Image, CheckCircle, AlertCircle
 } from 'lucide-react'
 
 const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal'), { ssr: false })
@@ -28,6 +28,7 @@ export default function AdminLivePosts() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPost, setEditingPost] = useState(null)
+  const [showMediaModal, setShowMediaModal] = useState(null)
   
   const [content, setContent] = useState('')
   const [category, setCategory] = useState('tech')
@@ -39,13 +40,20 @@ export default function AdminLivePosts() {
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase
-      .from('live_posts')
-      .select('id,category,content,media_items,status,likes,expires_at')
-      .order('created_at', { ascending: false })
-      .limit(50)
-    setPosts(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('live_posts')
+        .select('id, category, content, media_items, status, likes, expires_at, published_at')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      
+      if (error) throw error
+      setPosts(data || [])
+    } catch (err) {
+      console.error('Fetch error:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { fetchPosts() }, [fetchPosts])
@@ -63,40 +71,83 @@ export default function AdminLivePosts() {
     setSaving(true)
     setError('')
     
-    const now = new Date().toISOString()
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    try {
+      const now = new Date().toISOString()
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
-    const postData = {
-      category,
-      content: content.trim() || null,
-      media_items: media.map(m => ({ type: m.type, url: m.url })),
-      status: 'published',
-      published_at: now,
-      expires_at: expiresAt
-    }
+      const postData = {
+        category,
+        content: content.trim() || null,
+        media_items: media.map(m => ({ type: m.type, url: m.url })),
+        status: 'published',
+        published_at: now,
+        expires_at: expiresAt,
+        updated_at: now
+      }
 
-    let result
-    if (editingPost) {
-      result = await supabase.from('live_posts').update(postData).eq('id', editingPost.id)
-    } else {
-      result = await supabase.from('live_posts').insert([postData])
-    }
+      let result
+      
+      if (editingPost) {
+        // UPDATE existing post
+        result = await supabase
+          .from('live_posts')
+          .update(postData)
+          .eq('id', editingPost.id)
+          .select()
+        
+        if (result.error) throw result.error
+        
+        console.log('Post updated:', result.data)
+      } else {
+        // INSERT new post
+        result = await supabase
+          .from('live_posts')
+          .insert([postData])
+          .select()
+        
+        if (result.error) throw result.error
+        
+        console.log('Post created:', result.data)
+      }
 
-    if (!result.error) {
+      // Show success
       setSuccess(true)
       setTimeout(() => setSuccess(false), 2000)
+      
+      // Close modal and refresh
       setModalOpen(false)
       resetForm()
-      fetchPosts()
-    } else {
-      setError(result.error.message)
+      await fetchPosts()
+      
+    } catch (err) {
+      console.error('Save error:', err)
+      setError(err.message || 'Failed to save post')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const deletePost = async (id) => {
-    await supabase.from('live_posts').delete().eq('id', id)
-    fetchPosts()
+    if (!confirm('Delete this post?')) return
+    
+    const { error } = await supabase
+      .from('live_posts')
+      .delete()
+      .eq('id', id)
+    
+    if (!error) fetchPosts()
+  }
+
+  const forceExpire = async (id) => {
+    const { error } = await supabase
+      .from('live_posts')
+      .update({ 
+        status: 'expired', 
+        expires_at: new Date().toISOString() 
+      })
+      .eq('id', id)
+    
+    if (!error) fetchPosts()
   }
 
   const resetForm = () => {
@@ -121,6 +172,7 @@ export default function AdminLivePosts() {
       type: mediaData.type || 'image',
       url: mediaData.url
     }])
+    setShowMediaModal(null)
   }
 
   const removeMedia = (id) => {
@@ -128,6 +180,7 @@ export default function AdminLivePosts() {
   }
 
   const getTimeLeft = (expiresAt) => {
+    if (!expiresAt) return '—'
     const diff = new Date(expiresAt) - new Date()
     if (diff <= 0) return 'Expired'
     const hours = Math.floor(diff / (1000 * 60 * 60))
@@ -137,7 +190,7 @@ export default function AdminLivePosts() {
 
   return (
     <>
-      <Head><title>Live Posts</title></Head>
+      <Head><title>Live Posts | Admin</title></Head>
       <div className="min-h-screen bg-black p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -157,19 +210,19 @@ export default function AdminLivePosts() {
           {/* Stats */}
           <div className="grid grid-cols-4 gap-4 mb-8">
             <div className="bg-white/5 rounded-2xl p-4">
-              <div className="text-2xl mb-1">{posts.filter(isActive).length}</div>
+              <div className="text-2xl mb-1 text-white">{posts.filter(isActive).length}</div>
               <div className="text-xs text-gray-500">ACTIVE</div>
             </div>
             <div className="bg-white/5 rounded-2xl p-4">
-              <div className="text-2xl mb-1">{posts.length}</div>
+              <div className="text-2xl mb-1 text-white">{posts.length}</div>
               <div className="text-xs text-gray-500">TOTAL</div>
             </div>
             <div className="bg-white/5 rounded-2xl p-4">
-              <div className="text-2xl mb-1">{posts.reduce((s, p) => s + (p.likes || 0), 0)}</div>
+              <div className="text-2xl mb-1 text-white">{posts.reduce((s, p) => s + (p.likes || 0), 0)}</div>
               <div className="text-xs text-gray-500">LIKES</div>
             </div>
             <div className="bg-white/5 rounded-2xl p-4">
-              <div className="text-2xl mb-1">{posts.reduce((s, p) => s + (p.media_items?.length || 0), 0)}</div>
+              <div className="text-2xl mb-1 text-white">{posts.reduce((s, p) => s + (p.media_items?.length || 0), 0)}</div>
               <div className="text-xs text-gray-500">MEDIA</div>
             </div>
           </div>
@@ -193,7 +246,7 @@ export default function AdminLivePosts() {
                       <th className="p-4">Category</th>
                       <th className="p-4">Status</th>
                       <th className="p-4">Likes</th>
-                      <th className="p-4">Time</th>
+                      <th className="p-4">Time Left</th>
                       <th className="p-4"></th>
                     </tr>
                   </thead>
@@ -207,7 +260,7 @@ export default function AdminLivePosts() {
                             <div className="max-w-xs">
                               <p className="text-white text-sm line-clamp-1">{post.content || 'Untitled'}</p>
                             </div>
-                          </td>
+                           </td>
                           <td className="p-4">
                             <span className="text-sm" style={{ color: cat?.color }}>{cat?.icon} {cat?.name}</span>
                           </td>
@@ -224,9 +277,19 @@ export default function AdminLivePosts() {
                           </td>
                           <td className="p-4">
                             <div className="flex gap-2">
+                              <Link href={`/live-posts/${post.category}`} target="_blank">
+                                <button className="p-1.5 rounded hover:bg-white/10">
+                                  <Eye size={14} className="text-gray-400" />
+                                </button>
+                              </Link>
                               <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-white/10">
                                 <Edit size={14} className="text-gray-400" />
                               </button>
+                              {active && (
+                                <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-white/10">
+                                  <Clock size={14} className="text-gray-400" />
+                                </button>
+                              )}
                               <button onClick={() => deletePost(post.id)} className="p-1.5 rounded hover:bg-white/10">
                                 <Trash2 size={14} className="text-gray-400" />
                               </button>
@@ -243,7 +306,7 @@ export default function AdminLivePosts() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Create/Edit Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setModalOpen(false)}>
           <div className="bg-[#0f0f0f] rounded-2xl w-full max-w-lg max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -257,7 +320,7 @@ export default function AdminLivePosts() {
             <div className="p-5 space-y-5 overflow-y-auto max-h-[calc(85vh-120px)]">
               {success && (
                 <div className="flex items-center gap-2 text-sm text-green-500 bg-green-500/10 p-3 rounded-xl">
-                  <CheckCircle size={16} /> Story published!
+                  <CheckCircle size={16} /> {editingPost ? 'Story updated!' : 'Story published!'}
                 </div>
               )}
               {error && (
@@ -316,9 +379,15 @@ export default function AdminLivePosts() {
             </div>
 
             <div className="p-5 border-t border-white/10 flex gap-3">
-              <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-white/10 rounded-xl text-gray-400 text-sm hover:bg-white/5">Cancel</button>
-              <button onClick={savePost} disabled={saving} className="flex-1 py-2.5 bg-white text-black rounded-xl text-sm font-medium disabled:opacity-50">
-                {saving ? 'Publishing...' : 'Publish'}
+              <button onClick={() => setModalOpen(false)} className="flex-1 py-2.5 border border-white/10 rounded-xl text-gray-400 text-sm hover:bg-white/5">
+                Cancel
+              </button>
+              <button 
+                onClick={savePost} 
+                disabled={saving || media.length === 0} 
+                className="flex-1 py-2.5 bg-white text-black rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Publishing...' : editingPost ? 'Update' : 'Publish'}
               </button>
             </div>
           </div>
@@ -326,9 +395,9 @@ export default function AdminLivePosts() {
       )}
 
       {/* Media Modals */}
-      <ImageModal isOpen={showMediaModal === 'image'} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />
-      <VideoModal isOpen={showMediaModal === 'video'} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />
-      <AudioModal isOpen={showMediaModal === 'audio'} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />
+      {showMediaModal === 'image' && <ImageModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />}
+      {showMediaModal === 'video' && <VideoModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />}
+      {showMediaModal === 'audio' && <AudioModal isOpen={true} onClose={() => setShowMediaModal(null)} onUpload={addMedia} />}
     </>
   )
 }
