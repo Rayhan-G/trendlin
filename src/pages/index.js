@@ -1,4 +1,4 @@
-// src/pages/index.js - COMPLETE WORKING VERSION
+// src/pages/index.js - COMPLETE PRODUCTION-READY VERSION
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
@@ -15,6 +15,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false)
   const [visitorId, setVisitorId] = useState(null)
 
+  // Generate visitor ID for anonymous interactions
   useEffect(() => {
     try {
       let vid = localStorage.getItem('visitor_id')
@@ -49,15 +50,18 @@ export default function Home() {
 
       if (!posts || posts.length === 0) return
 
+      // Editor's picks (featured posts)
       const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
       setEditorsPicks(picks)
 
+      // Today's posts
       const todayFiltered = posts.filter(post => {
         const publishDate = post.created_at?.split('T')[0]
         return publishDate === todayStr
       })
       setTodayPosts(todayFiltered)
 
+      // Most popular this month
       const popularFiltered = posts
         .filter(post => {
           const publishDate = post.created_at?.split('T')[0] || ''
@@ -72,12 +76,11 @@ export default function Home() {
     }
   }, [])
 
-  // Fetch live posts from 'live_posts' table - FIXED
+  // Fetch live posts from 'live_posts' table
   const fetchLivePosts = useCallback(async () => {
     if (!visitorId) return
     
     try {
-      // Simple query - just get all published posts
       const { data: live, error: liveError } = await supabase
         .from('live_posts')
         .select('*')
@@ -89,22 +92,12 @@ export default function Home() {
         return
       }
 
-      console.log('Raw posts from DB:', live)
-
       if (live && live.length > 0) {
-        // Filter out expired posts on client side
-        const now = new Date()
-        const activePosts = live.filter(post => {
-          if (!post.expires_at) return true
-          return new Date(post.expires_at) > now
-        })
-        
-        const postsWithDetails = await Promise.all(activePosts.map(async (post) => {
+        const postsWithDetails = await Promise.all(live.map(async (post) => {
           const { count: commentsCount } = await supabase
             .from('live_post_comments')
             .select('*', { count: 'exact', head: true })
             .eq('live_post_id', post.id)
-            .eq('status', 'approved')
           
           return {
             ...post,
@@ -135,18 +128,23 @@ export default function Home() {
   }, [])
 
   const refreshLivePosts = () => fetchLivePosts()
+  
   const handleRefreshAll = async () => {
     setRefreshing(true)
     await Promise.all([fetchRegularPosts(), fetchLivePosts()])
     setRefreshing(false)
   }
 
+  // Initial load
   useEffect(() => {
     Promise.all([fetchRegularPosts(), fetchLivePosts()]).finally(() => setLoading(false))
   }, [fetchRegularPosts, fetchLivePosts])
 
+  // Auto-refresh live posts every minute
   useEffect(() => {
-    const interval = setInterval(() => visitorId && fetchLivePosts(), 60000)
+    const interval = setInterval(() => {
+      if (visitorId) fetchLivePosts()
+    }, 60000)
     return () => clearInterval(interval)
   }, [visitorId, fetchLivePosts])
 
@@ -157,11 +155,70 @@ export default function Home() {
       <div className="loading-container">
         <div className="loading-spinner" />
         <style jsx>{`
-          .loading-container { min-height: 60vh; display: flex; align-items: center; justify-content: center; }
-          .loading-spinner { width: 48px; height: 48px; border: 3px solid #e2e8f0; border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; }
-          @keyframes spin { to { transform: rotate(360deg); } }
+          .loading-container {
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #8b5cf6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
         `}</style>
       </div>
+    )
+  }
+
+  if (error && livePosts.length === 0 && todayPosts.length === 0) {
+    return (
+      <>
+        <HeroSection />
+        <div className="error-container">
+          <div className="error-card">
+            <span className="error-icon">⚠️</span>
+            <h2>Something went wrong</h2>
+            <p>{error}</p>
+            <button onClick={handleRefreshAll} className="retry-btn">Try Again</button>
+          </div>
+        </div>
+        <style jsx>{`
+          .error-container {
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+          }
+          .error-card {
+            text-align: center;
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+          }
+          .error-icon { font-size: 48px; display: block; margin-bottom: 16px; }
+          .error-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: #1e293b; }
+          .error-card p { color: #64748b; margin-bottom: 20px; }
+          .retry-btn { 
+            padding: 10px 24px; 
+            background: #8b5cf6;
+            color: white; 
+            border: none; 
+            border-radius: 40px; 
+            cursor: pointer; 
+            font-weight: 500;
+          }
+          .retry-btn:hover { background: #7c3aed; }
+        `}</style>
+      </>
     )
   }
 
@@ -178,11 +235,26 @@ export default function Home() {
           <button onClick={handleRefreshAll} className="refresh-btn">⟳ Refresh</button>
         </div>
         <style jsx>{`
-          .empty-state { text-align: center; padding: 4rem; background: white; border-radius: 24px; margin: 2rem auto; max-width: 500px; }
+          .empty-state {
+            text-align: center;
+            padding: 4rem;
+            background: white;
+            border-radius: 24px;
+            margin: 2rem auto;
+            max-width: 500px;
+          }
           .empty-icon { font-size: 64px; margin-bottom: 1rem; }
           .empty-state h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; color: #1e293b; }
           .empty-state p { color: #64748b; margin-bottom: 1.5rem; }
-          .refresh-btn { padding: 0.75rem 1.5rem; background: #8b5cf6; color: white; border: none; border-radius: 40px; cursor: pointer; font-weight: 500; }
+          .refresh-btn {
+            padding: 0.75rem 1.5rem;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+          }
         `}</style>
       </>
     )
@@ -191,6 +263,7 @@ export default function Home() {
   return (
     <>
       <HeroSection />
+      
       <div className="home-container">
         {refreshing && (
           <div className="refresh-indicator">
@@ -199,9 +272,23 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live Posts Section - NO AUTO-SCROLL */}
+        {/* Live Posts Section - 24H Premium */}
         {livePosts.length > 0 && (
           <div className="live-section">
+            <div className="section-header">
+              <div className="live-badge">
+                <span className="live-dot"></span>
+                LIVE NOW • 24H POSTS
+                <button onClick={refreshLivePosts} className="refresh-live" title="Refresh live posts">
+                  ⟳
+                </button>
+              </div>
+              <h2 className="section-title">✨ Fresh Daily</h2>
+              <p className="section-subtitle">
+                One post per category. Expires in 24 hours. 
+                <span className="live-count">{livePosts.length} active {livePosts.length === 1 ? 'story' : 'stories'}</span>
+              </p>
+            </div>
             <LivePostCarousel 
               posts={livePosts}
               onLike={handleLivePostLike}
@@ -211,41 +298,231 @@ export default function Home() {
           </div>
         )}
 
+        {/* Regular Posts Sections */}
         {editorsPicks.length > 0 && (
-          <HorizontalScroll title="⭐ Editor's Picks" posts={editorsPicks} showRank={false} />
+          <HorizontalScroll 
+            title="⭐ Editor's Picks" 
+            posts={editorsPicks} 
+            showRank={false} 
+          />
         )}
 
         {todayPosts.length > 0 && (
-          <HorizontalScroll title="📰 Today's Fresh Posts" posts={todayPosts} showRank={false} />
+          <HorizontalScroll 
+            title="📰 Today's Fresh Posts" 
+            posts={todayPosts} 
+            showRank={false} 
+          />
         )}
 
         {popularPosts.length > 0 && (
-          <HorizontalScroll title={`🔥 Most Popular - ${currentMonthName}`} posts={popularPosts} showRank={true} />
+          <HorizontalScroll 
+            title={`🔥 Most Popular - ${currentMonthName}`} 
+            posts={popularPosts} 
+            showRank={true} 
+          />
         )}
 
+        {/* Quick Stats Footer */}
         <div className="stats-footer">
-          <div className="stat-item"><span className="stat-emoji">⚡</span><span className="stat-value">{livePosts.length}</span><span className="stat-label">Live Stories</span></div>
-          <div className="stat-item"><span className="stat-emoji">📝</span><span className="stat-value">{todayPosts.length + editorsPicks.length}</span><span className="stat-label">Today's Posts</span></div>
-          <div className="stat-item"><span className="stat-emoji">🔥</span><span className="stat-value">{popularPosts.length}</span><span className="stat-label">Trending</span></div>
+          <div className="stat-item">
+            <span className="stat-emoji">⚡</span>
+            <span className="stat-value">{livePosts.length}</span>
+            <span className="stat-label">Live Stories</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-emoji">📝</span>
+            <span className="stat-value">{todayPosts.length + editorsPicks.length}</span>
+            <span className="stat-label">Today's Posts</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-emoji">🔥</span>
+            <span className="stat-value">{popularPosts.length}</span>
+            <span className="stat-label">Trending</span>
+          </div>
         </div>
       </div>
 
       <style jsx>{`
-        .home-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem 4rem; position: relative; }
-        .refresh-indicator { position: fixed; top: 80px; right: 20px; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); padding: 0.5rem 1rem; border-radius: 40px; display: flex; align-items: center; gap: 0.5rem; color: white; font-size: 0.75rem; z-index: 100; animation: slideIn 0.3s ease; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        .refresh-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
-        .live-section { margin-bottom: 4rem; }
-        .stats-footer { display: flex; justify-content: center; gap: 3rem; margin-top: 4rem; padding: 2rem; background: rgba(255,255,255,0.03); border-radius: 2rem; border: 1px solid rgba(255,255,255,0.05); }
-        .stat-item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
-        .stat-emoji { font-size: 1.5rem; }
-        .stat-value { font-size: 1.5rem; font-weight: 700; color: #f1f5f9; }
-        .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+        .home-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 0 2rem 4rem 2rem;
+          position: relative;
+        }
+        
+        .refresh-indicator {
+          position: fixed;
+          top: 80px;
+          right: 20px;
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(10px);
+          padding: 0.5rem 1rem;
+          border-radius: 40px;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: white;
+          font-size: 0.75rem;
+          z-index: 100;
+          animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .refresh-spinner {
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 0.6s linear infinite;
+        }
+        
+        .live-section {
+          margin-bottom: 4rem;
+        }
+        
+        .section-header {
+          margin-bottom: 1.5rem;
+        }
+        
+        .live-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.25rem 0.75rem;
+          background: linear-gradient(135deg, #8b5cf6, #ec4899);
+          border-radius: 40px;
+          font-size: 0.7rem;
+          font-weight: 600;
+          letter-spacing: 1px;
+          color: white;
+          margin-bottom: 1rem;
+        }
+        
+        .refresh-live {
+          background: rgba(255,255,255,0.2);
+          border: none;
+          color: white;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          cursor: pointer;
+          font-size: 0.7rem;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.2s;
+        }
+        
+        .refresh-live:hover {
+          transform: rotate(180deg);
+          background: rgba(255,255,255,0.3);
+        }
+        
+        .live-dot {
+          width: 8px;
+          height: 8px;
+          background: #22c55e;
+          border-radius: 50%;
+          animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.8); }
+        }
+        
+        .section-title {
+          font-size: 1.8rem;
+          font-weight: 700;
+          background: linear-gradient(135deg, #fff, #a78bfa);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          margin-bottom: 0.5rem;
+        }
+        
+        .section-subtitle {
+          color: #64748b;
+          font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          flex-wrap: wrap;
+        }
+        
+        .live-count {
+          padding: 0.25rem 0.75rem;
+          background: rgba(139, 92, 246, 0.15);
+          border-radius: 40px;
+          font-size: 0.7rem;
+          font-weight: 500;
+          color: #8b5cf6;
+        }
+        
+        .stats-footer {
+          display: flex;
+          justify-content: center;
+          gap: 3rem;
+          margin-top: 4rem;
+          padding: 2rem;
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: 2rem;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .stat-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.25rem;
+        }
+        
+        .stat-emoji {
+          font-size: 1.5rem;
+        }
+        
+        .stat-value {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #f1f5f9;
+        }
+        
+        .stat-label {
+          font-size: 0.7rem;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 768px) {
-          .home-container { padding: 0 1rem 3rem; }
-          .stats-footer { gap: 1rem; padding: 1rem; }
-          .stat-value { font-size: 1rem; }
-          .refresh-indicator { top: 70px; right: 10px; font-size: 0.65rem; }
+          .home-container {
+            padding: 0 1rem 3rem 1rem;
+          }
+          .section-title {
+            font-size: 1.4rem;
+          }
+          .stats-footer {
+            gap: 1rem;
+            padding: 1rem;
+          }
+          .stat-value {
+            font-size: 1rem;
+          }
+          .refresh-indicator {
+            top: 70px;
+            right: 10px;
+            font-size: 0.65rem;
+          }
         }
       `}</style>
     </>
