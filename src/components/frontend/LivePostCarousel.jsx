@@ -1,6 +1,5 @@
-// components/frontend/LivePostCarousel.jsx
+// components/frontend/LivePostCarousel.jsx - NO AUTO-PLAY
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { createPortal } from 'react-dom'
 import { supabase } from '../../lib/supabase'
 import { useInteractions } from '../../hooks/useInteractions'
 import CommentSection from '../comments/CommentSection'
@@ -9,13 +8,9 @@ import {
   Play, Volume2, VolumeX, Maximize2, CheckCircle,
   Zap, User, Send, X, Clock, Copy
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
 
-export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLike, onShare, sessionId }) {
+export default function LivePostCarousel({ posts, onLike, onShare, sessionId }) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [direction, setDirection] = useState(0)
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true)
-  const [isHovering, setIsHovering] = useState(false)
   const [showComments, setShowComments] = useState({})
   const [commentCounts, setCommentCounts] = useState({})
   const [expandedContent, setExpandedContent] = useState({})
@@ -23,8 +18,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
   const [successMsg, setSuccessMsg] = useState({})
   const [showShareOptions, setShowShareOptions] = useState({})
   const [localShareCount, setLocalShareCount] = useState({})
-  const [shareMenuPosition, setShareMenuPosition] = useState({ top: 0, left: 0, direction: 'up' })
-  const autoPlayRef = useRef(null)
   const shareButtonRef = useRef({})
 
   const getSessionId = useCallback(() => {
@@ -62,25 +55,12 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     setLocalShareCount(counts)
   }, [posts])
 
-  // Auto-play
-  useEffect(() => {
-    if (isAutoPlaying && posts.length > 1 && !isHovering) {
-      autoPlayRef.current = setInterval(() => {
-        setDirection(1)
-        setCurrentIndex((prev) => (prev + 1) % posts.length)
-      }, autoPlayInterval)
-    }
-    return () => {
-      if (autoPlayRef.current) clearInterval(autoPlayRef.current)
-    }
-  }, [isAutoPlaying, posts.length, autoPlayInterval, isHovering])
-
   // Close share menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       const isOutside = Object.keys(shareButtonRef.current).every(postId => {
         const button = shareButtonRef.current[postId]
-        const menu = document.getElementById(`share-menu-portal-${postId}`)
+        const menu = document.getElementById(`share-menu-${postId}`)
         return button && !button.contains(event.target) && menu && !menu.contains(event.target)
       })
       if (isOutside) setShowShareOptions({})
@@ -133,42 +113,16 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     setShowShareOptions(prev => ({ ...prev, [postId]: false }))
   }
 
-  const openShareMenu = (postId) => {
-    const button = shareButtonRef.current[postId]
-    if (button) {
-      const rect = button.getBoundingClientRect()
-      const spaceAbove = rect.top
-      const spaceBelow = window.innerHeight - rect.bottom
-      const direction = spaceAbove > spaceBelow ? 'up' : 'down'
-      
-      setShareMenuPosition({
-        top: direction === 'up' ? rect.top - 10 : rect.bottom + 10,
-        left: rect.right - 180,
-        direction
-      })
-    }
-    setShowShareOptions(prev => ({ ...prev, [postId]: true }))
-  }
-
-  const goToSlide = (index, dir = index > currentIndex ? 1 : -1) => {
-    setDirection(dir)
+  const goToSlide = (index) => {
     setCurrentIndex(index)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
   }
 
   const nextSlide = () => {
-    setDirection(1)
     setCurrentIndex((prev) => (prev + 1) % posts.length)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
   }
 
   const prevSlide = () => {
-    setDirection(-1)
     setCurrentIndex((prev) => (prev - 1 + posts.length) % posts.length)
-    setIsAutoPlaying(false)
-    setTimeout(() => setIsAutoPlaying(true), 10000)
   }
 
   const formatNumber = (num) => {
@@ -205,275 +159,181 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
     return `${minutes}m`
   }
 
-  const slideVariants = {
-    enter: (direction) => ({
-      x: direction > 0 ? 400 : -400,
-      opacity: 0,
-      scale: 0.95
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] }
-    },
-    exit: (direction) => ({
-      x: direction > 0 ? -400 : 400,
-      opacity: 0,
-      scale: 0.95,
-      transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
-    })
-  }
-
   return (
-    <div className="million-dollar-carousel">
-      {/* Main Carousel */}
-      <div className="carousel-viewport">
-        <AnimatePresence initial={false} custom={direction} mode="wait">
-          <motion.div
-            key={currentIndex}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            className="carousel-slide"
-          >
-            <div className="premium-card">
-              {/* Category Badge */}
-              <div className="category-badge">
-                <span className="badge-dot" />
-                <span className="badge-text">{currentPost.category}</span>
-                {getTimeLeft() && (
-                  <div className="time-chip">
-                    <Zap size={10} />
-                    <span>{getTimeLeft()}</span>
-                  </div>
-                )}
+    <div className="premium-carousel">
+      {/* Main Card */}
+      <div className="premium-card">
+        {/* Category Header */}
+        <div className="category-header">
+          <span className="category-dot" />
+          <span className="category-name">{currentPost.category}</span>
+          {getTimeLeft() && (
+            <span className="time-left">
+              <Zap size={10} />
+              {getTimeLeft()} left
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="content-area">
+          {currentPost.content ? (
+            <>
+              <div className="content-text">
+                <div dangerouslySetInnerHTML={{ __html: displayContent || currentPost.content }} />
               </div>
-
-              {/* Content */}
-              <div className="content-area">
-                {currentPost.content ? (
-                  <>
-                    <div className="rich-content">
-                      <div dangerouslySetInnerHTML={{ __html: displayContent || currentPost.content }} />
-                    </div>
-                    {currentPost.content.length > 280 && (
-                      <button onClick={() => setExpandedContent(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} className="read-more">
-                        {isExpanded ? 'Show less' : 'Read more'}
-                        <ChevronRight size={14} className="read-more-icon" />
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <p className="empty-state">No description provided</p>
-                )}
-              </div>
-
-              {/* Media Grid */}
-              {currentPost.media_items && currentPost.media_items.length > 0 && (
-                <div className={`media-grid ${currentPost.media_items.length === 1 ? 'single' : 'grid-2'}`}>
-                  {currentPost.media_items.slice(0, 2).map((media, idx) => (
-                    <div key={idx} className="media-frame">
-                      <img src={media.url} alt="" loading="lazy" />
-                      {currentPost.media_items.length > 2 && idx === 0 && (
-                        <div className="media-overlay">
-                          <span>+{currentPost.media_items.length - 2}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Action Bar */}
-              <div className="action-bar-premium">
-                <button 
-                  onClick={toggleLike} 
-                  className={`action-premium like ${userHasLiked ? 'active' : ''}`}
-                  disabled={isSyncingInteractions}
-                >
-                  <Heart size={18} fill={userHasLiked ? '#ef4444' : 'none'} />
-                  <span>{formatNumber(liveLikes)}</span>
+              {currentPost.content.length > 280 && (
+                <button onClick={() => setExpandedContent(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} className="read-more">
+                  {isExpanded ? 'Show less' : 'Read more'}
+                  <ChevronRight size={14} />
                 </button>
-                
-                <button 
-                  onClick={() => toggleComments(currentPost.id)} 
-                  className={`action-premium comment ${isCommentsOpen ? 'active' : ''}`}
-                >
-                  <MessageCircle size={18} />
-                  <span>{formatNumber(currentCommentCount)}</span>
-                </button>
-                
-                <div className="share-wrapper">
-                  <button 
-                    ref={el => shareButtonRef.current[currentPost.id] = el}
-                    onClick={() => openShareMenu(currentPost.id)} 
-                    className="action-premium share"
-                  >
-                    <Share2 size={18} />
-                    <span>{formatNumber(currentShareCount)}</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Status Messages */}
-              {successMsg[currentPost.id] && (
-                <div className="status-chip success">
-                  <CheckCircle size={12} />
-                  {successMsg[currentPost.id]}
-                </div>
               )}
-              {errorMsg[currentPost.id] && (
-                <div className="status-chip error">
-                  <X size={12} />
-                  {errorMsg[currentPost.id]}
-                </div>
-              )}
+            </>
+          ) : (
+            <p className="no-content">No description</p>
+          )}
+        </div>
 
-              {/* Comments Section */}
-              <AnimatePresence>
-                {isCommentsOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="comments-wrapper"
-                  >
-                    <CommentSection 
-                      postId={currentPost.id}
-                      sessionId={getSessionId()}
-                      commentCount={currentCommentCount}
-                      onCommentCountChange={(newCount) => {
-                        setCommentCounts(prev => ({ ...prev, [currentPost.id]: newCount }))
-                      }}
-                    />
-                  </motion.div>
+        {/* Media */}
+        {currentPost.media_items && currentPost.media_items.length > 0 && (
+          <div className="media-grid">
+            {currentPost.media_items.slice(0, 2).map((media, idx) => (
+              <div key={idx} className={`media-item ${currentPost.media_items.length === 1 ? 'single' : 'double'}`}>
+                <img src={media.url} alt="" loading="lazy" />
+                {currentPost.media_items.length > 2 && idx === 0 && (
+                  <div className="media-badge">+{currentPost.media_items.length - 2}</div>
                 )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-      </div>
-
-      {/* Navigation */}
-      {posts.length > 1 && (
-        <div className="nav-premium">
-          <button onClick={prevSlide} className="nav-btn-premium prev">
-            <ChevronLeft size={20} />
-          </button>
-          <div className="nav-dots">
-            {posts.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => goToSlide(idx, idx > currentIndex ? 1 : -1)}
-                className={`nav-dot ${idx === currentIndex ? 'active' : ''}`}
-              />
+              </div>
             ))}
           </div>
-          <button onClick={nextSlide} className="nav-btn-premium next">
-            <ChevronRight size={20} />
-          </button>
-        </div>
-      )}
+        )}
 
-      {/* Portal Share Menu - Renders at body level, never gets cut off */}
-      {isShareMenuOpen && typeof document !== 'undefined' && createPortal(
-        <motion.div 
-          id={`share-menu-portal-${currentPost.id}`}
-          className={`share-menu-portal ${shareMenuPosition.direction}`}
-          style={{
-            position: 'fixed',
-            top: shareMenuPosition.top,
-            left: shareMenuPosition.left,
-            zIndex: 99999,
-          }}
-          initial={{ opacity: 0, scale: 0.95, y: shareMenuPosition.direction === 'up' ? 10 : -10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: shareMenuPosition.direction === 'up' ? 10 : -10 }}
-          transition={{ duration: 0.15 }}
-        >
-          <div className="share-menu-arrow" />
-          <button onClick={() => handleShare(currentPost.id, 'copy')} className="share-option-portal">
-            <Copy size={14} />
-            <span>Copy link</span>
+        {/* Actions */}
+        <div className="action-bar">
+          <button 
+            onClick={toggleLike} 
+            className={`action-btn like ${userHasLiked ? 'active' : ''}`}
+            disabled={isSyncingInteractions}
+          >
+            <Heart size={18} fill={userHasLiked ? '#ef4444' : 'none'} />
+            <span>{formatNumber(liveLikes)}</span>
+            {pendingLike !== undefined && <span className="pending-dot" />}
           </button>
-          <button onClick={() => handleShare(currentPost.id, 'twitter')} className="share-option-portal">
-            <span>🐦</span>
-            <span>Twitter</span>
+          
+          <button 
+            onClick={() => toggleComments(currentPost.id)} 
+            className={`action-btn comment ${isCommentsOpen ? 'active' : ''}`}
+          >
+            <MessageCircle size={18} />
+            <span>{formatNumber(currentCommentCount)}</span>
           </button>
-          <button onClick={() => handleShare(currentPost.id, 'facebook')} className="share-option-portal">
-            <span>📘</span>
-            <span>Facebook</span>
-          </button>
-          <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-option-portal">
-            <span>🔗</span>
-            <span>LinkedIn</span>
-          </button>
-          <button onClick={() => handleShare(currentPost.id, 'whatsapp')} className="share-option-portal">
-            <span>💬</span>
-            <span>WhatsApp</span>
-          </button>
-          <button onClick={() => handleShare(currentPost.id, 'telegram')} className="share-option-portal">
-            <span>✈️</span>
-            <span>Telegram</span>
-          </button>
-          <button onClick={() => handleShare(currentPost.id, 'email')} className="share-option-portal">
-            <span>📧</span>
-            <span>Email</span>
-          </button>
-        </motion.div>,
-        document.body
-      )}
+          
+          <div className="share-wrapper">
+            <button 
+              ref={el => shareButtonRef.current[currentPost.id] = el}
+              onClick={() => setShowShareOptions(prev => ({ ...prev, [currentPost.id]: !prev[currentPost.id] }))} 
+              className="action-btn share"
+            >
+              <Share2 size={18} />
+              <span>{formatNumber(currentShareCount)}</span>
+            </button>
+            
+            {isShareMenuOpen && (
+              <div className="share-menu" id={`share-menu-${currentPost.id}`}>
+                <button onClick={() => handleShare(currentPost.id, 'copy')} className="share-item">
+                  <Copy size={14} /> Copy
+                </button>
+                <button onClick={() => handleShare(currentPost.id, 'twitter')} className="share-item">🐦 Twitter</button>
+                <button onClick={() => handleShare(currentPost.id, 'facebook')} className="share-item">📘 Facebook</button>
+                <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-item">🔗 LinkedIn</button>
+                <button onClick={() => handleShare(currentPost.id, 'whatsapp')} className="share-item">💬 WhatsApp</button>
+                <button onClick={() => handleShare(currentPost.id, 'telegram')} className="share-item">✈️ Telegram</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Messages */}
+        {successMsg[currentPost.id] && (
+          <div className="success-msg">
+            <CheckCircle size={12} /> {successMsg[currentPost.id]}
+          </div>
+        )}
+        {errorMsg[currentPost.id] && (
+          <div className="error-msg">
+            <X size={12} /> {errorMsg[currentPost.id]}
+          </div>
+        )}
+
+        {/* Comments */}
+        {isCommentsOpen && (
+          <CommentSection 
+            postId={currentPost.id}
+            sessionId={getSessionId()}
+            commentCount={currentCommentCount}
+            onCommentCountChange={(newCount) => {
+              setCommentCounts(prev => ({ ...prev, [currentPost.id]: newCount }))
+            }}
+          />
+        )}
+
+        {/* Navigation Arrows */}
+        {posts.length > 1 && (
+          <div className="nav-arrows">
+            <button onClick={prevSlide} className="nav-btn prev">
+              <ChevronLeft size={20} />
+            </button>
+            <div className="nav-dots">
+              {posts.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => goToSlide(idx)}
+                  className={`nav-dot ${idx === currentIndex ? 'active' : ''}`}
+                />
+              ))}
+            </div>
+            <button onClick={nextSlide} className="nav-btn next">
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        )}
+      </div>
 
       <style jsx>{`
-        .million-dollar-carousel {
+        .premium-carousel {
           width: 100%;
-          max-width: 720px;
+          max-width: 680px;
           margin: 0 auto;
-          position: relative;
-        }
-
-        .carousel-viewport {
-          position: relative;
-          overflow: hidden;
-          border-radius: 32px;
-        }
-
-        .carousel-slide {
-          width: 100%;
         }
 
         .premium-card {
           background: rgba(255, 255, 255, 0.98);
-          border-radius: 32px;
+          border-radius: 28px;
           overflow: hidden;
-          box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.02);
-          transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.4, 1), box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.4, 1);
+          box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.12);
+          transition: transform 0.3s, box-shadow 0.3s;
         }
 
         .premium-card:hover {
           transform: translateY(-2px);
-          box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(139, 92, 246, 0.15);
+          box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.18);
         }
 
-        .category-badge {
+        .category-header {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 20px 24px 0 24px;
         }
 
-        .badge-dot {
+        .category-dot {
           width: 8px;
           height: 8px;
           border-radius: 50%;
           background: #8b5cf6;
         }
 
-        .badge-text {
+        .category-name {
           font-size: 12px;
           font-weight: 600;
           text-transform: uppercase;
@@ -481,7 +341,7 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           color: #64748b;
         }
 
-        .time-chip {
+        .time-left {
           display: flex;
           align-items: center;
           gap: 4px;
@@ -490,7 +350,6 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           background: #f1f5f9;
           border-radius: 20px;
           font-size: 10px;
-          font-family: monospace;
           color: #475569;
         }
 
@@ -498,13 +357,13 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           padding: 12px 24px;
         }
 
-        .rich-content {
+        .content-text {
           font-size: 15px;
           line-height: 1.6;
           color: #1e293b;
         }
 
-        .empty-state {
+        .no-content {
           color: #94a3b8;
           font-style: italic;
         }
@@ -520,62 +379,47 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           background: none;
           border: none;
           cursor: pointer;
-          transition: gap 0.2s;
-        }
-
-        .read-more:hover {
-          gap: 10px;
         }
 
         .media-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2px;
           margin: 0 24px 16px 24px;
           border-radius: 20px;
           overflow: hidden;
           background: #f1f5f9;
         }
 
-        .media-grid.single {
-          display: block;
-        }
-
-        .media-grid.grid-2 {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 2px;
-        }
-
-        .media-frame {
+        .media-item {
           position: relative;
           aspect-ratio: 16/9;
           overflow: hidden;
           background: #f8fafc;
         }
 
-        .media-frame img {
+        .media-item.single {
+          grid-column: span 2;
+        }
+
+        .media-item img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.5s ease;
         }
 
-        .media-frame:hover img {
-          transform: scale(1.03);
-        }
-
-        .media-overlay {
+        .media-badge {
           position: absolute;
           bottom: 12px;
           right: 12px;
           background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(8px);
           padding: 4px 10px;
           border-radius: 20px;
           font-size: 12px;
-          font-weight: 500;
           color: white;
         }
 
-        .action-bar-premium {
+        .action-bar {
           display: flex;
           align-items: center;
           gap: 8px;
@@ -583,31 +427,31 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           border-top: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .action-premium {
+        .action-btn {
           display: flex;
           align-items: center;
           gap: 8px;
           padding: 8px 16px;
-          background: transparent;
+          background: none;
           border: none;
           border-radius: 40px;
           font-size: 14px;
           font-weight: 500;
           color: #64748b;
           cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.2, 0.8, 0.4, 1);
+          transition: all 0.2s;
         }
 
-        .action-premium:hover {
+        .action-btn:hover {
           background: #f8fafc;
           color: #1e293b;
         }
 
-        .action-premium.like.active {
+        .like.active {
           color: #ef4444;
         }
 
-        .action-premium.comment.active {
+        .comment.active {
           color: #8b5cf6;
         }
 
@@ -616,44 +460,82 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           margin-left: auto;
         }
 
-        .status-chip {
-          display: inline-flex;
+        .share-menu {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          right: 0;
+          background: white;
+          border-radius: 16px;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+          padding: 8px;
+          min-width: 150px;
+          z-index: 10;
+        }
+
+        .share-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 8px 12px;
+          background: none;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 13px;
+          color: #1e293b;
+        }
+
+        .share-item:hover {
+          background: #f1f5f9;
+        }
+
+        .pending-dot {
+          width: 6px;
+          height: 6px;
+          background: #f59e0b;
+          border-radius: 50%;
+          animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+
+        .success-msg, .error-msg {
+          display: flex;
           align-items: center;
           gap: 8px;
           margin: 0 24px 16px 24px;
-          padding: 8px 14px;
-          border-radius: 40px;
+          padding: 8px 12px;
+          border-radius: 12px;
           font-size: 12px;
         }
 
-        .status-chip.success {
+        .success-msg {
           background: #22c55e10;
           color: #22c55e;
         }
 
-        .status-chip.error {
+        .error-msg {
           background: #ef444410;
           color: #ef4444;
         }
 
-        .comments-wrapper {
-          border-top: 1px solid rgba(0, 0, 0, 0.05);
-          margin-top: 8px;
-        }
-
-        .nav-premium {
+        .nav-arrows {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 20px;
-          margin-top: 24px;
+          padding: 0 24px 24px 24px;
         }
 
-        .nav-btn-premium {
-          width: 40px;
-          height: 40px;
+        .nav-btn {
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
-          background: white;
+          background: transparent;
           border: 1px solid #e2e8f0;
           display: flex;
           align-items: center;
@@ -663,11 +545,10 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           transition: all 0.2s;
         }
 
-        .nav-btn-premium:hover {
+        .nav-btn:hover {
           background: #8b5cf6;
           border-color: #8b5cf6;
           color: white;
-          transform: scale(1.05);
         }
 
         .nav-dots {
@@ -695,159 +576,50 @@ export default function LivePostCarousel({ posts, autoPlayInterval = 5000, onLik
           .premium-card {
             background: rgba(30, 41, 59, 0.98);
           }
-          .rich-content {
+          .content-text {
             color: #e2e8f0;
           }
-          .action-premium:hover {
+          .action-btn:hover {
             background: #334155;
             color: #f1f5f9;
           }
-          .time-chip {
-            background: #334155;
-            color: #cbd5e1;
-          }
-          .nav-btn-premium {
+          .share-menu {
             background: #1e293b;
+          }
+          .share-item {
+            color: #e2e8f0;
+          }
+          .share-item:hover {
+            background: #334155;
+          }
+          .nav-btn {
             border-color: #334155;
             color: #94a3b8;
           }
-          .action-bar-premium {
-            border-top-color: rgba(255, 255, 255, 0.05);
-          }
-          .media-grid {
+          .time-left {
             background: #334155;
-          }
-          .media-frame {
-            background: #0f172a;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .million-dollar-carousel {
-            padding: 0 12px;
-          }
-          .premium-card {
-            border-radius: 24px;
-          }
-          .category-badge {
-            padding: 16px 20px 0 20px;
-          }
-          .content-area {
-            padding: 8px 20px;
-          }
-          .rich-content {
-            font-size: 14px;
-          }
-          .media-grid {
-            margin: 0 20px 12px 20px;
-          }
-          .action-bar-premium {
-            padding: 6px 20px 16px 20px;
-          }
-          .action-premium {
-            padding: 6px 12px;
-          }
-          .nav-premium {
-            margin-top: 16px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .action-premium span:first-child {
-            display: none;
-          }
-          .action-premium {
-            gap: 4px;
-            padding: 6px 10px;
-          }
-        }
-      `}</style>
-
-      <style jsx global>{`
-        .share-menu-portal {
-          background: white;
-          border-radius: 20px;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-          padding: 8px;
-          min-width: 170px;
-          border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .share-menu-portal.up .share-menu-arrow {
-          position: absolute;
-          bottom: -6px;
-          right: 20px;
-          width: 12px;
-          height: 12px;
-          background: white;
-          border-right: 1px solid rgba(0, 0, 0, 0.05);
-          border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-          transform: rotate(45deg);
-        }
-
-        .share-menu-portal.down .share-menu-arrow {
-          position: absolute;
-          top: -6px;
-          right: 20px;
-          width: 12px;
-          height: 12px;
-          background: white;
-          border-left: 1px solid rgba(0, 0, 0, 0.05);
-          border-top: 1px solid rgba(0, 0, 0, 0.05);
-          transform: rotate(45deg);
-        }
-
-        .share-option-portal {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          width: 100%;
-          padding: 10px 14px;
-          background: none;
-          border: none;
-          border-radius: 14px;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          color: #1e293b;
-          transition: all 0.2s ease;
-          text-align: left;
-        }
-
-        .share-option-portal:hover {
-          background: #f1f5f9;
-        }
-
-        @media (prefers-color-scheme: dark) {
-          .share-menu-portal {
-            background: #1e293b;
-            border-color: #334155;
-          }
-          .share-menu-portal.up .share-menu-arrow {
-            background: #1e293b;
-            border-right-color: #334155;
-            border-bottom-color: #334155;
-          }
-          .share-menu-portal.down .share-menu-arrow {
-            background: #1e293b;
-            border-left-color: #334155;
-            border-top-color: #334155;
-          }
-          .share-option-portal {
-            color: #e2e8f0;
-          }
-          .share-option-portal:hover {
-            background: #334155;
+            color: #cbd5e1;
           }
         }
 
         @media (max-width: 640px) {
-          .share-menu-portal {
-            min-width: 150px;
+          .category-header, .content-area, .media-grid {
+            padding-left: 16px;
+            padding-right: 16px;
           }
-          .share-option-portal {
-            padding: 8px 12px;
-            font-size: 13px;
+          .action-bar {
+            padding-left: 16px;
+            padding-right: 16px;
+          }
+          .action-btn span:first-child {
+            display: none;
+          }
+          .action-btn {
+            padding: 6px 10px;
+          }
+          .share-menu {
+            right: -10px;
+            min-width: 140px;
           }
         }
       `}</style>

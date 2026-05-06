@@ -1,4 +1,4 @@
-// src/pages/index.js - FULLY WORKING with both tables
+// src/pages/index.js - Remove autoPlayInterval
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
@@ -28,14 +28,12 @@ export default function Home() {
     }
   }, [])
 
-  // Fetch regular posts from 'posts' table - FIXED column names
   const fetchRegularPosts = useCallback(async () => {
     try {
       const today = new Date()
       const todayStr = today.toISOString().split('T')[0]
       const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
-      // Use correct column names from your posts table
       const { data: posts, error: postsError } = await supabase
         .from('posts')
         .select('*')
@@ -50,18 +48,15 @@ export default function Home() {
 
       if (!posts || posts.length === 0) return
 
-      // Editor's picks - using your actual column names
       const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
       setEditorsPicks(picks)
 
-      // Today's posts - using created_at instead of published_at
       const todayFiltered = posts.filter(post => {
         const publishDate = post.created_at?.split('T')[0]
         return publishDate === todayStr
       })
       setTodayPosts(todayFiltered)
 
-      // Most popular this month - using views column
       const popularFiltered = posts
         .filter(post => {
           const publishDate = post.created_at?.split('T')[0] || ''
@@ -76,7 +71,6 @@ export default function Home() {
     }
   }, [])
 
-  // Fetch live posts from 'live_posts' table
   const fetchLivePosts = useCallback(async () => {
     if (!visitorId) return
     
@@ -193,23 +187,11 @@ export default function Home() {
           </div>
         )}
 
+        {/* Live Posts Section - NO AUTO SCROLL */}
         {livePosts.length > 0 && (
           <div className="live-section">
-            <div className="section-header">
-              <div className="live-badge">
-                <span className="live-dot" />
-                LIVE NOW • 24H POSTS
-                <button onClick={refreshLivePosts} className="refresh-live">⟳</button>
-              </div>
-              <h2 className="section-title">✨ Fresh Daily</h2>
-              <p className="section-subtitle">
-                One post per category. Expires in 24 hours. 
-                <span className="live-count">{livePosts.length} active {livePosts.length === 1 ? 'story' : 'stories'}</span>
-              </p>
-            </div>
             <LivePostCarousel 
               posts={livePosts}
-              autoPlayInterval={5000}
               onLike={handleLivePostLike}
               onShare={handleLivePostShare}
               sessionId={visitorId}
@@ -242,15 +224,6 @@ export default function Home() {
         @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         .refresh-spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite; }
         .live-section { margin-bottom: 4rem; }
-        .section-header { margin-bottom: 1.5rem; }
-        .live-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; background: linear-gradient(135deg, #8b5cf6, #ec4899); border-radius: 40px; font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; color: white; margin-bottom: 1rem; }
-        .refresh-live { background: rgba(255,255,255,0.2); border: none; color: white; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 0.7rem; display: inline-flex; align-items: center; justify-content: center; transition: transform 0.2s; }
-        .refresh-live:hover { transform: rotate(180deg); background: rgba(255,255,255,0.3); }
-        .live-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
-        .section-title { font-size: 1.8rem; font-weight: 700; background: linear-gradient(135deg, #fff, #a78bfa); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 0.5rem; }
-        .section-subtitle { color: #64748b; font-size: 0.9rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-        .live-count { padding: 0.25rem 0.75rem; background: rgba(139,92,246,0.15); border-radius: 40px; font-size: 0.7rem; font-weight: 500; color: #8b5cf6; }
         .stats-footer { display: flex; justify-content: center; gap: 3rem; margin-top: 4rem; padding: 2rem; background: rgba(255,255,255,0.03); border-radius: 2rem; border: 1px solid rgba(255,255,255,0.05); }
         .stat-item { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
         .stat-emoji { font-size: 1.5rem; }
@@ -258,7 +231,6 @@ export default function Home() {
         .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
         @media (max-width: 768px) {
           .home-container { padding: 0 1rem 3rem; }
-          .section-title { font-size: 1.4rem; }
           .stats-footer { gap: 1rem; padding: 1rem; }
           .stat-value { font-size: 1rem; }
           .refresh-indicator { top: 70px; right: 10px; font-size: 0.65rem; }
