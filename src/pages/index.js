@@ -1,4 +1,4 @@
-// src/pages/index.js - NO AUTO-SCROLL
+// src/pages/index.js - COMPLETE WORKING VERSION
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
@@ -28,6 +28,7 @@ export default function Home() {
     }
   }, [])
 
+  // Fetch regular posts from 'posts' table
   const fetchRegularPosts = useCallback(async () => {
     try {
       const today = new Date()
@@ -71,23 +72,34 @@ export default function Home() {
     }
   }, [])
 
+  // Fetch live posts from 'live_posts' table - FIXED
   const fetchLivePosts = useCallback(async () => {
     if (!visitorId) return
     
     try {
-      const now = new Date().toISOString()
+      // Simple query - just get all published posts
       const { data: live, error: liveError } = await supabase
         .from('live_posts')
         .select('*')
-        .in('status', ['active', 'published'])
-        .gt('expires_at', now)
+        .eq('status', 'published')
         .order('published_at', { ascending: false })
-        .limit(50)
 
-      if (liveError) throw liveError
+      if (liveError) {
+        console.error('Live posts error:', liveError)
+        return
+      }
+
+      console.log('Raw posts from DB:', live)
 
       if (live && live.length > 0) {
-        const postsWithDetails = await Promise.all(live.map(async (post) => {
+        // Filter out expired posts on client side
+        const now = new Date()
+        const activePosts = live.filter(post => {
+          if (!post.expires_at) return true
+          return new Date(post.expires_at) > now
+        })
+        
+        const postsWithDetails = await Promise.all(activePosts.map(async (post) => {
           const { count: commentsCount } = await supabase
             .from('live_post_comments')
             .select('*', { count: 'exact', head: true })
