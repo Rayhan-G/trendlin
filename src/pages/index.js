@@ -1,4 +1,4 @@
-// src/pages/index.js - Remove autoPlayInterval
+// src/pages/index.js - NO AUTO-SCROLL
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
@@ -187,7 +187,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live Posts Section - NO AUTO SCROLL */}
+        {/* Live Posts Section - NO AUTO-SCROLL */}
         {livePosts.length > 0 && (
           <div className="live-section">
             <LivePostCarousel 
