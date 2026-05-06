@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import BookmarkButton from './BookmarkButton'
+import BookmarkButton from './BookmarkButton.tsx'
 
 export default function PostCard({ post, rank = null }) {
   const [isDarkMode, setIsDarkMode] = useState(false)
