@@ -1,3 +1,8 @@
+// ============================================
+// AUTH MODAL - WITH EVENT DISPATCH
+// ============================================
+// FILE: src/components/frontend/AuthModal.jsx
+
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 
@@ -17,7 +22,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
   const [verificationId, setVerificationId] = useState('')
   const [countdown, setCountdown] = useState(0)
   const [canResend, setCanResend] = useState(false)
-  const [isAdminMode, setIsAdminMode] = useState(false) // Track if trying to login as admin
 
   const inputRefs = useRef([])
 
@@ -38,7 +42,6 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       setVerificationCode(['', '', '', '', '', ''])
       setVerificationId('')
       setCountdown(0)
-      setIsAdminMode(false)
     }
   }, [isOpen])
 
@@ -207,6 +210,9 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
       })
 
       if (signupResult.success) {
+        // ✅ DISPATCH EVENT FOR BOOKMARK BUTTON
+        window.dispatchEvent(new CustomEvent('authComplete'));
+        
         if (onLogin) onLogin(signupResult.data.user)
         onClose()
       } else {
@@ -271,22 +277,22 @@ export default function AuthModal({ isOpen, mode: propMode, onClose, onLogin }) 
     setLoading(true)
     setError('')
 
-    // Check if trying to login as admin
     const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@yourdomain.com'
     const isAttemptingAdmin = email.toLowerCase() === adminEmail.toLowerCase()
 
     const result = await callApi('/api/auth/login', { email, password, rememberMe })
 
     if (result.success) {
+      // ✅ DISPATCH EVENT FOR BOOKMARK BUTTON
+      window.dispatchEvent(new CustomEvent('authComplete'));
+      
       if (onLogin) onLogin(result.data.user)
       onClose()
       
-      // If admin, redirect to admin dashboard
       if (result.data.isAdmin === true || result.data.user?.is_admin === true) {
         router.push('/admin/dashboard')
       }
     } else {
-      // Show appropriate error message
       if (isAttemptingAdmin) {
         setError('Invalid admin credentials. Please check your email and password.')
       } else {
