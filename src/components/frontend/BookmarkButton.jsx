@@ -1,5 +1,5 @@
 // ============================================
-// BOOKMARK BUTTON - COMPLETE WORKING VERSION
+// BOOKMARK BUTTON - FIXED WITH PROPER AUTH GATING
 // ============================================
 // FILE: src/components/frontend/BookmarkButton.jsx
 
@@ -20,22 +20,22 @@ export default function BookmarkButton({
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Function to check auth and bookmark status
+  // ============================================
+  // FIXED: Check Supabase auth directly (no /api/auth/me)
+  // ============================================
   const checkAuthAndBookmark = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/me', {
-        credentials: 'include',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
+      // Get current session from Supabase
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      const data = await res.json();
-      console.log('BookmarkButton auth check:', data.authenticated ? 'Logged in' : 'Not logged in');
+      if (sessionError) throw sessionError;
       
-      if (data.authenticated && data.user) {
-        const uid = data.user.id;
+      if (session?.user) {
+        const uid = session.user.id;
         setUserId(uid);
         
+        // Check if bookmark exists
         const { data: bookmark, error } = await supabase
           .from('bookmarks')
           .select('id')
@@ -53,6 +53,7 @@ export default function BookmarkButton({
     } catch (error) {
       console.error('Auth check error:', error);
       setUserId(null);
+      setIsBookmarked(false);
     } finally {
       setLoading(false);
     }
@@ -65,28 +66,44 @@ export default function BookmarkButton({
     }
   }, [postId]);
 
-  // Listen for auth changes
+  // Listen for Supabase auth changes
   useEffect(() => {
-    const handleAuthChange = () => {
-      console.log('Auth change detected, rechecking...');
-      checkAuthAndBookmark();
-    };
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event);
+      if (event === 'SIGNED_IN') {
+        checkAuthAndBookmark();
+      } else if (event === 'SIGNED_OUT') {
+        setUserId(null);
+        setIsBookmarked(false);
+        setLoading(false);
+      }
+    });
 
-    window.addEventListener('authComplete', handleAuthChange);
-    window.addEventListener('storage', handleAuthChange);
-    
     return () => {
-      window.removeEventListener('authComplete', handleAuthChange);
-      window.removeEventListener('storage', handleAuthChange);
+      subscription.unsubscribe();
     };
   }, [postId]);
 
+  // ============================================
+  // FIXED: Proper freemium gating - opens auth modal
+  // ============================================
   const handleBookmark = async () => {
     if (!userId) {
-      window.dispatchEvent(new CustomEvent('openAuth', { detail: 'signup' }));
-      toast.error('Sign in to save bookmarks', {
+      // Dispatch custom event to open your existing AuthPage modal
+      const authEvent = new CustomEvent('openAuth', { 
+        detail: { mode: 'signup', redirectFeature: 'bookmark' }
+      });
+      window.dispatchEvent(authEvent);
+      
+      // Also show toast with clear CTA
+      toast.error('Create a free account to save bookmarks!', {
         icon: '🔖',
-        duration: 4000
+        duration: 5000,
+        style: {
+          background: '#1e293b',
+          color: '#fff',
+        },
       });
       return;
     }
@@ -95,6 +112,7 @@ export default function BookmarkButton({
     
     try {
       if (!isBookmarked) {
+        // Insert bookmark
         const { error } = await supabase
           .from('bookmarks')
           .insert({
@@ -102,8 +120,8 @@ export default function BookmarkButton({
             post_id: parseInt(postId),
             post_title: postTitle,
             post_slug: postSlug,
-            post_excerpt: postExcerpt,
-            featured_image_url: featuredImage,
+            post_excerpt: postExcerpt || '',
+            featured_image_url: featuredImage || '',
             importance_level: 3,
             created_at: new Date().toISOString()
           });
@@ -111,8 +129,13 @@ export default function BookmarkButton({
         if (error) throw error;
         
         setIsBookmarked(true);
-        toast.success('Saved to bookmarks!', { duration: 3000, icon: '✅' });
+        toast.success('Saved to your library!', { 
+          duration: 3000, 
+          icon: '✅',
+          style: { background: '#22c55e', color: '#fff' }
+        });
       } else {
+        // Delete bookmark
         const { error } = await supabase
           .from('bookmarks')
           .delete()
@@ -122,11 +145,17 @@ export default function BookmarkButton({
         if (error) throw error;
         
         setIsBookmarked(false);
-        toast.success('Removed from bookmarks', { duration: 3000, icon: '🗑️' });
+        toast.success('Removed from library', { 
+          duration: 3000, 
+          icon: '🗑️' 
+        });
       }
     } catch (error) {
       console.error('Bookmark error:', error);
-      toast.error('Failed to save bookmark', { duration: 4000, icon: '❌' });
+      toast.error('Something went wrong. Please try again.', { 
+        duration: 4000, 
+        icon: '❌' 
+      });
     } finally {
       setLoading(false);
     }
