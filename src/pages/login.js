@@ -1,166 +1,172 @@
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/router'
+import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { supabase } from '../../../lib/supabase';
 
-export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
-
-  // Check for reset success message
-  useEffect(() => {
-    if (router.query.reset === 'true') {
-      setSuccessMessage('Password reset successful! Please sign in with your new password.')
-      
-      // Clean up URL without reloading the page
-      const newUrl = window.location.pathname
-      window.history.replaceState({}, '', newUrl)
-    }
-  }, [router.query])
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccessMessage('')
-
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, rememberMe })
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        // Trigger auth complete event for navbar
-        window.dispatchEvent(new CustomEvent('authComplete', { detail: data.user }))
-        router.push('/')
-      } else {
-        setError(data.error || 'Login failed')
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
-        <div>
-          <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-        </div>
-        
-        {successMessage && (
-          <div className="rounded-md bg-green-50 p-4 border border-green-200">
-            <div className="text-sm text-green-700">{successMessage}</div>
-          </div>
-        )}
-        
-        {error && (
-          <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-700">{error}</div>
-          </div>
-        )}
-        
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                placeholder="you@example.com"
-                disabled={loading}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-                placeholder="Enter your password"
-                disabled={loading}
-              />
-            </div>
-          </div>
+  const { email, password, rememberMe = false } = req.body;
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-          </div>
+  if (!email || !password) {
+    return res.status(400).json({ success: false, error: 'Email and password are required' });
+  }
 
-          {/* FORGOT PASSWORD LINK */}
-          <div className="text-center py-2">
-            <Link 
-              href="/forgot-password" 
-              className="text-purple-600 hover:text-purple-800 font-medium text-sm underline"
-              style={{ color: '#9333EA', textDecoration: 'underline' }}
-            >
-              🔐 Forgot your password?
-            </Link>
-          </div>
+  const emailRegex = /^[^\s@]+@([^\s@.,]+\.)+[^\s@.,]{2,}$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ success: false, error: 'Invalid email format' });
+  }
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-        </form>
+  try {
+    // ============================================================
+    // ADMIN LOGIN - 6 HOURS ONLY
+    // ============================================================
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+
+    if (adminEmail && adminPasswordHash && email.toLowerCase() === adminEmail.toLowerCase()) {
+      const isValid = await bcrypt.compare(password, adminPasswordHash);
+      
+      if (isValid) {
+        const sessionToken = crypto.randomBytes(64).toString('hex');
+        const maxAge = 6 * 60 * 60; // 6 hours in seconds
+        const expiresAt = new Date(Date.now() + maxAge * 1000);
+        const isProduction = process.env.NODE_ENV === 'production';
         
-        <div className="text-center text-sm border-t pt-4">
-          <span className="text-gray-600">Don't have an account?</span>{' '}
-          <Link href="/signup" className="font-medium text-purple-600 hover:text-purple-500">
-            Sign up
-          </Link>
-        </div>
+        const { error: sessionError } = await supabase
+          .from('admin_sessions')
+          .insert({
+            token: sessionToken,
+            expires_at: expiresAt.toISOString(),
+            user_agent: req.headers['user-agent'] || null,
+            ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
+          });
+
+        if (sessionError) {
+          console.error('Admin session error:', sessionError);
+          return res.status(500).json({ success: false, error: 'Failed to create admin session' });
+        }
         
-        {/* EXTRA LINK AT BOTTOM - AS A FALLBACK */}
-        <div className="text-center text-xs text-gray-400">
-          <Link href="/forgot-password" className="hover:text-gray-600">
-            Need help? Reset password
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
+        res.setHeader('Set-Cookie', [
+          `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
+          `is_admin=true; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
+          `admin_email=${encodeURIComponent(adminEmail)}; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
+          `user_role=admin; Path=/; Max-Age=${maxAge}; SameSite=Strict`
+        ]);
+
+        return res.status(200).json({
+          success: true,
+          user: {
+            id: 'admin',
+            email: adminEmail,
+            is_admin: true,
+            role: 'admin'
+          },
+          isAdmin: true
+        });
+      }
+    }
+
+    // ============================================================
+    // REGULAR USER LOGIN - 3 DAYS
+    // ============================================================
+    console.log('Looking for user with email:', email.toLowerCase());
+    
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email, password_hash, email_verified')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (userError) {
+      console.error('User fetch error:', userError);
+      return res.status(401).json({ success: false, error: 'Invalid email or password' });
+    }
+
+    if (!user) {
+      console.log('No user found with email:', email);
+      return res.status(401).json({ success: false, error: 'Invalid email or password' });
+    }
+
+    console.log('User found:', { id: user.id, email: user.email, verified: user.email_verified });
+
+    if (!user.email_verified) {
+      return res.status(401).json({ 
+        success: false, 
+        error: 'Please verify your email address before logging in.' 
+      });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ success: false, error: 'Invalid email or password' });
+    }
+
+    // Update last login
+    await supabase
+      .from('users')
+      .update({ last_login_at: new Date().toISOString() })
+      .eq('id', user.id);
+
+    // Create session - 3 days expiry
+    const sessionToken = crypto.randomBytes(64).toString('hex');
+    const maxAge = 3 * 24 * 60 * 60; // 3 days in seconds
+    const expiresAt = new Date(Date.now() + maxAge * 1000);
+
+    console.log('Creating session for user_id:', user.id);
+    console.log('Session expires:', expiresAt.toISOString());
+
+    const { data: sessionData, error: sessionError } = await supabase
+      .from('user_sessions')
+      .insert({
+        user_id: user.id,
+        token: sessionToken,
+        expires_at: expiresAt.toISOString(),
+        user_agent: req.headers['user-agent'] || null,
+        ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
+      })
+      .select();
+
+    if (sessionError) {
+      console.error('Session insert error DETAILS:', {
+        code: sessionError.code,
+        message: sessionError.message,
+        details: sessionError.details,
+        hint: sessionError.hint
+      });
+      
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Failed to create session: ' + sessionError.message,
+        debug: sessionError.message
+      });
+    }
+
+    console.log('Session created successfully, expires in 3 days');
+
+    const isProduction = process.env.NODE_ENV === 'production';
+    
+    res.setHeader('Set-Cookie', [
+      `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
+      `user_role=user; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
+      `user_email=${encodeURIComponent(user.email)}; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
+      `user_id=${user.id}; Path=/; Max-Age=${maxAge}; SameSite=Strict`
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        is_admin: false,
+        role: 'user'
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ success: false, error: 'Internal server error: ' + error.message });
+  }
 }

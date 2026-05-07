@@ -1,12 +1,7 @@
-// ============================================
-// GET CURRENT USER (ME ENDPOINT)
-// ============================================
-// FILE: pages/api/auth/me.js
-
+// pages/api/auth/me.js
 import { supabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
-  // Only allow GET requests
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).json({ 
@@ -16,7 +11,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Extract session token from cookies
     const sessionToken = req.cookies.session_token;
     
     if (!sessionToken) {
@@ -27,7 +21,7 @@ export default async function handler(req, res) {
     }
 
     // ============================================================
-    // CHECK ADMIN SESSION FIRST
+    // CHECK ADMIN SESSION (6 HOUR EXPIRY)
     // ============================================================
     const isAdminCookie = req.cookies.is_admin === 'true';
     const adminEmail = req.cookies.admin_email 
@@ -58,12 +52,19 @@ export default async function handler(req, res) {
               created_at: adminSession.created_at
             }
           });
+        } else {
+          // Admin session expired - clean up
+          await supabase.from('admin_sessions').delete().eq('token', sessionToken);
+          return res.status(200).json({ 
+            authenticated: false,
+            reason: 'SESSION_EXPIRED'
+          });
         }
       }
     }
 
     // ============================================================
-    // CHECK REGULAR USER SESSION
+    // CHECK REGULAR USER SESSION (3 DAY EXPIRY)
     // ============================================================
     const { data: session, error: sessionError } = await supabase
       .from('user_sessions')
@@ -78,7 +79,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check session expiration
+    // Check session expiration (3 days)
     if (new Date(session.expires_at) < new Date()) {
       // Clean up expired session
       await supabase
@@ -119,7 +120,6 @@ export default async function handler(req, res) {
       .update({ last_activity_at: new Date().toISOString() })
       .eq('token', sessionToken);
 
-    // Return complete user data
     return res.status(200).json({
       authenticated: true,
       user: {
