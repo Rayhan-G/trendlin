@@ -69,6 +69,17 @@ export default function Navbar() {
     return () => window.removeEventListener('openAuth', handleOpenAuth)
   }, [])
 
+  // Listen for auth complete event
+  useEffect(() => {
+    const handleAuthComplete = async () => {
+      const res = await fetch('/api/auth/me')
+      const data = await res.json()
+      if (data.authenticated) setUser(data.user)
+    }
+    window.addEventListener('authComplete', handleAuthComplete)
+    return () => window.removeEventListener('authComplete', handleAuthComplete)
+  }, [])
+
   // Auto-hide auth popup after 4 seconds
   useEffect(() => {
     if (showAuthPopup) {
@@ -106,6 +117,9 @@ export default function Navbar() {
     setUser(null)
     setShowUserMenu(false)
     setShowMobileMenu(false)
+    window.dispatchEvent(new CustomEvent('showToast', { 
+      detail: { message: 'Logged out successfully', type: 'success', duration: 3000 }
+    }));
   }
 
   const openLogin = () => {
@@ -122,12 +136,14 @@ export default function Navbar() {
     setShowMobileMenu(false)
   }
 
-  // Handle bookmark click - if logged in, go to bookmarks page; if not, show popup
+  // Handle bookmark click with Toast for non-authenticated users
   const handleBookmarkClick = (e) => {
     if (!user) {
       e.preventDefault()
-      setShowAuthPopup(true)
-      setShowMobileMenu(false)
+      window.dispatchEvent(new CustomEvent('openAuth', { detail: 'signup' }));
+      window.dispatchEvent(new CustomEvent('showToast', { 
+        detail: { message: 'Create an account to save bookmarks', type: 'info', duration: 3000 }
+      }));
     }
   }
 
@@ -154,7 +170,7 @@ export default function Navbar() {
 
           {/* Desktop Navigation - Visible on tablets and up */}
           <div className="desktop-nav">
-            {/* Bookmark Icon */}
+            {/* Bookmark Icon - UPDATED WITH TOAST */}
             <Link 
               href={user ? "/bookmarks" : "#"} 
               style={{ textDecoration: 'none' }}
@@ -274,7 +290,7 @@ export default function Navbar() {
                       <div style={{ fontSize: 11, color: 'var(--user-plan-color, #999)', marginTop: 4 }}>Free Account</div>
                     </div>
                     
-                    {/* ADDED: Admin Dashboard Link - Only shows if user is admin */}
+                    {/* Admin Dashboard Link - Only shows if user is admin */}
                     {user?.is_admin === true && (
                       <Link 
                         href="/admin/dashboard" 
@@ -301,6 +317,12 @@ export default function Navbar() {
                       textDecoration: 'none', color: 'var(--menu-item-color, #444)', fontSize: 13
                     }}><span>⚙️</span><span>Settings</span></Link>
                     
+                    <Link href="/bookmarks" onClick={() => setShowUserMenu(false)} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
+                      textDecoration: 'none', color: 'var(--menu-item-color, #444)', fontSize: 13,
+                      borderTop: '1px solid var(--menu-border, #eaeaea)'
+                    }}><span>🔖</span><span>My Bookmarks</span></Link>
+                    
                     <Link href="/newsletter/manage" onClick={() => setShowUserMenu(false)} style={{
                       display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
                       textDecoration: 'none', color: 'var(--menu-item-color, #444)', fontSize: 13,
@@ -319,7 +341,7 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Navigation - Only Explore button + Hamburger */}
+          {/* Mobile Navigation Buttons */}
           <div className="mobile-nav-buttons">
             {/* Explore Button - MOBILE VERSION */}
             <div style={{ position: 'relative' }}>
@@ -419,7 +441,7 @@ export default function Navbar() {
               </button>
             </div>
             
-            {/* Bookmark in Mobile */}
+            {/* Bookmark in Mobile - UPDATED WITH TOAST */}
             <Link 
               href={user ? "/bookmarks" : "#"} 
               className="mobile-menu-item"
@@ -543,7 +565,7 @@ export default function Navbar() {
                   <div style={{ fontSize: 11, color: 'var(--user-plan-color, #999)', marginTop: 4 }}>Free Account</div>
                 </div>
                 
-                {/* ADDED: Admin Dashboard Link for Mobile */}
+                {/* Admin Dashboard Link for Mobile */}
                 {user?.is_admin === true && (
                   <Link 
                     href="/admin/dashboard" 
@@ -576,6 +598,18 @@ export default function Navbar() {
                   fontSize: 14,
                   borderRadius: 8
                 }}><span>⚙️</span><span>Settings</span></Link>
+                
+                <Link href="/bookmarks" onClick={() => setShowMobileMenu(false)} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '12px',
+                  textDecoration: 'none',
+                  color: 'var(--menu-item-color, #444)',
+                  fontSize: 14,
+                  borderRadius: 8
+                }}><span>🔖</span><span>My Bookmarks</span></Link>
+                
                 <Link href="/newsletter/manage" onClick={() => setShowMobileMenu(false)} style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -586,6 +620,7 @@ export default function Navbar() {
                   fontSize: 14,
                   borderRadius: 8
                 }}><span>📬</span><span>Newsletter</span></Link>
+                
                 <button onClick={handleLogout} style={{
                   display: 'flex',
                   alignItems: 'center',
