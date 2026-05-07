@@ -25,12 +25,33 @@ export default function FrontendLayout({ children }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
+    <div className="layout-wrapper">
       <Navbar />
-      <main className="w-full" style={{ margin: 0, padding: 0 }}>
+      <main className="main-content">
         {children}
       </main>
       <Footer />
+      
+      <style jsx>{`
+        .layout-wrapper {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          background: #f5f7fa;
+        }
+        .main-content {
+          flex: 1;
+          width: 100%;
+          max-width: 100%;
+          overflow-x: hidden;
+          margin-top: 0;
+          padding-top: 0;
+        }
+        /* Dark mode support */
+        :global(.dark) .layout-wrapper {
+          background: #0f172a;
+        }
+      `}</style>
     </div>
   )
 }
