@@ -1,6 +1,6 @@
 // pages/api/auth/signup.js
 import bcrypt from 'bcrypt'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '../../../../lib/supabase'
 import { randomBytes } from 'crypto'
 
 export default async function handler(req, res) {
