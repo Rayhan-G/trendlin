@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../../../lib/supabase';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       
       if (isValid) {
         const sessionToken = crypto.randomBytes(64).toString('hex');
-        const maxAge = 6 * 60 * 60; // 6 hours in seconds
+        const maxAge = 6 * 60 * 60; // 6 hours in seconds (not rememberMe)
         const expiresAt = new Date(Date.now() + maxAge * 1000);
         const isProduction = process.env.NODE_ENV === 'production';
         
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     }
 
     // ============================================================
-    // REGULAR USER LOGIN - 3 DAYS
+    // REGULAR USER LOGIN - 3 DAYS (or rememberMe for 30 days)
     // ============================================================
     console.log('Looking for user with email:', email.toLowerCase());
     
@@ -110,13 +110,14 @@ export default async function handler(req, res) {
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', user.id);
 
-    // Create session - 3 days expiry
+    // Create session - 3 days (or 30 days if rememberMe)
     const sessionToken = crypto.randomBytes(64).toString('hex');
-    const maxAge = 3 * 24 * 60 * 60; // 3 days in seconds
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 3 * 24 * 60 * 60; // 30 days OR 3 days
     const expiresAt = new Date(Date.now() + maxAge * 1000);
 
     console.log('Creating session for user_id:', user.id);
     console.log('Session expires:', expiresAt.toISOString());
+    console.log('Remember me:', rememberMe);
 
     const { data: sessionData, error: sessionError } = await supabase
       .from('user_sessions')
@@ -144,7 +145,7 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log('Session created successfully, expires in 3 days');
+    console.log('Session created successfully');
 
     const isProduction = process.env.NODE_ENV === 'production';
     
