@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     // ============================================================
-    // ADMIN LOGIN
+    // ADMIN LOGIN - NO PERSISTENCE (Session cookie only)
     // ============================================================
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
@@ -31,14 +31,14 @@ export default async function handler(req, res) {
       
       if (isValid) {
         const sessionToken = crypto.randomBytes(64).toString('hex');
-        const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
+        const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000); // 6 hours max
         const isProduction = process.env.NODE_ENV === 'production';
         
         const { error: sessionError } = await supabase
           .from('admin_sessions')
           .insert({
             token: sessionToken,
-            expires_at: new Date(Date.now() + maxAge * 1000).toISOString(),
+            expires_at: expiresAt.toISOString(),
             user_agent: req.headers['user-agent'] || null,
             ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
           });
@@ -48,11 +48,12 @@ export default async function handler(req, res) {
           return res.status(500).json({ success: false, error: 'Failed to create admin session' });
         }
         
+        // ADMIN: NO Max-Age = Session cookie (deletes when browser closes)
         res.setHeader('Set-Cookie', [
-          `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
-          `is_admin=true; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
-          `admin_email=${encodeURIComponent(adminEmail)}; Path=/; Max-Age=${maxAge}; SameSite=Strict`,
-          `user_role=admin; Path=/; Max-Age=${maxAge}; SameSite=Strict`
+          `session_token=${sessionToken}; Path=/; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
+          `is_admin=true; Path=/; SameSite=Strict`,
+          `admin_email=${encodeURIComponent(adminEmail)}; Path=/; SameSite=Strict`,
+          `user_role=admin; Path=/; SameSite=Strict`
         ]);
 
         return res.status(200).json({
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
     }
 
     // ============================================================
-    // REGULAR USER LOGIN
+    // REGULAR USER LOGIN - 7 DAYS with "Remember Me"
     // ============================================================
     console.log('Looking for user with email:', email.toLowerCase());
     
@@ -109,46 +110,41 @@ export default async function handler(req, res) {
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', user.id);
 
-    // Create session
+    // Create session - 7 days (or 30 days if rememberMe checked)
     const sessionToken = crypto.randomBytes(64).toString('hex');
-    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
-    const expiresAt = new Date(Date.now() + maxAge * 1000).toISOString();
+    // USER: 7 days default, 30 days if rememberMe
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60; // 30 days OR 7 days
+    const expiresAt = new Date(Date.now() + maxAge * 1000);
 
-    console.log('Attempting to create session for user_id:', user.id);
-    console.log('Session token:', sessionToken);
-    console.log('Expires at:', expiresAt);
+    console.log('Creating session for user_id:', user.id);
+    console.log('Session expires:', expiresAt.toISOString());
+    console.log('Remember me:', rememberMe);
 
-    // Try to insert with detailed error logging
     const { data: sessionData, error: sessionError } = await supabase
       .from('user_sessions')
       .insert({
         user_id: user.id,
         token: sessionToken,
-        expires_at: expiresAt,
+        expires_at: expiresAt.toISOString(),
         user_agent: req.headers['user-agent'] || null,
         ip_address: req.headers['x-forwarded-for'] || req.socket.remoteAddress || null
       })
       .select();
 
     if (sessionError) {
-      console.error('Session insert error DETAILS:', {
-        code: sessionError.code,
-        message: sessionError.message,
-        details: sessionError.details,
-        hint: sessionError.hint
-      });
+      console.error('Session insert error:', sessionError);
       
       return res.status(500).json({ 
         success: false, 
-        error: 'Failed to create session: ' + sessionError.message,
-        debug: sessionError.message
+        error: 'Failed to create session: ' + sessionError.message
       });
     }
 
-    console.log('Session created successfully:', sessionData);
+    console.log('Session created successfully');
 
     const isProduction = process.env.NODE_ENV === 'production';
     
+    // USER: Has Max-Age = persistent cookie
     res.setHeader('Set-Cookie', [
       `session_token=${sessionToken}; Path=/; Max-Age=${maxAge}; SameSite=Strict; ${isProduction ? 'Secure;' : ''} HttpOnly`,
       `user_role=user; Path=/; Max-Age=${maxAge}; SameSite=Strict`,

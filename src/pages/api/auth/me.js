@@ -1,34 +1,90 @@
-// src/pages/api/auth/me.js
-import { supabase } from '../../../lib/supabase'
+import { supabase } from '../../../lib/supabase';
 
 export default async function handler(req, res) {
-  const sessionToken = req.cookies.session_token
-  
-  if (!sessionToken) {
-    return res.status(200).json({ authenticated: false })
+  if (req.method !== 'GET') {
+    res.setHeader('Allow', ['GET']);
+    return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  // Check user session
-  const { data: session } = await supabase
-    .from('user_sessions')
-    .select('user_id')
-    .eq('token', sessionToken)
-    .gt('expires_at', new Date().toISOString())
-    .single()
+  try {
+    const sessionToken = req.cookies.session_token;
+    
+    if (!sessionToken) {
+      return res.status(200).json({ authenticated: false });
+    }
 
-  if (!session) {
-    return res.status(200).json({ authenticated: false })
+    // Check admin session first (no Max-Age cookie = session cookie)
+    const isAdminCookie = req.cookies.is_admin === 'true';
+    const adminEmail = req.cookies.admin_email 
+      ? decodeURIComponent(req.cookies.admin_email) 
+      : null;
+
+    if (isAdminCookie && adminEmail) {
+      const { data: adminSession, error: adminError } = await supabase
+        .from('admin_sessions')
+        .select('expires_at')
+        .eq('token', sessionToken)
+        .single();
+
+      if (!adminError && adminSession && new Date(adminSession.expires_at) > new Date()) {
+        return res.status(200).json({
+          authenticated: true,
+          user: {
+            id: 'admin',
+            email: adminEmail,
+            is_admin: true,
+            role: 'admin'
+          }
+        });
+      }
+    }
+
+    // Check regular user session (has Max-Age)
+    const { data: session, error: sessionError } = await supabase
+      .from('user_sessions')
+      .select('user_id, expires_at')
+      .eq('token', sessionToken)
+      .single();
+
+    if (sessionError || !session) {
+      return res.status(200).json({ authenticated: false });
+    }
+
+    // Check if expired
+    if (new Date(session.expires_at) < new Date()) {
+      await supabase.from('user_sessions').delete().eq('token', sessionToken);
+      return res.status(200).json({ authenticated: false });
+    }
+
+    // Get user details
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('id', session.user_id)
+      .single();
+
+    if (userError || !user) {
+      return res.status(200).json({ authenticated: false });
+    }
+
+    // Update last activity
+    await supabase
+      .from('user_sessions')
+      .update({ last_activity_at: new Date().toISOString() })
+      .eq('token', sessionToken);
+
+    return res.status(200).json({
+      authenticated: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        is_admin: false,
+        role: 'user'
+      }
+    });
+
+  } catch (error) {
+    console.error('Me API error:', error);
+    return res.status(500).json({ authenticated: false, error: 'Internal server error' });
   }
-
-  // Get user
-  const { data: user } = await supabase
-    .from('users')
-    .select('id, email')
-    .eq('id', session.user_id)
-    .single()
-
-  return res.status(200).json({
-    authenticated: true,
-    user: { id: user.id, email: user.email }
-  })
 }
