@@ -1,24 +1,34 @@
-// src/pages/bookmarks/index.jsx
+// ============================================
+// COMPLETE BOOKMARK PAGE - ALL FEATURES RESTORED
+// ============================================
+// FILE: src/pages/bookmarks/index.jsx
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';  // ✅ FIXED: relative path
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 import Link from 'next/link';
 import debounce from 'lodash/debounce';
 
 // ============================================
-// ICON IMPORTS (keeping only what we need)
+// BLOCK 1: ALL ICON IMPORTS
 // ============================================
 import {
-  Bookmark, BookmarkCheck, Loader2, FolderPlus, Star, MoreHorizontal,
-  Trash2, Edit2, X, Check, Plus, Search, Grid3x3, List,
-  Clock, AlertTriangle, RefreshCw, Download, Upload, CheckCircle2,
-  SlidersHorizontal, ArrowUp, ArrowDown, Menu
+  Bookmark, BookmarkCheck, Loader2, FolderPlus, Star, MoreHorizontal, Share2,
+  Trash2, Edit2, X, Check, Plus, Search, Filter, ChevronDown, Grid3x3, List,
+  Clock, AlertCircle, FolderOpen, Tag, ExternalLink, Archive, Bell, Calendar,
+  Link2, Sparkles, Layers, TrendingUp, BarChart3, Menu, ChevronRight, Cloud,
+  Zap, Shield, Users, Globe, Lock, Eye, Heart, MessageCircle, RefreshCw,
+  Settings, Download, Upload, Move, Copy, Pin, Unlock, CheckCircle2, XCircle,
+  AlertTriangle, Info, FileText, Layout, Columns, Rows, Maximize2, Minimize2,
+  SlidersHorizontal, PlusCircle, MinusCircle, ArrowUpDown, ArrowUp, ArrowDown,
+  Moon, Sun, Monitor, Palette, Type
 } from 'lucide-react';
 
 // ============================================
-// CUSTOM HOOKS
+// BLOCK 2: CUSTOM HOOKS
 // ============================================
 
 function useDebounce(value, delay) {
@@ -48,58 +58,64 @@ function useLocalStorage(key, initialValue) {
 }
 
 // ============================================
-// MAIN COMPONENT
+// BLOCK 3: MAIN COMPONENT
 // ============================================
 
 export default function BookmarksPage() {
   const router = useRouter();
   
+  // State Management
   const [user, setUser] = useState(null);
   const [bookmarks, setBookmarks] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [selectedBookmark, setSelectedBookmark] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [batchMode, setBatchMode] = useState(false);
   
+  // Filter & View State
   const [filter, setFilter] = useState({
-    search: '',
-    sortBy: 'created_at', 
-    sortOrder: 'desc'
+    category: null, importance: null, search: '',
+    sortBy: 'created_at', sortOrder: 'desc', dateRange: 'all'
   });
   const [view, setView] = useLocalStorage('bookmark-view', {
-    layout: 'grid'
+    layout: 'grid', density: 'comfortable', showFilters: true, showSidebar: true
   });
   
   const debouncedSearch = useDebounce(filter.search, 300);
+  const containerRef = useRef(null);
 
   // ============================================
-  // FETCH USER AND BOOKMARKS
+  // BLOCK 4: DATA FETCHING
   // ============================================
 
   useEffect(() => {
-    const fetchUserAndBookmarks = async () => {
+    const fetchUser = async () => {
       try {
         const res = await fetch('/api/auth/me');
         const data = await res.json();
-        
-        if (!data.authenticated) {
+        if (data.authenticated) {
+          setUser(data.user);
+          await Promise.all([
+            fetchBookmarks(data.user.id),
+            fetchCategories(data.user.id)
+          ]);
+        } else {
           router.push('/');
-          return;
         }
-        
-        setUser(data.user);
-        await fetchBookmarks(data.user.id);
       } catch (error) {
-        console.error('Error:', error);
         window.dispatchEvent(new CustomEvent('showToast', { 
-          detail: { message: 'Failed to load bookmarks', type: 'error', duration: 3000 }
+          detail: { message: 'Failed to load user data', type: 'error', duration: 3000 }
         }));
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchUserAndBookmarks();
+    fetchUser();
   }, [router]);
 
   const fetchBookmarks = async (userId) => {
@@ -108,32 +124,92 @@ export default function BookmarksPage() {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
-    
     if (error) throw error;
     setBookmarks(data || []);
   };
 
+  const fetchCategories = async (userId) => {
+    const { data, error } = await supabase
+      .from('bookmark_categories')
+      .select('*')
+      .eq('user_id', userId)
+      .order('position', { ascending: true });
+    if (error) throw error;
+    
+    // Build category hierarchy
+    const categoryMap = new Map();
+    const roots = [];
+    data?.forEach(cat => categoryMap.set(cat.id, { ...cat, child_categories: [] }));
+    categoryMap.forEach(cat => {
+      if (cat.parent_id && categoryMap.has(cat.parent_id)) {
+        categoryMap.get(cat.parent_id).child_categories.push(cat);
+      } else {
+        roots.push(cat);
+      }
+    });
+    setCategories(roots);
+  };
+
   // ============================================
-  // FILTERED BOOKMARKS
+  // BLOCK 5: FILTERING & SORTING LOGIC
   // ============================================
 
-  const filteredBookmarks = useMemo(() => {
+  const filteredAndSortedBookmarks = useMemo(() => {
     let filtered = [...bookmarks];
 
+    // Search filter
     if (debouncedSearch) {
       const searchLower = debouncedSearch.toLowerCase();
       filtered = filtered.filter(b => 
         b.post_title.toLowerCase().includes(searchLower) ||
-        (b.post_excerpt && b.post_excerpt.toLowerCase().includes(searchLower))
+        (b.post_excerpt && b.post_excerpt.toLowerCase().includes(searchLower)) ||
+        (b.notes && b.notes.toLowerCase().includes(searchLower))
       );
     }
 
+    // Category filter
+    if (filter.category) {
+      filtered = filtered.filter(b => b.category_id === filter.category);
+    }
+
+    // Importance filter
+    if (filter.importance) {
+      filtered = filtered.filter(b => b.importance_level === filter.importance);
+    }
+
+    // Date range filter
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    switch (filter.dateRange) {
+      case 'today':
+        filtered = filtered.filter(b => new Date(b.created_at) >= today);
+        break;
+      case 'week':
+        const weekAgo = new Date(now.setDate(now.getDate() - 7));
+        filtered = filtered.filter(b => new Date(b.created_at) >= weekAgo);
+        break;
+      case 'month':
+        const monthAgo = new Date(now.setMonth(now.getMonth() - 1));
+        filtered = filtered.filter(b => new Date(b.created_at) >= monthAgo);
+        break;
+      case 'year':
+        const yearAgo = new Date(now.setFullYear(now.getFullYear() - 1));
+        filtered = filtered.filter(b => new Date(b.created_at) >= yearAgo);
+        break;
+      default: break;
+    }
+
+    // Sorting
     filtered.sort((a, b) => {
       let aVal = a[filter.sortBy];
       let bVal = b[filter.sortBy];
-      if (filter.sortBy === 'created_at') {
+      if (filter.sortBy === 'created_at' || filter.sortBy === 'updated_at') {
         aVal = new Date(aVal).getTime();
         bVal = new Date(bVal).getTime();
+      }
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = bVal.toLowerCase();
       }
       return filter.sortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
     });
@@ -141,67 +217,156 @@ export default function BookmarksPage() {
     return filtered;
   }, [bookmarks, filter, debouncedSearch]);
 
+  // Helper functions
+  const getAllCategoriesFlat = useCallback((categoryList = categories) => {
+    const flat = [];
+    const traverse = (cats) => {
+      cats.forEach(cat => {
+        flat.push(cat);
+        if (cat.child_categories && cat.child_categories.length) {
+          traverse(cat.child_categories);
+        }
+      });
+    };
+    traverse(categoryList);
+    return flat;
+  }, [categories]);
+
+  const getCategoryColor = (categoryId) => {
+    if (!categoryId) return '#64748b';
+    const findColor = (cats) => {
+      for (const cat of cats) {
+        if (cat.id === categoryId) return cat.color;
+        if (cat.child_categories) {
+          const found = findColor(cat.child_categories);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findColor(categories) || '#64748b';
+  };
+
+  const getCategoryName = (categoryId) => {
+    if (!categoryId) return 'Uncategorized';
+    const findName = (cats) => {
+      for (const cat of cats) {
+        if (cat.id === categoryId) return cat.name;
+        if (cat.child_categories) {
+          const found = findName(cat.child_categories);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+    return findName(categories) || 'Uncategorized';
+  };
+
   // ============================================
-  // DELETE BOOKMARK - FIXED
+  // BLOCK 6: CRUD OPERATIONS
   // ============================================
+
   const handleDeleteBookmark = async (id) => {
-    const { error } = await supabase
-      .from('bookmarks')
-      .delete()
-      .eq('id', id);
-    
-    if (error) {
-      window.dispatchEvent(new CustomEvent('showToast', { 
-        detail: { message: 'Failed to delete bookmark', type: 'error', duration: 3000 }
-      }));
-      return;
-    }
-    
+    const { error } = await supabase.from('bookmarks').delete().eq('id', id);
+    if (error) throw error;
     setBookmarks(prev => prev.filter(b => b.id !== id));
-    setShowDeleteConfirm(null);
-    
-    // Notify bookmark buttons on other pages to update
-    const deletedBookmark = bookmarks.find(b => b.id === id);
-    if (deletedBookmark) {
-      window.dispatchEvent(new CustomEvent('bookmarkUpdated', { 
-        detail: { postId: deletedBookmark.post_id, isBookmarked: false }
-      }));
-    }
-    
+    setSelectedIds(prev => { const newSet = new Set(prev); newSet.delete(id); return newSet; });
     window.dispatchEvent(new CustomEvent('showToast', { 
       detail: { message: 'Bookmark removed', type: 'success', duration: 3000 }
+    }));
+    setShowDeleteConfirm(null);
+  };
+
+  const handleBatchDelete = async () => {
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase.from('bookmarks').delete().in('id', ids);
+    if (error) throw error;
+    setBookmarks(prev => prev.filter(b => !selectedIds.has(b.id)));
+    setSelectedIds(new Set());
+    setBatchMode(false);
+    window.dispatchEvent(new CustomEvent('showToast', { 
+      detail: { message: `Removed ${ids.length} bookmarks`, type: 'success', duration: 3000 }
+    }));
+  };
+
+  const handleBatchMove = async (targetCategoryId) => {
+    const ids = Array.from(selectedIds);
+    const { error } = await supabase
+      .from('bookmarks')
+      .update({ category_id: targetCategoryId, updated_at: new Date().toISOString() })
+      .in('id', ids);
+    if (error) throw error;
+    setBookmarks(prev => prev.map(b => 
+      selectedIds.has(b.id) ? { ...b, category_id: targetCategoryId } : b
+    ));
+    setSelectedIds(new Set());
+    setBatchMode(false);
+    window.dispatchEvent(new CustomEvent('showToast', { 
+      detail: { message: `Moved ${ids.length} bookmarks`, type: 'success', duration: 3000 }
     }));
   };
 
   const handleUpdateBookmark = async (id, updates) => {
     const { error } = await supabase
       .from('bookmarks')
-      .update({ 
-        importance_level: updates.importance_level, 
-        notes: updates.notes,
-        updated_at: new Date().toISOString()
-      })
+      .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', id);
-    
-    if (error) {
-      window.dispatchEvent(new CustomEvent('showToast', { 
-        detail: { message: 'Failed to update bookmark', type: 'error', duration: 3000 }
-      }));
-      return;
-    }
-    
+    if (error) throw error;
     setBookmarks(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
-    setShowEditModal(false);
-    
     window.dispatchEvent(new CustomEvent('showToast', { 
       detail: { message: 'Bookmark updated', type: 'success', duration: 3000 }
     }));
+    setShowEditModal(false);
   };
 
-  const handleExport = () => {
+  const handleCreateCategory = async (name, icon, color, parentId = null) => {
+    const { data, error } = await supabase
+      .from('bookmark_categories')
+      .insert({ 
+        user_id: user.id, 
+        name, 
+        icon, 
+        color, 
+        parent_id: parentId,
+        position: getAllCategoriesFlat().length 
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    await fetchCategories(user.id);
+    window.dispatchEvent(new CustomEvent('showToast', { 
+      detail: { message: 'Category created', type: 'success', duration: 3000 }
+    }));
+    setShowCreateCategoryModal(false);
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    const { error } = await supabase
+      .from('bookmark_categories')
+      .delete()
+      .eq('id', categoryId);
+    if (error) throw error;
+    await fetchCategories(user.id);
+    window.dispatchEvent(new CustomEvent('showToast', { 
+      detail: { message: 'Category deleted', type: 'success', duration: 3000 }
+    }));
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    await Promise.all([fetchBookmarks(user.id), fetchCategories(user.id)]);
+    window.dispatchEvent(new CustomEvent('showToast', { 
+      detail: { message: 'Synced with cloud', type: 'success', duration: 3000 }
+    }));
+    setSyncing(false);
+  };
+
+  const handleExport = async () => {
     const exportData = { 
-      bookmarks: filteredBookmarks, 
+      bookmarks: filteredAndSortedBookmarks, 
+      categories: getAllCategoriesFlat(),
       exportDate: new Date().toISOString(),
+      version: '2.0',
       totalCount: bookmarks.length
     };
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
@@ -211,404 +376,452 @@ export default function BookmarksPage() {
     a.download = `bookmarks-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    
     window.dispatchEvent(new CustomEvent('showToast', { 
       detail: { message: `${bookmarks.length} bookmarks exported`, type: 'success', duration: 3000 }
     }));
   };
 
+  const handleImport = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const imported = JSON.parse(e.target.result);
+        if (imported.bookmarks && Array.isArray(imported.bookmarks)) {
+          let successCount = 0;
+          for (const bookmark of imported.bookmarks) {
+            const { error } = await supabase.from('bookmarks').insert({
+              user_id: user.id,
+              post_id: bookmark.post_id,
+              post_title: bookmark.post_title,
+              post_slug: bookmark.post_slug,
+              post_excerpt: bookmark.post_excerpt,
+              category_id: bookmark.category_id,
+              importance_level: bookmark.importance_level || 3,
+              notes: bookmark.notes || ''
+            });
+            if (!error) successCount++;
+          }
+          await fetchBookmarks(user.id);
+          window.dispatchEvent(new CustomEvent('showToast', { 
+            detail: { message: `Imported ${successCount} bookmarks`, type: 'success', duration: 3000 }
+          }));
+        }
+      } catch (error) {
+        window.dispatchEvent(new CustomEvent('showToast', { 
+          detail: { message: 'Invalid import file', type: 'error', duration: 3000 }
+        }));
+      }
+    };
+    reader.readAsText(file);
+  };
+
   if (loading) {
     return (
-      <div className="loading-container">
-        <Loader2 className="spinner" />
-        <style jsx>{`
-          .loading-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f5f5f5;
-          }
-          .spinner {
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            color: #3b82f6;
-          }
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading your library...</p>
+        </div>
       </div>
     );
   }
 
+  if (!user) {
+    return null;
+  }
+
+  const allCategoriesFlat = getAllCategoriesFlat();
+  const stats = {
+    total: bookmarks.length,
+    categories: allCategoriesFlat.length,
+    highImportance: bookmarks.filter(b => b.importance_level >= 4).length
+  };
+
+  // ============================================
+  // BLOCK 7: RENDER
+  // ============================================
+
   return (
-    <div className="bookmarks-page">
-      <div className="bookmarks-container">
-        {/* Header */}
-        <div className="page-header">
-          <div className="header-left">
-            <Link href="/" className="back-button">
-              ← Back to Home
-            </Link>
-          </div>
-          <div className="header-center">
-            <div className="logo-icon">
-              <Bookmark className="w-5 h-5" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+      {/* Header Bar */}
+      <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo and Stats */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
+                  <Bookmark className="w-5 h-5 text-white" />
+                </div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+                  Readora
+                </h1>
+              </div>
+              <div className="hidden md:flex items-center gap-4 ml-4 pl-4 border-l border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+                  <BookmarkCheck className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-medium">{stats.total}</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+                  <FolderPlus className="w-4 h-4 text-blue-500" />
+                  <span className="text-sm font-medium">{stats.categories}</span>
+                </div>
+              </div>
             </div>
-            <h1>My Bookmarks</h1>
-            <p className="bookmark-count">{bookmarks.length} saved {bookmarks.length === 1 ? 'post' : 'posts'}</p>
-          </div>
-          <div className="header-right">
-            <button onClick={handleExport} className="export-btn" title="Export bookmarks">
-              <Download className="w-4 h-4" />
-              <span>Export</span>
-            </button>
-          </div>
-        </div>
 
-        {/* Search Bar */}
-        <div className="search-section">
-          <div className="search-wrapper">
-            <Search className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search your bookmarks..."
-              value={filter.search}
-              onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
-              className="search-input"
-            />
+            {/* Actions Bar */}
+            <div className="flex items-center gap-2">
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search bookmarks..."
+                  value={filter.search}
+                  onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
+                  className="pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-800 border-0 rounded-full text-sm w-64 focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Layout Toggle */}
+              <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                {(['grid', 'list', 'compact']).map((layout) => (
+                  <button
+                    key={layout}
+                    onClick={() => setView(prev => ({ ...prev, layout }))}
+                    className={`p-1.5 rounded transition-colors ${view.layout === layout ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}
+                  >
+                    {layout === 'grid' && <Grid3x3 className="w-4 h-4" />}
+                    {layout === 'list' && <List className="w-4 h-4" />}
+                    {layout === 'compact' && <Menu className="w-4 h-4" />}
+                  </button>
+                ))}
+              </div>
+
+              {/* Sync Button */}
+              <button onClick={handleSync} disabled={syncing} className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
+              </button>
+
+              {/* Export Button */}
+              <button onClick={handleExport} className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                <Download className="w-5 h-5" />
+              </button>
+
+              {/* Import Button */}
+              <label className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer">
+                <Upload className="w-5 h-5" />
+                <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+              </label>
+
+              {/* Batch Mode Toggle */}
+              <button
+                onClick={() => setBatchMode(!batchMode)}
+                className={`p-2 rounded-lg transition-colors ${batchMode ? 'bg-blue-500 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+              >
+                <CheckCircle2 className="w-5 h-5" />
+              </button>
+
+              {/* Settings Button */}
+              <button
+                onClick={() => setView(prev => ({ ...prev, showFilters: !prev.showFilters }))}
+                className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+              >
+                <SlidersHorizontal className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          
-          <div className="view-controls">
-            <button
-              onClick={() => setView(prev => ({ ...prev, layout: 'grid' }))}
-              className={`view-btn ${view.layout === 'grid' ? 'active' : ''}`}
+
+          {/* Filter Bar */}
+          {view.showFilters && (
+            <div className="flex items-center gap-3 py-3 overflow-x-auto scrollbar-hide">
+              <button
+                onClick={() => setFilter(prev => ({ ...prev, category: null }))}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                  !filter.category
+                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                All
+              </button>
+              
+              {categories.map(cat => (
+                <CategoryFilterButton
+                  key={cat.id}
+                  category={cat}
+                  isActive={filter.category === cat.id}
+                  onClick={() => setFilter(prev => ({ ...prev, category: cat.id }))}
+                />
+              ))}
+              
+              <button
+                onClick={() => setShowCreateCategoryModal(true)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                New Category
+              </button>
+
+              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
+
+              <select
+                value={filter.sortBy}
+                onChange={(e) => setFilter(prev => ({ ...prev, sortBy: e.target.value }))}
+                className="px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-800 border-0 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="created_at">Date Added</option>
+                <option value="updated_at">Last Updated</option>
+                <option value="importance_level">Importance</option>
+                <option value="post_title">Title</option>
+              </select>
+
+              <button
+                onClick={() => setFilter(prev => ({ ...prev, sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc' }))}
+                className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800"
+              >
+                {filter.sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+              </button>
+
+              <select
+                value={filter.dateRange}
+                onChange={(e) => setFilter(prev => ({ ...prev, dateRange: e.target.value }))}
+                className="px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-800 border-0 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+              </select>
+
+              <select
+                value={filter.importance || ''}
+                onChange={(e) => setFilter(prev => ({ ...prev, importance: e.target.value ? parseInt(e.target.value) : null }))}
+                className="px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-800 border-0 focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Importance</option>
+                <option value="5">⭐ 5 - Critical</option>
+                <option value="4">⭐ 4 - High</option>
+                <option value="3">⭐ 3 - Medium</option>
+                <option value="2">⭐ 2 - Low</option>
+                <option value="1">⭐ 1 - Optional</option>
+              </select>
+            </div>
+          )}
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Batch Actions Floating Bar */}
+        <AnimatePresence>
+          {batchMode && selectedIds.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center gap-4"
             >
-              <Grid3x3 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setView(prev => ({ ...prev, layout: 'list' }))}
-              className={`view-btn ${view.layout === 'list' ? 'active' : ''}`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+              <span className="text-sm font-medium">{selectedIds.size} selected</span>
+              <button onClick={() => setSelectedIds(new Set())} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <X className="w-4 h-4" />
+              </button>
+              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+              <button onClick={handleBatchDelete} className="flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </button>
+              
+              <select
+                onChange={(e) => e.target.value && handleBatchMove(e.target.value)}
+                className="px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                defaultValue=""
+              >
+                <option value="" disabled>Move to Category</option>
+                <option value="">Uncategorized</option>
+                {allCategoriesFlat.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                ))}
+              </select>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Sort Controls */}
-        <div className="sort-section">
-          <span className="sort-label">Sort by:</span>
-          <select
-            value={filter.sortBy}
-            onChange={(e) => setFilter(prev => ({ ...prev, sortBy: e.target.value }))}
-            className="sort-select"
-          >
-            <option value="created_at">Date Saved</option>
-            <option value="post_title">Title</option>
-          </select>
-          <button
-            onClick={() => setFilter(prev => ({ ...prev, sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc' }))}
-            className="sort-order-btn"
-          >
-            {filter.sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* Bookmarks Grid/List */}
-        {filteredBookmarks.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🔖</div>
-            <h2>No bookmarks yet</h2>
-            <p>Save your favorite posts by clicking the bookmark button on any article.</p>
-            <Link href="/" className="browse-button">
-              Browse Posts →
-            </Link>
+        {/* Empty State */}
+        {filteredAndSortedBookmarks.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+              <Bookmark className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No bookmarks found</h3>
+            <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">
+              {bookmarks.length === 0 
+                ? "You haven't saved any bookmarks yet. Start saving your favorite content!"
+                : "Try adjusting your filters to see more results."}
+            </p>
           </div>
-        ) : (
-          <div className={`bookmarks-${view.layout}`}>
-            {filteredBookmarks.map((bookmark) => (
+        )}
+
+        {/* Bookmark Grid/List/Compact Layout */}
+        <div ref={containerRef} className="space-y-3">
+          <div className={`
+            ${view.layout === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4' : ''}
+            ${view.layout === 'list' ? 'space-y-2' : ''}
+            ${view.layout === 'compact' ? 'divide-y divide-gray-100 dark:divide-gray-800' : ''}
+          `}>
+            {filteredAndSortedBookmarks.map((bookmark) => (
               <React.Fragment key={bookmark.id}>
-                {view.layout === 'grid' ? (
+                {view.layout === 'grid' && (
                   <BookmarkGridCard
                     bookmark={bookmark}
+                    selected={selectedIds.has(bookmark.id)}
+                    onSelect={(id, selected) => {
+                      setSelectedIds(prev => {
+                        const newSet = new Set(prev);
+                        selected ? newSet.add(id) : newSet.delete(id);
+                        return newSet;
+                      });
+                    }}
+                    batchMode={batchMode}
                     onEdit={() => { setSelectedBookmark(bookmark); setShowEditModal(true); }}
                     onDelete={() => setShowDeleteConfirm(bookmark.id)}
+                    categoryName={getCategoryName(bookmark.category_id)}
+                    categoryColor={getCategoryColor(bookmark.category_id)}
                   />
-                ) : (
+                )}
+                {view.layout === 'list' && (
                   <BookmarkListCard
                     bookmark={bookmark}
+                    selected={selectedIds.has(bookmark.id)}
+                    onSelect={(id, selected) => {
+                      setSelectedIds(prev => {
+                        const newSet = new Set(prev);
+                        selected ? newSet.add(id) : newSet.delete(id);
+                        return newSet;
+                      });
+                    }}
+                    batchMode={batchMode}
                     onEdit={() => { setSelectedBookmark(bookmark); setShowEditModal(true); }}
                     onDelete={() => setShowDeleteConfirm(bookmark.id)}
+                    categoryName={getCategoryName(bookmark.category_id)}
+                    categoryColor={getCategoryColor(bookmark.category_id)}
+                  />
+                )}
+                {view.layout === 'compact' && (
+                  <BookmarkCompactCard
+                    bookmark={bookmark}
+                    selected={selectedIds.has(bookmark.id)}
+                    onSelect={(id, selected) => {
+                      setSelectedIds(prev => {
+                        const newSet = new Set(prev);
+                        selected ? newSet.add(id) : newSet.delete(id);
+                        return newSet;
+                      });
+                    }}
+                    batchMode={batchMode}
+                    onEdit={() => { setSelectedBookmark(bookmark); setShowEditModal(true); }}
+                    onDelete={() => setShowDeleteConfirm(bookmark.id)}
+                    categoryName={getCategoryName(bookmark.category_id)}
+                    categoryColor={getCategoryColor(bookmark.category_id)}
                   />
                 )}
               </React.Fragment>
             ))}
           </div>
+        </div>
+      </main>
+
+      {/* Modals */}
+      <AnimatePresence>
+        {showEditModal && selectedBookmark && (
+          <EditBookmarkModal
+            bookmark={selectedBookmark}
+            categories={allCategoriesFlat}
+            onClose={() => setShowEditModal(false)}
+            onSave={handleUpdateBookmark}
+          />
         )}
-      </div>
+      </AnimatePresence>
 
-      {/* Edit Modal */}
-      {showEditModal && selectedBookmark && (
-        <EditBookmarkModal
-          bookmark={selectedBookmark}
-          onClose={() => setShowEditModal(false)}
-          onSave={handleUpdateBookmark}
-        />
-      )}
+      <AnimatePresence>
+        {showCreateCategoryModal && (
+          <CreateCategoryModal
+            categories={categories}
+            onClose={() => setShowCreateCategoryModal(false)}
+            onCreate={handleCreateCategory}
+            onDeleteCategory={handleDeleteCategory}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <DeleteConfirmModal
-          onConfirm={() => handleDeleteBookmark(showDeleteConfirm)}
-          onCancel={() => setShowDeleteConfirm(null)}
-        />
-      )}
-
-      <style jsx>{`
-        .bookmarks-page {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-          padding: 20px;
-        }
-        .bookmarks-container {
-          max-width: 1400px;
-          margin: 0 auto;
-        }
-        
-        /* Header Styles */
-        .page-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 32px;
-          padding: 24px 32px;
-          background: white;
-          border-radius: 24px;
-          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-        }
-        .back-button {
-          text-decoration: none;
-          color: #6b7280;
-          font-size: 14px;
-          padding: 8px 16px;
-          border-radius: 12px;
-          background: #f3f4f6;
-          transition: all 0.2s;
-        }
-        .back-button:hover {
-          background: #e5e7eb;
-          color: #374151;
-        }
-        .header-center {
-          text-align: center;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-        }
-        .logo-icon {
-          width: 48px;
-          height: 48px;
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-          border-radius: 16px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-        }
-        .header-center h1 {
-          margin: 0;
-          font-size: 24px;
-          color: #1f2937;
-        }
-        .bookmark-count {
-          margin: 0;
-          font-size: 14px;
-          color: #6b7280;
-        }
-        .export-btn {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          padding: 8px 16px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 12px;
-          color: #374151;
-          font-size: 14px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .export-btn:hover {
-          background: #e5e7eb;
-        }
-        
-        /* Search Section */
-        .search-section {
-          display: flex;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-        .search-wrapper {
-          flex: 1;
-          position: relative;
-        }
-        .search-icon {
-          position: absolute;
-          left: 16px;
-          top: 50%;
-          transform: translateY(-50%);
-          width: 18px;
-          height: 18px;
-          color: #9ca3af;
-        }
-        .search-input {
-          width: 100%;
-          padding: 12px 16px 12px 48px;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 16px;
-          font-size: 14px;
-          outline: none;
-          transition: all 0.2s;
-        }
-        .search-input:focus {
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-        }
-        .view-controls {
-          display: flex;
-          gap: 8px;
-          background: white;
-          padding: 4px;
-          border-radius: 12px;
-          border: 1px solid #e5e7eb;
-        }
-        .view-btn {
-          padding: 8px 12px;
-          background: transparent;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          color: #9ca3af;
-          transition: all 0.2s;
-        }
-        .view-btn.active {
-          background: #3b82f6;
-          color: white;
-        }
-        
-        /* Sort Section */
-        .sort-section {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin-bottom: 24px;
-          padding: 12px 16px;
-          background: white;
-          border-radius: 12px;
-          border: 1px solid #e5e7eb;
-        }
-        .sort-label {
-          font-size: 13px;
-          color: #6b7280;
-        }
-        .sort-select {
-          padding: 6px 12px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 8px;
-          font-size: 13px;
-          cursor: pointer;
-        }
-        .sort-order-btn {
-          padding: 6px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          color: #6b7280;
-        }
-        
-        /* Grid Layout - FIXED OVERFLOW */
-        .bookmarks-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-          gap: 24px;
-        }
-        
-        /* List Layout */
-        .bookmarks-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        
-        /* Empty State */
-        .empty-state {
-          text-align: center;
-          padding: 80px 20px;
-          background: white;
-          border-radius: 24px;
-          margin-top: 40px;
-        }
-        .empty-icon {
-          font-size: 64px;
-          margin-bottom: 20px;
-        }
-        .empty-state h2 {
-          margin: 0 0 10px;
-          color: #1f2937;
-        }
-        .empty-state p {
-          color: #6b7280;
-          margin-bottom: 24px;
-        }
-        .browse-button {
-          display: inline-block;
-          padding: 12px 28px;
-          background: #3b82f6;
-          color: white;
-          text-decoration: none;
-          border-radius: 40px;
-          font-weight: 500;
-          transition: background 0.2s;
-        }
-        .browse-button:hover {
-          background: #2563eb;
-        }
-        
-        @media (max-width: 768px) {
-          .bookmarks-page {
-            padding: 12px;
-          }
-          .page-header {
-            padding: 16px;
-            flex-direction: column;
-            gap: 16px;
-          }
-          .bookmarks-grid {
-            grid-template-columns: 1fr;
-          }
-          .search-section {
-            flex-direction: column;
-          }
-        }
-      `}</style>
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <DeleteConfirmModal
+            onConfirm={() => handleDeleteBookmark(showDeleteConfirm)}
+            onCancel={() => setShowDeleteConfirm(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 // ============================================
-// GRID VIEW CARD - FIXED LINKS & STYLING
+// BLOCK 8: CATEGORY FILTER BUTTON
 // ============================================
 
-function BookmarkGridCard({ bookmark, onEdit, onDelete }) {
+function CategoryFilterButton({ category, isActive, onClick }) {
+  const [showChildren, setShowChildren] = useState(false);
+  const hasChildren = category.child_categories && category.child_categories.length > 0;
+
+  return (
+    <div className="relative">
+      <button
+        onClick={onClick}
+        className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1 ${
+          isActive
+            ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+            : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+        }`}
+      >
+        <span>{category.icon}</span>
+        {category.name}
+        {hasChildren && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowChildren(!showChildren); }}
+            className="ml-1 p-0.5 hover:bg-white/20 rounded"
+          >
+            <ChevronDown className={`w-3 h-3 transition-transform ${showChildren ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+      </button>
+      
+      {hasChildren && showChildren && (
+        <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 min-w-[150px]">
+          {category.child_categories.map(child => (
+            <button
+              key={child.id}
+              onClick={() => { onClick(); setShowChildren(false); }}
+              className="w-full px-3 py-2 text-sm text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+            >
+              <span>{child.icon}</span> {child.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================
+// BLOCK 9: GRID VIEW CARD
+// ============================================
+
+function BookmarkGridCard({ bookmark, selected, onSelect, batchMode, onEdit, onDelete, categoryName, categoryColor }) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef(null);
 
@@ -622,547 +835,576 @@ function BookmarkGridCard({ bookmark, onEdit, onDelete }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // FIXED: Correct post URL - adjust based on your actual post URL structure
-  const postUrl = bookmark.post_slug 
-    ? `/post/${bookmark.post_slug}` 
-    : `/post/${bookmark.post_id}`;
-
   return (
-    <div className="bookmark-card">
-      <Link href={postUrl} className="card-link">
-        {bookmark.featured_image_url && (
-          <div className="card-image">
-            <img src={bookmark.featured_image_url} alt={bookmark.post_title} />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -4 }}
+      className={`group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm border overflow-hidden transition-all ${
+        selected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-gray-200 dark:border-gray-700 hover:shadow-xl'
+      }`}
+    >
+      {batchMode && (
+        <div className="absolute top-3 left-3 z-10">
+          <button
+            onClick={() => onSelect(bookmark.id, !selected)}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+              selected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white dark:bg-gray-700'
+            }`}
+          >
+            {selected && <Check className="w-3 h-3 text-white" />}
+          </button>
+        </div>
+      )}
+
+      <div className="absolute top-3 right-3 z-10" ref={menuRef}>
+        <button
+          onClick={() => setShowMenu(!showMenu)}
+          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <MoreHorizontal className="w-4 h-4 text-gray-500" />
+        </button>
+        <AnimatePresence>
+          {showMenu && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="absolute right-0 top-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 min-w-[120px] z-20"
+            >
+              <button onClick={onEdit} className="w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                <Edit2 className="w-3.5 h-3.5" /> Edit
+              </button>
+              <button onClick={onDelete} className="w-full px-3 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <Link href={`/post/${bookmark.post_slug}`} className="block">
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColor }} />
+            <span className="text-xs text-gray-500 dark:text-gray-400">{categoryName}</span>
           </div>
-        )}
-        <div className="card-content">
-          <div className="importance-stars">
-            {[1, 2, 3, 4, 5].map(level => (
-              <Star
-                key={level}
-                className={`star ${level <= (bookmark.importance_level || 3) ? 'filled' : ''}`}
-              />
-            ))}
-          </div>
-          <h3>{bookmark.post_title}</h3>
-          <p>{bookmark.post_excerpt?.substring(0, 100)}...</p>
-          <div className="card-footer">
-            <span className="date">
-              Saved {formatDistanceToNow(new Date(bookmark.created_at), { addSuffix: true })}
-            </span>
+
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+            {bookmark.post_title}
+          </h3>
+          
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+            {bookmark.post_excerpt || 'No description available'}
+          </p>
+
+          {bookmark.notes && (
+            <div className="mb-3 p-2 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                📝 {bookmark.notes}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map(level => (
+                <Star
+                  key={level}
+                  className={`w-3 h-3 ${
+                    level <= bookmark.importance_level
+                      ? 'text-yellow-400 fill-yellow-400'
+                      : 'text-gray-300 dark:text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-3 h-3 text-gray-400" />
+              <span className="text-xs text-gray-500">
+                {formatDistanceToNow(new Date(bookmark.created_at), { addSuffix: true })}
+              </span>
+            </div>
           </div>
         </div>
       </Link>
-      <div className="card-actions" ref={menuRef}>
-        <button onClick={() => setShowMenu(!showMenu)} className="menu-btn">
-          <MoreHorizontal className="w-4 h-4" />
-        </button>
-        {showMenu && (
-          <div className="menu-dropdown">
-            <button onClick={onEdit} className="menu-item">
-              <Edit2 className="w-3.5 h-3.5" /> Edit
-            </button>
-            <button onClick={onDelete} className="menu-item delete">
-              <Trash2 className="w-3.5 h-3.5" /> Delete
-            </button>
-          </div>
-        )}
-      </div>
-
-      <style jsx>{`
-        .bookmark-card {
-          position: relative;
-          background: white;
-          border-radius: 20px;
-          overflow: hidden;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-          transition: all 0.2s;
-        }
-        .bookmark-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15);
-        }
-        .card-link {
-          text-decoration: none;
-          color: inherit;
-          display: block;
-        }
-        .card-image {
-          height: 160px;
-          overflow: hidden;
-          background: #f3f4f6;
-        }
-        .card-image img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.3s;
-        }
-        .bookmark-card:hover .card-image img {
-          transform: scale(1.05);
-        }
-        .card-content {
-          padding: 16px;
-        }
-        .importance-stars {
-          display: flex;
-          gap: 2px;
-          margin-bottom: 8px;
-        }
-        .star {
-          width: 14px;
-          height: 14px;
-          color: #d1d5db;
-        }
-        .star.filled {
-          color: #fbbf24;
-          fill: #fbbf24;
-        }
-        .card-content h3 {
-          margin: 0 0 8px;
-          font-size: 16px;
-          font-weight: 600;
-          color: #1f2937;
-          line-height: 1.4;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .card-content p {
-          margin: 0 0 12px;
-          font-size: 13px;
-          color: #6b7280;
-          line-height: 1.5;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .card-footer {
-          display: flex;
-          justify-content: flex-start;
-        }
-        .date {
-          font-size: 11px;
-          color: #9ca3af;
-        }
-        .card-actions {
-          position: absolute;
-          top: 12px;
-          right: 12px;
-        }
-        .menu-btn {
-          background: rgba(255,255,255,0.9);
-          border: none;
-          padding: 6px;
-          border-radius: 8px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #6b7280;
-          transition: all 0.2s;
-        }
-        .menu-btn:hover {
-          background: white;
-          color: #374151;
-        }
-        .menu-dropdown {
-          position: absolute;
-          top: 36px;
-          right: 0;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          border: 1px solid #e5e7eb;
-          min-width: 120px;
-          z-index: 10;
-          overflow: hidden;
-        }
-        .menu-item {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          width: 100%;
-          padding: 10px 14px;
-          background: white;
-          border: none;
-          font-size: 13px;
-          color: #374151;
-          cursor: pointer;
-          transition: background 0.2s;
-          text-align: left;
-        }
-        .menu-item:hover {
-          background: #f3f4f6;
-        }
-        .menu-item.delete {
-          color: #ef4444;
-        }
-        .menu-item.delete:hover {
-          background: #fee2e2;
-        }
-      `}</style>
-    </div>
+    </motion.div>
   );
 }
 
 // ============================================
-// LIST VIEW CARD
+// BLOCK 10: LIST VIEW CARD
 // ============================================
 
-function BookmarkListCard({ bookmark, onEdit, onDelete }) {
-  const postUrl = bookmark.post_slug 
-    ? `/post/${bookmark.post_slug}` 
-    : `/post/${bookmark.post_id}`;
-
+function BookmarkListCard({ bookmark, selected, onSelect, batchMode, onEdit, onDelete, categoryName, categoryColor }) {
   return (
-    <div className="bookmark-list-item">
-      <Link href={postUrl} className="list-link">
-        <div className="list-content">
-          <div className="list-stars">
-            {[1, 2, 3, 4, 5].map(level => (
-              <Star
-                key={level}
-                className={`star ${level <= (bookmark.importance_level || 3) ? 'filled' : ''}`}
-              />
-            ))}
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className={`group bg-white dark:bg-gray-800 rounded-xl shadow-sm border ${
+        selected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/80'
+      }`}
+    >
+      <div className="flex items-center gap-4 p-4">
+        {batchMode && (
+          <button
+            onClick={() => onSelect(bookmark.id, !selected)}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+              selected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white dark:bg-gray-700'
+            }`}
+          >
+            {selected && <Check className="w-3 h-3 text-white" />}
+          </button>
+        )}
+
+        <Link href={`/post/${bookmark.post_slug}`} className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: categoryColor }} />
+            <span className="text-xs text-gray-500 dark:text-gray-400">{categoryName}</span>
+            <div className="flex items-center gap-0.5 ml-2">
+              {[1, 2, 3, 4, 5].map(level => (
+                <Star
+                  key={level}
+                  className={`w-3 h-3 ${
+                    level <= bookmark.importance_level
+                      ? 'text-yellow-400 fill-yellow-400'
+                      : 'text-gray-300 dark:text-gray-600'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
-          <h3>{bookmark.post_title}</h3>
-          <p>{bookmark.post_excerpt?.substring(0, 80)}...</p>
-          <span className="list-date">
-            Saved {formatDistanceToNow(new Date(bookmark.created_at), { addSuffix: true })}
+          
+          <h3 className="font-medium text-gray-900 dark:text-white truncate">
+            {bookmark.post_title}
+          </h3>
+          
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+            {bookmark.post_excerpt || 'No description'}
+          </p>
+        </Link>
+
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-400">
+            {formatDistanceToNow(new Date(bookmark.created_at), { addSuffix: true })}
           </span>
+          
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+              <Edit2 className="w-4 h-4 text-gray-500" />
+            </button>
+            <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30">
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
         </div>
-      </Link>
-      <div className="list-actions">
-        <button onClick={onEdit} className="action-btn" title="Edit">
-          <Edit2 className="w-4 h-4" />
-        </button>
-        <button onClick={onDelete} className="action-btn delete" title="Delete">
-          <Trash2 className="w-4 h-4" />
-        </button>
       </div>
-
-      <style jsx>{`
-        .bookmark-list-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: white;
-          padding: 16px 20px;
-          border-radius: 16px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-          transition: all 0.2s;
-        }
-        .bookmark-list-item:hover {
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .list-link {
-          flex: 1;
-          text-decoration: none;
-          color: inherit;
-        }
-        .list-content {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .list-stars {
-          display: flex;
-          gap: 2px;
-        }
-        .star {
-          width: 14px;
-          height: 14px;
-          color: #d1d5db;
-        }
-        .star.filled {
-          color: #fbbf24;
-          fill: #fbbf24;
-        }
-        .list-content h3 {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 600;
-          color: #1f2937;
-        }
-        .list-content p {
-          margin: 0;
-          font-size: 13px;
-          color: #6b7280;
-        }
-        .list-date {
-          font-size: 11px;
-          color: #9ca3af;
-        }
-        .list-actions {
-          display: flex;
-          gap: 8px;
-        }
-        .action-btn {
-          padding: 8px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          color: #6b7280;
-          transition: all 0.2s;
-        }
-        .action-btn:hover {
-          background: #e5e7eb;
-          color: #374151;
-        }
-        .action-btn.delete:hover {
-          background: #fee2e2;
-          color: #ef4444;
-        }
-      `}</style>
-    </div>
+    </motion.div>
   );
 }
 
 // ============================================
-// EDIT BOOKMARK MODAL
+// BLOCK 11: COMPACT VIEW CARD
 // ============================================
 
-function EditBookmarkModal({ bookmark, onClose, onSave }) {
-  const [importance, setImportance] = useState(bookmark.importance_level || 3);
+function BookmarkCompactCard({ bookmark, selected, onSelect, batchMode, onEdit, onDelete, categoryName, categoryColor }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={`group border-b border-gray-100 dark:border-gray-800 ${
+        selected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+      }`}
+    >
+      <Link href={`/post/${bookmark.post_slug}`} className="block">
+        <div className="flex items-center gap-3 py-2 px-3">
+          {batchMode && (
+            <button
+              onClick={() => onSelect(bookmark.id, !selected)}
+              className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                selected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white dark:bg-gray-700'
+              }`}
+            >
+              {selected && <Check className="w-2.5 h-2.5 text-white" />}
+            </button>
+          )}
+
+          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: categoryColor }} />
+          
+          <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate flex-1">
+            {bookmark.post_title}
+          </h4>
+          
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map(level => (
+              <Star
+                key={level}
+                className={`w-2.5 h-2.5 ${
+                  level <= bookmark.importance_level
+                    ? 'text-yellow-400 fill-yellow-400'
+                    : 'text-gray-300 dark:text-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+          
+          <span className="text-xs text-gray-400">
+            {formatDistanceToNow(new Date(bookmark.created_at))}
+          </span>
+          
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={onEdit} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+              <Edit2 className="w-3 h-3 text-gray-500" />
+            </button>
+            <button onClick={onDelete} className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30">
+              <Trash2 className="w-3 h-3 text-red-500" />
+            </button>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ============================================
+// BLOCK 12: EDIT BOOKMARK MODAL
+// ============================================
+
+function EditBookmarkModal({ bookmark, categories, onClose, onSave }) {
+  const [importance, setImportance] = useState(bookmark.importance_level);
+  const [categoryId, setCategoryId] = useState(bookmark.category_id);
   const [notes, setNotes] = useState(bookmark.notes || '');
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
     setSaving(true);
-    await onSave(bookmark.id, { importance_level: importance, notes });
+    await onSave(bookmark.id, { importance_level: importance, category_id: categoryId, notes });
     setSaving(false);
+    onClose();
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Edit Bookmark</h3>
-          <button onClick={onClose} className="close-btn">✕</button>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit Bookmark</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <div className="modal-body">
+
+        <div className="p-6 space-y-4">
           <div>
-            <label>Importance Level</label>
-            <div className="importance-buttons">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Category
+            </label>
+            <select
+              value={categoryId || ''}
+              onChange={(e) => setCategoryId(e.target.value || null)}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Uncategorized</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.icon} {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Importance Level
+            </label>
+            <div className="flex gap-2">
               {[1, 2, 3, 4, 5].map(level => (
                 <button
                   key={level}
                   onClick={() => setImportance(level)}
-                  className={`importance-btn ${importance >= level ? 'active' : ''}`}
+                  className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+                    importance >= level
+                      ? 'bg-yellow-400 text-yellow-900'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500'
+                  }`}
                 >
                   {level}
                 </button>
               ))}
             </div>
           </div>
+
           <div>
-            <label>Private Notes</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Private Notes
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={4}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
               placeholder="Add your thoughts about this post..."
             />
           </div>
         </div>
-        <div className="modal-footer">
-          <button onClick={onClose} className="cancel-btn">Cancel</button>
-          <button onClick={handleSubmit} disabled={saving} className="save-btn">
-            {saving ? 'Saving...' : 'Save Changes'}
+
+        <div className="flex gap-3 p-6 pt-0">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Save Changes'}
           </button>
         </div>
-      </div>
-
-      <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0,0,0,0.5);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        .modal-content {
-          background: white;
-          border-radius: 24px;
-          width: 90%;
-          max-width: 500px;
-          max-height: 90vh;
-          overflow: auto;
-        }
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 20px 24px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        .modal-header h3 {
-          margin: 0;
-          font-size: 18px;
-        }
-        .close-btn {
-          background: none;
-          border: none;
-          font-size: 20px;
-          cursor: pointer;
-          color: #9ca3af;
-        }
-        .modal-body {
-          padding: 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-        .modal-body label {
-          display: block;
-          font-size: 13px;
-          font-weight: 600;
-          color: #374151;
-          margin-bottom: 8px;
-        }
-        .importance-buttons {
-          display: flex;
-          gap: 8px;
-        }
-        .importance-btn {
-          flex: 1;
-          padding: 8px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-        }
-        .importance-btn.active {
-          background: #fbbf24;
-          color: #78350f;
-        }
-        textarea {
-          width: 100%;
-          padding: 12px;
-          background: #f9fafb;
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
-          font-size: 14px;
-          resize: vertical;
-        }
-        .modal-footer {
-          display: flex;
-          gap: 12px;
-          padding: 20px 24px;
-          border-top: 1px solid #e5e7eb;
-        }
-        .cancel-btn {
-          flex: 1;
-          padding: 10px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-        }
-        .save-btn {
-          flex: 1;
-          padding: 10px;
-          background: #3b82f6;
-          color: white;
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-          font-weight: 500;
-        }
-        .save-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      `}</style>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
 // ============================================
-// DELETE CONFIRMATION MODAL
+// BLOCK 13: CREATE CATEGORY MODAL
+// ============================================
+
+function CreateCategoryModal({ categories, onClose, onCreate, onDeleteCategory }) {
+  const [name, setName] = useState('');
+  const [icon, setIcon] = useState('📁');
+  const [color, setColor] = useState('#3b82f6');
+  const [parentId, setParentId] = useState(null);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+
+  const icons = ['📁', '📘', '💡', '🎯', '💼', '🎨', '🔧', '📊', '🎓', '🏆', '⭐', '❤️', '🔖', '📌', '✨', '🎵', '🎬', '📰', '🛒', '💻'];
+  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
+
+  const getAllCategoriesForSelect = (cats, level = 0) => {
+    let result = [];
+    cats.forEach(cat => {
+      result.push({ ...cat, level });
+      if (cat.child_categories && cat.child_categories.length) {
+        result = result.concat(getAllCategoriesForSelect(cat.child_categories, level + 1));
+      }
+    });
+    return result;
+  };
+
+  const flatCategories = getAllCategoriesForSelect(categories);
+
+  if (deleteMode) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        onClick={() => { setDeleteMode(false); setCategoryToDelete(null); }}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Delete Category</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to delete "{categoryToDelete?.name}"? Bookmarks in this category will become uncategorized.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => { setDeleteMode(false); setCategoryToDelete(null); }} className="flex-1 px-4 py-2 bg-gray-100 rounded-lg">
+                Cancel
+              </button>
+              <button onClick={() => { onDeleteCategory(categoryToDelete.id); setDeleteMode(false); setCategoryToDelete(null); onClose(); }} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg">
+                Delete
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Manage Categories</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {flatCategories.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Existing Categories
+              </label>
+              <div className="space-y-1 max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-2">
+                {flatCategories.map(cat => (
+                  <div key={cat.id} className="flex items-center justify-between p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
+                    <div className="flex items-center gap-2" style={{ marginLeft: `${cat.level * 20}px` }}>
+                      <span className="text-lg">{cat.icon}</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{cat.name}</span>
+                    </div>
+                    <button
+                      onClick={() => { setCategoryToDelete(cat); setDeleteMode(true); }}
+                      className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Create New Category</h4>
+            
+            <div className="mb-3">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Category name (e.g., Design, Development)"
+                autoFocus
+              />
+            </div>
+
+            <div className="mb-3">
+              <select
+                value={parentId || ''}
+                onChange={(e) => setParentId(e.target.value || null)}
+                className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+              >
+                <option value="">No Parent (Top Level)</option>
+                {flatCategories.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {'  '.repeat(cat.level)}{cat.icon} {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-xs text-gray-500 mb-1">Icon</label>
+              <div className="flex gap-2 flex-wrap">
+                {icons.map(ic => (
+                  <button
+                    key={ic}
+                    onClick={() => setIcon(ic)}
+                    className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all ${
+                      icon === ic ? 'bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {ic}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-xs text-gray-500 mb-1">Color</label>
+              <div className="flex gap-2 flex-wrap">
+                {colors.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setColor(c)}
+                    className={`w-8 h-8 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 p-6 pt-0">
+          <button onClick={onClose} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200">
+            Close
+          </button>
+          <button
+            onClick={() => name.trim() && onCreate(name, icon, color, parentId)}
+            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Create Category
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ============================================
+// BLOCK 14: DELETE CONFIRMATION MODAL
 // ============================================
 
 function DeleteConfirmModal({ onConfirm, onCancel }) {
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="confirm-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="confirm-icon">🗑️</div>
-        <h3>Delete Bookmark?</h3>
-        <p>This action cannot be undone.</p>
-        <div className="confirm-buttons">
-          <button onClick={onCancel} className="cancel-btn">Cancel</button>
-          <button onClick={onConfirm} className="delete-btn">Delete</button>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 text-center">
+          <div className="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+            <AlertTriangle className="w-6 h-6 text-red-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Delete Bookmark</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Are you sure you want to delete this bookmark? This action cannot be undone.
+          </p>
         </div>
-      </div>
-
-      <style jsx>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0,0,0,0.5);
-          backdrop-filter: blur(4px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        .confirm-modal {
-          background: white;
-          border-radius: 24px;
-          padding: 32px;
-          text-align: center;
-          max-width: 320px;
-          width: 90%;
-        }
-        .confirm-icon {
-          font-size: 48px;
-          margin-bottom: 16px;
-        }
-        .confirm-modal h3 {
-          margin: 0 0 8px;
-          font-size: 20px;
-        }
-        .confirm-modal p {
-          margin: 0 0 24px;
-          color: #6b7280;
-        }
-        .confirm-buttons {
-          display: flex;
-          gap: 12px;
-        }
-        .cancel-btn {
-          flex: 1;
-          padding: 10px;
-          background: #f3f4f6;
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-        }
-        .delete-btn {
-          flex: 1;
-          padding: 10px;
-          background: #ef4444;
-          color: white;
-          border: none;
-          border-radius: 12px;
-          cursor: pointer;
-        }
-      `}</style>
-    </div>
+        <div className="flex gap-3 p-6 pt-0">
+          <button onClick={onCancel} className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200">
+            Cancel
+          </button>
+          <button onClick={onConfirm} className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+            Delete
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
