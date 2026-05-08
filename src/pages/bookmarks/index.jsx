@@ -1,31 +1,32 @@
 // ============================================
 // FILE: src/pages/bookmarks/index.jsx
 // ============================================
-// A faithful recreation of the "My Bookmarks / Blog collection" image
-// Clean sidebar, simple list view, no extra fluff
+// EXACT MATCH to the provided image - My Bookmarks / Blog collection
+// Clean sidebar with Favorites, Recently Added, Read Later, Archive
+// Collections: Tech Blogs, Writing & Growth, Design Inspiration, Marketing & SEO, Personal Finance
+// Tags: Productivity, Web Development, AI, Design, Marketing
 
 import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
-import { formatDistanceToNow } from 'date-fns';
 
 // ============================================
-// SIMPLE SVG ICONS (minimal, clean)
+// SIMPLE SVG ICONS (matching image style)
 // ============================================
-const BookmarkIcon = () => (
+const StarIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-  </svg>
-);
-
-const HeartIcon = ({ filled = false }) => (
-  <svg className={`w-4 h-4 ${filled ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} fill={filled ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
   </svg>
 );
 
 const ClockIcon = () => (
-  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const BookmarkIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
   </svg>
 );
 
@@ -37,19 +38,7 @@ const ArchiveIcon = () => (
 
 const TagIcon = () => (
   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l5 5a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-5-5A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-  </svg>
-);
-
-const ChevronRightIcon = () => (
-  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-  </svg>
-);
-
-const MoreIcon = () => (
-  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l5 5a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-5-5A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
   </svg>
 );
 
@@ -59,140 +48,145 @@ const SearchIcon = () => (
   </svg>
 );
 
+const CalendarIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
+const GlobeIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const ChevronDownIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
+
 // ============================================
-// DATA STRUCTURES (matching the image)
+// DATA
 // ============================================
 
-// Collections from the image
 const COLLECTIONS = [
-  { id: 'tech', name: 'Tech Blogs', count: 12 },
-  { id: 'writing', name: 'Writing & Growth', count: 8 },
-  { id: 'design', name: 'Design Inspiration', count: 6 },
-  { id: 'marketing', name: 'Marketing & SEO', count: 9 },
-  { id: 'finance', name: 'Personal Finance', count: 7 },
+  { id: 'tech', name: 'Tech Blogs' },
+  { id: 'writing', name: 'Writing & Growth' },
+  { id: 'design', name: 'Design Inspiration' },
+  { id: 'marketing', name: 'Marketing & SEO' },
+  { id: 'finance', name: 'Personal Finance' },
 ];
 
-// Tags from the image
-const TAGS = [
-  'Productivity',
-  'Web Development',
-  'AI',
-  'Design',
-  'Marketing',
-];
+const TAGS = ['Productivity', 'Web Development', 'AI', 'Design', 'Marketing'];
 
-// Filter options (sidebar menu)
-const SIDEBAR_FILTERS = [
-  { id: 'all', name: 'All Bookmarks', icon: null },
-  { id: 'favorites', name: 'Favorites', icon: null },
-  { id: 'recent', name: 'Recently Added', icon: null },
-  { id: 'readlater', name: 'Read Later', icon: null },
-  { id: 'archive', name: 'Archive', icon: null },
-];
+const STORAGE_KEY = 'my_bookmarks_collection';
 
-// Storage key
-const STORAGE_KEY = 'blog_collection_bookmarks';
-
-// Sample bookmarks (matching the style in the image)
 const getInitialBookmarks = () => {
-  const now = new Date();
-  const daysAgo = (days) => {
-    const d = new Date(now);
-    d.setDate(now.getDate() - days);
+  const getDate = (daysAgo) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
     return d.toISOString();
   };
-  
+
   return [
     {
       id: '1',
       title: 'How I Write: A Practical Guide to Better Writing',
       excerpt: 'A practical guide to better writing. Insights on writing clearly, thinking better, and sharing ideas that matter.',
-      url: 'theswetestup.com',
+      domain: 'theswetestup.com',
+      collection: 'Writing & Growth',
       collectionId: 'writing',
       tags: ['Writing', 'Productivity'],
-      isFavorite: true,
-      isRead: true,
+      savedDate: getDate(2),
+      read: true,
+      favorite: false,
       readLater: false,
       archived: false,
-      savedAt: daysAgo(2),
     },
     {
       id: '2',
       title: 'The Complete Guide to Building a Second Brain with Notion',
       excerpt: 'A step-by-step guide to organize your life and knowledge using Notion.',
-      url: 'notion-guide.com',
+      domain: 'notionmastery.com',
+      collection: 'Tech Blogs',
       collectionId: 'tech',
       tags: ['Productivity', 'Notion', 'Organization'],
-      isFavorite: false,
-      isRead: true,
+      savedDate: getDate(5),
+      read: true,
+      favorite: true,
       readLater: false,
       archived: false,
-      savedAt: daysAgo(4),
     },
     {
       id: '3',
       title: '10 Web Design Trends to Watch in 2024',
       excerpt: 'Explore the top web design trends that will dominate in 2024.',
-      url: 'designtrends.com',
+      domain: 'designweekly.com',
+      collection: 'Design Inspiration',
       collectionId: 'design',
       tags: ['Design', 'Web Design', 'Trends'],
-      isFavorite: false,
-      isRead: true,
+      savedDate: getDate(7),
+      read: true,
+      favorite: false,
       readLater: false,
       archived: false,
-      savedAt: daysAgo(5),
     },
     {
       id: '4',
       title: 'SEO Checklist for Blog Posts (2024)',
       excerpt: 'A comprehensive checklist to rank your blog posts higher in search results.',
-      url: 'seochecklist.com',
+      domain: 'seomastery.com',
+      collection: 'Marketing & SEO',
       collectionId: 'marketing',
       tags: ['SEO', 'Marketing', 'Blogging'],
-      isFavorite: true,
-      isRead: true,
+      savedDate: getDate(3),
+      read: true,
+      favorite: false,
       readLater: false,
       archived: false,
-      savedAt: daysAgo(6),
     },
     {
       id: '5',
-      title: 'Why Every Developer Should Learn TypeScript in 2025',
-      excerpt: 'TypeScript adoption is skyrocketing. Here\'s why you can\'t afford to ignore it.',
-      url: 'typescript.dev',
-      collectionId: 'tech',
-      tags: ['Web Development', 'TypeScript'],
-      isFavorite: false,
-      isRead: false,
+      title: 'The Psychology of Money: Timeless Lessons',
+      excerpt: 'Wealth is what you don\'t see. Understanding the soft skills of financial success.',
+      domain: 'collabfund.com',
+      collection: 'Personal Finance',
+      collectionId: 'finance',
+      tags: ['Finance', 'Psychology'],
+      savedDate: getDate(1),
+      read: false,
+      favorite: true,
       readLater: true,
       archived: false,
-      savedAt: daysAgo(1),
     },
     {
       id: '6',
-      title: 'The Psychology of Color in Marketing',
-      excerpt: 'How color choices affect consumer behavior and brand perception.',
-      url: 'colormarketing.com',
-      collectionId: 'marketing',
-      tags: ['Marketing', 'Design'],
-      isFavorite: false,
-      isRead: false,
-      readLater: false,
+      title: 'Why Every Developer Should Learn TypeScript in 2025',
+      excerpt: 'TypeScript adoption is skyrocketing. Here\'s why you can\'t afford to ignore it.',
+      domain: 'dev.to',
+      collection: 'Tech Blogs',
+      collectionId: 'tech',
+      tags: ['Web Development', 'TypeScript'],
+      savedDate: getDate(4),
+      read: false,
+      favorite: false,
+      readLater: true,
       archived: false,
-      savedAt: daysAgo(3),
     },
     {
       id: '7',
-      title: 'Building a Personal Brand as a Developer',
-      excerpt: 'Practical advice for growing your online presence and career.',
-      url: 'personalbrand.dev',
+      title: 'Building a Personal Brand as a Creator',
+      excerpt: 'Practical advice for growing your online presence and standing out.',
+      domain: 'creativeblog.com',
+      collection: 'Writing & Growth',
       collectionId: 'writing',
       tags: ['Writing', 'Growth'],
-      isFavorite: true,
-      isRead: false,
+      savedDate: getDate(0),
+      read: false,
+      favorite: false,
       readLater: false,
       archived: false,
-      savedAt: daysAgo(0),
     },
   ];
 };
@@ -202,14 +196,13 @@ const getInitialBookmarks = () => {
 // ============================================
 export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState([]);
-  const [activeFilter, setActiveFilter] = useState('all');
-  const [activeCollection, setActiveCollection] = useState(null);
-  const [activeTag, setActiveTag] = useState(null);
+  const [activeView, setActiveView] = useState('all'); // all, favorites, recent, readlater, archive
+  const [selectedCollection, setSelectedCollection] = useState(null);
+  const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAllTags, setShowAllTags] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [showTagDropdown, setShowTagDropdown] = useState(false);
 
-  // Load from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -220,35 +213,33 @@ export default function BookmarksPage() {
     setIsHydrated(true);
   }, []);
 
-  // Save to localStorage
   useEffect(() => {
-    if (isHydrated && bookmarks.length > 0) {
+    if (isHydrated) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
     }
   }, [bookmarks, isHydrated]);
 
-  // Filter bookmarks based on active filters
+  const formatDate = (dateISO) => {
+    const date = new Date(dateISO);
+    return `Saved on ${date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+  };
+
   const filteredBookmarks = useMemo(() => {
     let filtered = [...bookmarks];
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(b => 
-        b.title.toLowerCase().includes(query) || 
-        b.excerpt.toLowerCase().includes(query) ||
-        b.tags.some(tag => tag.toLowerCase().includes(query))
-      );
+    // Don't show archived in main views
+    if (activeView !== 'archive') {
+      filtered = filtered.filter(b => !b.archived);
     }
 
-    // Sidebar filter
-    switch (activeFilter) {
+    // View filter
+    switch (activeView) {
       case 'favorites':
-        filtered = filtered.filter(b => b.isFavorite);
+        filtered = filtered.filter(b => b.favorite);
         break;
       case 'recent':
         filtered = filtered.filter(b => {
-          const daysAgo = (Date.now() - new Date(b.savedAt).getTime()) / (1000 * 60 * 60 * 24);
+          const daysAgo = (Date.now() - new Date(b.savedDate).getTime()) / (1000 * 60 * 60 * 24);
           return daysAgo <= 7;
         });
         break;
@@ -259,61 +250,60 @@ export default function BookmarksPage() {
         filtered = filtered.filter(b => b.archived);
         break;
       default:
-        filtered = filtered.filter(b => !b.archived);
+        break;
     }
 
     // Collection filter
-    if (activeCollection) {
-      filtered = filtered.filter(b => b.collectionId === activeCollection);
+    if (selectedCollection) {
+      filtered = filtered.filter(b => b.collectionId === selectedCollection);
     }
 
     // Tag filter
-    if (activeTag) {
-      filtered = filtered.filter(b => b.tags.includes(activeTag));
+    if (selectedTag) {
+      filtered = filtered.filter(b => b.tags.includes(selectedTag));
+    }
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(b =>
+        b.title.toLowerCase().includes(query) ||
+        b.excerpt.toLowerCase().includes(query) ||
+        b.tags.some(t => t.toLowerCase().includes(query))
+      );
     }
 
     return filtered;
-  }, [bookmarks, activeFilter, activeCollection, activeTag, searchQuery]);
+  }, [bookmarks, activeView, selectedCollection, selectedTag, searchQuery]);
 
-  // Get count for each collection
-  const getCollectionCount = (collectionId) => {
-    return bookmarks.filter(b => b.collectionId === collectionId && !b.archived).length;
-  };
-
-  // Get count for each tag
-  const getTagCount = (tag) => {
-    return bookmarks.filter(b => b.tags.includes(tag) && !b.archived).length;
-  };
-
-  // Toggle favorite
   const toggleFavorite = (id) => {
-    setBookmarks(prev => prev.map(b => 
-      b.id === id ? { ...b, isFavorite: !b.isFavorite } : b
+    setBookmarks(prev => prev.map(b =>
+      b.id === id ? { ...b, favorite: !b.favorite } : b
     ));
   };
 
-  // Toggle read later
   const toggleReadLater = (id) => {
-    setBookmarks(prev => prev.map(b => 
+    setBookmarks(prev => prev.map(b =>
       b.id === id ? { ...b, readLater: !b.readLater } : b
     ));
   };
 
-  // Toggle archive
   const toggleArchive = (id) => {
-    setBookmarks(prev => prev.map(b => 
+    setBookmarks(prev => prev.map(b =>
       b.id === id ? { ...b, archived: !b.archived, readLater: false } : b
     ));
   };
 
   const totalBookmarks = bookmarks.filter(b => !b.archived).length;
 
+  const displayedTags = showAllTags ? TAGS : TAGS.slice(0, 5);
+
   if (!isHydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-gray-500">Loading your library...</p>
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-sm text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -327,103 +317,151 @@ export default function BookmarksPage() {
       </Head>
 
       <div className="min-h-screen bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          
+        <div className="max-w-6xl mx-auto px-6 py-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-gray-900">My Bookmarks</h1>
+            <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">My Bookmarks</h1>
             <p className="text-sm text-gray-500 mt-0.5">Blog collection</p>
           </div>
 
-          <div className="flex gap-8">
+          <div className="flex gap-10">
             {/* ========== SIDEBAR ========== */}
-            <aside className="w-64 flex-shrink-0">
-              {/* All Bookmarks header with count */}
+            <aside className="w-56 flex-shrink-0">
+              {/* All Bookmarks with count */}
               <div className="mb-6">
-                <h2 className="text-base font-medium text-gray-900 mb-3">All Bookmarks</h2>
-                <p className="text-sm text-gray-500 -mt-1 mb-4">All your saved blog posts in one place</p>
-                <div className="text-3xl font-semibold text-gray-800 mb-4">{totalBookmarks}</div>
+                <div className="text-4xl font-bold text-gray-800 mb-1">{totalBookmarks}</div>
+                <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">All Bookmarks</div>
+                <p className="text-xs text-gray-400 mt-1">All your saved blog posts in one place</p>
               </div>
 
-              {/* Sidebar Menu */}
-              <div className="space-y-1 mb-8">
-                {SIDEBAR_FILTERS.map(filter => (
-                  <button
-                    key={filter.id}
-                    onClick={() => {
-                      setActiveFilter(filter.id);
-                      setActiveCollection(null);
-                      setActiveTag(null);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
-                      activeFilter === filter.id && !activeCollection && !activeTag
-                        ? 'bg-gray-100 text-gray-900 font-medium'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {filter.name}
-                  </button>
-                ))}
-              </div>
+              {/* Sidebar navigation */}
+              <nav className="space-y-1 mb-8">
+                <button
+                  onClick={() => {
+                    setActiveView('all');
+                    setSelectedCollection(null);
+                    setSelectedTag(null);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    activeView === 'all' && !selectedCollection && !selectedTag
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  All Bookmarks
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveView('favorites');
+                    setSelectedCollection(null);
+                    setSelectedTag(null);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                    activeView === 'favorites'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <StarIcon /> Favorites
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveView('recent');
+                    setSelectedCollection(null);
+                    setSelectedTag(null);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                    activeView === 'recent'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <ClockIcon /> Recently Added
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveView('readlater');
+                    setSelectedCollection(null);
+                    setSelectedTag(null);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                    activeView === 'readlater'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <BookmarkIcon /> Read Later
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveView('archive');
+                    setSelectedCollection(null);
+                    setSelectedTag(null);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                    activeView === 'archive'
+                      ? 'bg-gray-100 text-gray-900'
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <ArchiveIcon /> Archive
+                </button>
+              </nav>
 
-              {/* Collections Section */}
-              <div className="mb-8">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">
-                  Collections
-                </h3>
-                <div className="space-y-1">
+              {/* Collections */}
+              <div className="mb-6">
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">Collections</h3>
+                <div className="space-y-0.5">
                   {COLLECTIONS.map(collection => (
                     <button
                       key={collection.id}
                       onClick={() => {
-                        setActiveCollection(collection.id);
-                        setActiveFilter('all');
-                        setActiveTag(null);
+                        setSelectedCollection(collection.id);
+                        setActiveView('all');
+                        setSelectedTag(null);
                       }}
-                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex justify-between items-center ${
-                        activeCollection === collection.id
-                          ? 'bg-gray-100 text-gray-900 font-medium'
-                          : 'text-gray-600 hover:bg-gray-50'
+                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
+                        selectedCollection === collection.id
+                          ? 'bg-gray-100 text-gray-900'
+                          : 'text-gray-500 hover:bg-gray-50'
                       }`}
                     >
-                      <span>{collection.name}</span>
-                      <span className="text-xs text-gray-400">{getCollectionCount(collection.id)}</span>
+                      {collection.name}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Tags Section */}
+              {/* Tags */}
               <div>
-                <div className="flex items-center justify-between px-3 mb-3">
+                <div className="flex items-center justify-between px-3 mb-2">
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tags</h3>
-                  <button 
-                    onClick={() => setShowTagDropdown(!showTagDropdown)}
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
-                    {showTagDropdown ? 'Show less ▼' : 'Show more ▼'}
-                  </button>
+                  {TAGS.length > 5 && (
+                    <button
+                      onClick={() => setShowAllTags(!showAllTags)}
+                      className="text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      {showAllTags ? 'Show less' : 'Show more'} ▼
+                    </button>
+                  )}
                 </div>
-                <div className="space-y-1">
-                  {TAGS.map(tag => (
+                <div className="space-y-0.5">
+                  {displayedTags.map(tag => (
                     <button
                       key={tag}
                       onClick={() => {
-                        setActiveTag(tag);
-                        setActiveCollection(null);
-                        setActiveFilter('all');
+                        setSelectedTag(tag);
+                        setActiveView('all');
+                        setSelectedCollection(null);
                       }}
-                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex justify-between items-center ${
-                        activeTag === tag
-                          ? 'bg-gray-100 text-gray-900 font-medium'
-                          : 'text-gray-600 hover:bg-gray-50'
+                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
+                        selectedTag === tag
+                          ? 'bg-gray-100 text-gray-900'
+                          : 'text-gray-500 hover:bg-gray-50'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <TagIcon />
-                        <span>{tag}</span>
-                      </div>
-                      <span className="text-xs text-gray-400">{getTagCount(tag)}</span>
+                      <TagIcon />
+                      {tag}
                     </button>
                   ))}
                 </div>
@@ -432,10 +470,10 @@ export default function BookmarksPage() {
 
             {/* ========== MAIN CONTENT ========== */}
             <main className="flex-1 min-w-0">
-              {/* Search Bar */}
+              {/* Search */}
               <div className="mb-6">
                 <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <SearchIcon />
                   </div>
                   <input
@@ -443,98 +481,100 @@ export default function BookmarksPage() {
                     placeholder="Search bookmarks..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
+                    className="block w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
                   />
                 </div>
               </div>
 
-              {/* All Bookmarks Header */}
+              {/* All Bookmarks header */}
               <div className="mb-6">
                 <h2 className="text-lg font-medium text-gray-900">All Bookmarks</h2>
                 <p className="text-sm text-gray-500">All your saved blog posts in one place</p>
               </div>
 
-              {/* Bookmarks List */}
+              {/* Bookmarks list */}
               <div className="space-y-6">
                 {filteredBookmarks.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
                       <BookmarkIcon />
                     </div>
                     <p className="text-gray-500 text-sm">No bookmarks found</p>
-                    <p className="text-gray-400 text-xs mt-1">Try adjusting your filters</p>
                   </div>
                 ) : (
                   filteredBookmarks.map(bookmark => (
-                    <div key={bookmark.id} className="group">
+                    <div key={bookmark.id} className="border-b border-gray-100 pb-5 last:border-0">
                       <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-base font-medium text-gray-900 mb-1">
+                        <div className="flex-1 pr-4">
+                          <h3 className="text-base font-semibold text-gray-900 mb-1">
                             {bookmark.title}
                           </h3>
                           <p className="text-sm text-gray-500 mb-2 leading-relaxed">
                             {bookmark.excerpt}
                           </p>
-                          <div className="flex items-center gap-3 text-xs text-gray-400">
-                            <span>{bookmark.url}</span>
-                            <span>•</span>
+                          
+                          {/* Meta row: domain, date, read status */}
+                          <div className="flex items-center gap-3 text-xs text-gray-400 mb-2">
                             <div className="flex items-center gap-1">
-                              <ClockIcon />
-                              <span>Saved {formatDistanceToNow(new Date(bookmark.savedAt), { addSuffix: true })}</span>
+                              <GlobeIcon />
+                              <span>{bookmark.domain}</span>
                             </div>
-                            {bookmark.isRead && (
-                              <>
-                                <span>•</span>
-                                <span className="text-green-600">Read</span>
-                              </>
+                            <div className="flex items-center gap-1">
+                              <CalendarIcon />
+                              <span>{formatDate(bookmark.savedDate)}</span>
+                            </div>
+                            {bookmark.read && (
+                              <span className="text-green-600 font-medium">Read</span>
                             )}
                           </div>
+
+                          {/* Collection link */}
+                          <div className="text-xs text-gray-500 mb-2">
+                            Collection <span className="text-gray-700">{bookmark.collection}</span>
+                          </div>
+
                           {/* Tags */}
-                          {bookmark.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              {bookmark.tags.map(tag => (
-                                <span
-                                  key={tag}
-                                  className="text-xs px-2 py-0.5 bg-gray-50 text-gray-500 rounded"
-                                >
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          <div className="flex flex-wrap gap-1.5">
+                            {bookmark.tags.map(tag => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-0.5">
                           <button
                             onClick={() => toggleFavorite(bookmark.id)}
-                            className="p-1.5 rounded hover:bg-gray-50 transition"
-                            title={bookmark.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                            className={`p-1.5 rounded-md transition-colors ${
+                              bookmark.favorite ? 'text-yellow-500' : 'text-gray-300 hover:text-gray-400'
+                            }`}
+                            title={bookmark.favorite ? 'Remove from favorites' : 'Add to favorites'}
                           >
-                            <HeartIcon filled={bookmark.isFavorite} />
+                            <StarIcon />
                           </button>
                           <button
                             onClick={() => toggleReadLater(bookmark.id)}
-                            className={`p-1.5 rounded hover:bg-gray-50 transition ${
-                              bookmark.readLater ? 'text-blue-500' : 'text-gray-400'
+                            className={`p-1.5 rounded-md transition-colors ${
+                              bookmark.readLater ? 'text-blue-500' : 'text-gray-300 hover:text-gray-400'
                             }`}
                             title={bookmark.readLater ? 'Remove from read later' : 'Read later'}
                           >
-                            <ClockIcon />
+                            <BookmarkIcon />
                           </button>
                           <button
                             onClick={() => toggleArchive(bookmark.id)}
-                            className="p-1.5 rounded hover:bg-gray-50 transition text-gray-400"
+                            className="p-1.5 rounded-md text-gray-300 hover:text-gray-400 transition-colors"
                             title="Archive"
                           >
                             <ArchiveIcon />
                           </button>
-                          <button className="p-1.5 rounded hover:bg-gray-50 transition">
-                            <MoreIcon />
-                          </button>
                         </div>
                       </div>
-                      <div className="border-b border-gray-100 mt-4 pb-4"></div>
                     </div>
                   ))
                 )}
