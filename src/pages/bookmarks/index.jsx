@@ -2,39 +2,121 @@
 // FILE: src/pages/bookmarks/index.jsx
 // ============================================
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import { formatDistanceToNow, subDays, isAfter } from 'date-fns';
 
 // ============================================
-// SVG ICON COMPONENTS (replacing lucide-react)
+// SVG ICON COMPONENTS
 // ============================================
-const Icon = ({ name, className = "w-5 h-5", filled = false }) => {
-  const icons = {
-    bookmark: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>,
-    bookmarkCheck: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" /></svg>,
-    star: <svg className={`${className} ${filled ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>,
-    more: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" /></svg>,
-    trash: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
-    edit: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>,
-    x: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
-    check: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
-    plus: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
-    search: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
-    grid: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
-    list: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>,
-    menu: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>,
-    refresh: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>,
-    download: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>,
-    upload: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>,
-    chevronDown: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>,
-    arrowUp: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>,
-    arrowDown: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>,
-    clock: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-    alertTriangle: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-  };
-  return icons[name] || null;
-};
+const BookmarkIcon = ({ className = "w-5 h-5" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+  </svg>
+);
+
+const BookmarkCheckIcon = ({ className = "w-4 h-4" }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" />
+  </svg>
+);
+
+const StarIcon = ({ filled = false, className = "w-3 h-3" }) => (
+  <svg className={`${className} ${filled ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+  </svg>
+);
+
+const MoreIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
+const EditIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+  </svg>
+);
+
+const XIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+  </svg>
+);
+
+const GridIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+  </svg>
+);
+
+const ListIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+  </svg>
+);
+
+const MenuIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+const DownloadIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+  </svg>
+);
+
+const UploadIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+  </svg>
+);
+
+const ArrowUpIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+  </svg>
+);
+
+const ArrowDownIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const AlertTriangleIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
 
 // ============================================
 // FIXED CATEGORIES: Health, Wealth, Tech, Growth, Entertainment, World, Lifestyle
@@ -86,8 +168,8 @@ export default function BookmarksPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [viewLayout, setViewLayout] = useState('grid'); // grid, list, compact
-  const [selectedBookmark, setSelectedBookmark] = useState(null); // for postcard modal
+  const [viewLayout, setViewLayout] = useState('grid');
+  const [selectedBookmark, setSelectedBookmark] = useState(null);
   const [editingBookmark, setEditingBookmark] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -98,7 +180,6 @@ export default function BookmarksPage() {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_BOOKMARKS);
     let bookmarksData = stored ? JSON.parse(stored) : getInitialBookmarks();
-    // Apply 7-day auto-delete
     const cleaned = cleanExpiredBookmarks(bookmarksData);
     if (cleaned.length !== bookmarksData.length) {
       bookmarksData = cleaned;
@@ -115,8 +196,8 @@ export default function BookmarksPage() {
     }
   }, [bookmarks, isHydrated]);
 
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
+  const showToastMessage = (message) => {
+    setToast({ message });
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -161,14 +242,14 @@ export default function BookmarksPage() {
   const handleDeleteBookmark = (id) => {
     setBookmarks(prev => prev.filter(b => b.id !== id));
     setShowDeleteConfirm(null);
-    showToast('Bookmark removed', 'success');
+    showToastMessage('Bookmark removed');
   };
 
   const handleUpdateBookmark = (id, updates) => {
     setBookmarks(prev => prev.map(b => b.id === id ? { ...b, ...updates, updatedAt: new Date().toISOString() } : b));
     setShowEditModal(false);
     setEditingBookmark(null);
-    showToast('Bookmark updated', 'success');
+    showToastMessage('Bookmark updated');
   };
 
   const handleAddDemoBookmark = () => {
@@ -183,7 +264,7 @@ export default function BookmarksPage() {
       createdAt: new Date().toISOString()
     };
     setBookmarks(prev => [newBookmark, ...prev]);
-    showToast('New bookmark added! Expires in 7 days', 'success');
+    showToastMessage('New bookmark added! Expires in 7 days');
   };
 
   const handleExport = () => {
@@ -195,7 +276,7 @@ export default function BookmarksPage() {
     a.download = `readora-bookmarks-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Bookmarks exported', 'success');
+    showToastMessage('Bookmarks exported');
   };
 
   const handleImport = (e) => {
@@ -206,15 +287,14 @@ export default function BookmarksPage() {
       try {
         const imported = JSON.parse(event.target.result);
         if (imported.bookmarks && Array.isArray(imported.bookmarks)) {
-          // Clean imported bookmarks for 7-day rule
           const cleanedImported = cleanExpiredBookmarks(imported.bookmarks);
           setBookmarks(cleanedImported);
-          showToast(`Imported ${cleanedImported.length} bookmarks`, 'success');
+          showToastMessage(`Imported ${cleanedImported.length} bookmarks`);
         } else {
-          showToast('Invalid file format', 'error');
+          showToastMessage('Invalid file format');
         }
       } catch (err) {
-        showToast('Failed to import', 'error');
+        showToastMessage('Failed to import');
       }
     };
     reader.readAsText(file);
@@ -226,7 +306,10 @@ export default function BookmarksPage() {
   if (!isHydrated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center"><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div><p className="text-gray-500">Loading your library...</p></div>
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-gray-500">Loading your library...</p>
+        </div>
       </div>
     );
   }
@@ -252,7 +335,7 @@ export default function BookmarksPage() {
             <div className="flex items-center justify-between h-16">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-md text-white">
-                  {Icon({ name: 'bookmark', className: "w-5 h-5" })}
+                  <BookmarkIcon className="w-5 h-5" />
                 </div>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Readora</h1>
                 <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-gray-200">
@@ -264,38 +347,55 @@ export default function BookmarksPage() {
               
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{Icon({ name: 'search' })}</div>
-                  <input type="text" placeholder="Search bookmarks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 pr-4 py-2 bg-gray-100 border-0 rounded-full text-sm w-56 focus:ring-2 focus:ring-blue-400 outline-none" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><SearchIcon /></div>
+                  <input 
+                    type="text" 
+                    placeholder="Search bookmarks..." 
+                    value={searchQuery} 
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                    className="pl-9 pr-4 py-2 bg-gray-100 border-0 rounded-full text-sm w-56 focus:ring-2 focus:ring-blue-400 outline-none" 
+                  />
                 </div>
                 
                 <div className="flex bg-gray-100 rounded-lg p-1">
-                  {['grid', 'list', 'compact'].map(layout => (
-                    <button key={layout} onClick={() => setViewLayout(layout)} className={`p-1.5 rounded transition ${viewLayout === layout ? 'bg-white shadow-sm' : ''}`}>
-                      {layout === 'grid' && Icon({ name: 'grid' })}
-                      {layout === 'list' && Icon({ name: 'list' })}
-                      {layout === 'compact' && Icon({ name: 'menu' })}
-                    </button>
-                  ))}
+                  <button onClick={() => setViewLayout('grid')} className={`p-1.5 rounded transition ${viewLayout === 'grid' ? 'bg-white shadow-sm' : ''}`}>
+                    <GridIcon />
+                  </button>
+                  <button onClick={() => setViewLayout('list')} className={`p-1.5 rounded transition ${viewLayout === 'list' ? 'bg-white shadow-sm' : ''}`}>
+                    <ListIcon />
+                  </button>
+                  <button onClick={() => setViewLayout('compact')} className={`p-1.5 rounded transition ${viewLayout === 'compact' ? 'bg-white shadow-sm' : ''}`}>
+                    <MenuIcon />
+                  </button>
                 </div>
                 
                 <button onClick={handleAddDemoBookmark} className="px-3 py-1.5 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center gap-1">
-                  {Icon({ name: 'plus' })} Add Demo
+                  <PlusIcon /> Add Demo
                 </button>
-                <button onClick={handleExport} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">{Icon({ name: 'download' })}</button>
+                <button onClick={handleExport} className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                  <DownloadIcon />
+                </button>
                 <label className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer">
-                  {Icon({ name: 'upload' })}
+                  <UploadIcon />
                   <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                 </label>
               </div>
             </div>
             
-            {/* Category Filter Bar - Health, Wealth, Tech, Growth, Entertainment, World, Lifestyle */}
-            <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
-              <button onClick={() => setFilterCategory(null)} className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${!filterCategory ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+            {/* Category Filter Bar */}
+            <div className="flex items-center gap-2 py-3 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <button 
+                onClick={() => setFilterCategory(null)} 
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${!filterCategory ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
                 All
               </button>
               {FIXED_CATEGORIES.map(cat => (
-                <button key={cat.id} onClick={() => setFilterCategory(cat.id)} className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1 ${filterCategory === cat.id ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                <button 
+                  key={cat.id} 
+                  onClick={() => setFilterCategory(cat.id)} 
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-1 ${filterCategory === cat.id ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                >
                   <span>{cat.icon}</span> {cat.name}
                 </button>
               ))}
@@ -308,7 +408,7 @@ export default function BookmarksPage() {
                 <option value="title">Title</option>
               </select>
               <button onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')} className="p-1.5 rounded-lg bg-gray-100">
-                {sortOrder === 'asc' ? Icon({ name: 'arrowUp' }) : Icon({ name: 'arrowDown' })}
+                {sortOrder === 'asc' ? <ArrowUpIcon /> : <ArrowDownIcon />}
               </button>
             </div>
           </div>
@@ -318,7 +418,9 @@ export default function BookmarksPage() {
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {filteredBookmarks.length === 0 ? (
             <div className="text-center py-20">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">{Icon({ name: 'bookmark', className: "w-10 h-10" })}</div>
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
+                <BookmarkIcon className="w-10 h-10" />
+              </div>
               <h3 className="text-xl font-semibold mb-2">No bookmarks found</h3>
               <p className="text-gray-500">Bookmarks expire after 7 days automatically. Add a demo bookmark to get started!</p>
               <button onClick={handleAddDemoBookmark} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg">+ Add Demo Bookmark</button>
@@ -331,11 +433,80 @@ export default function BookmarksPage() {
             }>
               {filteredBookmarks.map(bookmark => {
                 const category = getCategory(bookmark.categoryId);
-                const commonProps = { bookmark, category, onView: () => setSelectedBookmark(bookmark), onEdit: () => { setEditingBookmark(bookmark); setShowEditModal(true); }, onDelete: () => setShowDeleteConfirm(bookmark.id) };
                 
-                if (viewLayout === 'grid') return <GridCard key={bookmark.id} {...commonProps} />;
-                if (viewLayout === 'list') return <ListCard key={bookmark.id} {...commonProps} />;
-                return <CompactCard key={bookmark.id} {...commonProps} />;
+                if (viewLayout === 'grid') {
+                  return (
+                    <div key={bookmark.id} className="group bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all cursor-pointer overflow-hidden" onClick={() => setSelectedBookmark(bookmark)}>
+                      <div className="p-5">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
+                            <span className="text-xs text-gray-500">{category.icon} {category.name}</span>
+                          </div>
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => { setEditingBookmark(bookmark); setShowEditModal(true); }} className="p-1.5 hover:bg-gray-100 rounded-lg"><EditIcon /></button>
+                            <button onClick={() => setShowDeleteConfirm(bookmark.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><TrashIcon /></button>
+                          </div>
+                        </div>
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{bookmark.title}</h3>
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{bookmark.excerpt}</p>
+                        {bookmark.notes && (
+                          <div className="mb-3 p-2 bg-gray-50 rounded-lg text-xs text-gray-500 line-clamp-2">📝 {bookmark.notes}</div>
+                        )}
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                          <div className="flex gap-0.5">
+                            {[1,2,3,4,5].map(level => <StarIcon key={level} filled={level <= bookmark.importance} />)}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-400">
+                            <ClockIcon />
+                            {formatDistanceToNow(new Date(bookmark.createdAt), { addSuffix: true })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                if (viewLayout === 'list') {
+                  return (
+                    <div key={bookmark.id} className="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition" onClick={() => setSelectedBookmark(bookmark)}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
+                          <span className="text-xs text-gray-500">{category.icon} {category.name}</span>
+                          <div className="flex gap-0.5 ml-2">
+                            {[1,2,3,4,5].map(level => <StarIcon key={level} filled={level <= bookmark.importance} />)}
+                          </div>
+                        </div>
+                        <h3 className="font-medium text-gray-900 truncate">{bookmark.title}</h3>
+                        <p className="text-sm text-gray-500 truncate">{bookmark.excerpt}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-400">{formatDistanceToNow(new Date(bookmark.createdAt))}</span>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                          <button onClick={() => { setEditingBookmark(bookmark); setShowEditModal(true); }} className="p-1.5 hover:bg-gray-200 rounded"><EditIcon /></button>
+                          <button onClick={() => setShowDeleteConfirm(bookmark.id)} className="p-1.5 hover:bg-red-100 rounded"><TrashIcon /></button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Compact view
+                return (
+                  <div key={bookmark.id} className="group py-3 px-2 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition" onClick={() => setSelectedBookmark(bookmark)}>
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: category.color }} />
+                    <h4 className="text-sm font-medium text-gray-900 flex-1 truncate">{bookmark.title}</h4>
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(level => <StarIcon key={level} filled={level <= bookmark.importance} className="w-2.5 h-2.5" />)}
+                    </div>
+                    <span className="text-xs text-gray-400">{formatDistanceToNow(new Date(bookmark.createdAt))}</span>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => { setEditingBookmark(bookmark); setShowEditModal(true); }} className="p-1 hover:bg-gray-200 rounded"><EditIcon /></button>
+                      <button onClick={() => setShowDeleteConfirm(bookmark.id)} className="p-1 hover:bg-red-100 rounded"><TrashIcon /></button>
+                    </div>
+                  </div>
+                );
               })}
             </div>
           )}
@@ -343,231 +514,125 @@ export default function BookmarksPage() {
 
         {/* Postcard Modal */}
         {selectedBookmark && (
-          <PostcardModal bookmark={selectedBookmark} category={getCategory(selectedBookmark.categoryId)} onClose={() => setSelectedBookmark(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedBookmark(null)}>
+            <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+              <div className="relative h-32 bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
+                <div className="absolute top-4 right-4">
+                  <button onClick={() => setSelectedBookmark(null)} className="p-1.5 bg-white/20 rounded-full hover:bg-white/30 text-white"><XIcon /></button>
+                </div>
+                <div className="text-white text-center">
+                  <div className="text-6xl mb-2">{getCategory(selectedBookmark.categoryId).icon}</div>
+                  <div className="text-sm opacity-90">{getCategory(selectedBookmark.categoryId).name}</div>
+                </div>
+              </div>
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-3 text-blue-600">
+                  <BookmarkCheckIcon className="w-5 h-5" />
+                  <h2 className="text-xl font-bold text-gray-900">{selectedBookmark.title}</h2>
+                </div>
+                <p className="text-gray-600 mb-4 leading-relaxed">{selectedBookmark.excerpt}</p>
+                {selectedBookmark.notes && (
+                  <div className="bg-amber-50 p-3 rounded-lg mb-4 border border-amber-100">
+                    <p className="text-sm text-amber-800"><span className="font-medium">✍️ Private notes:</span> {selectedBookmark.notes}</p>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map(level => <StarIcon key={level} filled={level <= selectedBookmark.importance} className="w-4 h-4" />)}
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-gray-400">
+                    <ClockIcon /> Saved {formatDistanceToNow(new Date(selectedBookmark.createdAt), { addSuffix: true })}
+                  </div>
+                </div>
+                <div className="mt-5 text-center text-xs text-gray-400 border-t pt-4">
+                  📌 Bookmarks are automatically deleted 7 days after creation
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Edit Modal */}
         {showEditModal && editingBookmark && (
-          <EditModal bookmark={editingBookmark} categories={FIXED_CATEGORIES} onClose={() => { setShowEditModal(false); setEditingBookmark(null); }} onSave={handleUpdateBookmark} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => { setShowEditModal(false); setEditingBookmark(null); }}>
+            <div className="bg-white rounded-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold mb-4">Edit Bookmark</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Category</label>
+                  <select 
+                    value={editingBookmark.categoryId || ''} 
+                    onChange={e => setEditingBookmark({ ...editingBookmark, categoryId: e.target.value })} 
+                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400"
+                  >
+                    {FIXED_CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Importance (1-5)</label>
+                  <div className="flex gap-2">
+                    {[1,2,3,4,5].map(level => (
+                      <button 
+                        key={level} 
+                        onClick={() => setEditingBookmark({ ...editingBookmark, importance: level })} 
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${editingBookmark.importance >= level ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-100'}`}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">Private Notes</label>
+                  <textarea 
+                    rows={3} 
+                    value={editingBookmark.notes || ''} 
+                    onChange={e => setEditingBookmark({ ...editingBookmark, notes: e.target.value })} 
+                    className="w-full p-2 border rounded-lg" 
+                    placeholder="Add your thoughts..." 
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => { setShowEditModal(false); setEditingBookmark(null); }} className="flex-1 py-2 bg-gray-100 rounded-lg">Cancel</button>
+                <button onClick={() => handleUpdateBookmark(editingBookmark.id, { importance: editingBookmark.importance, categoryId: editingBookmark.categoryId, notes: editingBookmark.notes })} className="flex-1 py-2 bg-blue-500 text-white rounded-lg">Save Changes</button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Delete Confirm Modal */}
         {showDeleteConfirm && (
-          <DeleteConfirmModal onConfirm={() => handleDeleteBookmark(showDeleteConfirm)} onCancel={() => setShowDeleteConfirm(null)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(null)}>
+            <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center" onClick={e => e.stopPropagation()}>
+              <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center text-red-500">
+                <AlertTriangleIcon />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Delete Bookmark</h3>
+              <p className="text-gray-500 text-sm mb-6">This action cannot be undone.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 py-2 bg-gray-100 rounded-lg">Cancel</button>
+                <button onClick={() => handleDeleteBookmark(showDeleteConfirm)} className="flex-1 py-2 bg-red-500 text-white rounded-lg">Delete</button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
       <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .line-clamp-2 {
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .line-clamp-3 {
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
       `}</style>
     </>
   );
-}
-
-// ============================================
-// GRID CARD COMPONENT
-// ============================================
-function GridCard({ bookmark, category, onView, onEdit, onDelete }) {
-  return (
-    <div className="group bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-all cursor-pointer overflow-hidden" onClick={onView}>
-      <div className="p-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
-            <span className="text-xs text-gray-500">{category.icon} {category.name}</span>
-          </div>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition" onClick={e => e.stopPropagation()}>
-            <button onClick={onEdit} className="p-1.5 hover:bg-gray-100 rounded-lg">{Icon({ name: 'edit' })}</button>
-            <button onClick={onDelete} className="p-1.5 hover:bg-red-50 rounded-lg">{Icon({ name: 'trash' })}</button>
-          </div>
-        </div>
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{bookmark.title}</h3>
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{bookmark.excerpt}</p>
-        {bookmark.notes && (
-          <div className="mb-3 p-2 bg-gray-50 rounded-lg text-xs text-gray-500 line-clamp-2">📝 {bookmark.notes}</div>
-        )}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <div className="flex gap-0.5">
-            {[1,2,3,4,5].map(level => Icon({ name: 'star', className: "w-3 h-3", filled: level <= bookmark.importance }))}
-          </div>
-          <div className="flex items-center gap-1 text-xs text-gray-400">
-            {Icon({ name: 'clock' })}
-            {formatDistanceToNow(new Date(bookmark.createdAt), { addSuffix: true })}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// LIST CARD COMPONENT
-// ============================================
-function ListCard({ bookmark, category, onView, onEdit, onDelete }) {
-  return (
-    <div className="group bg-white rounded-lg shadow-sm border border-gray-200 p-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition" onClick={onView}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: category.color }} />
-          <span className="text-xs text-gray-500">{category.icon} {category.name}</span>
-          <div className="flex gap-0.5 ml-2">
-            {[1,2,3,4,5].map(level => Icon({ name: 'star', className: "w-3 h-3", filled: level <= bookmark.importance }))}
-          </div>
-        </div>
-        <h3 className="font-medium text-gray-900 truncate">{bookmark.title}</h3>
-        <p className="text-sm text-gray-500 truncate">{bookmark.excerpt}</p>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-gray-400">{formatDistanceToNow(new Date(bookmark.createdAt))}</span>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
-          <button onClick={onEdit} className="p-1.5 hover:bg-gray-200 rounded">{Icon({ name: 'edit' })}</button>
-          <button onClick={onDelete} className="p-1.5 hover:bg-red-100 rounded">{Icon({ name: 'trash' })}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// COMPACT CARD COMPONENT
-// ============================================
-function CompactCard({ bookmark, category, onView, onEdit, onDelete }) {
-  return (
-    <div className="group py-3 px-2 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition" onClick={onView}>
-      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: category.color }} />
-      <h4 className="text-sm font-medium text-gray-900 flex-1 truncate">{bookmark.title}</h4>
-      <div className="flex gap-0.5">
-        {[1,2,3,4,5].map(level => Icon({ name: 'star', className: "w-2.5 h-2.5", filled: level <= bookmark.importance }))}
-      </div>
-      <span className="text-xs text-gray-400">{formatDistanceToNow(new Date(bookmark.createdAt))}</span>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100" onClick={e => e.stopPropagation()}>
-        <button onClick={onEdit} className="p-1 hover:bg-gray-200 rounded">{Icon({ name: 'edit' })}</button>
-        <button onClick={onDelete} className="p-1 hover:bg-red-100 rounded">{Icon({ name: 'trash' })}</button>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// POSTCARD MODAL (Click on any bookmark)
-// ============================================
-function PostcardModal({ bookmark, category, onClose }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden transform transition-all" onClick={e => e.stopPropagation()}>
-        <div className="relative h-32 bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center">
-          <div className="absolute top-4 right-4"><button onClick={onClose} className="p-1.5 bg-white/20 rounded-full hover:bg-white/30 text-white">{Icon({ name: 'x' })}</button></div>
-          <div className="text-white text-center">
-            <div className="text-6xl mb-2">{category.icon}</div>
-            <div className="text-sm opacity-90">{category.name}</div>
-          </div>
-        </div>
-        <div className="p-6">
-          <div className="flex items-center gap-2 mb-3 text-blue-600">{Icon({ name: 'bookmarkCheck', className: "w-5 h-5" })}<h2 className="text-xl font-bold text-gray-900">{bookmark.title}</h2></div>
-          <p className="text-gray-600 mb-4 leading-relaxed">{bookmark.excerpt}</p>
-          {bookmark.notes && (
-            <div className="bg-amber-50 p-3 rounded-lg mb-4 border border-amber-100">
-              <p className="text-sm text-amber-800"><span className="font-medium">✍️ Private notes:</span> {bookmark.notes}</p>
-            </div>
-          )}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <div className="flex gap-1">
-              {[1,2,3,4,5].map(level => Icon({ name: 'star', className: "w-4 h-4", filled: level <= bookmark.importance }))}
-            </div>
-            <div className="flex items-center gap-1 text-sm text-gray-400">
-              {Icon({ name: 'clock' })} Saved {formatDistanceToNow(new Date(bookmark.createdAt), { addSuffix: true })}
-            </div>
-          </div>
-          <div className="mt-5 text-center text-xs text-gray-400 border-t pt-4">
-            📌 Bookmarks are automatically deleted 7 days after creation
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// EDIT MODAL
-// ============================================
-function EditModal({ bookmark, categories, onClose, onSave }) {
-  const [importance, setImportance] = useState(bookmark.importance);
-  const [categoryId, setCategoryId] = useState(bookmark.categoryId);
-  const [notes, setNotes] = useState(bookmark.notes || '');
-  
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" onClick={onClose}>
-      <div className="bg-white rounded-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Edit Bookmark</h3>
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-1 block">Category</label>
-            <select value={categoryId || ''} onChange={e => setCategoryId(e.target.value)} className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-400">
-              {categories.map(c => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Importance (1-5)</label>
-            <div className="flex gap-2">
-              {[1,2,3,4,5].map(level => (
-                <button key={level} onClick={() => setImportance(level)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${importance >= level ? 'bg-yellow-400 text-yellow-900' : 'bg-gray-100'}`}>{level}</button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Private Notes</label>
-            <textarea rows={3} value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border rounded-lg" placeholder="Add your thoughts..." />
-          </div>
-        </div>
-        <div className="flex gap-3 mt-6">
-          <button onClick={onClose} className="flex-1 py-2 bg-gray-100 rounded-lg">Cancel</button>
-          <button onClick={() => onSave(bookmark.id, { importance, categoryId, notes })} className="flex-1 py-2 bg-blue-500 text-white rounded-lg">Save Changes</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================
-// DELETE CONFIRM MODAL
-// ============================================
-function DeleteConfirmModal({ onConfirm, onCancel }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" onClick={onCancel}>
-      <div className="bg-white rounded-xl max-w-sm w-full p-6 text-center" onClick={e => e.stopPropagation()}>
-        <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center text-red-500">{Icon({ name: 'alertTriangle' })}</div>
-        <h3 className="text-lg font-semibold mb-2">Delete Bookmark</h3>
-        <p className="text-gray-500 text-sm mb-6">This action cannot be undone.</p>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-2 bg-gray-100 rounded-lg">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 bg-red-500 text-white rounded-lg">Delete</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Helper Icon function
-function Icon({ name, className = "w-5 h-5", filled = false }) {
-  const icons = {
-    bookmark: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>,
-    bookmarkCheck: <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4" /></svg>,
-    star: <svg className={`${className} ${filled ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>,
-    edit: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>,
-    trash: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
-    x: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
-    clock: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
-    alertTriangle: <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>,
-    search: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>,
-    grid: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>,
-    list: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>,
-    menu: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>,
-    plus: <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>,
-    download: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>,
-    upload: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>,
-    arrowUp: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>,
-    arrowDown: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-  };
-  return icons[name] || null;
 }
