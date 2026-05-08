@@ -1,16 +1,13 @@
-// ============================================
-// FILE: src/pages/bookmarks/index.jsx
-// ============================================
-// EXACT MATCH to the provided image - My Bookmarks / Blog collection
-// Clean sidebar with Favorites, Recently Added, Read Later, Archive
-// Collections: Tech Blogs, Writing & Growth, Design Inspiration, Marketing & SEO, Personal Finance
-// Tags: Productivity, Web Development, AI, Design, Marketing
+// src/pages/bookmarks/index.jsx
+// UPDATED to work with Supabase instead of localStorage
 
 import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
+import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../hooks/useAuth';
 
 // ============================================
-// SIMPLE SVG ICONS (matching image style)
+// SIMPLE SVG ICONS (same as before)
 // ============================================
 const StarIcon = () => (
   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,16 +57,9 @@ const GlobeIcon = () => (
   </svg>
 );
 
-const ChevronDownIcon = () => (
-  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-  </svg>
-);
-
 // ============================================
-// DATA
+// COLLECTIONS & TAGS (for filtering)
 // ============================================
-
 const COLLECTIONS = [
   { id: 'tech', name: 'Tech Blogs' },
   { id: 'writing', name: 'Writing & Growth' },
@@ -80,159 +70,158 @@ const COLLECTIONS = [
 
 const TAGS = ['Productivity', 'Web Development', 'AI', 'Design', 'Marketing'];
 
-const STORAGE_KEY = 'my_bookmarks_collection';
-
-const getInitialBookmarks = () => {
-  const getDate = (daysAgo) => {
-    const d = new Date();
-    d.setDate(d.getDate() - daysAgo);
-    return d.toISOString();
-  };
-
-  return [
-    {
-      id: '1',
-      title: 'How I Write: A Practical Guide to Better Writing',
-      excerpt: 'A practical guide to better writing. Insights on writing clearly, thinking better, and sharing ideas that matter.',
-      domain: 'theswetestup.com',
-      collection: 'Writing & Growth',
-      collectionId: 'writing',
-      tags: ['Writing', 'Productivity'],
-      savedDate: getDate(2),
-      read: true,
-      favorite: false,
-      readLater: false,
-      archived: false,
-    },
-    {
-      id: '2',
-      title: 'The Complete Guide to Building a Second Brain with Notion',
-      excerpt: 'A step-by-step guide to organize your life and knowledge using Notion.',
-      domain: 'notionmastery.com',
-      collection: 'Tech Blogs',
-      collectionId: 'tech',
-      tags: ['Productivity', 'Notion', 'Organization'],
-      savedDate: getDate(5),
-      read: true,
-      favorite: true,
-      readLater: false,
-      archived: false,
-    },
-    {
-      id: '3',
-      title: '10 Web Design Trends to Watch in 2024',
-      excerpt: 'Explore the top web design trends that will dominate in 2024.',
-      domain: 'designweekly.com',
-      collection: 'Design Inspiration',
-      collectionId: 'design',
-      tags: ['Design', 'Web Design', 'Trends'],
-      savedDate: getDate(7),
-      read: true,
-      favorite: false,
-      readLater: false,
-      archived: false,
-    },
-    {
-      id: '4',
-      title: 'SEO Checklist for Blog Posts (2024)',
-      excerpt: 'A comprehensive checklist to rank your blog posts higher in search results.',
-      domain: 'seomastery.com',
-      collection: 'Marketing & SEO',
-      collectionId: 'marketing',
-      tags: ['SEO', 'Marketing', 'Blogging'],
-      savedDate: getDate(3),
-      read: true,
-      favorite: false,
-      readLater: false,
-      archived: false,
-    },
-    {
-      id: '5',
-      title: 'The Psychology of Money: Timeless Lessons',
-      excerpt: 'Wealth is what you don\'t see. Understanding the soft skills of financial success.',
-      domain: 'collabfund.com',
-      collection: 'Personal Finance',
-      collectionId: 'finance',
-      tags: ['Finance', 'Psychology'],
-      savedDate: getDate(1),
-      read: false,
-      favorite: true,
-      readLater: true,
-      archived: false,
-    },
-    {
-      id: '6',
-      title: 'Why Every Developer Should Learn TypeScript in 2025',
-      excerpt: 'TypeScript adoption is skyrocketing. Here\'s why you can\'t afford to ignore it.',
-      domain: 'dev.to',
-      collection: 'Tech Blogs',
-      collectionId: 'tech',
-      tags: ['Web Development', 'TypeScript'],
-      savedDate: getDate(4),
-      read: false,
-      favorite: false,
-      readLater: true,
-      archived: false,
-    },
-    {
-      id: '7',
-      title: 'Building a Personal Brand as a Creator',
-      excerpt: 'Practical advice for growing your online presence and standing out.',
-      domain: 'creativeblog.com',
-      collection: 'Writing & Growth',
-      collectionId: 'writing',
-      tags: ['Writing', 'Growth'],
-      savedDate: getDate(0),
-      read: false,
-      favorite: false,
-      readLater: false,
-      archived: false,
-    },
-  ];
-};
-
 // ============================================
-// MAIN COMPONENT
+// MAIN COMPONENT - NOW LOADS FROM SUPABASE
 // ============================================
 export default function BookmarksPage() {
+  const { user, loading: authLoading } = useAuth();
   const [bookmarks, setBookmarks] = useState([]);
-  const [activeView, setActiveView] = useState('all'); // all, favorites, recent, readlater, archive
+  const [activeView, setActiveView] = useState('all');
   const [selectedCollection, setSelectedCollection] = useState(null);
   const [selectedTag, setSelectedTag] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllTags, setShowAllTags] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
 
+  // Load bookmarks from Supabase
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setBookmarks(JSON.parse(stored));
-    } else {
-      setBookmarks(getInitialBookmarks());
+    if (!user) {
+      setBookmarks([]);
+      setLoading(false);
+      return;
     }
-    setIsHydrated(true);
-  }, []);
 
-  useEffect(() => {
-    if (isHydrated) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
-    }
-  }, [bookmarks, isHydrated]);
+    const fetchBookmarks = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('bookmarks')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        
+        // Transform Supabase data to match your component structure
+        const transformedBookmarks = data.map(bookmark => ({
+          id: bookmark.id,
+          title: bookmark.post_title,
+          excerpt: bookmark.post_excerpt,
+          domain: extractDomain(bookmark.post_slug),
+          collection: inferCollection(bookmark.post_title, bookmark.tags),
+          collectionId: inferCollectionId(bookmark.post_title, bookmark.tags),
+          tags: bookmark.tags || extractTags(bookmark.post_title),
+          savedDate: bookmark.created_at,
+          read: bookmark.is_read || false,
+          favorite: bookmark.is_favorite || false,
+          readLater: bookmark.read_later || false,
+          archived: bookmark.archived || false,
+          postSlug: bookmark.post_slug,
+        }));
+        
+        setBookmarks(transformedBookmarks);
+      } catch (error) {
+        console.error('Error fetching bookmarks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookmarks();
+
+    // Listen for bookmark updates from the button
+    const handleBookmarkUpdate = (event) => {
+      fetchBookmarks(); // Refresh the list
+    };
+
+    window.addEventListener('bookmarkUpdated', handleBookmarkUpdate);
+    return () => window.removeEventListener('bookmarkUpdated', handleBookmarkUpdate);
+  }, [user]);
+
+  // Helper functions
+  const extractDomain = (slug) => {
+    if (!slug) return 'blog.post';
+    return slug.includes('.') ? slug.split('/')[0] : `${slug}.com`;
+  };
+
+  const extractTags = (title) => {
+    const tags = [];
+    if (title.toLowerCase().includes('writing')) tags.push('Writing');
+    if (title.toLowerCase().includes('productivity')) tags.push('Productivity');
+    if (title.toLowerCase().includes('design')) tags.push('Design');
+    if (title.toLowerCase().includes('seo')) tags.push('SEO');
+    if (title.toLowerCase().includes('marketing')) tags.push('Marketing');
+    if (tags.length === 0) tags.push('Reading');
+    return tags;
+  };
+
+  const inferCollection = (title, tags) => {
+    if (title.toLowerCase().includes('tech') || title.toLowerCase().includes('developer')) return 'Tech Blogs';
+    if (title.toLowerCase().includes('write') || title.toLowerCase().includes('growth')) return 'Writing & Growth';
+    if (title.toLowerCase().includes('design')) return 'Design Inspiration';
+    if (title.toLowerCase().includes('seo') || title.toLowerCase().includes('marketing')) return 'Marketing & SEO';
+    if (title.toLowerCase().includes('finance') || title.toLowerCase().includes('money')) return 'Personal Finance';
+    return 'Tech Blogs';
+  };
+
+  const inferCollectionId = (title, tags) => {
+    if (title.toLowerCase().includes('tech') || title.toLowerCase().includes('developer')) return 'tech';
+    if (title.toLowerCase().includes('write') || title.toLowerCase().includes('growth')) return 'writing';
+    if (title.toLowerCase().includes('design')) return 'design';
+    if (title.toLowerCase().includes('seo') || title.toLowerCase().includes('marketing')) return 'marketing';
+    if (title.toLowerCase().includes('finance') || title.toLowerCase().includes('money')) return 'finance';
+    return 'tech';
+  };
 
   const formatDate = (dateISO) => {
+    if (!dateISO) return 'Saved recently';
     const date = new Date(dateISO);
     return `Saved on ${date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
   };
 
+  // Update bookmark properties in Supabase
+  const updateBookmarkProperty = async (id, property, value) => {
+    try {
+      const { error } = await supabase
+        .from('bookmarks')
+        .update({ [property]: value })
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      setBookmarks(prev => prev.map(b =>
+        b.id === id ? { ...b, [property]: value } : b
+      ));
+    } catch (error) {
+      console.error(`Error updating ${property}:`, error);
+    }
+  };
+
+  const toggleFavorite = (id) => {
+    const bookmark = bookmarks.find(b => b.id === id);
+    updateBookmarkProperty(id, 'is_favorite', !bookmark?.favorite);
+  };
+
+  const toggleReadLater = (id) => {
+    const bookmark = bookmarks.find(b => b.id === id);
+    updateBookmarkProperty(id, 'read_later', !bookmark?.readLater);
+  };
+
+  const toggleArchive = (id) => {
+    const bookmark = bookmarks.find(b => b.id === id);
+    updateBookmarkProperty(id, 'archived', !bookmark?.archived);
+  };
+
+  // Filter bookmarks
   const filteredBookmarks = useMemo(() => {
     let filtered = [...bookmarks];
 
-    // Don't show archived in main views
     if (activeView !== 'archive') {
       filtered = filtered.filter(b => !b.archived);
     }
 
-    // View filter
     switch (activeView) {
       case 'favorites':
         filtered = filtered.filter(b => b.favorite);
@@ -253,17 +242,14 @@ export default function BookmarksPage() {
         break;
     }
 
-    // Collection filter
     if (selectedCollection) {
       filtered = filtered.filter(b => b.collectionId === selectedCollection);
     }
 
-    // Tag filter
     if (selectedTag) {
       filtered = filtered.filter(b => b.tags.includes(selectedTag));
     }
 
-    // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(b =>
@@ -276,34 +262,37 @@ export default function BookmarksPage() {
     return filtered;
   }, [bookmarks, activeView, selectedCollection, selectedTag, searchQuery]);
 
-  const toggleFavorite = (id) => {
-    setBookmarks(prev => prev.map(b =>
-      b.id === id ? { ...b, favorite: !b.favorite } : b
-    ));
-  };
-
-  const toggleReadLater = (id) => {
-    setBookmarks(prev => prev.map(b =>
-      b.id === id ? { ...b, readLater: !b.readLater } : b
-    ));
-  };
-
-  const toggleArchive = (id) => {
-    setBookmarks(prev => prev.map(b =>
-      b.id === id ? { ...b, archived: !b.archived, readLater: false } : b
-    ));
-  };
-
   const totalBookmarks = bookmarks.filter(b => !b.archived).length;
-
   const displayedTags = showAllTags ? TAGS : TAGS.slice(0, 5);
 
-  if (!isHydrated) {
+  // Loading state
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-gray-500">Loading...</p>
+          <p className="text-sm text-gray-500">Loading your bookmarks...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // No user logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <BookmarkIcon />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Save your favorite posts</h2>
+          <p className="text-gray-500 mb-6">Sign in to bookmark posts and access them from anywhere.</p>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('openAuth', { detail: 'login' }))}
+            className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+          >
+            Sign In
+          </button>
         </div>
       </div>
     );
@@ -325,252 +314,122 @@ export default function BookmarksPage() {
           </div>
 
           <div className="flex gap-10">
-            {/* ========== SIDEBAR ========== */}
+            {/* SIDEBAR - same as before */}
             <aside className="w-56 flex-shrink-0">
-              {/* All Bookmarks with count */}
               <div className="mb-6">
                 <div className="text-4xl font-bold text-gray-800 mb-1">{totalBookmarks}</div>
                 <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">All Bookmarks</div>
                 <p className="text-xs text-gray-400 mt-1">All your saved blog posts in one place</p>
               </div>
 
-              {/* Sidebar navigation */}
               <nav className="space-y-1 mb-8">
-                <button
-                  onClick={() => {
-                    setActiveView('all');
-                    setSelectedCollection(null);
-                    setSelectedTag(null);
-                  }}
-                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    activeView === 'all' && !selectedCollection && !selectedTag
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
+                <button onClick={() => { setActiveView('all'); setSelectedCollection(null); setSelectedTag(null); }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm ${activeView === 'all' && !selectedCollection && !selectedTag ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}>
                   All Bookmarks
                 </button>
-                <button
-                  onClick={() => {
-                    setActiveView('favorites');
-                    setSelectedCollection(null);
-                    setSelectedTag(null);
-                  }}
-                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                    activeView === 'favorites'
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
+                <button onClick={() => { setActiveView('favorites'); setSelectedCollection(null); setSelectedTag(null); }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-2 ${activeView === 'favorites' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}>
                   <StarIcon /> Favorites
                 </button>
-                <button
-                  onClick={() => {
-                    setActiveView('recent');
-                    setSelectedCollection(null);
-                    setSelectedTag(null);
-                  }}
-                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                    activeView === 'recent'
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
+                <button onClick={() => { setActiveView('recent'); setSelectedCollection(null); setSelectedTag(null); }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-2 ${activeView === 'recent' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}>
                   <ClockIcon /> Recently Added
                 </button>
-                <button
-                  onClick={() => {
-                    setActiveView('readlater');
-                    setSelectedCollection(null);
-                    setSelectedTag(null);
-                  }}
-                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                    activeView === 'readlater'
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
+                <button onClick={() => { setActiveView('readlater'); setSelectedCollection(null); setSelectedTag(null); }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-2 ${activeView === 'readlater' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}>
                   <BookmarkIcon /> Read Later
                 </button>
-                <button
-                  onClick={() => {
-                    setActiveView('archive');
-                    setSelectedCollection(null);
-                    setSelectedTag(null);
-                  }}
-                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                    activeView === 'archive'
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-500 hover:bg-gray-50'
-                  }`}
-                >
+                <button onClick={() => { setActiveView('archive'); setSelectedCollection(null); setSelectedTag(null); }}
+                  className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-2 ${activeView === 'archive' ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}>
                   <ArchiveIcon /> Archive
                 </button>
               </nav>
 
-              {/* Collections */}
               <div className="mb-6">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">Collections</h3>
                 <div className="space-y-0.5">
                   {COLLECTIONS.map(collection => (
-                    <button
-                      key={collection.id}
-                      onClick={() => {
-                        setSelectedCollection(collection.id);
-                        setActiveView('all');
-                        setSelectedTag(null);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors ${
-                        selectedCollection === collection.id
-                          ? 'bg-gray-100 text-gray-900'
-                          : 'text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
+                    <button key={collection.id} onClick={() => { setSelectedCollection(collection.id); setActiveView('all'); setSelectedTag(null); }}
+                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm ${selectedCollection === collection.id ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}>
                       {collection.name}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Tags */}
               <div>
                 <div className="flex items-center justify-between px-3 mb-2">
                   <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tags</h3>
-                  {TAGS.length > 5 && (
-                    <button
-                      onClick={() => setShowAllTags(!showAllTags)}
-                      className="text-xs text-gray-400 hover:text-gray-600"
-                    >
-                      {showAllTags ? 'Show less' : 'Show more'} ▼
-                    </button>
-                  )}
+                  {TAGS.length > 5 && (<button onClick={() => setShowAllTags(!showAllTags)} className="text-xs text-gray-400 hover:text-gray-600">
+                    {showAllTags ? 'Show less' : 'Show more'} ▼
+                  </button>)}
                 </div>
                 <div className="space-y-0.5">
                   {displayedTags.map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => {
-                        setSelectedTag(tag);
-                        setActiveView('all');
-                        setSelectedCollection(null);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm transition-colors flex items-center gap-2 ${
-                        selectedTag === tag
-                          ? 'bg-gray-100 text-gray-900'
-                          : 'text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      <TagIcon />
-                      {tag}
+                    <button key={tag} onClick={() => { setSelectedTag(tag); setActiveView('all'); setSelectedCollection(null); }}
+                      className={`w-full text-left px-3 py-1.5 rounded-md text-sm flex items-center gap-2 ${selectedTag === tag ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}>
+                      <TagIcon /> {tag}
                     </button>
                   ))}
                 </div>
               </div>
             </aside>
 
-            {/* ========== MAIN CONTENT ========== */}
+            {/* MAIN CONTENT */}
             <main className="flex-1 min-w-0">
-              {/* Search */}
               <div className="mb-6">
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <SearchIcon />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search bookmarks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-200"
-                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><SearchIcon /></div>
+                  <input type="text" placeholder="Search bookmarks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                    className="block w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:border-gray-300 focus:ring-1 focus:ring-gray-200" />
                 </div>
               </div>
 
-              {/* All Bookmarks header */}
               <div className="mb-6">
                 <h2 className="text-lg font-medium text-gray-900">All Bookmarks</h2>
                 <p className="text-sm text-gray-500">All your saved blog posts in one place</p>
               </div>
 
-              {/* Bookmarks list */}
               <div className="space-y-6">
                 {filteredBookmarks.length === 0 ? (
                   <div className="text-center py-12">
-                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <BookmarkIcon />
-                    </div>
+                    <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3"><BookmarkIcon /></div>
                     <p className="text-gray-500 text-sm">No bookmarks found</p>
+                    <p className="text-gray-400 text-xs mt-1">Save some posts to see them here</p>
                   </div>
                 ) : (
                   filteredBookmarks.map(bookmark => (
                     <div key={bookmark.id} className="border-b border-gray-100 pb-5 last:border-0">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 pr-4">
-                          <h3 className="text-base font-semibold text-gray-900 mb-1">
+                          <a href={`/post/${bookmark.postSlug}`} className="text-base font-semibold text-gray-900 mb-1 hover:text-blue-600 transition">
                             {bookmark.title}
-                          </h3>
-                          <p className="text-sm text-gray-500 mb-2 leading-relaxed">
-                            {bookmark.excerpt}
-                          </p>
+                          </a>
+                          <p className="text-sm text-gray-500 mb-2 leading-relaxed">{bookmark.excerpt}</p>
                           
-                          {/* Meta row: domain, date, read status */}
                           <div className="flex items-center gap-3 text-xs text-gray-400 mb-2">
-                            <div className="flex items-center gap-1">
-                              <GlobeIcon />
-                              <span>{bookmark.domain}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <CalendarIcon />
-                              <span>{formatDate(bookmark.savedDate)}</span>
-                            </div>
-                            {bookmark.read && (
-                              <span className="text-green-600 font-medium">Read</span>
-                            )}
+                            <div className="flex items-center gap-1"><GlobeIcon /><span>{bookmark.domain}</span></div>
+                            <div className="flex items-center gap-1"><CalendarIcon /><span>{formatDate(bookmark.savedDate)}</span></div>
+                            {bookmark.read && <span className="text-green-600 font-medium">Read</span>}
                           </div>
 
-                          {/* Collection link */}
-                          <div className="text-xs text-gray-500 mb-2">
-                            Collection <span className="text-gray-700">{bookmark.collection}</span>
-                          </div>
+                          <div className="text-xs text-gray-500 mb-2">Collection <span className="text-gray-700">{bookmark.collection}</span></div>
 
-                          {/* Tags */}
                           <div className="flex flex-wrap gap-1.5">
                             {bookmark.tags.map(tag => (
-                              <span
-                                key={tag}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600"
-                              >
-                                {tag}
-                              </span>
+                              <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-50 text-gray-600">{tag}</span>
                             ))}
                           </div>
                         </div>
 
-                        {/* Action buttons */}
                         <div className="flex items-center gap-0.5">
-                          <button
-                            onClick={() => toggleFavorite(bookmark.id)}
-                            className={`p-1.5 rounded-md transition-colors ${
-                              bookmark.favorite ? 'text-yellow-500' : 'text-gray-300 hover:text-gray-400'
-                            }`}
-                            title={bookmark.favorite ? 'Remove from favorites' : 'Add to favorites'}
-                          >
+                          <button onClick={() => toggleFavorite(bookmark.id)} className={`p-1.5 rounded-md transition-colors ${bookmark.favorite ? 'text-yellow-500' : 'text-gray-300 hover:text-gray-400'}`} title={bookmark.favorite ? 'Remove from favorites' : 'Add to favorites'}>
                             <StarIcon />
                           </button>
-                          <button
-                            onClick={() => toggleReadLater(bookmark.id)}
-                            className={`p-1.5 rounded-md transition-colors ${
-                              bookmark.readLater ? 'text-blue-500' : 'text-gray-300 hover:text-gray-400'
-                            }`}
-                            title={bookmark.readLater ? 'Remove from read later' : 'Read later'}
-                          >
+                          <button onClick={() => toggleReadLater(bookmark.id)} className={`p-1.5 rounded-md transition-colors ${bookmark.readLater ? 'text-blue-500' : 'text-gray-300 hover:text-gray-400'}`} title={bookmark.readLater ? 'Remove from read later' : 'Read later'}>
                             <BookmarkIcon />
                           </button>
-                          <button
-                            onClick={() => toggleArchive(bookmark.id)}
-                            className="p-1.5 rounded-md text-gray-300 hover:text-gray-400 transition-colors"
-                            title="Archive"
-                          >
+                          <button onClick={() => toggleArchive(bookmark.id)} className="p-1.5 rounded-md text-gray-300 hover:text-gray-400 transition-colors" title="Archive">
                             <ArchiveIcon />
                           </button>
                         </div>
