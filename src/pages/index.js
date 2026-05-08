@@ -1,9 +1,8 @@
-// src/pages/index.js - COMPLETE PRODUCTION-READY VERSION
+// src/pages/index.js - UPDATED to use API routes
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
 import LivePostCarousel from '../components/frontend/LivePostCarousel'
-import { supabase } from '../lib/supabase'
 
 export default function Home() {
   const [todayPosts, setTodayPosts] = useState([])
@@ -29,32 +28,48 @@ export default function Home() {
     }
   }, [])
 
-  // Fetch regular posts from 'posts' table
-  const fetchRegularPosts = useCallback(async () => {
+  // Fetch live posts from API
+  const fetchLivePosts = useCallback(async () => {
+    if (!visitorId) return
+    
     try {
-      const today = new Date()
-      const todayStr = today.toISOString().split('T')[0]
-      const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+      const res = await fetch('/api/live-posts?limit=50')
+      const data = await res.json()
+      
+      if (data.success) {
+        setLivePosts(data.posts || [])
+      } else {
+        console.error('API error:', data.error)
+        setLivePosts([])
+      }
+    } catch (err) {
+      console.error('Error fetching live posts:', err)
+      setLivePosts([])
+    }
+  }, [visitorId])
 
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('status', 'published')
-        .order('created_at', { ascending: false, nullsLast: true })
-        .limit(100)
-
-      if (postsError) {
-        console.error('Posts table error:', postsError.message)
+  // Fetch categories and regular posts
+  const fetchRegularData = useCallback(async () => {
+    try {
+      // Try to fetch from posts API, but don't error if it doesn't exist
+      const res = await fetch('/api/posts?limit=100').catch(() => ({ success: false }))
+      const data = await res.json().catch(() => ({ success: false, posts: [] }))
+      
+      const posts = data.success ? (data.posts || []) : []
+      
+      if (posts.length === 0) {
+        setEditorsPicks([])
+        setTodayPosts([])
+        setPopularPosts([])
         return
       }
-
-      if (!posts || posts.length === 0) return
 
       // Editor's picks (featured posts)
       const picks = posts.filter(post => post.is_featured === true).slice(0, 6)
       setEditorsPicks(picks)
 
       // Today's posts
+      const todayStr = new Date().toISOString().split('T')[0]
       const todayFiltered = posts.filter(post => {
         const publishDate = post.created_at?.split('T')[0]
         return publishDate === todayStr
@@ -62,6 +77,7 @@ export default function Home() {
       setTodayPosts(todayFiltered)
 
       // Most popular this month
+      const currentMonthStr = new Date().toISOString().slice(0, 7)
       const popularFiltered = posts
         .filter(post => {
           const publishDate = post.created_at?.split('T')[0] || ''
@@ -73,57 +89,21 @@ export default function Home() {
       
     } catch (err) {
       console.error('Error fetching regular posts:', err)
+      setEditorsPicks([])
+      setTodayPosts([])
+      setPopularPosts([])
     }
   }, [])
 
-  // Fetch live posts from 'live_posts' table
-  const fetchLivePosts = useCallback(async () => {
-    if (!visitorId) return
-    
-    try {
-      const { data: live, error: liveError } = await supabase
-        .from('live_posts')
-        .select('*')
-        .eq('status', 'published')
-        .order('published_at', { ascending: false })
-
-      if (liveError) {
-        console.error('Live posts error:', liveError)
-        return
-      }
-
-      if (live && live.length > 0) {
-        const postsWithDetails = await Promise.all(live.map(async (post) => {
-          const { count: commentsCount } = await supabase
-            .from('live_post_comments')
-            .select('*', { count: 'exact', head: true })
-            .eq('live_post_id', post.id)
-          
-          return {
-            ...post,
-            comments_count: commentsCount || 0,
-            user_has_liked: (post.liked_by || []).includes(visitorId),
-            content: post.content || post.description || null
-          }
-        }))
-        setLivePosts(postsWithDetails)
-      } else {
-        setLivePosts([])
-      }
-    } catch (err) {
-      console.error('Error fetching live posts:', err)
-    }
-  }, [visitorId])
-
   const handleLivePostLike = useCallback(async (postId, newLikesCount) => {
     setLivePosts(prev => prev.map(post => 
-      post.id === postId ? { ...post, likes: newLikesCount, user_has_liked: true } : post
+      post.id === postId ? { ...post, likes_count: newLikesCount, user_has_liked: true } : post
     ))
   }, [])
 
   const handleLivePostShare = useCallback(async (postId) => {
     setLivePosts(prev => prev.map(post => 
-      post.id === postId ? { ...post, shares: (post.shares || 0) + 1 } : post
+      post.id === postId ? { ...post, shares_count: (post.shares_count || 0) + 1 } : post
     ))
   }, [])
 
@@ -131,14 +111,16 @@ export default function Home() {
   
   const handleRefreshAll = async () => {
     setRefreshing(true)
-    await Promise.all([fetchRegularPosts(), fetchLivePosts()])
+    await Promise.all([fetchRegularData(), fetchLivePosts()])
     setRefreshing(false)
   }
 
   // Initial load
   useEffect(() => {
-    Promise.all([fetchRegularPosts(), fetchLivePosts()]).finally(() => setLoading(false))
-  }, [fetchRegularPosts, fetchLivePosts])
+    Promise.all([fetchRegularData(), fetchLivePosts()])
+      .catch(err => console.error('Initial load error:', err))
+      .finally(() => setLoading(false))
+  }, [fetchRegularData, fetchLivePosts])
 
   // Auto-refresh live posts every minute
   useEffect(() => {
@@ -285,7 +267,7 @@ export default function Home() {
               </div>
               <h2 className="section-title">✨ Fresh Daily</h2>
               <p className="section-subtitle">
-                One post per category. Expires in 24 hours. 
+                Posts expire in 24 hours. 
                 <span className="live-count">{livePosts.length} active {livePosts.length === 1 ? 'story' : 'stories'}</span>
               </p>
             </div>
