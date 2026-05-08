@@ -1,211 +1,208 @@
 // src/pages/settings.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
 export default function SettingsPage() {
-  const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile'); // profile, password
+  const { user, loading: authLoading, refreshUser } = useAuth();
+  const [activeTab, setActiveTab] = useState('profile');
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
   
-  // Profile form state
-  const [displayName, setDisplayName] = useState('');
+  // Profile state
+  const [fullName, setFullName] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [bio, setBio] = useState('');
+  
+  // Email state
   const [email, setEmail] = useState('');
   const [newEmail, setNewEmail] = useState('');
-  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [emailPassword, setEmailPassword] = useState('');
+  const [showEmailForm, setShowEmailForm] = useState(false);
   
-  // Password form state
+  // Password state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   
-  // UI state
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
-  const [showCurrentPasswordField, setShowCurrentPasswordField] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // Load user data
   useEffect(() => {
     if (user) {
       setEmail(user.email || '');
-      setDisplayName(user.user_metadata?.full_name || '');
+      setFullName(user.user_metadata?.full_name || '');
+      setAvatarUrl(user.user_metadata?.avatar_url || '');
+      setBio(user.user_metadata?.bio || '');
     }
   }, [user]);
 
   const showMessage = (text, type = 'success') => {
     setMessage({ text, type });
-    setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+    setTimeout(() => setMessage(null), 3000);
   };
 
-  // Update Display Name
-  const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
     
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: { full_name: displayName }
-      });
-      
-      if (error) throw error;
-      
-      showMessage('Profile updated successfully!', 'success');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      showMessage(error.message || 'Failed to update profile', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Change Email - requires current password verification
-  const handleChangeEmail = async (e) => {
-    e.preventDefault();
-    
-    if (!newEmail || newEmail === email) {
-      showMessage('Please enter a new email address', 'error');
+    if (!file.type.startsWith('image/')) {
+      showMessage('Please upload an image file', 'error');
       return;
     }
     
-    setLoading(true);
+    if (file.size > 2 * 1024 * 1024) {
+      showMessage('Image must be less than 2MB', 'error');
+      return;
+    }
+    
+    setSaving(true);
     
     try {
-      // First verify current password by re-authenticating
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const { error } = await supabase.auth.updateUser({
+          data: { avatar_url: reader.result }
+        });
+        if (error) throw error;
+        setAvatarUrl(reader.result);
+        showMessage('Avatar updated');
+        refreshUser?.();
+        setSaving(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      showMessage(error.message || 'Upload failed', 'error');
+      setSaving(false);
+    }
+  };
+
+  const updateProfile = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: fullName, bio }
+      });
+      if (error) throw error;
+      showMessage('Profile updated');
+      refreshUser?.();
+    } catch (error) {
+      showMessage(error.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateEmail = async () => {
+    if (!newEmail || newEmail === email) {
+      showMessage('Enter a new email address', 'error');
+      return;
+    }
+    
+    setSaving(true);
+    try {
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
-        password: currentPassword,
+        password: emailPassword,
       });
       
       if (signInError) {
-        showMessage('Current password is incorrect. Please try again.', 'error');
-        setLoading(false);
+        showMessage('Current password is incorrect', 'error');
+        setSaving(false);
         return;
       }
       
-      // Update email
-      const { error } = await supabase.auth.updateUser({
-        email: newEmail
-      });
-      
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
       if (error) throw error;
       
-      showMessage('Verification email sent! Please check your new email to confirm the change.', 'success');
+      setShowEmailForm(false);
       setNewEmail('');
-      setCurrentPassword('');
-      setIsChangingEmail(false);
+      setEmailPassword('');
+      showMessage('Verification email sent! Check your inbox.');
       
     } catch (error) {
-      console.error('Error changing email:', error);
-      showMessage(error.message || 'Failed to change email', 'error');
+      showMessage(error.message, 'error');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  // Change Password - requires current password verification
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    
-    if (!currentPassword) {
-      showMessage('Please enter your current password', 'error');
-      return;
-    }
-    
-    if (newPassword.length < 6) {
-      showMessage('New password must be at least 6 characters', 'error');
+  const updatePassword = async () => {
+    if (newPassword.length < 8) {
+      showMessage('Password must be at least 8 characters', 'error');
       return;
     }
     
     if (newPassword !== confirmPassword) {
-      showMessage('New passwords do not match', 'error');
+      showMessage('Passwords do not match', 'error');
       return;
     }
     
-    setLoading(true);
-    
+    setSaving(true);
     try {
-      // First verify current password by re-authenticating
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: currentPassword,
       });
       
       if (signInError) {
-        showMessage('Current password is incorrect. Please try again.', 'error');
-        setLoading(false);
+        showMessage('Current password is incorrect', 'error');
+        setSaving(false);
         return;
       }
       
-      // Update password
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-      
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       
-      showMessage('Password changed successfully!', 'success');
+      setShowPasswordForm(false);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setShowCurrentPasswordField(false);
+      showMessage('Password changed');
       
     } catch (error) {
-      console.error('Error changing password:', error);
-      showMessage(error.message || 'Failed to change password', 'error');
+      showMessage(error.message, 'error');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  // Forgot Password - Send reset email
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
+  const sendPasswordReset = async () => {
+    setSaving(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
         redirectTo: `${window.location.origin}/update-password`,
       });
-      
       if (error) throw error;
-      
-      setResetEmailSent(true);
-      showMessage('Password reset email sent! Check your inbox.', 'success');
-      setShowForgotPassword(false);
-      
+      showMessage('Reset email sent! Check your inbox.');
     } catch (error) {
-      console.error('Error sending reset email:', error);
-      showMessage(error.message || 'Failed to send reset email', 'error');
+      showMessage(error.message, 'error');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mx-auto mb-3"></div>
-          <p className="text-sm text-gray-500">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto px-6">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">🔒</span>
           </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Sign in required</h2>
-          <p className="text-gray-500 mb-6">Please sign in to access your profile settings.</p>
+          <h2 className="text-xl font-medium mb-2">Sign in required</h2>
+          <p className="text-gray-500 text-sm mb-6">Sign in to manage your settings</p>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('openAuth', { detail: 'login' }))}
-            className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+            className="px-5 py-2 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition"
           >
             Sign In
           </button>
@@ -217,321 +214,291 @@ export default function SettingsPage() {
   return (
     <>
       <Head>
-        <title>Settings • Edit Profile</title>
-        <meta name="description" content="Manage your account settings" />
+        <title>Settings</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+      <div className="min-h-screen bg-gray-50">
+        {/* Toast */}
+        {message && (
+          <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg ${
+            message.type === 'error' ? 'bg-red-500 text-white' : 'bg-gray-900 text-white'
+          }`}>
+            {message.type === 'error' ? '⚠️ ' : '✓ '}{message.text}
+          </div>
+        )}
+
+        <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-gray-900">Account Settings</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage your profile and security</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+            <p className="text-gray-500 text-sm mt-1">Manage your account</p>
           </div>
 
-          {/* Message Toast */}
-          {message.text && (
-            <div className={`mb-6 p-4 rounded-lg ${
-              message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-            }`}>
-              {message.text}
-            </div>
-          )}
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Sidebar */}
+            <nav className="w-full md:w-48 flex md:flex-col gap-1">
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium text-left transition ${
+                  activeTab === 'profile'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => setActiveTab('security')}
+                className={`px-3 py-2 rounded-lg text-sm font-medium text-left transition ${
+                  activeTab === 'security'
+                    ? 'bg-white shadow-sm text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Security
+              </button>
+            </nav>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'profile'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              ✏️ Edit Profile
-            </button>
-            <button
-              onClick={() => setActiveTab('password')}
-              className={`px-4 py-2 text-sm font-medium transition-colors ${
-                activeTab === 'password'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              🔒 Security
-            </button>
-          </div>
-
-          {/* Profile Tab */}
-          {activeTab === 'profile' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              <form onSubmit={handleUpdateProfile} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Display Name
-                  </label>
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    placeholder="Your display name"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    This name will be displayed on your profile
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                >
-                  {loading ? 'Saving...' : 'Save Changes'}
-                </button>
-              </form>
-
-              {/* Email Change Section */}
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Change Email Address</h3>
-                
-                {!isChangingEmail ? (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Current email: <span className="font-medium">{email}</span>
-                    </p>
-                    <button
-                      onClick={() => setIsChangingEmail(true)}
-                      className="text-blue-600 text-sm font-medium hover:text-blue-700"
-                    >
-                      Change email →
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleChangeEmail} className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        New Email Address
-                      </label>
-                      <input
-                        type="email"
-                        value={newEmail}
-                        onChange={(e) => setNewEmail(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                        placeholder="newemail@example.com"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Current Password <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                        placeholder="Enter your current password"
-                        required
-                      />
-                      <p className="text-xs text-gray-400 mt-1">
-                        For security, please confirm your current password
-                      </p>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                      >
-                        {loading ? 'Sending...' : 'Update Email'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsChangingEmail(false);
-                          setNewEmail('');
-                          setCurrentPassword('');
-                        }}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Security / Password Tab */}
-          {activeTab === 'password' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-              {!showCurrentPasswordField ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-2xl">🔐</span>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Change Password</h3>
-                  <p className="text-sm text-gray-500 mb-6">
-                    You'll need to verify your current password to set a new one
-                  </p>
-                  <button
-                    onClick={() => setShowCurrentPasswordField(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-                  >
-                    Continue →
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleChangePassword} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                      placeholder="Enter your current password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPassword(true)}
-                      className="text-xs text-blue-600 hover:text-blue-700 mt-1"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                      placeholder="At least 6 characters"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Confirm New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                      placeholder="Re-enter new password"
-                      required
-                    />
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                    >
-                      {loading ? 'Updating...' : 'Update Password'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowCurrentPasswordField(false);
-                        setCurrentPassword('');
-                        setNewPassword('');
-                        setConfirmPassword('');
-                      }}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {/* Forgot Password Modal */}
-              {showForgotPassword && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                  <div className="bg-white rounded-xl max-w-md w-full p-6">
-                    <div className="text-center mb-4">
-                      <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                        <span className="text-xl">🔑</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">Forgot Password?</h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        We'll send a password reset link to your email
-                      </p>
-                    </div>
-
-                    {!resetEmailSent ? (
-                      <form onSubmit={handleForgotPassword}>
-                        <div className="mb-4">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Email Address
-                          </label>
-                          <input
-                            type="email"
-                            value={email}
-                            readOnly
-                            className="w-full px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-600"
-                          />
-                          <p className="text-xs text-gray-400 mt-1">
-                            Reset link will be sent to: {email}
-                          </p>
+            {/* Main content */}
+            <div className="flex-1 space-y-5">
+              {/* Profile Tab */}
+              {activeTab === 'profile' && (
+                <>
+                  {/* Avatar */}
+                  <div className="bg-white rounded-xl border p-5">
+                    <div className="flex items-center gap-5">
+                      <div className="relative">
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center overflow-hidden">
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-white text-xl font-medium">
+                              {fullName ? fullName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+                            </span>
+                          )}
                         </div>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute -bottom-1 -right-1 w-7 h-7 bg-white rounded-full border shadow-sm flex items-center justify-center text-xs hover:bg-gray-50"
+                        >
+                          📷
+                        </button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                        />
+                      </div>
+                      <div>
+                        <p className="font-medium">Profile picture</p>
+                        <p className="text-xs text-gray-500">JPG or PNG. Max 2MB</p>
+                      </div>
+                    </div>
+                  </div>
 
-                        <div className="flex gap-3">
+                  {/* Profile Info */}
+                  <div className="bg-white rounded-xl border p-5">
+                    <h3 className="font-medium mb-4">Profile information</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Full name</label>
+                        <input
+                          type="text"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                          placeholder="Your name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Bio</label>
+                        <textarea
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 resize-none"
+                          placeholder="Tell us about yourself"
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-5 pt-4 border-t flex justify-end">
+                      <button
+                        onClick={updateProfile}
+                        disabled={saving}
+                        className="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 transition"
+                      >
+                        {saving ? 'Saving...' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="bg-white rounded-xl border p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium">Email address</h3>
+                      {!showEmailForm && (
+                        <button
+                          onClick={() => setShowEmailForm(true)}
+                          className="text-sm text-gray-500 hover:text-gray-900"
+                        >
+                          Change
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600">{email}</p>
+                    
+                    {showEmailForm && (
+                      <div className="mt-4 pt-4 border-t space-y-3">
+                        <input
+                          type="email"
+                          value={newEmail}
+                          onChange={(e) => setNewEmail(e.target.value)}
+                          placeholder="New email address"
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                        />
+                        <input
+                          type="password"
+                          value={emailPassword}
+                          onChange={(e) => setEmailPassword(e.target.value)}
+                          placeholder="Current password"
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                        />
+                        <div className="flex gap-2">
                           <button
-                            type="submit"
-                            disabled={loading}
-                            className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
+                            onClick={updateEmail}
+                            disabled={saving}
+                            className="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
                           >
-                            {loading ? 'Sending...' : 'Send Reset Link'}
+                            Update
                           </button>
                           <button
-                            type="button"
-                            onClick={() => setShowForgotPassword(false)}
-                            className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition"
+                            onClick={() => {
+                              setShowEmailForm(false);
+                              setNewEmail('');
+                              setEmailPassword('');
+                            }}
+                            className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50"
                           >
                             Cancel
                           </button>
                         </div>
-                      </form>
-                    ) : (
-                      <div className="text-center">
-                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <span className="text-xl">📧</span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-4">
-                          Password reset email sent! Check your inbox for the link.
-                        </p>
-                        <button
-                          onClick={() => {
-                            setShowForgotPassword(false);
-                            setResetEmailSent(false);
-                          }}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
-                        >
-                          Close
-                        </button>
                       </div>
                     )}
                   </div>
-                </div>
+                </>
+              )}
+
+              {/* Security Tab */}
+              {activeTab === 'security' && (
+                <>
+                  {/* Password */}
+                  <div className="bg-white rounded-xl border p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium">Password</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">Last updated: {user?.updated_at ? new Date(user.updated_at).toLocaleDateString() : 'Never'}</p>
+                      </div>
+                      {!showPasswordForm && (
+                        <button
+                          onClick={() => setShowPasswordForm(true)}
+                          className="text-sm text-gray-500 hover:text-gray-900"
+                        >
+                          Change
+                        </button>
+                      )}
+                    </div>
+                    
+                    {showPasswordForm && (
+                      <div className="mt-4 pt-4 border-t space-y-3">
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="Current password"
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                        />
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="New password (min 8 characters)"
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                        />
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Confirm new password"
+                          className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={updatePassword}
+                            disabled={saving}
+                            className="px-3 py-1.5 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                          >
+                            Update
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowPasswordForm(false);
+                              setCurrentPassword('');
+                              setNewPassword('');
+                              setConfirmPassword('');
+                            }}
+                            className="px-3 py-1.5 border rounded-lg text-sm hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        <div className="pt-1">
+                          <button
+                            onClick={sendPasswordReset}
+                            className="text-xs text-gray-500 hover:text-gray-900"
+                          >
+                            Forgot password?
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Session */}
+                  <div className="bg-white rounded-xl border p-5">
+                    <h3 className="font-medium mb-3">Active session</h3>
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm text-sm">
+                        💻
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Current device</p>
+                        <p className="text-xs text-gray-500">{new Date().toLocaleDateString()}</p>
+                      </div>
+                      <span className="text-xs text-green-600">Active</span>
+                    </div>
+                  </div>
+
+                  {/* Danger */}
+                  <div className="bg-red-50 rounded-xl border border-red-200 p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-red-600">Delete account</h3>
+                        <p className="text-xs text-red-500 mt-0.5">Permanently delete your account</p>
+                      </div>
+                      <button
+                        onClick={() => showMessage('Contact support to delete your account', 'info')}
+                        className="px-3 py-1.5 bg-white border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </>

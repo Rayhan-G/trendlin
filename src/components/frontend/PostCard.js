@@ -1,3 +1,4 @@
+// src/components/frontend/PostCard.jsx
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import BookmarkButton from './BookmarkButton'
@@ -135,12 +136,14 @@ export default function PostCard({ post, rank = null }) {
         </div>
       </Link>
 
-      {/* Bookmark Button */}
+      {/* Bookmark Button - Positioned exactly to flow under navbar */}
       <div className="bookmark-wrapper">
         <BookmarkButton 
           postId={post.id}
           postTitle={post.title}
           postSlug={post.slug}
+          postExcerpt={post.excerpt}
+          featuredImage={post.image_url || post.featured_image}
         />
       </div>
 
@@ -153,24 +156,45 @@ export default function PostCard({ post, rank = null }) {
         
         .bookmark-wrapper {
           position: absolute;
-          top: 12px;
-          right: 12px;
-          z-index: 100;
+          top: 16px;
+          right: 16px;
+          z-index: 25;
           opacity: 0;
-          transition: opacity 0.2s ease, transform 0.2s ease;
+          transform: translateY(-8px);
+          transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+                      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          pointer-events: auto;
         }
         
+        /* On hover, button gracefully appears - flows under navbar naturally */
         .post-card-container:hover .bookmark-wrapper {
           opacity: 1;
+          transform: translateY(0);
         }
         
-        .bookmark-wrapper:hover {
-          transform: scale(1.05);
-        }
-        
-        @media (max-width: 768px) {
+        /* Always visible on touch devices - no hover needed */
+        @media (hover: none) and (pointer: coarse) {
           .bookmark-wrapper {
             opacity: 1;
+            transform: translateY(0);
+            top: 12px;
+            right: 12px;
+          }
+        }
+        
+        /* Ensure bookmark doesn't overlap navbar when scrolling (navbar ~70px) 
+           This makes it flow beautifully under the navbar when scrolling */
+        @media (max-width: 768px) {
+          .bookmark-wrapper {
+            top: 12px;
+            right: 12px;
+          }
+        }
+        
+        /* Prevent bookmark from being hidden under sticky navbar */
+        @supports (position: sticky) {
+          .bookmark-wrapper {
+            isolation: isolate;
           }
         }
         
@@ -187,7 +211,7 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-card {
-          border-radius: 16px;
+          border-radius: 20px;
           overflow: hidden;
           height: 100%;
           display: flex;
@@ -198,40 +222,40 @@ export default function PostCard({ post, rank = null }) {
         
         .post-card.light {
           background: white;
-          border: 1px solid #e5e7eb;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+          border: 1px solid #eef2ff;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
         }
         
         .post-card.dark {
-          background: #1f2937;
-          border: 1px solid #374151;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          background: #1e293b;
+          border: 1px solid #334155;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
         .post-card-link:hover .post-card {
-          box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.02);
+          box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.12), 0 4px 8px -4px rgba(0, 0, 0, 0.05);
         }
         
         .rank-badge {
           position: absolute;
-          top: 8px;
-          left: 8px;
-          z-index: 10;
-          width: 32px;
-          height: 32px;
+          top: 12px;
+          left: 12px;
+          z-index: 20;
+          width: 34px;
+          height: 34px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 10px;
+          border-radius: 12px;
           background: linear-gradient(135deg, #f59e0b, #ea580c);
-          box-shadow: 0 2px 8px rgba(245,158,11,0.3);
+          box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
         }
         
         .rank-glow {
           position: absolute;
           inset: 0;
           background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent);
-          border-radius: 10px;
+          border-radius: 12px;
         }
         
         .rank-number {
@@ -247,7 +271,7 @@ export default function PostCard({ post, rank = null }) {
           width: 100%;
           aspect-ratio: 16 / 9;
           overflow: hidden;
-          background: #f3f4f6;
+          background: #f1f5f9;
         }
         
         .post-card-image img {
@@ -257,15 +281,15 @@ export default function PostCard({ post, rank = null }) {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.4s ease;
+          transition: transform 0.5s cubic-bezier(0.2, 0.9, 0.4, 1.1);
         }
         
         .post-card-link:hover .post-card-image img {
-          transform: scale(1.05);
+          transform: scale(1.06);
         }
         
         .post-card-content {
-          padding: 1rem;
+          padding: 1.125rem;
           flex: 1;
           display: flex;
           flex-direction: column;
@@ -289,21 +313,22 @@ export default function PostCard({ post, rank = null }) {
           text-transform: uppercase;
           letter-spacing: 0.5px;
           color: var(--category-color);
-          padding: 0.25rem 0.6rem;
-          border-radius: 20px;
+          padding: 0.25rem 0.75rem;
+          border-radius: 24px;
+          background: rgba(139, 92, 246, 0.08);
         }
         
         .post-card.light .post-category {
-          background: #f3f4f6;
+          background: #f8fafc;
         }
         
         .post-card.dark .post-category {
-          background: #374151;
+          background: #334155;
         }
         
         .category-dot {
-          width: 4px;
-          height: 4px;
+          width: 5px;
+          height: 5px;
           background: currentColor;
           border-radius: 50%;
         }
@@ -311,22 +336,23 @@ export default function PostCard({ post, rank = null }) {
         .read-time {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
+          gap: 0.3rem;
           font-size: 0.65rem;
+          font-weight: 500;
         }
         
         .post-card.light .read-time {
-          color: #6b7280;
+          color: #64748b;
         }
         
         .post-card.dark .read-time {
-          color: #9ca3af;
+          color: #94a3b8;
         }
         
         .post-title {
-          font-size: 1.1rem;
+          font-size: 1.125rem;
           font-weight: 700;
-          line-height: 1.35;
+          line-height: 1.4;
           margin: 0;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -335,15 +361,15 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-card.light .post-title {
-          color: #111827;
+          color: #0f172a;
         }
         
         .post-card.dark .post-title {
-          color: #f9fafb;
+          color: #f1f5f9;
         }
         
         .post-excerpt {
-          font-size: 0.8rem;
+          font-size: 0.8125rem;
           line-height: 1.5;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -353,11 +379,11 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-card.light .post-excerpt {
-          color: #6b7280;
+          color: #475569;
         }
         
         .post-card.dark .post-excerpt {
-          color: #9ca3af;
+          color: #94a3b8;
         }
         
         .post-footer {
@@ -365,45 +391,46 @@ export default function PostCard({ post, rank = null }) {
           align-items: center;
           justify-content: space-between;
           margin-top: auto;
-          padding-top: 0.75rem;
+          padding-top: 0.875rem;
           border-top: 1px solid;
         }
         
         .post-card.light .post-footer {
-          border-top-color: #e5e7eb;
+          border-top-color: #e2e8f0;
         }
         
         .post-card.dark .post-footer {
-          border-top-color: #374151;
+          border-top-color: #334155;
         }
         
         .post-meta {
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.875rem;
           flex-wrap: wrap;
         }
         
         .meta-item {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
-          font-size: 0.65rem;
+          gap: 0.3rem;
+          font-size: 0.7rem;
+          font-weight: 500;
         }
         
         .post-card.light .meta-item {
-          color: #6b7280;
+          color: #64748b;
         }
         
         .post-card.dark .meta-item {
-          color: #9ca3af;
+          color: #94a3b8;
         }
         
         .read-more {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
-          font-size: 0.7rem;
+          gap: 0.3rem;
+          font-size: 0.75rem;
           font-weight: 600;
           transition: gap 0.3s ease;
         }
@@ -421,48 +448,51 @@ export default function PostCard({ post, rank = null }) {
         }
         
         .post-card-link:hover .read-more svg {
-          transform: translateX(3px);
+          transform: translateX(4px);
         }
         
-        /* ========== IMPROVED MOBILE STYLES ========== */
+        /* Responsive */
         @media (max-width: 768px) {
           .post-card {
-            border-radius: 12px;
+            border-radius: 16px;
           }
           
           .post-card-content {
-            padding: 0.875rem;
+            padding: 1rem;
             gap: 0.625rem;
           }
           
           .post-title {
             font-size: 1rem;
             -webkit-line-clamp: 3;
-            line-height: 1.4;
+          }
+          
+          .post-excerpt {
+            font-size: 0.75rem;
           }
         }
         
         @media (max-width: 480px) {
           .post-card {
-            border-radius: 10px;
+            border-radius: 14px;
           }
           
           .post-card-content {
-            padding: 0.75rem;
+            padding: 0.875rem;
             gap: 0.5rem;
           }
           
           .post-title {
-            font-size: 0.95rem;
+            font-size: 0.9375rem;
             font-weight: 700;
             -webkit-line-clamp: 3;
             line-height: 1.4;
           }
           
           .post-excerpt {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             -webkit-line-clamp: 2;
-            line-height: 1.4;
+            line-height: 1.45;
           }
           
           .post-category {
@@ -471,11 +501,11 @@ export default function PostCard({ post, rank = null }) {
           }
           
           .read-time {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
           }
           
           .meta-item {
-            font-size: 0.6rem;
+            font-size: 0.55rem;
           }
           
           .post-card-image {
@@ -483,18 +513,19 @@ export default function PostCard({ post, rank = null }) {
           }
           
           .rank-badge {
-            width: 26px;
-            height: 26px;
-            top: 6px;
-            left: 6px;
+            width: 28px;
+            height: 28px;
+            top: 10px;
+            left: 10px;
+            border-radius: 10px;
           }
           
           .rank-number {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
           }
         }
         
-        /* Landscape mode on mobile */
+        /* Landscape mode */
         @media (max-width: 768px) and (orientation: landscape) {
           .post-card-image {
             aspect-ratio: 16 / 9;
@@ -505,7 +536,7 @@ export default function PostCard({ post, rank = null }) {
           }
         }
         
-        /* Touch-friendly improvements */
+        /* Touch-friendly */
         @media (hover: none) and (pointer: coarse) {
           .read-more {
             gap: 0.5rem;

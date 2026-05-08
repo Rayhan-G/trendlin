@@ -1,5 +1,6 @@
-// components/comments/CommentSection.jsx
-import { useState, useCallback, useEffect } from 'react'
+// components/comments/CommentSection.jsx - FIXED LAYOUT
+
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { 
   Heart, Reply, Edit2, Trash2, User, Send, 
   X, Clock, CheckCircle, ThumbsUp, ThumbsDown,
@@ -17,9 +18,10 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
   const [replyingTo, setReplyingTo] = useState(null)
   const [replyContent, setReplyContent] = useState('')
   const [showNameInput, setShowNameInput] = useState(!localStorage.getItem('comment_name'))
-  const [sortBy, setSortBy] = useState('top') // top, newest, likes
-  const [showReplies, setShowReplies] = useState({})
-  const [visibleReplies, setVisibleReplies] = useState(3)
+  const [sortBy, setSortBy] = useState('top')
+  const [expandedReplies, setExpandedReplies] = useState({})
+  const textareaRef = useRef(null)
+  const replyTextareaRef = useRef(null)
 
   const {
     comments,
@@ -35,7 +37,22 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
     syncAllComments
   } = useComments(postId, sessionId)
 
-  // Sort comments based on selected option
+  // Auto-expand textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 100) + 'px'
+    }
+  }, [newComment])
+
+  useEffect(() => {
+    if (replyTextareaRef.current) {
+      replyTextareaRef.current.style.height = 'auto'
+      replyTextareaRef.current.style.height = Math.min(replyTextareaRef.current.scrollHeight, 80) + 'px'
+    }
+  }, [replyContent])
+
+  // Sort comments
   const getSortedComments = () => {
     const sorted = [...comments]
     switch (sortBy) {
@@ -96,7 +113,7 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
     await addComment(replyContent, name, userEmail || null, parentId)
     setReplyContent('')
     setReplyingTo(null)
-    setShowReplies(prev => ({ ...prev, [parentId]: true }))
+    setExpandedReplies(prev => ({ ...prev, [parentId]: true }))
   }
 
   const handleSaveName = () => {
@@ -121,7 +138,7 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
   }
 
   const toggleReplies = (commentId) => {
-    setShowReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }))
+    setExpandedReplies(prev => ({ ...prev, [commentId]: !prev[commentId] }))
   }
 
   const formatTimeAgo = (date) => {
@@ -132,7 +149,9 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
     const hours = Math.floor(minutes / 60)
     if (hours < 24) return `${hours}h`
     const days = Math.floor(hours / 24)
-    return `${days}d`
+    if (days < 7) return `${days}d`
+    const weeks = Math.floor(days / 7)
+    return `${weeks}w`
   }
 
   const formatNumber = (num) => {
@@ -142,43 +161,50 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
   }
 
   const sortedComments = getSortedComments()
+  const currentUserName = localStorage.getItem('comment_name') || userName
 
   return (
     <div className="comment-section">
       {/* Name Input Modal */}
       {showNameInput && (
-        <div className="name-modal">
-          <div className="name-modal-content">
-            <h4>Join the conversation</h4>
+        <div className="modal-overlay" onClick={() => {}}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h4>Join the conversation</h4>
+              <button onClick={() => setShowNameInput(false)} className="modal-close">
+                <X size={18} />
+              </button>
+            </div>
             <p>Please enter your name to comment</p>
             <input
               type="text"
               placeholder="Your name *"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              className="name-input"
+              className="modal-input"
+              autoFocus
             />
             <input
               type="email"
               placeholder="Your email (optional)"
               value={userEmail}
               onChange={(e) => setUserEmail(e.target.value)}
-              className="email-input"
+              className="modal-input"
             />
-            <button onClick={handleSaveName} disabled={!userName.trim()} className="save-name-btn">
+            <button onClick={handleSaveName} disabled={!userName.trim()} className="modal-btn">
               Continue
             </button>
           </div>
         </div>
       )}
 
-      {/* Comment Stats & Sort */}
-      <div className="comment-stats-bar">
-        <div className="comment-count">
-          <span className="count-number">{sortedComments.length}</span>
-          <span className="count-text">Comments</span>
+      {/* Header */}
+      <div className="comments-header">
+        <div className="comments-count">
+          <span className="count">{sortedComments.length}</span>
+          <span>Comments</span>
         </div>
-        <div className="sort-options">
+        <div className="sort-buttons">
           <button 
             onClick={() => setSortBy('top')} 
             className={`sort-btn ${sortBy === 'top' ? 'active' : ''}`}
@@ -191,30 +217,27 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           >
             Newest
           </button>
-          <button 
-            onClick={() => setSortBy('likes')} 
-            className={`sort-btn ${sortBy === 'likes' ? 'active' : ''}`}
-          >
-            Most Liked
-          </button>
         </div>
       </div>
 
-      {/* Comment Input - YouTube Style */}
-      <div className="comment-input-wrapper">
-        <div className="comment-input-avatar">
-          <div className="avatar-placeholder">
-            {localStorage.getItem('comment_name')?.[0]?.toUpperCase() || '?'}
+      {/* Comment Input */}
+      <div className="comment-input">
+        <div className="comment-avatar">
+          <div className="avatar">
+            {currentUserName ? currentUserName[0].toUpperCase() : '?'}
           </div>
         </div>
-        <div className="comment-input-container">
+        <div className="input-wrapper">
           {replyingTo && (
             <div className="replying-badge">
-              <span>Replying to @{comments.find(c => c.id === replyingTo)?.user_name}</span>
-              <button onClick={() => setReplyingTo(null)}><X size={14} /></button>
+              <span>Replying to {comments.find(c => c.id === replyingTo)?.user_name}</span>
+              <button onClick={() => setReplyingTo(null)}>
+                <X size={14} />
+              </button>
             </div>
           )}
           <textarea
+            ref={replyingTo ? replyTextareaRef : textareaRef}
             placeholder={replyingTo ? "Write a reply..." : "Add a comment..."}
             value={replyingTo ? replyContent : newComment}
             onChange={(e) => replyingTo ? setReplyContent(e.target.value) : setNewComment(e.target.value)}
@@ -224,10 +247,18 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
                 replyingTo ? handleReplySubmit(replyingTo) : handleSubmit()
               }
             }}
-            rows="1"
-            className="comment-input-field"
+            rows={1}
+            className="comment-textarea"
           />
-          <div className="comment-input-actions">
+          <div className="input-actions">
+            {replyingTo && (
+              <button 
+                onClick={() => setReplyingTo(null)}
+                className="cancel-btn"
+              >
+                Cancel
+              </button>
+            )}
             <button 
               onClick={() => replyingTo ? handleReplySubmit(replyingTo) : handleSubmit()} 
               disabled={replyingTo ? !replyContent.trim() : (!newComment.trim() || isSubmitting)}
@@ -241,26 +272,16 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
 
       {/* Sync Status */}
       {pendingComments.length > 0 && (
-        <div className={`sync-status ${isSyncing ? 'syncing' : ''}`}>
-          {isSyncing ? (
-            <>
-              <div className="sync-spinner" />
-              <span>Saving...</span>
-            </>
-          ) : (
-            <>
-              <Clock size={14} />
-              <span>Saving {pendingComments.length} comment{pendingComments.length > 1 ? 's' : ''}</span>
-              <button onClick={syncAllComments} className="sync-now-btn">Save now</button>
-            </>
-          )}
+        <div className="sync-status">
+          <div className="sync-spinner" />
+          <span>Saving...</span>
         </div>
       )}
 
       {/* Comments List */}
       <div className="comments-list">
         {loading ? (
-          [...Array(3)].map((_, i) => (
+          [...Array(2)].map((_, i) => (
             <div key={i} className="comment-skeleton">
               <div className="skeleton-avatar" />
               <div className="skeleton-content">
@@ -272,28 +293,23 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
         ) : sortedComments.length === 0 ? (
           <div className="no-comments">
             <div className="no-comments-icon">💬</div>
-            <h4>No comments yet</h4>
-            <p>Be the first to share your thoughts!</p>
+            <p>No comments yet. Be the first!</p>
           </div>
         ) : (
           sortedComments.map((comment) => (
             <div key={comment.id} className="comment-thread">
               {/* Main Comment */}
-              <div className={`comment-item ${!comment.is_synced ? 'pending' : ''}`}>
+              <div className={`comment ${!comment.is_synced ? 'pending' : ''}`}>
                 <div className="comment-avatar">
-                  <div className="avatar-placeholder">
+                  <div className="avatar">
                     {comment.user_name?.[0]?.toUpperCase() || '?'}
                   </div>
                 </div>
-                <div className="comment-content">
+                <div className="comment-body">
                   <div className="comment-header">
-                    <div className="comment-author">
-                      {comment.user_name}
-                      {comment.is_edited && <span className="edited-badge">(edited)</span>}
-                    </div>
-                    <div className="comment-time">
-                      {formatTimeAgo(comment.created_at)}
-                    </div>
+                    <span className="comment-author">{comment.user_name}</span>
+                    <span className="comment-time">{formatTimeAgo(comment.created_at)}</span>
+                    {comment.is_edited && <span className="edited-badge">edited</span>}
                   </div>
                   
                   {editingId === comment.id ? (
@@ -301,7 +317,7 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
                       <textarea
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
-                        rows="2"
+                        rows={2}
                         autoFocus
                       />
                       <div className="edit-actions">
@@ -316,82 +332,67 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
                   <div className="comment-actions">
                     <button 
                       onClick={() => likeComment(comment.id)} 
-                      className={`action-btn like-btn ${comment.liked_by?.includes(sessionId) ? 'liked' : ''}`}
+                      className={`action like ${comment.liked_by?.includes(sessionId) ? 'active' : ''}`}
                     >
                       <ThumbsUp size={14} />
                       <span>{formatNumber(comment.likes || 0)}</span>
                     </button>
-                    <button onClick={() => setReplyingTo(comment.id)} className="action-btn reply-btn">
+                    <button onClick={() => setReplyingTo(comment.id)} className="action reply">
                       <Reply size={14} />
                       <span>Reply</span>
                     </button>
                     {isOwnComment(comment) && (
                       <>
-                        <button onClick={() => handleEdit(comment)} className="action-btn edit-btn">
+                        <button onClick={() => handleEdit(comment)} className="action edit">
                           <Edit2 size={14} />
-                          <span>Edit</span>
                         </button>
-                        <button onClick={() => deleteComment(comment.id)} className="action-btn delete-btn">
+                        <button onClick={() => deleteComment(comment.id)} className="action delete">
                           <Trash2 size={14} />
-                          <span>Delete</span>
                         </button>
                       </>
                     )}
-                    <button className="action-btn more-btn">
-                      <MoreHorizontal size={14} />
-                    </button>
                   </div>
-
-                  {/* Admin Reply */}
-                  {comment.admin_reply && (
-                    <div className="admin-reply">
-                      <div className="admin-reply-header">
-                        <span className="admin-badge">✓ Admin</span>
-                      </div>
-                      <div className="admin-reply-content">{comment.admin_reply}</div>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Replies Section */}
+              {/* Replies */}
               {comment.reply_count > 0 && (
                 <div className="replies-section">
                   <button 
                     onClick={() => toggleReplies(comment.id)} 
-                    className="show-replies-btn"
+                    className="toggle-replies"
                   >
-                    {showReplies[comment.id] ? (
-                      <><ChevronUp size={14} /> Hide replies ({comment.reply_count})</>
+                    {expandedReplies[comment.id] ? (
+                      <><ChevronUp size={14} /> Hide {comment.reply_count} replies</>
                     ) : (
-                      <><ChevronDown size={14} /> Show replies ({comment.reply_count})</>
+                      <><ChevronDown size={14} /> Show {comment.reply_count} replies</>
                     )}
                   </button>
                   
-                  {showReplies[comment.id] && comment.replies && (
+                  {expandedReplies[comment.id] && comment.replies && (
                     <div className="replies-list">
-                      {comment.replies.slice(0, visibleReplies).map((reply) => (
-                        <div key={reply.id} className="comment-item reply-item">
+                      {comment.replies.map((reply) => (
+                        <div key={reply.id} className="comment reply">
                           <div className="comment-avatar">
-                            <div className="avatar-placeholder small">
+                            <div className="avatar small">
                               {reply.user_name?.[0]?.toUpperCase() || '?'}
                             </div>
                           </div>
-                          <div className="comment-content">
+                          <div className="comment-body">
                             <div className="comment-header">
-                              <div className="comment-author">{reply.user_name}</div>
-                              <div className="comment-time">{formatTimeAgo(reply.created_at)}</div>
+                              <span className="comment-author">{reply.user_name}</span>
+                              <span className="comment-time">{formatTimeAgo(reply.created_at)}</span>
                             </div>
                             <div className="comment-text">{reply.content}</div>
                             <div className="comment-actions">
                               <button 
                                 onClick={() => likeComment(reply.id)} 
-                                className={`action-btn like-btn ${reply.liked_by?.includes(sessionId) ? 'liked' : ''}`}
+                                className={`action like ${reply.liked_by?.includes(sessionId) ? 'active' : ''}`}
                               >
                                 <ThumbsUp size={12} />
                                 <span>{formatNumber(reply.likes || 0)}</span>
                               </button>
-                              <button onClick={() => setReplyingTo(reply.id)} className="action-btn reply-btn">
+                              <button onClick={() => setReplyingTo(reply.id)} className="action reply">
                                 <Reply size={12} />
                                 <span>Reply</span>
                               </button>
@@ -399,14 +400,6 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
                           </div>
                         </div>
                       ))}
-                      {comment.replies.length > visibleReplies && (
-                        <button 
-                          onClick={() => setVisibleReplies(prev => prev + 5)}
-                          className="load-more-replies"
-                        >
-                          Load more replies...
-                        </button>
-                      )}
                     </div>
                   )}
                 </div>
@@ -416,7 +409,7 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
         )}
         
         {hasMore && !loading && (
-          <button onClick={loadMore} className="load-more-btn">
+          <button onClick={loadMore} className="load-more">
             Load more comments
           </button>
         )}
@@ -424,77 +417,77 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
 
       <style jsx>{`
         .comment-section {
-          margin-top: 1.5rem;
-          padding-top: 1rem;
+          margin-top: 16px;
+          padding: 16px 0 8px 0;
+          border-top: 1px solid var(--border-color);
+          width: 100%;
+          overflow-x: hidden;
         }
 
-        /* Stats Bar */
-        .comment-stats-bar {
+        /* Header */
+        .comments-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1.5rem;
+          margin-bottom: 16px;
           flex-wrap: wrap;
-          gap: 1rem;
+          gap: 8px;
         }
 
-        .comment-count {
+        .comments-count {
           display: flex;
           align-items: baseline;
-          gap: 0.5rem;
+          gap: 6px;
+          font-size: 13px;
+          color: var(--text-secondary);
         }
 
-        .count-number {
-          font-size: 1.25rem;
+        .comments-count .count {
+          font-size: 16px;
           font-weight: 700;
-          color: #1e293b;
+          color: var(--text-primary);
         }
 
-        .count-text {
-          font-size: 0.9rem;
-          color: #64748b;
-        }
-
-        .sort-options {
+        .sort-buttons {
           display: flex;
-          gap: 0.5rem;
+          gap: 4px;
         }
 
         .sort-btn {
-          padding: 0.25rem 0.75rem;
-          background: none;
+          padding: 4px 12px;
+          background: transparent;
           border: none;
-          border-radius: 20px;
-          font-size: 0.75rem;
+          border-radius: 30px;
+          font-size: 12px;
           font-weight: 500;
-          color: #64748b;
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
         }
 
         .sort-btn:hover {
-          background: #f1f5f9;
+          background: var(--hover-bg);
         }
 
         .sort-btn.active {
-          background: #e2e8f0;
-          color: #1e293b;
+          background: var(--active-bg);
+          color: #8b5cf6;
         }
 
-        /* Comment Input - YouTube Style */
-        .comment-input-wrapper {
+        /* Comment Input */
+        .comment-input {
           display: flex;
-          gap: 1rem;
-          margin-bottom: 1.5rem;
+          gap: 10px;
+          margin-bottom: 20px;
         }
 
-        .comment-input-avatar {
+        .comment-avatar {
           flex-shrink: 0;
         }
 
-        .avatar-placeholder {
-          width: 40px;
-          height: 40px;
+        .avatar {
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
           background: linear-gradient(135deg, #8b5cf6, #6366f1);
           display: flex;
@@ -502,75 +495,101 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           justify-content: center;
           color: white;
           font-weight: 600;
-          font-size: 14px;
+          font-size: 13px;
         }
 
-        .avatar-placeholder.small {
-          width: 32px;
-          height: 32px;
-          font-size: 12px;
+        .avatar.small {
+          width: 28px;
+          height: 28px;
+          font-size: 11px;
         }
 
-        .comment-input-container {
+        .input-wrapper {
           flex: 1;
-          position: relative;
+          min-width: 0;
         }
 
         .replying-badge {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 0.25rem 0.5rem;
-          background: #f1f5f9;
-          border-radius: 8px;
-          font-size: 0.7rem;
-          margin-bottom: 0.5rem;
-          color: #475569;
+          padding: 4px 8px;
+          background: var(--replying-bg);
+          border-radius: 6px;
+          font-size: 11px;
+          color: var(--text-secondary);
+          margin-bottom: 6px;
         }
 
         .replying-badge button {
           background: none;
           border: none;
           cursor: pointer;
-          color: #64748b;
+          color: var(--text-secondary);
+          padding: 2px;
+          display: flex;
+          align-items: center;
         }
 
-        .comment-input-field {
+        .comment-textarea {
           width: 100%;
-          padding: 0.75rem 0;
+          padding: 8px 0;
           border: none;
-          border-bottom: 2px solid #e2e8f0;
-          font-size: 0.875rem;
+          border-bottom: 2px solid var(--border-color);
           background: transparent;
-          outline: none;
-          resize: none;
+          font-size: 13px;
           font-family: inherit;
+          resize: none;
+          outline: none;
+          color: var(--text-primary);
           transition: border-color 0.2s;
         }
 
-        .comment-input-field:focus {
+        .comment-textarea:focus {
           border-bottom-color: #8b5cf6;
         }
 
-        .comment-input-actions {
-          display: flex;
-          justify-content: flex-end;
-          margin-top: 0.5rem;
+        .comment-textarea::placeholder {
+          color: var(--text-tertiary);
+          font-size: 13px;
         }
 
-        .submit-btn {
-          padding: 0.375rem 1rem;
-          background: #8b5cf6;
-          color: white;
+        .input-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 8px;
+        }
+
+        .cancel-btn {
+          padding: 4px 12px;
+          background: transparent;
           border: none;
-          border-radius: 20px;
-          font-size: 0.75rem;
+          border-radius: 16px;
+          font-size: 12px;
           font-weight: 500;
+          color: var(--text-secondary);
           cursor: pointer;
           transition: all 0.2s;
         }
 
-        .submit-btn:hover {
+        .cancel-btn:hover {
+          background: var(--hover-bg);
+        }
+
+        .submit-btn {
+          padding: 4px 14px;
+          background: #8b5cf6;
+          border: none;
+          border-radius: 16px;
+          font-size: 12px;
+          font-weight: 500;
+          color: white;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .submit-btn:hover:not(:disabled) {
           background: #7c3aed;
         }
 
@@ -579,60 +598,84 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           cursor: not-allowed;
         }
 
-        /* Name Modal */
-        .name-modal {
+        /* Modal */
+        .modal-overlay {
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0,0,0,0.5);
+          background: rgba(0, 0, 0, 0.5);
           display: flex;
           align-items: center;
           justify-content: center;
           z-index: 1000;
         }
 
-        .name-modal-content {
-          background: white;
+        .modal-content {
+          background: var(--card-bg);
           border-radius: 16px;
-          padding: 24px;
-          max-width: 400px;
+          padding: 20px;
+          max-width: 320px;
           width: 90%;
         }
 
-        .name-modal-content h4 {
-          font-size: 1.25rem;
-          font-weight: 600;
+        .modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           margin-bottom: 8px;
         }
 
-        .name-modal-content p {
-          font-size: 0.85rem;
-          color: #64748b;
-          margin-bottom: 16px;
+        .modal-header h4 {
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text-primary);
         }
 
-        .name-input, .email-input {
-          width: 100%;
-          padding: 10px 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
+        .modal-close {
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: var(--text-secondary);
+          padding: 4px;
+        }
+
+        .modal-content p {
+          font-size: 12px;
+          color: var(--text-secondary);
           margin-bottom: 12px;
         }
 
-        .save-name-btn {
+        .modal-input {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid var(--border-color);
+          border-radius: 10px;
+          background: var(--input-bg);
+          color: var(--text-primary);
+          margin-bottom: 10px;
+          font-size: 13px;
+        }
+
+        .modal-input:focus {
+          outline: none;
+          border-color: #8b5cf6;
+        }
+
+        .modal-btn {
           width: 100%;
           padding: 10px;
           background: #8b5cf6;
-          color: white;
           border: none;
-          border-radius: 8px;
-          cursor: pointer;
+          border-radius: 10px;
+          color: white;
           font-weight: 500;
+          cursor: pointer;
+          font-size: 13px;
         }
 
-        .save-name-btn:disabled {
+        .modal-btn:disabled {
           opacity: 0.5;
           cursor: not-allowed;
         }
@@ -642,35 +685,21 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 12px;
-          background: #fef3c7;
+          padding: 6px 10px;
+          background: var(--sync-bg);
           border-radius: 8px;
-          margin-bottom: 1rem;
-          font-size: 0.7rem;
-          color: #d97706;
-        }
-
-        .sync-status.syncing {
-          background: #e0e7ff;
-          color: #4338ca;
+          margin-bottom: 16px;
+          font-size: 11px;
+          color: var(--sync-color);
         }
 
         .sync-spinner {
-          width: 14px;
-          height: 14px;
-          border: 2px solid #4338ca;
+          width: 12px;
+          height: 12px;
+          border: 2px solid currentColor;
           border-top-color: transparent;
           border-radius: 50%;
           animation: spin 0.6s linear infinite;
-        }
-
-        .sync-now-btn {
-          margin-left: auto;
-          background: none;
-          border: none;
-          color: #d97706;
-          cursor: pointer;
-          text-decoration: underline;
         }
 
         @keyframes spin {
@@ -679,23 +708,23 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
 
         /* Comments List */
         .comments-list {
-          max-height: 600px;
+          max-height: 400px;
           overflow-y: auto;
         }
 
         /* Comment Skeleton */
         .comment-skeleton {
           display: flex;
-          gap: 1rem;
-          padding: 1rem 0;
+          gap: 10px;
+          padding: 12px 0;
           animation: pulse 1.5s ease-in-out infinite;
         }
 
         .skeleton-avatar {
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
-          background: #e2e8f0;
+          background: var(--skeleton-bg);
         }
 
         .skeleton-content {
@@ -703,10 +732,10 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
         }
 
         .skeleton-line {
-          height: 12px;
-          background: #e2e8f0;
-          border-radius: 6px;
-          margin-bottom: 8px;
+          height: 10px;
+          background: var(--skeleton-bg);
+          border-radius: 5px;
+          margin-bottom: 6px;
         }
 
         @keyframes pulse {
@@ -714,265 +743,256 @@ export default function CommentSection({ postId, sessionId, commentCount, onComm
           50% { opacity: 0.5; }
         }
 
-        /* Comment Item */
+        /* Comment Thread */
         .comment-thread {
-          margin-bottom: 1rem;
-          border-bottom: 1px solid #f1f5f9;
+          margin-bottom: 4px;
         }
 
-        .comment-item {
+        .comment {
           display: flex;
-          gap: 1rem;
-          padding: 1rem 0;
+          gap: 10px;
+          padding: 10px 0;
         }
 
-        .comment-item.pending {
-          opacity: 0.7;
+        .comment.pending {
+          opacity: 0.6;
         }
 
-        .reply-item {
-          padding: 0.75rem 0 0.75rem 3rem;
+        .comment.reply {
+          padding: 8px 0 8px 38px;
         }
 
-        .comment-content {
+        .comment-body {
           flex: 1;
+          min-width: 0;
         }
 
         .comment-header {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 6px;
           flex-wrap: wrap;
-          margin-bottom: 0.25rem;
+          margin-bottom: 2px;
         }
 
         .comment-author {
           font-weight: 600;
-          font-size: 0.8rem;
-          color: #1e293b;
+          font-size: 12px;
+          color: var(--text-primary);
         }
 
         .comment-time {
-          font-size: 0.65rem;
-          color: #94a3b8;
+          font-size: 10px;
+          color: var(--text-tertiary);
         }
 
         .edited-badge {
-          font-size: 0.6rem;
-          color: #64748b;
-          margin-left: 0.25rem;
+          font-size: 9px;
+          color: var(--text-tertiary);
         }
 
         .comment-text {
-          font-size: 0.85rem;
-          color: #334155;
-          line-height: 1.5;
-          margin-bottom: 0.5rem;
+          font-size: 13px;
+          line-height: 1.45;
+          color: var(--text-primary);
+          margin-bottom: 6px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         .comment-actions {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          flex-wrap: wrap;
+          gap: 12px;
         }
 
-        .action-btn {
+        .action {
           display: flex;
           align-items: center;
-          gap: 0.25rem;
+          gap: 4px;
           background: none;
           border: none;
-          color: #64748b;
-          font-size: 0.7rem;
+          font-size: 11px;
+          font-weight: 500;
+          color: var(--text-secondary);
           cursor: pointer;
-          padding: 0.25rem 0.5rem;
-          border-radius: 20px;
+          padding: 3px 6px;
+          border-radius: 16px;
           transition: all 0.2s;
         }
 
-        .action-btn:hover {
-          background: #f1f5f9;
+        .action:hover {
+          background: var(--hover-bg);
         }
 
-        .like-btn.liked {
+        .action.like.active {
           color: #ef4444;
         }
 
-        .delete-btn:hover {
-          background: #fee2e2;
+        .action.delete:hover {
+          background: rgba(239, 68, 68, 0.1);
           color: #ef4444;
         }
 
+        .action span {
+          font-size: 11px;
+        }
+
+        /* Edit Mode */
         .edit-mode {
-          margin: 0.5rem 0;
+          margin: 6px 0;
         }
 
         .edit-mode textarea {
           width: 100%;
-          padding: 0.5rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 0.85rem;
+          padding: 8px;
+          border: 1px solid var(--border-color);
+          border-radius: 10px;
+          background: var(--input-bg);
+          color: var(--text-primary);
           font-family: inherit;
+          font-size: 12px;
+          resize: vertical;
         }
 
         .edit-actions {
           display: flex;
-          gap: 0.5rem;
-          margin-top: 0.5rem;
+          gap: 6px;
+          margin-top: 6px;
         }
 
         .edit-actions button {
-          padding: 0.25rem 0.75rem;
-          border-radius: 20px;
-          font-size: 0.7rem;
+          padding: 4px 12px;
+          border-radius: 16px;
+          font-size: 11px;
+          font-weight: 500;
           cursor: pointer;
         }
 
         .edit-actions button:first-child {
-          background: #f1f5f9;
+          background: var(--hover-bg);
           border: none;
+          color: var(--text-secondary);
         }
 
         .edit-actions button:last-child {
           background: #8b5cf6;
-          color: white;
           border: none;
-        }
-
-        /* Admin Reply */
-        .admin-reply {
-          margin-top: 0.5rem;
-          padding: 0.5rem 0.75rem;
-          background: #f0fdf4;
-          border-radius: 8px;
-          border-left: 3px solid #22c55e;
-        }
-
-        .admin-badge {
-          font-size: 0.6rem;
-          font-weight: 600;
-          color: #22c55e;
-        }
-
-        .admin-reply-content {
-          font-size: 0.75rem;
-          color: #1e293b;
-          margin-top: 0.25rem;
+          color: white;
         }
 
         /* Replies Section */
         .replies-section {
-          margin-left: 2rem;
+          margin-left: 46px;
         }
 
-        .show-replies-btn {
+        .toggle-replies {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
+          gap: 4px;
           background: none;
           border: none;
-          color: #8b5cf6;
-          font-size: 0.75rem;
+          font-size: 11px;
           font-weight: 500;
+          color: #8b5cf6;
           cursor: pointer;
-          padding: 0.25rem 0;
-          margin: 0.25rem 0;
+          padding: 4px 0;
+          margin: 2px 0;
         }
 
-        .show-replies-btn:hover {
+        .toggle-replies:hover {
           opacity: 0.8;
         }
 
         .replies-list {
-          margin-top: 0.5rem;
+          margin-top: 2px;
         }
 
-        .load-more-replies {
-          background: none;
-          border: none;
-          color: #8b5cf6;
-          font-size: 0.7rem;
-          cursor: pointer;
-          margin-left: 3rem;
-          padding: 0.25rem 0;
-        }
-
-        .load-more-btn {
+        .load-more {
           width: 100%;
-          padding: 0.75rem;
+          padding: 10px;
           background: transparent;
-          border: 1px solid #e2e8f0;
-          border-radius: 40px;
-          color: #8b5cf6;
+          border: 1px solid var(--border-color);
+          border-radius: 30px;
+          font-size: 12px;
           font-weight: 500;
+          color: #8b5cf6;
           cursor: pointer;
-          margin-top: 1rem;
+          margin-top: 12px;
           transition: all 0.2s;
         }
 
-        .load-more-btn:hover {
-          background: #f1f5f9;
+        .load-more:hover {
+          background: var(--hover-bg);
         }
 
         /* No Comments */
         .no-comments {
           text-align: center;
-          padding: 3rem;
+          padding: 32px 16px;
         }
 
         .no-comments-icon {
-          font-size: 3rem;
-          margin-bottom: 1rem;
-        }
-
-        .no-comments h4 {
-          font-size: 1rem;
-          font-weight: 600;
-          color: #1e293b;
-          margin-bottom: 0.25rem;
+          font-size: 36px;
+          margin-bottom: 8px;
         }
 
         .no-comments p {
-          font-size: 0.8rem;
-          color: #64748b;
+          font-size: 12px;
+          color: var(--text-secondary);
         }
 
-        /* Dark Mode */
-        @media (prefers-color-scheme: dark) {
-          .count-number { color: #f1f5f9; }
-          .comment-author { color: #e2e8f0; }
-          .comment-text { color: #94a3b8; }
-          .comment-input-field { color: #e2e8f0; }
-          .comment-input-field:focus { border-bottom-color: #8b5cf6; }
-          .name-modal-content { background: #1e293b; }
-          .name-input, .email-input { background: #334155; border-color: #475569; color: white; }
-          .action-btn:hover { background: #334155; }
-          .delete-btn:hover { background: #7f1d1d; }
-          .edit-actions button:first-child { background: #334155; color: #e2e8f0; }
-          .no-comments h4 { color: #f1f5f9; }
-          .load-more-btn { border-color: #334155; }
-          .load-more-btn:hover { background: #334155; }
-          .comment-thread { border-bottom-color: #1e293b; }
-          .skeleton-avatar { background: #334155; }
-          .skeleton-line { background: #334155; }
+        /* CSS Variables */
+        :root {
+          --border-color: #e2e8f0;
+          --text-primary: #1e293b;
+          --text-secondary: #64748b;
+          --text-tertiary: #94a3b8;
+          --hover-bg: #f1f5f9;
+          --active-bg: #f1f5f9;
+          --replying-bg: #f1f5f9;
+          --card-bg: #ffffff;
+          --input-bg: #ffffff;
+          --skeleton-bg: #e2e8f0;
+          --sync-bg: #fef3c7;
+          --sync-color: #d97706;
+        }
+
+        :global(.dark) {
+          --border-color: #334155;
+          --text-primary: #f1f5f9;
+          --text-secondary: #94a3b8;
+          --text-tertiary: #64748b;
+          --hover-bg: #334155;
+          --active-bg: #334155;
+          --replying-bg: #334155;
+          --card-bg: #1e293b;
+          --input-bg: #1e293b;
+          --skeleton-bg: #334155;
+          --sync-bg: #422006;
+          --sync-color: #f59e0b;
         }
 
         /* Mobile */
         @media (max-width: 640px) {
-          .comment-stats-bar {
-            flex-direction: column;
-            align-items: flex-start;
+          .comment.reply {
+            padding-left: 32px;
           }
-          .reply-item {
-            padding-left: 1rem;
-          }
+          
           .replies-section {
-            margin-left: 0;
+            margin-left: 32px;
           }
-          .load-more-replies {
-            margin-left: 1rem;
+          
+          .action span:not(.like span) {
+            display: none;
+          }
+          
+          .action {
+            padding: 3px;
+          }
+          
+          .comment-text {
+            font-size: 12px;
           }
         }
       `}</style>
