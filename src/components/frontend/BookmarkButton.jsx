@@ -24,8 +24,6 @@ export default function BookmarkButton({
 
     const checkBookmark = async () => {
       try {
-        console.log('Checking bookmark for user:', user.id, 'post:', postId);
-        
         const { data, error } = await supabase
           .from('bookmarks')
           .select('id')
@@ -36,7 +34,6 @@ export default function BookmarkButton({
         if (error) {
           console.error('Error checking bookmark:', error);
         } else {
-          console.log('Bookmark exists:', !!data);
           setIsBookmarked(!!data);
         }
       } catch (error) {
@@ -62,26 +59,16 @@ export default function BookmarkButton({
     setLoading(true);
 
     try {
-      console.log('Attempting to', isBookmarked ? 'REMOVE' : 'ADD', 'bookmark');
-      console.log('User ID:', user.id);
-      console.log('Post ID:', parseInt(postId));
-      console.log('Post Title:', postTitle);
-
       if (isBookmarked) {
         // REMOVE bookmark
-        const { error, data } = await supabase
+        const { error } = await supabase
           .from('bookmarks')
           .delete()
           .eq('user_id', user.id)
-          .eq('post_id', parseInt(postId))
-          .select();
+          .eq('post_id', parseInt(postId));
         
-        if (error) {
-          console.error('Delete error details:', error);
-          throw error;
-        }
+        if (error) throw error;
         
-        console.log('Delete successful:', data);
         setIsBookmarked(false);
         
         window.dispatchEvent(new CustomEvent('bookmarkUpdated', { 
@@ -103,19 +90,12 @@ export default function BookmarkButton({
           created_at: new Date().toISOString()
         };
         
-        console.log('Inserting bookmark:', bookmarkData);
-        
-        const { error, data } = await supabase
+        const { error } = await supabase
           .from('bookmarks')
-          .insert(bookmarkData)
-          .select();
+          .insert(bookmarkData);
         
-        if (error) {
-          console.error('Insert error details:', error);
-          throw error;
-        }
+        if (error) throw error;
         
-        console.log('Insert successful:', data);
         setIsBookmarked(true);
         
         window.dispatchEvent(new CustomEvent('bookmarkUpdated', { 
@@ -127,12 +107,8 @@ export default function BookmarkButton({
         }));
       }
     } catch (error) {
-      console.error('BOOKMARK OPERATION FAILED:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      console.error('Error details:', error.details);
+      console.error('Bookmark operation failed:', error);
       
-      // Show specific error message based on error code
       let errorMessage = 'Failed to save bookmark';
       if (error.code === '23505') {
         errorMessage = 'Bookmark already exists';
@@ -140,8 +116,6 @@ export default function BookmarkButton({
         errorMessage = 'Invalid user or post reference';
       } else if (error.code === '42P01') {
         errorMessage = 'Bookmarks table not found';
-      } else if (error.message) {
-        errorMessage = error.message;
       }
       
       window.dispatchEvent(new CustomEvent('showToast', { 
@@ -152,7 +126,6 @@ export default function BookmarkButton({
     }
   };
 
-  // Rest of your component remains the same...
   if (authLoading || loading) {
     return (
       <button className="bookmark-btn loading" disabled>
