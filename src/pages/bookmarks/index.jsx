@@ -1,19 +1,21 @@
 // ============================================
-// COMPLETE BOOKMARK PAGE - ALL FEATURES RESTORED
-// ============================================
 // FILE: src/pages/bookmarks/index.jsx
+// ============================================
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
-import { supabase } from '../../lib/supabase';  // ✅ FIXED: relative path
+import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import debounce from 'lodash/debounce';
 
 // ============================================
-// BLOCK 1: ALL ICON IMPORTS
+// FEATURE: ICON LIBRARY MANAGEMENT
+// ============================================
+// To add a new icon: Import from lucide-react and add to the list below
+// To remove unused icons: Delete from this list to reduce bundle size
 // ============================================
 import {
   Bookmark, BookmarkCheck, Loader2, FolderPlus, Star, MoreHorizontal, Share2,
@@ -28,7 +30,10 @@ import {
 } from 'lucide-react';
 
 // ============================================
-// BLOCK 2: CUSTOM HOOKS
+// FEATURE: CUSTOM HOOKS - UTILITIES
+// ============================================
+// Modify debounce delay here: Change the 300ms default
+// Modify localStorage behavior here: Add encryption, compression, or validation
 // ============================================
 
 function useDebounce(value, delay) {
@@ -58,40 +63,60 @@ function useLocalStorage(key, initialValue) {
 }
 
 // ============================================
-// BLOCK 3: MAIN COMPONENT
+// FEATURE: MAIN COMPONENT - STATE MANAGEMENT
+// ============================================
+// Add new state variables here (e.g., theme, filters, sorting preferences)
+// Modify existing state structure here
 // ============================================
 
 export default function BookmarksPage() {
   const router = useRouter();
   
-  // State Management
+  // USER & AUTH STATE
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // DATA STATE
   const [bookmarks, setBookmarks] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  
+  // UI MODAL STATE
   const [selectedBookmark, setSelectedBookmark] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCreateCategoryModal, setShowCreateCategoryModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  
+  // BATCH OPERATIONS STATE
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [batchMode, setBatchMode] = useState(false);
   
-  // Filter & View State
+  // FILTER & VIEW STATE
   const [filter, setFilter] = useState({
-    category: null, importance: null, search: '',
-    sortBy: 'created_at', sortOrder: 'desc', dateRange: 'all'
+    category: null, 
+    importance: null, 
+    search: '',
+    sortBy: 'created_at', 
+    sortOrder: 'desc', 
+    dateRange: 'all'
   });
   const [view, setView] = useLocalStorage('bookmark-view', {
-    layout: 'grid', density: 'comfortable', showFilters: true, showSidebar: true
+    layout: 'grid', 
+    density: 'comfortable', 
+    showFilters: true, 
+    showSidebar: true
   });
   
   const debouncedSearch = useDebounce(filter.search, 300);
   const containerRef = useRef(null);
 
-  // ============================================
-  // BLOCK 4: DATA FETCHING
-  // ============================================
+  // ==========================================
+  // FEATURE: DATA FETCHING & SYNC
+  // ==========================================
+  // To modify API endpoints: Change the supabase queries below
+  // To add real-time updates: Add subscription logic here
+  // To add offline support: Implement cache-first strategy here
+  // ==========================================
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -150,14 +175,27 @@ export default function BookmarksPage() {
     setCategories(roots);
   };
 
-  // ============================================
-  // BLOCK 5: FILTERING & SORTING LOGIC
-  // ============================================
+  const handleSync = async () => {
+    setSyncing(true);
+    await Promise.all([fetchBookmarks(user.id), fetchCategories(user.id)]);
+    window.dispatchEvent(new CustomEvent('showToast', { 
+      detail: { message: 'Synced with cloud', type: 'success', duration: 3000 }
+    }));
+    setSyncing(false);
+  };
+
+  // ==========================================
+  // FEATURE: FILTERING & SORTING ENGINE
+  // ==========================================
+  // To add new filter types: Add new cases in the switch statements below
+  // To modify sorting logic: Change the comparison function
+  // To add saved filters: Implement filter persistence here
+  // ==========================================
 
   const filteredAndSortedBookmarks = useMemo(() => {
     let filtered = [...bookmarks];
 
-    // Search filter
+    // SEARCH FILTER
     if (debouncedSearch) {
       const searchLower = debouncedSearch.toLowerCase();
       filtered = filtered.filter(b => 
@@ -167,17 +205,17 @@ export default function BookmarksPage() {
       );
     }
 
-    // Category filter
+    // CATEGORY FILTER
     if (filter.category) {
       filtered = filtered.filter(b => b.category_id === filter.category);
     }
 
-    // Importance filter
+    // IMPORTANCE FILTER
     if (filter.importance) {
       filtered = filtered.filter(b => b.importance_level === filter.importance);
     }
 
-    // Date range filter
+    // DATE RANGE FILTER
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     switch (filter.dateRange) {
@@ -199,7 +237,7 @@ export default function BookmarksPage() {
       default: break;
     }
 
-    // Sorting
+    // SORTING LOGIC
     filtered.sort((a, b) => {
       let aVal = a[filter.sortBy];
       let bVal = b[filter.sortBy];
@@ -217,7 +255,7 @@ export default function BookmarksPage() {
     return filtered;
   }, [bookmarks, filter, debouncedSearch]);
 
-  // Helper functions
+  // Helper functions for categories
   const getAllCategoriesFlat = useCallback((categoryList = categories) => {
     const flat = [];
     const traverse = (cats) => {
@@ -262,9 +300,13 @@ export default function BookmarksPage() {
     return findName(categories) || 'Uncategorized';
   };
 
-  // ============================================
-  // BLOCK 6: CRUD OPERATIONS
-  // ============================================
+  // ==========================================
+  // FEATURE: CRUD OPERATIONS
+  // ==========================================
+  // To add bulk edit: Add new batch operations here
+  // To add undo/redo: Implement command pattern here
+  // To add optimistic updates: Add rollback logic here
+  // ==========================================
 
   const handleDeleteBookmark = async (id) => {
     const { error } = await supabase.from('bookmarks').delete().eq('id', id);
@@ -352,14 +394,13 @@ export default function BookmarksPage() {
     }));
   };
 
-  const handleSync = async () => {
-    setSyncing(true);
-    await Promise.all([fetchBookmarks(user.id), fetchCategories(user.id)]);
-    window.dispatchEvent(new CustomEvent('showToast', { 
-      detail: { message: 'Synced with cloud', type: 'success', duration: 3000 }
-    }));
-    setSyncing(false);
-  };
+  // ==========================================
+  // FEATURE: IMPORT/EXPORT FUNCTIONALITY
+  // ==========================================
+  // To add CSV export: Modify the export format below
+  // To add backup/restore: Add version checking and migration logic
+  // To add cloud backup: Integrate with cloud storage APIs here
+  // ==========================================
 
   const handleExport = async () => {
     const exportData = { 
@@ -418,6 +459,7 @@ export default function BookmarksPage() {
     reader.readAsText(file);
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
@@ -440,17 +482,20 @@ export default function BookmarksPage() {
     highImportance: bookmarks.filter(b => b.importance_level >= 4).length
   };
 
-  // ============================================
-  // BLOCK 7: RENDER
-  // ============================================
+  // ==========================================
+  // FEATURE: HEADER & NAVIGATION BAR
+  // ==========================================
+  // To add theme switcher: Add dark/light mode toggle here
+  // To add user avatar: Add profile dropdown here
+  // To add notification bell: Add notification center here
+  // ==========================================
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
-      {/* Header Bar */}
       <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo and Stats */}
+            {/* Logo and Stats Section */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl">
@@ -472,7 +517,7 @@ export default function BookmarksPage() {
               </div>
             </div>
 
-            {/* Actions Bar */}
+            {/* Actions & Controls Section */}
             <div className="flex items-center gap-2">
               {/* Search Input */}
               <div className="relative">
@@ -525,7 +570,7 @@ export default function BookmarksPage() {
                 <CheckCircle2 className="w-5 h-5" />
               </button>
 
-              {/* Settings Button */}
+              {/* Settings/Filters Toggle */}
               <button
                 onClick={() => setView(prev => ({ ...prev, showFilters: !prev.showFilters }))}
                 className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -535,7 +580,11 @@ export default function BookmarksPage() {
             </div>
           </div>
 
-          {/* Filter Bar */}
+          {/* ========================================
+              FEATURE: FILTER BAR COMPONENT
+              Modify available filters here
+              Add new filter types (e.g., tags, authors)
+          ======================================== */}
           {view.showFilters && (
             <div className="flex items-center gap-3 py-3 overflow-x-auto scrollbar-hide">
               <button
@@ -568,6 +617,7 @@ export default function BookmarksPage() {
 
               <div className="h-6 w-px bg-gray-200 dark:bg-gray-700" />
 
+              {/* Sort By Selector */}
               <select
                 value={filter.sortBy}
                 onChange={(e) => setFilter(prev => ({ ...prev, sortBy: e.target.value }))}
@@ -579,6 +629,7 @@ export default function BookmarksPage() {
                 <option value="post_title">Title</option>
               </select>
 
+              {/* Sort Order Toggle */}
               <button
                 onClick={() => setFilter(prev => ({ ...prev, sortOrder: prev.sortOrder === 'asc' ? 'desc' : 'asc' }))}
                 className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800"
@@ -586,6 +637,7 @@ export default function BookmarksPage() {
                 {filter.sortOrder === 'asc' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
               </button>
 
+              {/* Date Range Filter */}
               <select
                 value={filter.dateRange}
                 onChange={(e) => setFilter(prev => ({ ...prev, dateRange: e.target.value }))}
@@ -598,6 +650,7 @@ export default function BookmarksPage() {
                 <option value="year">This Year</option>
               </select>
 
+              {/* Importance Filter */}
               <select
                 value={filter.importance || ''}
                 onChange={(e) => setFilter(prev => ({ ...prev, importance: e.target.value ? parseInt(e.target.value) : null }))}
@@ -615,7 +668,11 @@ export default function BookmarksPage() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* ========================================
+          FEATURE: MAIN CONTENT AREA
+          Modify layout spacing, grid columns here
+          Add infinite scroll or pagination here
+      ======================================== */}
       <main className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Batch Actions Floating Bar */}
         <AnimatePresence>
@@ -771,7 +828,10 @@ export default function BookmarksPage() {
 }
 
 // ============================================
-// BLOCK 8: CATEGORY FILTER BUTTON
+// FEATURE: CATEGORY FILTER BUTTON COMPONENT
+// ============================================
+// Modify: Change dropdown behavior, add category editing
+// Enhance: Add drag-and-drop for category hierarchy
 // ============================================
 
 function CategoryFilterButton({ category, isActive, onClick }) {
@@ -818,7 +878,10 @@ function CategoryFilterButton({ category, isActive, onClick }) {
 }
 
 // ============================================
-// BLOCK 9: GRID VIEW CARD
+// FEATURE: GRID VIEW CARD COMPONENT
+// ============================================
+// Modify: Change card layout, add/remove card elements
+// Enhance: Add preview on hover, add quick actions
 // ============================================
 
 function BookmarkGridCard({ bookmark, selected, onSelect, batchMode, onEdit, onDelete, categoryName, categoryColor }) {
@@ -933,7 +996,10 @@ function BookmarkGridCard({ bookmark, selected, onSelect, batchMode, onEdit, onD
 }
 
 // ============================================
-// BLOCK 10: LIST VIEW CARD
+// FEATURE: LIST VIEW CARD COMPONENT
+// ============================================
+// Modify: Change list layout, add/remove columns
+// Enhance: Add inline editing, add drag handles
 // ============================================
 
 function BookmarkListCard({ bookmark, selected, onSelect, batchMode, onEdit, onDelete, categoryName, categoryColor }) {
@@ -1004,7 +1070,10 @@ function BookmarkListCard({ bookmark, selected, onSelect, batchMode, onEdit, onD
 }
 
 // ============================================
-// BLOCK 11: COMPACT VIEW CARD
+// FEATURE: COMPACT VIEW CARD COMPONENT
+// ============================================
+// Modify: Change compact layout, adjust density
+// Enhance: Add expandable details, add keyboard shortcuts
 // ============================================
 
 function BookmarkCompactCard({ bookmark, selected, onSelect, batchMode, onEdit, onDelete, categoryName, categoryColor }) {
@@ -1067,7 +1136,10 @@ function BookmarkCompactCard({ bookmark, selected, onSelect, batchMode, onEdit, 
 }
 
 // ============================================
-// BLOCK 12: EDIT BOOKMARK MODAL
+// FEATURE: EDIT BOOKMARK MODAL
+// ============================================
+// Modify: Add more editable fields (tags, custom fields)
+// Enhance: Add auto-save, add character counter for notes
 // ============================================
 
 function EditBookmarkModal({ bookmark, categories, onClose, onSave }) {
@@ -1180,7 +1252,10 @@ function EditBookmarkModal({ bookmark, categories, onClose, onSave }) {
 }
 
 // ============================================
-// BLOCK 13: CREATE CATEGORY MODAL
+// FEATURE: CATEGORY MANAGEMENT MODAL
+// ============================================
+// Modify: Add category editing, reordering, merging
+// Enhance: Add bulk category operations, add color picker
 // ============================================
 
 function CreateCategoryModal({ categories, onClose, onCreate, onDeleteCategory }) {
@@ -1368,7 +1443,10 @@ function CreateCategoryModal({ categories, onClose, onCreate, onDeleteCategory }
 }
 
 // ============================================
-// BLOCK 14: DELETE CONFIRMATION MODAL
+// FEATURE: DELETE CONFIRMATION MODAL
+// ============================================
+// Modify: Add "Don't ask again" option, add bulk delete confirmation
+// Enhance: Add undo option, add loading state during deletion
 // ============================================
 
 function DeleteConfirmModal({ onConfirm, onCancel }) {
