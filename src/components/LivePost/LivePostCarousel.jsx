@@ -14,11 +14,21 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageCarouselIndex, setImageCarouselIndex] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const emojiPickerRef = useRef(null);
   const shareMenuRef = useRef(null);
 
+  // Initialize user reactions from posts
   useEffect(() => {
     setPosts(initialPosts || []);
+    const initialUserReactions = {};
+    (initialPosts || []).forEach(post => {
+      if (post.userReaction) {
+        initialUserReactions[post.id] = post.userReaction;
+      }
+    });
+    setUserReactions(initialUserReactions);
   }, [initialPosts]);
 
   // Close menus when clicking outside
@@ -35,49 +45,121 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Clear error after 3 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const currentPost = posts[currentIndex];
 
   const handleReaction = async (postId, reactionType) => {
-    setUserReactions(prev => ({ ...prev, [postId]: reactionType }));
-    setShowEmojiPicker(null);
+    if (isLoading) return;
     
+    const isRemoving = userReactions[postId] === reactionType;
+    const previousPosts = [...posts];
+    const previousUserReactions = { ...userReactions };
+    
+    // Close emoji picker
+    setShowEmojiPicker(null);
+    setIsLoading(true);
+    
+    // Optimistic update
     setPosts(prevPosts => prevPosts.map(post => {
       if (post.id === postId) {
         const oldReaction = userReactions[postId];
         const newReactions = { ...post.reactions };
         
-        if (oldReaction) {
-          newReactions[oldReaction] = Math.max(0, (newReactions[oldReaction] || 0) - 1);
-          newReactions.total = Math.max(0, (newReactions.total || 0) - 1);
-        }
-        if (reactionType) {
+        if (isRemoving) {
+          // Remove existing reaction
+          if (oldReaction && newReactions[oldReaction]) {
+            newReactions[oldReaction] = Math.max(0, newReactions[oldReaction] - 1);
+            newReactions.total = Math.max(0, newReactions.total - 1);
+          }
+          return { ...post, reactions: newReactions, userReaction: null };
+        } else {
+          // Remove old reaction if exists and different
+          if (oldReaction && oldReaction !== reactionType) {
+            newReactions[oldReaction] = Math.max(0, (newReactions[oldReaction] || 0) - 1);
+            newReactions.total = Math.max(0, (newReactions.total || 0) - 1);
+          }
+          
+          // Add new reaction
           newReactions[reactionType] = (newReactions[reactionType] || 0) + 1;
           newReactions.total = (newReactions.total || 0) + 1;
+          
+          return { ...post, reactions: newReactions, userReaction: reactionType };
         }
-        
-        return { ...post, reactions: newReactions, userReaction: reactionType };
       }
       return post;
     }));
+    
+    // Update userReactions state optimistically
+    setUserReactions(prev => {
+      if (isRemoving) {
+        const newState = { ...prev };
+        delete newState[postId];
+        return newState;
+      }
+      return { ...prev, [postId]: reactionType };
+    });
 
     try {
+      const finalReactionType = isRemoving ? null : reactionType;
+      
       const response = await fetch(`/api/live-posts/${postId}/react`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reactionType, sessionId })
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          reactionType: finalReactionType, 
+          sessionId 
+        })
       });
       
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Failed to update reaction`);
+      }
+      
       const data = await response.json();
+      
       if (data.success) {
+        // Update with server data
         setPosts(prevPosts => prevPosts.map(post => {
           if (post.id === postId) {
-            return { ...post, reactions: data.reactions, userReaction: data.reaction };
+            return { 
+              ...post, 
+              reactions: data.reactions, 
+              userReaction: data.userReaction 
+            };
           }
           return post;
         }));
+        
+        // Update userReactions with server data
+        setUserReactions(prev => {
+          if (!data.userReaction) {
+            const newState = { ...prev };
+            delete newState[postId];
+            return newState;
+          }
+          return { ...prev, [postId]: data.userReaction };
+        });
+      } else {
+        throw new Error(data.error || 'Failed to update reaction');
       }
-    } catch (error) {
-      console.error('Reaction error:', error);
+    } catch (err) {
+      console.error('Reaction error:', err);
+      // Rollback on error
+      setPosts(previousPosts);
+      setUserReactions(previousUserReactions);
+      setError(err.message || 'Failed to update reaction. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -86,9 +168,14 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
     const title = encodeURIComponent(currentPost?.title || 'Check out this post');
     
     if (platform === 'copy') {
-      await navigator.clipboard.writeText(url);
-      setShareSuccess(postId);
-      setTimeout(() => setShareSuccess(null), 2000);
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareSuccess(postId);
+        setTimeout(() => setShareSuccess(null), 2000);
+      } catch (err) {
+        console.error('Copy failed:', err);
+        setError('Failed to copy link');
+      }
       setShowShareMenu(null);
       return;
     }
@@ -100,18 +187,21 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
       shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
     } else if (platform === 'whatsapp') {
       shareUrl = `https://wa.me/?text=${title}%20${encodeURIComponent(url)}`;
+    } else if (platform === 'linkedin') {
+      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
     }
     
     if (shareUrl) {
       window.open(shareUrl, '_blank', 'width=600,height=400');
+      
+      // Update share count optimistically
+      setPosts(prevPosts => prevPosts.map(post => {
+        if (post.id === postId) {
+          return { ...post, share_count: (post.share_count || 0) + 1 };
+        }
+        return post;
+      }));
     }
-    
-    setPosts(prevPosts => prevPosts.map(post => {
-      if (post.id === postId) {
-        return { ...post, share_count: (post.share_count || 0) + 1 };
-      }
-      return post;
-    }));
     setShowShareMenu(null);
   };
 
@@ -131,7 +221,6 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
     setTimeout(() => setIsAnimating(false), 400);
   }, [isAnimating, posts.length]);
 
-  // Image carousel navigation for a specific post
   const nextImage = (postId, currentIdx, totalImages) => {
     setImageCarouselIndex(prev => ({
       ...prev,
@@ -168,12 +257,32 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
 
   const slideVariants = {
     enter: (direction) => ({ x: direction > 0 ? 400 : -400, opacity: 0, scale: 0.95 }),
-    center: { x: 0, opacity: 1, scale: 1, transition: { x: { type: 'spring', stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } } },
-    exit: (direction) => ({ x: direction > 0 ? -400 : 400, opacity: 0, scale: 0.95, transition: { x: { type: 'spring', stiffness: 300, damping: 30 }, opacity: { duration: 0.2 } } })
+    center: { 
+      x: 0, 
+      opacity: 1, 
+      scale: 1, 
+      transition: { 
+        x: { type: 'spring', stiffness: 300, damping: 30 }, 
+        opacity: { duration: 0.2 } 
+      } 
+    },
+    exit: (direction) => ({ 
+      x: direction > 0 ? -400 : 400, 
+      opacity: 0, 
+      scale: 0.95, 
+      transition: { 
+        x: { type: 'spring', stiffness: 300, damping: 30 }, 
+        opacity: { duration: 0.2 } 
+      } 
+    })
   };
 
   const reactionEmojis = {
     like: '👍', love: '❤️', laugh: '😂', wow: '😮', sad: '😢', angry: '😠'
+  };
+
+  const reactionLabels = {
+    like: 'Like', love: 'Love', laugh: 'Laugh', wow: 'Wow', sad: 'Sad', angry: 'Angry'
   };
 
   const getCurrentImageIndex = (postId) => {
@@ -187,6 +296,14 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
 
   return (
     <>
+      {error && (
+        <div className="error-toast">
+          <span>⚠️</span>
+          <span>{error}</span>
+          <button onClick={() => setError(null)}>✕</button>
+        </div>
+      )}
+
       <div className="carousel-container">
         <div className="carousel-header">
           <div className="live-badge">
@@ -198,17 +315,36 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
 
         <div className="carousel-wrapper">
           <AnimatePresence mode="wait" custom={direction}>
-            <motion.div key={currentIndex} custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" className="carousel-slide">
+            <motion.div 
+              key={currentIndex} 
+              custom={direction} 
+              variants={slideVariants} 
+              initial="enter" 
+              animate="center" 
+              exit="exit" 
+              className="carousel-slide"
+            >
               <div className="post-card">
                 {/* Header */}
                 <div className="post-header">
                   <div className="post-author">
                     <div className="author-avatar">
-                      {currentPost.author?.avatar ? <img src={currentPost.author.avatar} alt="" /> : <span className="avatar-placeholder">📰</span>}
+                      {currentPost.author?.avatar ? (
+                        <img src={currentPost.author.avatar} alt={currentPost.author?.name} />
+                      ) : (
+                        <span className="avatar-placeholder">📰</span>
+                      )}
                     </div>
                     <div className="author-info">
                       <span className="author-name">{currentPost.author?.name || 'Trendlin'}</span>
-                      <span className="post-time">{new Date(currentPost.created_at).toLocaleDateString()}</span>
+                      <span className="post-time">
+                        {new Date(currentPost.created_at).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
                     </div>
                   </div>
                   <div className="expiry-badge">
@@ -235,19 +371,28 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
                         alt={`Image ${currentImageIdx + 1}`} 
                         className="carousel-image"
                         onClick={() => openImageModal(images, currentImageIdx)}
+                        loading="lazy"
                       />
                       
                       {hasMultipleImages && (
                         <>
                           <button 
                             className="carousel-nav prev" 
-                            onClick={(e) => { e.stopPropagation(); prevImage(currentPost.id, currentImageIdx, images.length); }}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              prevImage(currentPost.id, currentImageIdx, images.length); 
+                            }}
+                            aria-label="Previous image"
                           >
                             ‹
                           </button>
                           <button 
                             className="carousel-nav next" 
-                            onClick={(e) => { e.stopPropagation(); nextImage(currentPost.id, currentImageIdx, images.length); }}
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              nextImage(currentPost.id, currentImageIdx, images.length); 
+                            }}
+                            aria-label="Next image"
                           >
                             ›
                           </button>
@@ -256,7 +401,11 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
                               <button
                                 key={idx}
                                 className={`dot ${idx === currentImageIdx ? 'active' : ''}`}
-                                onClick={(e) => { e.stopPropagation(); setImageCarouselIndex(prev => ({ ...prev, [currentPost.id]: idx })); }}
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  setImageCarouselIndex(prev => ({ ...prev, [currentPost.id]: idx })); 
+                                }}
+                                aria-label={`Go to image ${idx + 1}`}
                               />
                             ))}
                           </div>
@@ -270,20 +419,30 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
                 {videos.length > 0 && (
                   <div className="videos-section">
                     {videos.map((video, idx) => (
-                      <video key={idx} src={video.url} controls className="video-player" />
+                      <video 
+                        key={idx} 
+                        src={video.url} 
+                        controls 
+                        className="video-player"
+                        preload="metadata"
+                      />
                     ))}
                   </div>
                 )}
 
-                {/* Reactions & Share - Fixed Layout */}
+                {/* Reactions & Share */}
                 <div className="actions-section">
                   {/* Reaction Button */}
                   <div className="reaction-wrapper" ref={emojiPickerRef}>
                     <button 
                       className={`reaction-trigger ${userReactions[currentPost.id] ? 'active' : ''}`}
                       onClick={() => setShowEmojiPicker(showEmojiPicker === currentPost.id ? null : currentPost.id)}
+                      disabled={isLoading}
+                      aria-label="Open reaction picker"
                     >
-                      <span className="reaction-icon">{userReactions[currentPost.id] ? reactionEmojis[userReactions[currentPost.id]] : '👍'}</span>
+                      <span className="reaction-icon">
+                        {userReactions[currentPost.id] ? reactionEmojis[userReactions[currentPost.id]] : '👍'}
+                      </span>
                       <span>React</span>
                     </button>
                     
@@ -293,7 +452,9 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
                           <button
                             key={type}
                             className={`emoji-option ${userReactions[currentPost.id] === type ? 'active' : ''}`}
-                            onClick={() => handleReaction(currentPost.id, userReactions[currentPost.id] === type ? null : type)}
+                            onClick={() => handleReaction(currentPost.id, type)}
+                            title={reactionLabels[type]}
+                            aria-label={`React with ${reactionLabels[type]}`}
                           >
                             <span className="emoji">{emoji}</span>
                           </button>
@@ -309,19 +470,25 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
                         .filter(([key, count]) => count > 0 && key !== 'total')
                         .slice(0, 3)
                         .map(([type, count]) => (
-                          <span key={type} className="reaction-stat">
+                          <span key={type} className="reaction-stat" title={`${count} ${reactionLabels[type]} reactions`}>
                             {reactionEmojis[type]} {count}
                           </span>
                         ))}
                       {currentPost.reactions.total > 3 && (
-                        <span className="reaction-stat">+{currentPost.reactions.total - 3}</span>
+                        <span className="reaction-stat" title={`${currentPost.reactions.total - 3} more reactions`}>
+                          +{currentPost.reactions.total - 3}
+                        </span>
                       )}
                     </div>
                   )}
 
-                  {/* Share Button with Dropdown */}
+                  {/* Share Button */}
                   <div className="share-wrapper" ref={shareMenuRef}>
-                    <button className="share-trigger" onClick={() => setShowShareMenu(showShareMenu === currentPost.id ? null : currentPost.id)}>
+                    <button 
+                      className="share-trigger" 
+                      onClick={() => setShowShareMenu(showShareMenu === currentPost.id ? null : currentPost.id)}
+                      aria-label="Share post"
+                    >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
                         <polyline points="16 6 12 2 8 6" />
@@ -344,6 +511,9 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
                         <button onClick={() => handleShare(currentPost.id, 'whatsapp')} className="share-option">
                           <span>💬</span> WhatsApp
                         </button>
+                        <button onClick={() => handleShare(currentPost.id, 'linkedin')} className="share-option">
+                          <span>🔗</span> LinkedIn
+                        </button>
                       </div>
                     )}
                   </div>
@@ -355,11 +525,24 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
                     <div className="sources-header">🔗 Sources & References</div>
                     <div className="sources-list">
                       {currentPost.sources.map((source, idx) => (
-                        <a key={idx} href={source.url} target="_blank" rel="noopener noreferrer" className="source-link">
+                        <a 
+                          key={idx} 
+                          href={source.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="source-link"
+                        >
                           {source.name}
                         </a>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Loading indicator */}
+                {isLoading && (
+                  <div className="loading-overlay">
+                    <div className="spinner"></div>
                   </div>
                 )}
               </div>
@@ -370,19 +553,31 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
         {/* Navigation Arrows */}
         {posts.length > 1 && (
           <>
-            <button onClick={goToPrev} className="nav-btn prev">
+            <button onClick={goToPrev} className="nav-btn prev" aria-label="Previous post">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <button onClick={goToNext} className="nav-btn next">
+            <button onClick={goToNext} className="nav-btn next" aria-label="Next post">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="9 18 15 12 9 6" />
               </svg>
             </button>
             <div className="progress-dots">
               {posts.map((_, idx) => (
-                <button key={idx} onClick={() => { if (!isAnimating) { setDirection(idx > currentIndex ? 1 : -1); setIsAnimating(true); setCurrentIndex(idx); setTimeout(() => setIsAnimating(false), 400); } }} className={`dot ${idx === currentIndex ? 'active' : ''}`} />
+                <button 
+                  key={idx} 
+                  onClick={() => { 
+                    if (!isAnimating && !isLoading) { 
+                      setDirection(idx > currentIndex ? 1 : -1); 
+                      setIsAnimating(true); 
+                      setCurrentIndex(idx); 
+                      setTimeout(() => setIsAnimating(false), 400); 
+                    } 
+                  }} 
+                  className={`dot ${idx === currentIndex ? 'active' : ''}`}
+                  aria-label={`Go to post ${idx + 1}`}
+                />
               ))}
             </div>
           </>
@@ -393,15 +588,15 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
       {imageModalOpen && images.length > 0 && (
         <div className="lightbox" onClick={() => setImageModalOpen(false)}>
           <div className="lightbox-content" onClick={e => e.stopPropagation()}>
-            <button className="lightbox-close" onClick={() => setImageModalOpen(false)}>✕</button>
+            <button className="lightbox-close" onClick={() => setImageModalOpen(false)} aria-label="Close">✕</button>
             {images.length > 1 && (
               <>
-                <button className="lightbox-prev" onClick={() => setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length)}>‹</button>
-                <button className="lightbox-next" onClick={() => setCurrentImageIndex(prev => (prev + 1) % images.length)}>›</button>
+                <button className="lightbox-prev" onClick={() => setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length)} aria-label="Previous">‹</button>
+                <button className="lightbox-next" onClick={() => setCurrentImageIndex(prev => (prev + 1) % images.length)} aria-label="Next">›</button>
                 <div className="lightbox-counter">{currentImageIndex + 1} / {images.length}</div>
               </>
             )}
-            <img src={images[currentImageIndex]?.url} alt="Full size" />
+            <img src={images[currentImageIndex]?.url} alt="Full size" loading="lazy" />
           </div>
         </div>
       )}
@@ -417,7 +612,7 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
         .carousel-wrapper { position: relative; overflow: hidden; border-radius: 24px; background: white; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08); }
         :global(.dark) .carousel-wrapper { background: #1e293b; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3); }
         .carousel-slide { width: 100%; }
-        .post-card { background: white; border-radius: 24px; overflow: hidden; }
+        .post-card { background: white; border-radius: 24px; overflow: hidden; position: relative; }
         :global(.dark) .post-card { background: #1e293b; }
         
         /* Header */
@@ -457,14 +652,15 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
         .video-player { width: 100%; max-height: 400px; border-radius: 12px; }
         
         /* Actions Section */
-        .actions-section { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #eef2ff; border-bottom: 1px solid #eef2ff; flex-wrap: wrap; gap: 12px; }
+        .actions-section { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid #eef2ff; border-bottom: 1px solid #eef2ff; flex-wrap: wrap; gap: 12px; position: relative; z-index: 5; }
         :global(.dark) .actions-section { border-color: #334155; }
         
         .reaction-wrapper { position: relative; }
         .reaction-trigger { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 40px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .reaction-trigger:disabled { opacity: 0.6; cursor: not-allowed; }
         :global(.dark) .reaction-trigger { background: #334155; border-color: #475569; color: #e2e8f0; }
         .reaction-trigger.active { background: #ec489910; border-color: #ec4899; color: #ec4899; }
-        .reaction-trigger:hover { transform: scale(1.02); }
+        .reaction-trigger:hover:not(:disabled) { transform: scale(1.02); }
         .reaction-icon { font-size: 18px; }
         
         .emoji-picker { position: absolute; bottom: 100%; left: 0; margin-bottom: 8px; background: white; border-radius: 40px; padding: 8px 12px; display: flex; gap: 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); border: 1px solid #e2e8f0; z-index: 100; animation: fadeInUp 0.2s ease; }
@@ -472,7 +668,7 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
         .emoji-option { display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 50%; background: none; border: none; cursor: pointer; transition: all 0.2s; font-size: 22px; }
         .emoji-option:hover { background: #f1f5f9; transform: scale(1.2); }
         :global(.dark) .emoji-option:hover { background: #334155; }
-        .emoji-option.active { background: #ec489910; }
+        .emoji-option.active { background: #ec489910; box-shadow: 0 0 0 2px #ec4899; }
         
         .reaction-stats { display: flex; gap: 12px; flex: 1; justify-content: center; }
         .reaction-stat { font-size: 13px; font-weight: 500; color: #475569; }
@@ -497,7 +693,18 @@ export default function LivePostCarousel({ posts: initialPosts, sessionId }) {
         :global(.dark) .source-link { background: #334155; }
         .source-link:hover { background: #e2e8f0; transform: translateY(-1px); }
         
-        /* Navigation Arrows */
+        /* Loading Overlay */
+        .loading-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.8); display: flex; align-items: center; justify-content: center; z-index: 10; }
+        :global(.dark) .loading-overlay { background: rgba(0, 0, 0, 0.8); }
+        .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #8b5cf6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Error Toast */
+        .error-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 12px 20px; border-radius: 12px; display: flex; align-items: center; gap: 12px; z-index: 1000; animation: slideDown 0.3s ease; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        .error-toast button { background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: 8px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        
+        /* Navigation */
         .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: white; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 10; }
         :global(.dark) .nav-btn { background: #1e293b; border-color: #475569; color: white; }
         .nav-btn:hover { background: #8b5cf6; border-color: #8b5cf6; color: white; transform: translateY(-50%) scale(1.05); }
