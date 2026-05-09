@@ -299,21 +299,6 @@ export default function Home() {
         {/* Live Posts Section - Carousel Format */}
         {livePosts.length > 0 && (
           <div className="live-section">
-            <div className="section-header">
-              <div className="live-badge">
-                <span className="live-dot"></span>
-                LIVE NOW • 24H POSTS
-                <button onClick={refreshLivePosts} className="refresh-live" title="Refresh live posts">
-                  ⟳
-                </button>
-              </div>
-              <h2 className="section-title">✨ Fresh Daily</h2>
-              <p className="section-subtitle">
-                Swipe through today's hottest stories
-                <span className="live-count">{livePosts.length} active {livePosts.length === 1 ? 'story' : 'stories'}</span>
-              </p>
-            </div>
-            
             {/* LivePostCarousel - Each post shows all 4 parts */}
             <LivePostCarousel 
               posts={livePosts}
