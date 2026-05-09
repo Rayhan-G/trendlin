@@ -9,6 +9,7 @@ export default function BookmarkButton({
   postSlug = '', 
   postExcerpt = '',
   featuredImage = '',
+  tags = [],
   variant = 'floating' 
 }) {
   const { user, loading: authLoading } = useAuth();
@@ -17,7 +18,7 @@ export default function BookmarkButton({
 
   // Check if post is bookmarked
   useEffect(() => {
-    if (!user || !postId) {
+    if (!user || !postSlug) {
       setLoading(false);
       return;
     }
@@ -28,13 +29,11 @@ export default function BookmarkButton({
           .from('bookmarks')
           .select('id')
           .eq('user_id', user.id)
-          .eq('post_id', parseInt(postId))
+          .eq('post_slug', postSlug)
           .maybeSingle();
         
-        if (error) {
-          console.error('Error checking bookmark:', error);
-        } else {
-          setIsBookmarked(!!data);
+        if (!error && data) {
+          setIsBookmarked(true);
         }
       } catch (error) {
         console.error('Check bookmark error:', error);
@@ -44,10 +43,9 @@ export default function BookmarkButton({
     };
 
     checkBookmark();
-  }, [user, postId]);
+  }, [user, postSlug]);
 
   const handleClick = async () => {
-    // NOT LOGGED IN
     if (!user) {
       window.dispatchEvent(new CustomEvent('openAuth', { detail: 'signup' }));
       window.dispatchEvent(new CustomEvent('showToast', { 
@@ -65,15 +63,14 @@ export default function BookmarkButton({
           .from('bookmarks')
           .delete()
           .eq('user_id', user.id)
-          .eq('post_id', parseInt(postId));
+          .eq('post_slug', postSlug);
         
         if (error) throw error;
         
         setIsBookmarked(false);
         
-        window.dispatchEvent(new CustomEvent('bookmarkUpdated', { 
-          detail: { postId: parseInt(postId), isBookmarked: false }
-        }));
+        // Dispatch event for real-time update
+        window.dispatchEvent(new CustomEvent('bookmarkChanged'));
         
         window.dispatchEvent(new CustomEvent('showToast', { 
           detail: { message: 'Removed from bookmarks', type: 'success', duration: 3000 }
@@ -82,12 +79,16 @@ export default function BookmarkButton({
         // ADD bookmark
         const bookmarkData = {
           user_id: user.id,
-          post_id: parseInt(postId),
+          post_id: postId,
           post_title: postTitle,
           post_slug: postSlug,
           post_excerpt: postExcerpt || '',
           featured_image_url: featuredImage || '',
-          created_at: new Date().toISOString()
+          custom_tags: tags,
+          created_at: new Date().toISOString(),
+          is_favorite: false,
+          read_later: false,
+          archived: false
         };
         
         const { error } = await supabase
@@ -98,9 +99,8 @@ export default function BookmarkButton({
         
         setIsBookmarked(true);
         
-        window.dispatchEvent(new CustomEvent('bookmarkUpdated', { 
-          detail: { postId: parseInt(postId), isBookmarked: true }
-        }));
+        // Dispatch event for real-time update
+        window.dispatchEvent(new CustomEvent('bookmarkChanged'));
         
         window.dispatchEvent(new CustomEvent('showToast', { 
           detail: { message: 'Saved to bookmarks!', type: 'success', duration: 3000 }
@@ -109,17 +109,8 @@ export default function BookmarkButton({
     } catch (error) {
       console.error('Bookmark operation failed:', error);
       
-      let errorMessage = 'Failed to save bookmark';
-      if (error.code === '23505') {
-        errorMessage = 'Bookmark already exists';
-      } else if (error.code === '23503') {
-        errorMessage = 'Invalid user or post reference';
-      } else if (error.code === '42P01') {
-        errorMessage = 'Bookmarks table not found';
-      }
-      
       window.dispatchEvent(new CustomEvent('showToast', { 
-        detail: { message: errorMessage, type: 'error', duration: 4000 }
+        detail: { message: `Error: ${error.message}`, type: 'error', duration: 4000 }
       }));
     } finally {
       setLoading(false);

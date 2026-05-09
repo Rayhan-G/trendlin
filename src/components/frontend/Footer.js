@@ -3,12 +3,16 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import NewsletterSubscribe from './NewsletterSubscribe'
-import { useSubscription } from '@/contexts/SubscriptionContext'
+import { useSubscription } from '../../hooks/useSubscription'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const router = useRouter()
-  const { isSubscribed: globalIsSubscribed, loading: subscriptionLoading } = useSubscription()
+  
+  // Use the global subscription hook
+  const { isSubscribed: globalIsSubscribed, loading: globalLoading, refresh } = useSubscription()
+  
+  // Local state for backward compatibility
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -26,66 +30,45 @@ export default function Footer() {
     router.pathname === route || router.pathname.startsWith('/admin')
   )
 
-  // Check if user is subscribed to newsletter on mount
-  const checkSubscription = async () => {
-    try {
-      const res = await fetch('/api/auth/me')
-      const data = await res.json()
-      
-      if (data.authenticated && data.newsletter?.is_subscribed === true) {
-        setIsSubscribed(true)
-      } else {
-        setIsSubscribed(false)
-      }
-    } catch (error) {
-      console.error('Error checking subscription:', error)
-      setIsSubscribed(false)
-    } finally {
+  // Sync with global subscription state
+  useEffect(() => {
+    if (!globalLoading) {
+      setIsSubscribed(globalIsSubscribed)
       setLoading(false)
     }
-  }
+  }, [globalIsSubscribed, globalLoading])
 
-  useEffect(() => {
-    checkSubscription()
-  }, [])
-
-  // Listen for subscription changes
+  // Listen for subscription changes (backward compatibility)
   useEffect(() => {
     const handleSubscriptionChange = (event) => {
-      console.log('Footer received subscription change:', event.detail.isSubscribed)
+      console.log('Footer received subscription change:', event.detail)
       setIsSubscribed(event.detail.isSubscribed)
+      refresh() // Refresh global state
     }
     
-    // Listen for storage events (cross-tab)
     const handleStorageChange = (event) => {
       if (event.key === 'newsletter_subscribed') {
         const newStatus = event.newValue === 'true'
         console.log('Footer storage change detected:', newStatus)
         setIsSubscribed(newStatus)
+        refresh()
       }
+    }
+    
+    const handleAuthComplete = () => {
+      refresh()
     }
     
     window.addEventListener('subscriptionChange', handleSubscriptionChange)
     window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('authComplete', handleAuthComplete)
     
     return () => {
       window.removeEventListener('subscriptionChange', handleSubscriptionChange)
       window.removeEventListener('storage', handleStorageChange)
-    }
-  }, [])
-
-  // Also listen for auth changes
-  useEffect(() => {
-    const handleAuthComplete = () => {
-      checkSubscription()
-    }
-    
-    window.addEventListener('authComplete', handleAuthComplete)
-    
-    return () => {
       window.removeEventListener('authComplete', handleAuthComplete)
     }
-  }, [])
+  }, [refresh])
 
   const legalLinks = [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -124,200 +107,19 @@ export default function Footer() {
     return null
   }
 
-  // Don't show loading state - just hide the section until we know
-  if (loading || subscriptionLoading) {
-    return (
-      <footer className="footer">
-        <div className="footer-container">
-          <div className="footer-grid">
-            <div className="footer-about">
-              <Link href="/" className="footer-logo">
-                <span className="logo-text">trendlin</span>
-                <span className="logo-dot">.</span>
-              </Link>
-              <p className="about-text">
-                Curating the latest trends and insights to help you stay ahead.
-              </p>
-            </div>
-            <div className="footer-legal">
-              <h3>Legal</h3>
-              <div className="footer-links">
-                {legalLinks.map((link) => (
-                  <Link key={link.name} href={link.href} className="footer-link">
-                    {link.name}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <div className="footer-social-col">
-              <h3>Follow Us</h3>
-              <div className="footer-social">
-                {socialLinks.map((social) => (
-                  <a key={social.name} href={social.href} target="_blank" rel="noopener noreferrer" className={`social-link ${social.brandClass}`}>
-                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                      <SocialIcon name={social.name} />
-                    </svg>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="footer-copyright">
-            <p>© {currentYear} trendlin. All rights reserved.</p>
-          </div>
-        </div>
-        <style jsx>{`
-          .footer {
-            background: #fafafa;
-            border-top: 1px solid #e5e7eb;
-            margin-top: 4rem;
-          }
-          :global(html.dark) .footer {
-            background: #0f0f13;
-            border-top-color: #1f1f2a;
-          }
-          .footer-container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 3rem 2rem 2rem;
-          }
-          @media (max-width: 768px) {
-            .footer-container { padding: 2rem 1.5rem 1.5rem; }
-          }
-          .footer-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
-          }
-          @media (max-width: 768px) {
-            .footer-grid {
-              grid-template-columns: 1fr;
-              gap: 1.5rem;
-              text-align: center;
-            }
-          }
-          .footer-logo {
-            display: inline-flex;
-            align-items: baseline;
-            text-decoration: none;
-            margin-bottom: 1rem;
-          }
-          .logo-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #1a1a1a 0%, #404040 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-          }
-          .logo-dot {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-          }
-          :global(html.dark) .logo-text {
-            background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-          }
-          .about-text {
-            font-size: 0.85rem;
-            line-height: 1.5;
-            color: #6b7280;
-            max-width: 280px;
-          }
-          @media (max-width: 768px) {
-            .about-text { max-width: 100%; margin: 0 auto; }
-          }
-          :global(html.dark) .about-text { color: #9ca3af; }
-          .footer-legal h3, .footer-social-col h3 {
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            color: #9ca3af;
-          }
-          .footer-links {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-          @media (max-width: 768px) {
-            .footer-links { align-items: center; }
-          }
-          .footer-link {
-            font-size: 0.85rem;
-            color: #6b7280;
-            text-decoration: none;
-            transition: color 0.2s;
-          }
-          .footer-link:hover {
-            color: #111827;
-            text-decoration: underline;
-          }
-          :global(html.dark) .footer-link { color: #9ca3af; }
-          :global(html.dark) .footer-link:hover { color: #f1f5f9; }
-          .footer-social {
-            display: flex;
-            gap: 0.75rem;
-          }
-          @media (max-width: 768px) {
-            .footer-social { justify-content: center; }
-          }
-          .social-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            background: #f3f4f6;
-            color: #4b5563;
-            transition: all 0.2s;
-          }
-          :global(html.dark) .social-link {
-            background: #1f1f2a;
-            color: #9ca3af;
-          }
-          .social-link:hover { transform: translateY(-2px); }
-          .social-link.x:hover { background: #000000; color: white; }
-          .social-link.facebook:hover { background: #1877f2; color: white; }
-          .social-link.instagram:hover {
-            background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af);
-            color: white;
-          }
-          .footer-copyright {
-            text-align: center;
-            padding-top: 2rem;
-            border-top: 1px solid #e5e7eb;
-          }
-          :global(html.dark) .footer-copyright { border-top-color: #1f1f2a; }
-          .footer-copyright p {
-            font-size: 0.75rem;
-            color: #9ca3af;
-          }
-        `}</style>
-      </footer>
-    )
-  }
-
+  // Don't show loading state - just render footer without newsletter section
   return (
     <footer className="footer">
       <div className="footer-container">
         {/* Newsletter Section - Only show if NOT subscribed */}
-        {!isSubscribed && (
+        {!isSubscribed && !loading && (
           <div className="footer-newsletter">
             <NewsletterSubscribe 
               variant="footer" 
               onSubscriptionChange={(subscribed) => {
                 console.log('Subscription changed in footer:', subscribed)
                 setIsSubscribed(subscribed)
+                refresh() // Refresh global state
                 // Dispatch event for other components
                 window.dispatchEvent(new CustomEvent('subscriptionChange', { 
                   detail: { isSubscribed: subscribed }
