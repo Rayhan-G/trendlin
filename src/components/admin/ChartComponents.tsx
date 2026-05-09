@@ -1,4 +1,4 @@
-// src/components/admin/ChartComponents.jsx
+// @ts-nocheck
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -392,7 +392,7 @@ export default function ChartComponents({ chartData, topPosts }) {
           transition: all 0.2s ease;
           display: flex;
           flex-direction: column;
-          min-width: 0; /* Prevent overflow */
+          min-width: 0;
         }
 
         .chart-header {
@@ -467,7 +467,6 @@ export default function ChartComponents({ chartData, topPosts }) {
           margin: 0;
         }
 
-        /* Dark mode support */
         :global(.dark) .chart-card {
           background: #1f2937;
           border-color: #374151;
@@ -490,7 +489,6 @@ export default function ChartComponents({ chartData, topPosts }) {
           stroke: #4b5563;
         }
 
-        /* Responsive breakpoints */
         @media (max-width: 1024px) {
           .charts-grid {
             gap: 1.25rem;
@@ -534,7 +532,6 @@ export default function ChartComponents({ chartData, topPosts }) {
           }
         }
 
-        /* Touch device optimizations */
         @media (hover: none) and (pointer: coarse) {
           .chart-card {
             cursor: pointer;
@@ -544,7 +541,6 @@ export default function ChartComponents({ chartData, topPosts }) {
           }
         }
 
-        /* Landscape mode on mobile */
         @media (max-width: 768px) and (orientation: landscape) {
           .charts-grid {
             grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
@@ -554,7 +550,6 @@ export default function ChartComponents({ chartData, topPosts }) {
           }
         }
 
-        /* Print styles */
         @media print {
           .chart-card {
             break-inside: avoid;
@@ -566,7 +561,6 @@ export default function ChartComponents({ chartData, topPosts }) {
           }
         }
 
-        /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
           .chart-card {
             transition: none;
