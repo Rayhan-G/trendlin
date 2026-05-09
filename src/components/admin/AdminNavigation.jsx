@@ -1,4 +1,4 @@
-// src/components/admin/AdminNavigation.jsx (UPDATED with Live Posts & Comments)
+// src/components/admin/AdminNavigation.jsx (UPDATED with correct auth)
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -15,6 +15,27 @@ const AdminNavigation = ({ children }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
   const [touchStart, setTouchStart] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/verify');
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          router.push('/admin/login');
+        }
+      } catch (error) {
+        router.push('/admin/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
+  }, [router]);
 
   useEffect(() => {
     const checkDevice = () => {
@@ -47,6 +68,20 @@ const AdminNavigation = ({ children }) => {
       setIsOpen(false);
       setTouchStart(null);
     }
+  };
+
+  // Updated logout function
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      router.push('/admin/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const goToHomepage = () => {
+    window.location.href = '/';
   };
 
   const navItems = [
@@ -90,14 +125,21 @@ const AdminNavigation = ({ children }) => {
     return router.pathname === path;
   };
 
-  const goToHomepage = () => {
-    window.location.href = '/';
-  };
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-2 border-gray-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    window.location.href = '/';
-  };
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <>

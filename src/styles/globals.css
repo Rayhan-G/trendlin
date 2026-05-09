@@ -82,6 +82,31 @@
            bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 
            hover:bg-gray-200 dark:hover:bg-gray-700;
   }
+  
+  /* Blog Card Styles */
+  .blog-card {
+    @apply bg-white dark:bg-gray-800 rounded-xl overflow-hidden 
+           shadow-sm hover:shadow-xl transition-all duration-300 
+           border border-gray-100 dark:border-gray-700;
+  }
+  
+  .blog-card-image {
+    @apply w-full h-48 object-cover transition-transform duration-500 
+           group-hover:scale-105;
+  }
+  
+  .blog-card-content {
+    @apply p-5;
+  }
+  
+  .blog-card-title {
+    @apply text-xl font-bold mb-2 line-clamp-2 
+           text-gray-900 dark:text-white;
+  }
+  
+  .blog-card-excerpt {
+    @apply text-gray-600 dark:text-gray-300 line-clamp-3 text-sm;
+  }
 }
 
 /* ============================================
@@ -820,4 +845,30 @@
   background-color: #3b82f6;
   border-color: #3b82f6;
   color: white;
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+.loading-skeleton {
+  @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+}
+
+.loading-spinner {
+  @apply w-8 h-8 border-4 border-purple-200 dark:border-purple-900 
+         border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin;
+}
+
+/* ============================================
+   CARD HOVER EFFECTS
+   ============================================ */
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1);
 }

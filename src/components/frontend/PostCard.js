@@ -1,7 +1,6 @@
 // src/components/frontend/PostCard.jsx
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import BookmarkButton from './BookmarkButton'
 
 export default function PostCard({ post, rank = null }) {
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -136,66 +135,11 @@ export default function PostCard({ post, rank = null }) {
         </div>
       </Link>
 
-      {/* Bookmark Button - Positioned exactly to flow under navbar */}
-      <div className="bookmark-wrapper">
-        <BookmarkButton 
-          postId={post.id}
-          postTitle={post.title}
-          postSlug={post.slug}
-          postExcerpt={post.excerpt}
-          featuredImage={post.image_url || post.featured_image}
-        />
-      </div>
-
       <style jsx>{`
         .post-card-container {
           position: relative;
           overflow: visible;
           width: 100%;
-        }
-        
-        .bookmark-wrapper {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          z-index: 25;
-          opacity: 0;
-          transform: translateY(-8px);
-          transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
-                      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-          pointer-events: auto;
-        }
-        
-        /* On hover, button gracefully appears - flows under navbar naturally */
-        .post-card-container:hover .bookmark-wrapper {
-          opacity: 1;
-          transform: translateY(0);
-        }
-        
-        /* Always visible on touch devices - no hover needed */
-        @media (hover: none) and (pointer: coarse) {
-          .bookmark-wrapper {
-            opacity: 1;
-            transform: translateY(0);
-            top: 12px;
-            right: 12px;
-          }
-        }
-        
-        /* Ensure bookmark doesn't overlap navbar when scrolling (navbar ~70px) 
-           This makes it flow beautifully under the navbar when scrolling */
-        @media (max-width: 768px) {
-          .bookmark-wrapper {
-            top: 12px;
-            right: 12px;
-          }
-        }
-        
-        /* Prevent bookmark from being hidden under sticky navbar */
-        @supports (position: sticky) {
-          .bookmark-wrapper {
-            isolation: isolate;
-          }
         }
         
         .post-card-link {

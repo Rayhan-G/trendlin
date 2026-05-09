@@ -1,8 +1,8 @@
-// src/pages/index.js - UPDATED to use API routes
+// src/pages/index.js - UPDATED to use LivePostCarousel
 import { useState, useEffect, useCallback } from 'react'
 import HeroSection from '../components/frontend/HeroSection'
 import HorizontalScroll from '../components/frontend/HorizontalScroll'
-import LivePostCarousel from '../components/frontend/LivePostCarousel'
+import LivePostCarousel from '../components/LivePost/LivePostCarousel'  // Updated import
 
 export default function Home() {
   const [todayPosts, setTodayPosts] = useState([])
@@ -51,7 +51,6 @@ export default function Home() {
   // Fetch categories and regular posts
   const fetchRegularData = useCallback(async () => {
     try {
-      // Try to fetch from posts API, but don't error if it doesn't exist
       const res = await fetch('/api/posts?limit=100').catch(() => ({ success: false }))
       const data = await res.json().catch(() => ({ success: false, posts: [] }))
       
@@ -95,17 +94,60 @@ export default function Home() {
     }
   }, [])
 
-  const handleLivePostLike = useCallback(async (postId, newLikesCount) => {
-    setLivePosts(prev => prev.map(post => 
-      post.id === postId ? { ...post, likes_count: newLikesCount, user_has_liked: true } : post
-    ))
+  const handleLivePostVote = useCallback(async (postId, voteType) => {
+    try {
+      const response = await fetch(`/api/live-posts/${postId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vote: voteType, sessionId: visitorId })
+      })
+      const data = await response.json()
+      
+      if (data.success) {
+        setLivePosts(prev => prev.map(post => 
+          post.id === postId 
+            ? { 
+                ...post, 
+                votes: data.votes,
+                userVote: voteType 
+              } 
+            : post
+        ))
+      }
+    } catch (err) {
+      console.error('Error voting:', err)
+    }
+  }, [visitorId])
+
+  const handleLivePostShare = useCallback(async (postId, platform) => {
+    try {
+      await fetch(`/api/live-posts/${postId}/share`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform })
+      })
+      
+      setLivePosts(prev => prev.map(post => 
+        post.id === postId 
+          ? { ...post, shares: (post.shares || 0) + 1 } 
+          : post
+      ))
+    } catch (err) {
+      console.error('Error sharing:', err)
+    }
   }, [])
 
-  const handleLivePostShare = useCallback(async (postId) => {
-    setLivePosts(prev => prev.map(post => 
-      post.id === postId ? { ...post, shares_count: (post.shares_count || 0) + 1 } : post
-    ))
-  }, [])
+  const handleLivePostView = useCallback(async (postId) => {
+    try {
+      await fetch(`/api/live-posts/${postId}/view`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: visitorId })
+      })
+    } catch (err) {
+      console.error('Error tracking view:', err)
+    }
+  }, [visitorId])
 
   const refreshLivePosts = () => fetchLivePosts()
   
@@ -254,7 +296,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Live Posts Section - 24H Premium */}
+        {/* Live Posts Section - Carousel Format */}
         {livePosts.length > 0 && (
           <div className="live-section">
             <div className="section-header">
@@ -267,14 +309,17 @@ export default function Home() {
               </div>
               <h2 className="section-title">✨ Fresh Daily</h2>
               <p className="section-subtitle">
-                Posts expire in 24 hours. 
+                Swipe through today's hottest stories
                 <span className="live-count">{livePosts.length} active {livePosts.length === 1 ? 'story' : 'stories'}</span>
               </p>
             </div>
+            
+            {/* LivePostCarousel - Each post shows all 4 parts */}
             <LivePostCarousel 
               posts={livePosts}
-              onLike={handleLivePostLike}
+              onVote={handleLivePostVote}
               onShare={handleLivePostShare}
+              onView={handleLivePostView}
               sessionId={visitorId}
             />
           </div>
@@ -369,7 +414,8 @@ export default function Home() {
         }
         
         .section-header {
-          margin-bottom: 1.5rem;
+          margin-bottom: 2rem;
+          text-align: center;
         }
         
         .live-badge {
@@ -377,7 +423,7 @@ export default function Home() {
           align-items: center;
           gap: 0.5rem;
           padding: 0.25rem 0.75rem;
-          background: linear-gradient(135deg, #8b5cf6, #ec4899);
+          background: linear-gradient(135deg, #ef4444, #ec4899);
           border-radius: 40px;
           font-size: 0.7rem;
           font-weight: 600;
@@ -420,13 +466,19 @@ export default function Home() {
         }
         
         .section-title {
-          font-size: 1.8rem;
-          font-weight: 700;
-          background: linear-gradient(135deg, #fff, #a78bfa);
+          font-size: 2rem;
+          font-weight: 800;
+          background: linear-gradient(135deg, #0f172a, #8b5cf6);
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
           margin-bottom: 0.5rem;
+        }
+        
+        :global(.dark) .section-title {
+          background: linear-gradient(135deg, #f1f5f9, #a78bfa);
+          -webkit-background-clip: text;
+          background-clip: text;
         }
         
         .section-subtitle {
@@ -434,6 +486,7 @@ export default function Home() {
           font-size: 0.9rem;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 1rem;
           flex-wrap: wrap;
         }
@@ -453,9 +506,14 @@ export default function Home() {
           gap: 3rem;
           margin-top: 4rem;
           padding: 2rem;
-          background: rgba(255, 255, 255, 0.03);
+          background: rgba(0, 0, 0, 0.02);
           border-radius: 2rem;
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        :global(.dark) .stats-footer {
+          background: rgba(255, 255, 255, 0.02);
+          border-color: rgba(255, 255, 255, 0.05);
         }
         
         .stat-item {
@@ -472,6 +530,10 @@ export default function Home() {
         .stat-value {
           font-size: 1.5rem;
           font-weight: 700;
+          color: #1e293b;
+        }
+        
+        :global(.dark) .stat-value {
           color: #f1f5f9;
         }
         
@@ -491,7 +553,7 @@ export default function Home() {
             padding: 0 1rem 3rem 1rem;
           }
           .section-title {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
           }
           .stats-footer {
             gap: 1rem;

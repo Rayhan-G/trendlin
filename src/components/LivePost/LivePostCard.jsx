@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { Heart, MessageCircle, Share2, ChevronDown, ChevronUp, Play, Volume2 } from 'lucide-react';
-import CommentSection from './CommentSection';
+
 
 export default function LivePostCard({ post, sessionId, onLike, onShare }) {
     const [isExpanded, setIsExpanded] = useState(false);

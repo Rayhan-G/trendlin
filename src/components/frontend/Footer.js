@@ -1,25 +1,14 @@
 // src/components/frontend/Footer.js
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import NewsletterSubscribe from './NewsletterSubscribe'
-import { useSubscription } from '../../hooks/useSubscription'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
   const router = useRouter()
-  
-  // Use the global subscription hook
-  const { isSubscribed: globalIsSubscribed, loading: globalLoading, refresh } = useSubscription()
-  
-  // Local state for backward compatibility
-  const [isSubscribed, setIsSubscribed] = useState(false)
-  const [loading, setLoading] = useState(true)
 
   // Routes where footer should be hidden
   const hideFooterRoutes = [
     '/profile',
-    '/newsletter/manage',
     '/admin',
     '/dashboard',
     '/settings'
@@ -29,46 +18,6 @@ export default function Footer() {
   const shouldHideFooter = hideFooterRoutes.some(route => 
     router.pathname === route || router.pathname.startsWith('/admin')
   )
-
-  // Sync with global subscription state
-  useEffect(() => {
-    if (!globalLoading) {
-      setIsSubscribed(globalIsSubscribed)
-      setLoading(false)
-    }
-  }, [globalIsSubscribed, globalLoading])
-
-  // Listen for subscription changes (backward compatibility)
-  useEffect(() => {
-    const handleSubscriptionChange = (event) => {
-      console.log('Footer received subscription change:', event.detail)
-      setIsSubscribed(event.detail.isSubscribed)
-      refresh() // Refresh global state
-    }
-    
-    const handleStorageChange = (event) => {
-      if (event.key === 'newsletter_subscribed') {
-        const newStatus = event.newValue === 'true'
-        console.log('Footer storage change detected:', newStatus)
-        setIsSubscribed(newStatus)
-        refresh()
-      }
-    }
-    
-    const handleAuthComplete = () => {
-      refresh()
-    }
-    
-    window.addEventListener('subscriptionChange', handleSubscriptionChange)
-    window.addEventListener('storage', handleStorageChange)
-    window.addEventListener('authComplete', handleAuthComplete)
-    
-    return () => {
-      window.removeEventListener('subscriptionChange', handleSubscriptionChange)
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('authComplete', handleAuthComplete)
-    }
-  }, [refresh])
 
   const legalLinks = [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -107,28 +56,9 @@ export default function Footer() {
     return null
   }
 
-  // Don't show loading state - just render footer without newsletter section
   return (
     <footer className="footer">
       <div className="footer-container">
-        {/* Newsletter Section - Only show if NOT subscribed */}
-        {!isSubscribed && !loading && (
-          <div className="footer-newsletter">
-            <NewsletterSubscribe 
-              variant="footer" 
-              onSubscriptionChange={(subscribed) => {
-                console.log('Subscription changed in footer:', subscribed)
-                setIsSubscribed(subscribed)
-                refresh() // Refresh global state
-                // Dispatch event for other components
-                window.dispatchEvent(new CustomEvent('subscriptionChange', { 
-                  detail: { isSubscribed: subscribed }
-                }))
-              }}
-            />
-          </div>
-        )}
-
         <div className="footer-grid">
           <div className="footer-about">
             <Link href="/" className="footer-logo">
@@ -192,16 +122,6 @@ export default function Footer() {
           .footer-container {
             padding: 2rem 1.5rem 1.5rem;
           }
-        }
-        
-        .footer-newsletter {
-          margin-bottom: 3rem;
-          padding-bottom: 2rem;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        
-        :global(html.dark) .footer-newsletter {
-          border-bottom-color: #1f1f2a;
         }
         
         .footer-grid {

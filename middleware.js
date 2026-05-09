@@ -1,14 +1,26 @@
-// Next.js middleware for additional security
+// middleware.js (in root directory)
 import { NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
 
-export function middleware(request) {
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this';
+
+export async function middleware(request) {
   const { pathname } = request.nextUrl;
   
-  // Protect admin routes
-  if (pathname.startsWith('/admin')) {
-    const sessionToken = request.cookies.get('admin_session_token');
+  // Protect admin routes (except login page)
+  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
+    const token = request.cookies.get('admin_token')?.value;
     
-    if (!sessionToken && pathname !== '/admin/login') {
+    if (!token) {
+      return NextResponse.redirect(new URL('/admin/login', request.url));
+    }
+    
+    // Optional: Verify token validity
+    try {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      await jwtVerify(token, secret);
+    } catch (error) {
+      // Token is invalid or expired
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }

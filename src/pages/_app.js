@@ -5,7 +5,6 @@ import FrontendLayout from '../components/frontend/Layout'
 import { useEffect, useState } from 'react'
 import ErrorBoundary from '../components/ErrorBoundary'
 import Toast from '../components/ui/Toast'
-import { SubscriptionProvider } from '../contexts/SubscriptionContext'
 
 // IMPORTANT: Add this for styled-jsx to work
 import 'styled-jsx/style'
@@ -31,22 +30,18 @@ export default function App({ Component, pageProps }) {
   if (isAdminRoute) {
     return (
       <ErrorBoundary>
-        <SubscriptionProvider>
-          <Component {...pageProps} />
-          <Toast />
-        </SubscriptionProvider>
+        <Component {...pageProps} />
+        <Toast />
       </ErrorBoundary>
     )
   }
   
   return (
     <ErrorBoundary>
-      <SubscriptionProvider>
-        <FrontendLayout>
-          <Component {...pageProps} />
-          <Toast />
-        </FrontendLayout>
-      </SubscriptionProvider>
+      <FrontendLayout>
+        <Component {...pageProps} />
+        <Toast />
+      </FrontendLayout>
     </ErrorBoundary>
   )
 }

@@ -4,7 +4,8 @@ import { supabase } from '../../../lib/supabase'
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { 
-  Plus, Edit, Trash2, Clock, X, CheckCircle, AlertCircle, RefreshCw
+  Plus, Edit, Trash2, Clock, X, CheckCircle, AlertCircle, RefreshCw, 
+  Image, Video, Link, Hash, FileText, Source, Zap, Globe, Award
 } from 'lucide-react'
 
 const ImageModal = dynamic(() => import('../../components/media/Modals/ImageModal'), { ssr: false })
@@ -27,10 +28,17 @@ export default function AdminLivePosts() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPost, setEditingPost] = useState(null)
   const [showMediaModal, setShowMediaModal] = useState(null)
+  const [showSourceModal, setShowSourceModal] = useState(false)
   
+  // Form fields for 4-part system
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
   const [content, setContent] = useState('')
   const [category, setCategory] = useState('tech')
   const [media, setMedia] = useState([])
+  const [sources, setSources] = useState([])
+  const [newSourceName, setNewSourceName] = useState('')
+  const [newSourceUrl, setNewSourceUrl] = useState('')
   
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -52,10 +60,26 @@ export default function AdminLivePosts() {
   }, [fetchPosts])
 
   const isActive = (post) => {
-    return post.status === 'published' && new Date(post.expires_at) > new Date()
+    return post.status === 'active' && new Date(post.expires_at) > new Date()
+  }
+
+  const addSource = () => {
+    if (newSourceName.trim() && newSourceUrl.trim()) {
+      setSources([...sources, { name: newSourceName.trim(), url: newSourceUrl.trim() }])
+      setNewSourceName('')
+      setNewSourceUrl('')
+    }
+  }
+
+  const removeSource = (index) => {
+    setSources(sources.filter((_, i) => i !== index))
   }
 
   const savePost = async () => {
+    if (!description.trim()) {
+      setError('Description is required')
+      return
+    }
     if (media.length === 0) {
       setError('Add at least one image or video')
       return
@@ -68,13 +92,18 @@ export default function AdminLivePosts() {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
     const postData = {
-      category,
+      title: title.trim() || null,
+      description: description.trim(),
       content: content.trim() || null,
+      category,
       media_items: media.map(m => ({ type: m.type, url: m.url })),
-      status: 'published',
-      published_at: now,
+      sources: sources,
+      status: 'active',
+      created_at: editingPost ? editingPost.created_at : now,
       expires_at: expiresAt,
-      updated_at: now
+      updated_at: now,
+      view_count: editingPost?.view_count || 0,
+      share_count: editingPost?.share_count || 0
     }
 
     let result
@@ -118,17 +147,23 @@ export default function AdminLivePosts() {
 
   const resetForm = () => {
     setEditingPost(null)
+    setTitle('')
+    setDescription('')
     setContent('')
     setCategory('tech')
     setMedia([])
+    setSources([])
     setError('')
   }
 
   const editPost = (post) => {
     setEditingPost(post)
+    setTitle(post.title || '')
+    setDescription(post.description || '')
     setContent(post.content || '')
-    setCategory(post.category)
+    setCategory(post.category || 'tech')
     setMedia(post.media_items || [])
+    setSources(post.sources || [])
     setModalOpen(true)
   }
 
@@ -164,18 +199,18 @@ export default function AdminLivePosts() {
           <div className="flex justify-between items-center mb-8">
             <div>
               <h1 className="text-2xl font-bold text-white">Live Posts</h1>
-              <p className="text-gray-500 text-sm">24-hour stories</p>
+              <p className="text-gray-500 text-sm">24-hour stories with 4-part structure</p>
             </div>
             <button 
               onClick={() => { resetForm(); setModalOpen(true); }} 
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
             >
-              <Plus size={18} /> New Post
+              <Plus size={18} /> New Live Post
             </button>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
             <div className="bg-gray-900 rounded-lg p-4">
               <div className="text-2xl font-bold text-white">{posts.filter(isActive).length}</div>
               <div className="text-xs text-gray-500">ACTIVE</div>
@@ -185,18 +220,26 @@ export default function AdminLivePosts() {
               <div className="text-xs text-gray-500">TOTAL</div>
             </div>
             <div className="bg-gray-900 rounded-lg p-4">
-              <div className="text-2xl font-bold text-white">{posts.reduce((s, p) => s + (p.likes || 0), 0)}</div>
-              <div className="text-xs text-gray-500">LIKES</div>
+              <div className="text-2xl font-bold text-white">{posts.reduce((s, p) => s + (p.view_count || 0), 0)}</div>
+              <div className="text-xs text-gray-500">VIEWS</div>
+            </div>
+            <div className="bg-gray-900 rounded-lg p-4">
+              <div className="text-2xl font-bold text-white">{posts.reduce((s, p) => s + (p.share_count || 0), 0)}</div>
+              <div className="text-xs text-gray-500">SHARES</div>
             </div>
             <div className="bg-gray-900 rounded-lg p-4">
               <div className="text-2xl font-bold text-white">{posts.reduce((s, p) => s + (p.media_items?.length || 0), 0)}</div>
               <div className="text-xs text-gray-500">MEDIA</div>
             </div>
+            <div className="bg-gray-900 rounded-lg p-4">
+              <div className="text-2xl font-bold text-white">{posts.reduce((s, p) => s + (p.sources?.length || 0), 0)}</div>
+              <div className="text-xs text-gray-500">SOURCES</div>
+            </div>
           </div>
 
           {/* Refresh */}
           <div className="mb-4 text-right">
-            <button onClick={fetchPosts} className="text-gray-400 hover:text-white text-sm">
+            <button onClick={fetchPosts} className="text-gray-400 hover:text-white text-sm flex items-center gap-1 ml-auto">
               <RefreshCw size={14} /> Refresh
             </button>
           </div>
@@ -208,19 +251,20 @@ export default function AdminLivePosts() {
             ) : posts.length === 0 ? (
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">📭</div>
-                <p className="text-gray-500 mb-4">No posts yet</p>
-                <button onClick={() => { resetForm(); setModalOpen(true); }} className="text-purple-500">
-                  Create your first post
+                <p className="text-gray-500 mb-4">No live posts yet</p>
+                <button onClick={() => { resetForm(); setModalOpen(true); }} className="text-purple-500 hover:text-purple-400 transition">
+                  Create your first 24-hour story
                 </button>
               </div>
             ) : (
               <table className="w-full">
                 <thead className="border-b border-gray-800">
                   <tr className="text-left text-xs text-gray-500">
-                    <th className="p-4">Content</th>
+                    <th className="p-4">Title/Description</th>
                     <th className="p-4">Category</th>
                     <th className="p-4">Status</th>
-                    <th className="p-4">Likes</th>
+                    <th className="p-4">Views</th>
+                    <th className="p-4">Shares</th>
                     <th className="p-4">Time Left</th>
                     <th className="p-4">Actions</th>
                   </tr>
@@ -230,9 +274,10 @@ export default function AdminLivePosts() {
                     const active = isActive(post)
                     const cat = categories.find(c => c.id === post.category)
                     return (
-                      <tr key={post.id} className="border-b border-gray-800 hover:bg-gray-800/50">
+                      <tr key={post.id} className="border-b border-gray-800 hover:bg-gray-800/50 transition">
                         <td className="p-4">
-                          <p className="text-white text-sm line-clamp-2">{post.content || 'No content'}</p>
+                          {post.title && <div className="text-white font-medium text-sm">{post.title}</div>}
+                          <p className="text-gray-400 text-xs line-clamp-1 mt-1">{post.description?.substring(0, 80)}...</p>
                         </td>
                         <td className="p-4">
                           <span className="text-sm" style={{ color: cat?.color }}>
@@ -244,7 +289,8 @@ export default function AdminLivePosts() {
                             {active ? 'LIVE' : 'EXPIRED'}
                           </span>
                         </td>
-                        <td className="p-4 text-white">{post.likes || 0}</td>
+                        <td className="p-4 text-white text-sm">{post.view_count || 0}</td>
+                        <td className="p-4 text-white text-sm">{post.share_count || 0}</td>
                         <td className="p-4">
                           <span className={`text-xs font-mono ${active ? 'text-yellow-500' : 'text-gray-500'}`}>
                             {active ? getTimeLeft(post.expires_at) : '—'}
@@ -252,15 +298,15 @@ export default function AdminLivePosts() {
                         </td>
                         <td className="p-4">
                           <div className="flex gap-2">
-                            <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-gray-700">
+                            <button onClick={() => editPost(post)} className="p-1.5 rounded hover:bg-gray-700 transition" title="Edit">
                               <Edit size={14} className="text-gray-400" />
                             </button>
                             {active && (
-                              <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-gray-700">
+                              <button onClick={() => forceExpire(post.id)} className="p-1.5 rounded hover:bg-gray-700 transition" title="Force Expire">
                                 <Clock size={14} className="text-gray-400" />
                               </button>
                             )}
-                            <button onClick={() => deletePost(post.id)} className="p-1.5 rounded hover:bg-red-500/20">
+                            <button onClick={() => deletePost(post.id)} className="p-1.5 rounded hover:bg-red-500/20 transition" title="Delete">
                               <Trash2 size={14} className="text-gray-400" />
                             </button>
                           </div>
@@ -275,24 +321,27 @@ export default function AdminLivePosts() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Create/Edit Modal - 4 Part Structure */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-gray-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="bg-gray-900 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="p-5 border-b border-gray-800 flex justify-between items-center">
-              <h2 className="text-white text-lg font-semibold">
-                {editingPost ? 'Edit Post' : 'Create Post'}
-              </h2>
-              <button onClick={() => setModalOpen(false)} className="text-gray-500 hover:text-white">
+              <div>
+                <h2 className="text-white text-lg font-semibold">
+                  {editingPost ? 'Edit Live Post' : 'Create Live Post'}
+                </h2>
+                <p className="text-gray-500 text-xs mt-1">Posts automatically expire after 24 hours</p>
+              </div>
+              <button onClick={() => setModalOpen(false)} className="text-gray-500 hover:text-white transition">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="p-5 space-y-5 overflow-y-auto max-h-[calc(90vh-120px)]">
+            <div className="p-5 space-y-6 overflow-y-auto max-h-[calc(90vh-120px)]">
               {success && (
                 <div className="text-sm text-green-500 bg-green-500/10 p-3 rounded-lg">
                   <CheckCircle size={16} className="inline mr-2" />
-                  {editingPost ? 'Updated!' : 'Published!'}
+                  {editingPost ? 'Post updated successfully!' : 'Post published! It will expire in 24 hours.'}
                 </div>
               )}
               {error && (
@@ -302,69 +351,163 @@ export default function AdminLivePosts() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Category</label>
-                <select 
-                  value={category} 
-                  onChange={(e) => setCategory(e.target.value)} 
-                  className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white"
-                >
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
-                  ))}
-                </select>
+              {/* PART 1: Category & Title */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-800">
+                  <Hash size={16} className="text-purple-500" />
+                  <h3 className="text-white font-medium">Part 1: Basic Info</h3>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Category *</label>
+                  <select 
+                    value={category} 
+                    onChange={(e) => setCategory(e.target.value)} 
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Title (Optional)</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Catchy title for your story..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Description *</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="What's happening? Write your story description here..."
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-2">Full Content (Optional)</label>
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    rows={6}
+                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Extended content for readers who want more details..."
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Content</label>
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={5}
-                  className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white resize-none"
-                  placeholder="Write your story..."
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Media (required)</label>
-                <div className="flex gap-2 mb-3">
-                  <button onClick={() => setShowMediaModal('image')} className="px-3 py-1.5 bg-gray-800 rounded-lg text-xs text-gray-400 hover:text-white">
-                    📷 Image
+              {/* PART 2: Media */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-800">
+                  <Image size={16} className="text-green-500" />
+                  <h3 className="text-white font-medium">Part 2: Media *</h3>
+                  <span className="text-xs text-red-400 ml-2">Required</span>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button onClick={() => setShowMediaModal('image')} className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-700 transition">
+                    <Image size={16} /> Add Image
                   </button>
-                  <button onClick={() => setShowMediaModal('video')} className="px-3 py-1.5 bg-gray-800 rounded-lg text-xs text-gray-400 hover:text-white">
-                    🎥 Video
-                  </button>
-                  <button onClick={() => setShowMediaModal('audio')} className="px-3 py-1.5 bg-gray-800 rounded-lg text-xs text-gray-400 hover:text-white">
-                    🎵 Audio
+                  <button onClick={() => setShowMediaModal('video')} className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg text-sm text-gray-400 hover:text-white hover:bg-gray-700 transition">
+                    <Video size={16} /> Add Video
                   </button>
                 </div>
                 
                 {media.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-4 gap-3">
                     {media.map(item => (
-                      <div key={item.id} className="relative group bg-gray-800 rounded-lg aspect-square">
+                      <div key={item.id} className="relative group bg-gray-800 rounded-lg overflow-hidden aspect-square">
                         <img src={item.url} className="w-full h-full object-cover" alt="" />
-                        <button onClick={() => removeMedia(item.id)} className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
-                          <X size={10} />
+                        <button onClick={() => removeMedia(item.id)} className="absolute top-2 right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                          <X size={12} />
+                        </button>
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/50 rounded text-xs text-white">
+                          {item.type === 'video' ? '🎥' : '📷'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* PART 3: Sources */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-800">
+                  <Link size={16} className="text-blue-500" />
+                  <h3 className="text-white font-medium">Part 3: Sources & References</h3>
+                </div>
+                
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSourceName}
+                    onChange={(e) => setNewSourceName(e.target.value)}
+                    className="flex-1 p-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500"
+                    placeholder="Source name (e.g., TechCrunch)"
+                  />
+                  <input
+                    type="url"
+                    value={newSourceUrl}
+                    onChange={(e) => setNewSourceUrl(e.target.value)}
+                    className="flex-1 p-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:ring-2 focus:ring-purple-500"
+                    placeholder="https://..."
+                  />
+                  <button onClick={addSource} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition">
+                    Add
+                  </button>
+                </div>
+                
+                {sources.length > 0 && (
+                  <div className="space-y-2">
+                    {sources.map((source, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="text-white text-sm font-medium">{source.name}</p>
+                          <p className="text-gray-500 text-xs truncate">{source.url}</p>
+                        </div>
+                        <button onClick={() => removeSource(idx)} className="p-1 hover:bg-red-500/20 rounded transition">
+                          <Trash2 size={14} className="text-gray-400" />
                         </button>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
+
+              {/* Info Box */}
+              <div className="bg-purple-500/10 rounded-lg p-4 border border-purple-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap size={14} className="text-purple-500" />
+                  <span className="text-purple-500 text-sm font-medium">24-Hour Story</span>
+                </div>
+                <p className="text-gray-400 text-xs">
+                  This post will automatically expire 24 hours after publishing. 
+                  Users can react with emojis and share on social media.
+                  Sources will be displayed as clickable links at the bottom.
+                </p>
+              </div>
             </div>
 
             <div className="p-5 border-t border-gray-800 flex gap-3">
-              <button onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-800 rounded-lg text-gray-400">
+              <button onClick={() => setModalOpen(false)} className="flex-1 py-2 bg-gray-800 rounded-lg text-gray-400 hover:bg-gray-700 transition">
                 Cancel
               </button>
               <button 
                 onClick={savePost} 
-                disabled={saving || media.length === 0} 
-                className="flex-1 py-2 bg-purple-600 text-white rounded-lg disabled:opacity-50"
+                disabled={saving || !description.trim() || media.length === 0} 
+                className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving ? 'Saving...' : (editingPost ? 'Update' : 'Publish')}
+                {saving ? 'Saving...' : (editingPost ? 'Update Post' : 'Publish Live Story')}
               </button>
             </div>
           </div>
@@ -378,3 +521,4 @@ export default function AdminLivePosts() {
     </>
   )
 }
+

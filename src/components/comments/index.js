@@ -1,6 +1,0 @@
-export { default as FacebookComments } from './FacebookComments'
-export { default as CommentInput } from './CommentInput'
-export { default as CommentItem } from './CommentItem'
-export { default as CommentActions } from './CommentActions'
-export { default as ReplyList } from './ReplyList'
-export { default as EditCommentForm } from './EditCommentForm'
