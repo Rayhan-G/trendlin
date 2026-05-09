@@ -49,7 +49,7 @@
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.14.0",
-    "next": "14.2.0",
+    "next": "^14.2.35",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.1",
