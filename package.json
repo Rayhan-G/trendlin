@@ -8,8 +8,7 @@
     "vercel-build": "next build --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "cloudflare-build": "npm install --legacy-peer-deps && npm run build"
+    "lint": "next lint"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
@@ -50,12 +49,12 @@
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.14.0",
-    "next": "^14.2.0",
+    "next": "^16.2.4",
     "prop-types": "^15.8.1",
-    "react": "^18.2.0",
+    "react": "^19.2.5",
     "react-chartjs-2": "^5.3.1",
-    "react-datepicker": "^6.9.0",
-    "react-dom": "^18.2.0",
+    "react-datepicker": "^9.1.0",
+    "react-dom": "^19.2.5",
     "react-dropzone": "^15.0.0",
     "react-hot-toast": "^2.6.0",
     "react-image-crop": "^11.0.10",
@@ -75,10 +74,10 @@
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.5",
-    "@types/react": "^18.2.0",
+    "@types/react": "19.2.14",
     "@types/react-window": "^1.8.8",
     "autoprefixer": "^10.5.0",
     "postcss": "^8.5.10",
-    "typescript": "^5.0.0"
+    "typescript": "6.0.3"
   }
 }
