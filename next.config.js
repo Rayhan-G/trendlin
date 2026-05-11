@@ -10,36 +10,48 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
+  // REMOVE output: 'standalone' - that's for Cloudflare
+  // REMOVE experimental configs that might cause issues
+  
   compress: true,
   staticPageGenerationTimeout: 60,
   
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
+    domains: ['res.cloudinary.com'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   
-  // Disable features that consume memory
+  // Memory optimization
   swcMinify: true,
   
-  // Reduce memory usage
-  experimental: {
-    largePageDataBytes: 128 * 1000, // 128KB
-    optimisticClientCache: false,
-  },
-  
-  // Don't generate source maps in production
+  // Disable source maps in production
   productionBrowserSourceMaps: false,
   
-  webpack: (config, { dev, isServer }) => {
-    if (!dev && !isServer) {
-      // Reduce bundle size
-      config.optimization.splitChunks.cacheGroups = {
-        ...config.optimization.splitChunks.cacheGroups,
-        vendor: false,
+  // Optimize package imports
+  modularizeImports: {
+    'lodash': {
+      transform: 'lodash/{{member}}',
+    },
+  },
+  
+  webpack: (config, { isServer }) => {
+    // Reduce memory usage
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
+          minChunks: 1,
+          maxAsyncRequests: 30,
+          maxInitialRequests: 30,
+          cacheGroups: {
+            default: false,
+            vendors: false,
+          },
+        },
       };
     }
     

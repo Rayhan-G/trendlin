@@ -5,6 +5,13 @@
 .pnp.mjs
 .yarn/install-state.gz
 
+# OpenNext / Wrangler
+wrangler.jsonc
+open-next.config.ts
+.dev.vars
+public/_headers
+.vercel
+
 # testing
 /coverage
 

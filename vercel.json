@@ -4,9 +4,17 @@
   "framework": "nextjs",
   "outputDirectory": ".next",
   "functions": {
+    "pages/**/*.js": {
+      "maxDuration": 30,
+      "memory": 1024
+    },
     "pages/api/**/*.js": {
-      "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 10,
+      "memory": 1024
     }
+  },
+  "github": {
+    "silent": true,
+    "autoJobCancel": true
   }
 }
