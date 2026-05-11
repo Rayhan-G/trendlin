@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { supabase } from '@/lib/supabase'
-import AdminNavigation from '@/components/admin/AdminNavigation'
 import Link from 'next/link'
-import { formatNumber } from '@/utils/formatters'
+import { supabase } from '@/lib/supabase.js'
+import AdminNavigation from '@/components/admin/AdminNavigation.jsx'
+import { formatNumber } from '@/utils/formatters.js'
 
 export default function ContentCalendar() {
   const router = useRouter()
