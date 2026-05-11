@@ -10,13 +10,8 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
-  env: {
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-  },
-  
   compress: true,
-  staticPageGenerationTimeout: 120,
+  staticPageGenerationTimeout: 60,
   
   images: {
     remotePatterns: [
@@ -25,13 +20,29 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    unoptimized: true,
   },
   
-  // Cloudflare Pages optimization
-  output: 'standalone',
+  // Disable features that consume memory
+  swcMinify: true,
   
-  webpack: (config) => {
+  // Reduce memory usage
+  experimental: {
+    largePageDataBytes: 128 * 1000, // 128KB
+    optimisticClientCache: false,
+  },
+  
+  // Don't generate source maps in production
+  productionBrowserSourceMaps: false,
+  
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      // Reduce bundle size
+      config.optimization.splitChunks.cacheGroups = {
+        ...config.optimization.splitChunks.cacheGroups,
+        vendor: false,
+      };
+    }
+    
     config.ignoreWarnings = [
       { module: /@upstash\/redis/ },
       { message: /A Node.js API is used/ },
