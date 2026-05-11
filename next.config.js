@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   reactStrictMode: true,
   
@@ -10,9 +12,6 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   
-  // REMOVE output: 'standalone' - that's for Cloudflare
-  // REMOVE experimental configs that might cause issues
-  
   compress: true,
   staticPageGenerationTimeout: 60,
   
@@ -22,13 +21,9 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   
-  // Memory optimization
   swcMinify: true,
-  
-  // Disable source maps in production
   productionBrowserSourceMaps: false,
   
-  // Optimize package imports
   modularizeImports: {
     'lodash': {
       transform: 'lodash/{{member}}',
@@ -36,8 +31,14 @@ const nextConfig = {
   },
   
   webpack: (config, { isServer }) => {
-    // Add extension resolution - THIS FIXES THE MODULE NOT FOUND ERRORS
+    // Add extension resolution
     config.resolve.extensions = ['.js', '.jsx', '.ts', '.tsx', '.json'];
+    
+    // Ensure the alias is properly resolved
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, './src'),
+    };
     
     // Reduce memory usage
     if (!isServer) {

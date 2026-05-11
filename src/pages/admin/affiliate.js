@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase.js';
-import AdminNavigation from '@/components/admin/AdminNavigation.jsx';
-import UnifiedAnalytics from '@/components/admin/UnifiedAnalytics.jsx';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import AdminNavigation from '@/components/admin/AdminNavigation';
+import UnifiedAnalytics from '@/components/admin/UnifiedAnalytics';
 
 
 // Helper function to format currency
