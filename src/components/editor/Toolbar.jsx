@@ -28,14 +28,13 @@ const EmojiPicker = dynamic(() => import('emoji-picker-react').catch(() => () =>
   loading: () => <div className="p-4 text-center"><Loader2 className="animate-spin mx-auto" /></div>
 })
 
-// Dynamically import media modals
-const ImageModal = dynamic(() => import('@/components/media/Modals/ImageModal').catch(() => () => <div className="p-4 text-red-500">Failed to load ImageModal</div>), { ssr: false })
-const VideoModal = dynamic(() => import('@/components/media/Modals/VideoModal').catch(() => () => <div className="p-4 text-red-500">Failed to load VideoModal</div>), { ssr: false })
-const AudioModal = dynamic(() => import('@/components/media/Modals/AudioModal').catch(() => () => <div className="p-4 text-red-500">Failed to load AudioModal</div>), { ssr: false })
-const PDFModal = dynamic(() => import('@/components/media/Modals/PDFModal').catch(() => () => <div className="p-4 text-red-500">Failed to load PDFModal</div>), { ssr: false })
-const EmbedModal = dynamic(() => import('@/components/media/Modals/EmbedModal').catch(() => () => <div className="p-4 text-red-500">Failed to load EmbedModal</div>), { ssr: false })
-const GalleryModal = dynamic(() => import('@/components/media/Modals/GalleryModal').catch(() => () => <div className="p-4 text-red-500">Failed to load GalleryModal</div>), { ssr: false })
-
+// Dynamically import media modals with relative paths
+const ImageModal = dynamic(() => import('../media/Modals/ImageModal').catch(() => () => <div className="p-4 text-red-500">Failed to load ImageModal</div>), { ssr: false })
+const VideoModal = dynamic(() => import('../media/Modals/VideoModal').catch(() => () => <div className="p-4 text-red-500">Failed to load VideoModal</div>), { ssr: false })
+const AudioModal = dynamic(() => import('../media/Modals/AudioModal').catch(() => () => <div className="p-4 text-red-500">Failed to load AudioModal</div>), { ssr: false })
+const PDFModal = dynamic(() => import('../media/Modals/PDFModal').catch(() => () => <div className="p-4 text-red-500">Failed to load PDFModal</div>), { ssr: false })
+const EmbedModal = dynamic(() => import('../media/Modals/EmbedModal').catch(() => () => <div className="p-4 text-red-500">Failed to load EmbedModal</div>), { ssr: false })
+const GalleryModal = dynamic(() => import('../media/Modals/GalleryModal').catch(() => () => <div className="p-4 text-red-500">Failed to load GalleryModal</div>), { ssr: false })
 // ==================== UTILITY FUNCTIONS ====================
 const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
