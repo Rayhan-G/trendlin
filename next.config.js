@@ -36,6 +36,9 @@ const nextConfig = {
   },
   
   webpack: (config, { isServer }) => {
+    // Add extension resolution - THIS FIXES THE MODULE NOT FOUND ERRORS
+    config.resolve.extensions = ['.js', '.jsx', '.ts', '.tsx', '.json'];
+    
     // Reduce memory usage
     if (!isServer) {
       config.optimization = {
