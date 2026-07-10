@@ -1,0 +1,68 @@
+---
+// ============================================
+// POST PAGE - Direct Database Fetch
+// ============================================
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const { slug } = Astro.params;
+
+let post = null;
+
+try {
+  const { DB } = Astro.locals.runtime.env;
+  
+  // Get the post by slug
+  const result = await DB.prepare(`
+    SELECT * FROM posts 
+    WHERE slug = ? AND is_draft = 0
+  `).bind(slug).first();
+  
+  post = result;
+  
+  console.log('🔍 Looking for post with slug:', slug);
+  console.log('📊 Found post:', post);
+  
+} catch (error) {
+  console.error('Database error:', error);
+}
+---
+
+<BaseLayout title={post?.title || 'Post Not Found'}>
+  {post ? (
+    <article class="max-w-3xl mx-auto px-4 py-8">
+      <a href="/" class="text-blue-600 hover:underline inline-block mb-6">← Back to Home</a>
+      
+      <h1 class="text-4xl font-bold mb-4">{post.title}</h1>
+      
+      {post.cover_image && (
+        <img 
+          src={post.cover_image} 
+          alt={post.title} 
+          class="w-full h-64 object-cover rounded-xl mb-6" 
+        />
+      )}
+      
+      <div class="flex gap-4 text-sm text-gray-500 mb-6">
+        {post.published_at && (
+          <time>{new Date(post.published_at).toLocaleDateString()}</time>
+        )}
+        {post.category && <span>• {post.category}</span>}
+      </div>
+      
+      <div class="prose max-w-none">
+        {post.content ? (
+          <div set:html={post.content} />
+        ) : (
+          <p>No content available.</p>
+        )}
+      </div>
+    </article>
+  ) : (
+    <div class="text-center py-20">
+      <h1 class="text-4xl font-bold mb-4">Post Not Found</h1>
+      <p class="text-gray-500">The post you're looking for doesn't exist.</p>
+      <a href="/" class="text-blue-600 hover:underline mt-4 inline-block">Go back home</a>
+    </div>
+  )}
+</BaseLayout>

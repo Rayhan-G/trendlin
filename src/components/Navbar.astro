@@ -1,0 +1,250 @@
+---
+// ============================================
+// NAVBAR COMPONENT - Trendlin
+// ============================================
+
+const currentPath = Astro.url.pathname;
+const cookie = Astro.request.headers.get('cookie');
+const isLoggedIn = cookie && cookie.includes('session=');
+---
+
+<!-- ============================================
+NAVBAR: Main Container
+============================================ -->
+<header class="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 transition-all duration-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16 lg:h-20">
+      
+      <!-- ============================================
+      SECTION 1: Logo
+      ============================================ -->
+      <a href="/" class="flex items-center gap-2.5 group shrink-0">
+        <div class="w-9 h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm lg:text-base shadow-lg shadow-blue-500/25 group-hover:shadow-blue-500/40 transition-all duration-300 group-hover:scale-105">
+          T
+        </div>
+        <span class="text-xl lg:text-2xl font-bold text-gray-900">
+          Trendlin
+        </span>
+      </a>
+
+      <!-- ============================================
+      SECTION 2: Desktop Navigation (3 links only)
+      ============================================ -->
+      <nav class="hidden md:flex items-center gap-1 lg:gap-2">
+        
+        <!-- Nav Link: Home -->
+        <a 
+          href="/" 
+          class={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPath === '/' 
+              ? 'bg-gray-900 text-white' 
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          Home
+        </a>
+        
+        <!-- Nav Link: Categories -->
+        <a 
+          href="/categories" 
+          class={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPath.startsWith('/categories') 
+              ? 'bg-gray-900 text-white' 
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          Categories
+        </a>
+        
+        <!-- Nav Link: About -->
+        <a 
+          href="/about" 
+          class={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPath.startsWith('/about') 
+              ? 'bg-gray-900 text-white' 
+              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          }`}
+        >
+          About
+        </a>
+        
+      </nav>
+
+      <!-- ============================================
+      SECTION 3: Desktop Right Actions (Admin Only)
+      ============================================ -->
+      <div class="hidden md:flex items-center gap-3">
+        {isLoggedIn ? (
+          <!-- Admin Links (Logged In) -->
+          <>
+            <a 
+              href="/admin/dashboard" 
+              class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+            >
+              Dashboard
+            </a>
+            <a 
+              href="/admin/new" 
+              class="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
+            >
+              New Post
+            </a>
+            <a 
+              href="/admin/logout" 
+              class="px-4 py-2 text-sm font-medium text-red-500 hover:text-red-700 transition-all duration-200"
+            >
+              Logout
+            </a>
+          </>
+        ) : (
+          <!-- Empty: No Sign In button -->
+          <div></div>
+        )}
+      </div>
+
+      <!-- ============================================
+      SECTION 4: Mobile Menu Button
+      ============================================ -->
+      <button 
+        id="mobileMenuButton" 
+        class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+        aria-label="Toggle menu"
+      >
+        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+      
+    </div>
+
+    <!-- ============================================
+    SECTION 5: Mobile Navigation Menu (3 links only)
+    ============================================ -->
+    <div id="mobileMenu" class="hidden md:hidden py-4 border-t border-gray-100">
+      <div class="flex flex-col space-y-1">
+        
+        <!-- Mobile Nav: Home -->
+        <a 
+          href="/" 
+          class={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPath === '/' 
+              ? 'bg-gray-900 text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          Home
+        </a>
+        
+        <!-- Mobile Nav: Categories -->
+        <a 
+          href="/categories" 
+          class={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPath.startsWith('/categories') 
+              ? 'bg-gray-900 text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          Categories
+        </a>
+        
+        <!-- Mobile Nav: About -->
+        <a 
+          href="/about" 
+          class={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPath.startsWith('/about') 
+              ? 'bg-gray-900 text-white' 
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          About
+        </a>
+        
+        <!-- Mobile Divider -->
+        <div class="pt-4 mt-2 border-t border-gray-100 flex flex-col space-y-2">
+          
+          {isLoggedIn ? (
+            <!-- Mobile Admin Links (Logged In) -->
+            <>
+              <a 
+                href="/admin/dashboard" 
+                class="px-4 py-3 text-center text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+              >
+                Dashboard
+              </a>
+              <a 
+                href="/admin/new" 
+                class="px-4 py-3 text-center text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all duration-200"
+              >
+                New Post
+              </a>
+              <a 
+                href="/admin/logout" 
+                class="px-4 py-3 text-center text-sm font-medium text-red-500 hover:text-red-700 rounded-lg transition-all duration-200"
+              >
+                Logout
+              </a>
+            </>
+          ) : (
+            <!-- Empty: No Sign In link -->
+            <div></div>
+          )}
+          
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</header>
+
+<!-- ============================================
+SECTION 6: Mobile Menu JavaScript
+============================================ -->
+<script>
+  const menuButton = document.getElementById('mobileMenuButton');
+  const mobileMenu = document.getElementById('mobileMenu');
+  let isMenuOpen = false;
+
+  menuButton.addEventListener('click', () => {
+    isMenuOpen = !isMenuOpen;
+    mobileMenu.classList.toggle('hidden');
+    
+    const icon = menuButton.querySelector('svg');
+    if (isMenuOpen) {
+      icon.innerHTML = `
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      `;
+    } else {
+      icon.innerHTML = `
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+      `;
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isMenuOpen) {
+      menuButton.click();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (isMenuOpen && !e.target.closest('header')) {
+      menuButton.click();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 768 && isMenuOpen) {
+      menuButton.click();
+    }
+  });
+</script>
+
+<!-- ============================================
+SECTION 7: Styles
+============================================ -->
+<style is:global>
+  .backdrop-blur-md {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+</style>

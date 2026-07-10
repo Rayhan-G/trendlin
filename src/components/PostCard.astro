@@ -1,0 +1,57 @@
+---
+export interface Props {
+  post: {
+    slug: string;
+    title: string;
+    excerpt: string;
+    featured_image?: string;
+    category?: string;
+    published_at: string;
+  };
+}
+
+const { post } = Astro.props;
+---
+
+<a href={`/posts/${post.slug}`} class="group block">
+  <article class="border-b border-gray-200 dark:border-gray-800 py-8 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition -mx-4 px-4 rounded-xl">
+    <div class="flex flex-col md:flex-row gap-6">
+      {post.featured_image && (
+        <div class="md:w-48 flex-shrink-0">
+          <img 
+            src={post.featured_image} 
+            alt={post.title}
+            class="w-full h-32 object-cover rounded-lg"
+          />
+        </div>
+      )}
+      
+      <div class="flex-1 space-y-3">
+        <h2 class="text-2xl font-bold group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+          {post.title}
+        </h2>
+        
+        {post.excerpt && (
+          <p class="text-gray-600 dark:text-gray-400 line-clamp-2">
+            {post.excerpt}
+          </p>
+        )}
+        
+        <div class="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-500">
+          {post.published_at && (
+            <time>{new Date(post.published_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric'
+            })}</time>
+          )}
+          {post.category && (
+            <span class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+              {post.category}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  </article>
+</a>

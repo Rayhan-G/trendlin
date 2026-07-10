@@ -1,0 +1,86 @@
+---
+// ============================================
+// CATEGORIES INDEX - Count Entertainment Posts
+// ============================================
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const categories = [
+  { name: 'Lifestyle', icon: '🌴', slug: 'lifestyle' },
+  { name: 'Technology', icon: '💻', slug: 'technology' },
+  { name: 'Health & Wellness', icon: '🧘', slug: 'health-wellness' },
+  { name: 'Food & Dining', icon: '🍽️', slug: 'food-dining' },
+  { name: 'Entertainment', icon: '🎬', slug: 'entertainment' },
+  { name: 'Shopping', icon: '🛍️', slug: 'shopping' },
+  { name: 'Real Estate', icon: '🏠', slug: 'real-estate' },
+  { name: 'Finance', icon: '💰', slug: 'finance' },
+  { name: 'Fashion', icon: '👗', slug: 'fashion' },
+  { name: 'Automotive', icon: '🚗', slug: 'automotive' },
+  { name: 'Home & Garden', icon: '🏡', slug: 'home-garden' },
+  { name: 'Travel', icon: '✈️', slug: 'travel' }
+];
+
+let postCounts = {};
+let totalPosts = 0;
+
+try {
+  const { DB } = Astro.locals.runtime.env;
+  
+  const result = await DB.prepare(`
+    SELECT category, COUNT(*) as count 
+    FROM posts 
+    WHERE is_draft = 0 AND category IS NOT NULL
+    GROUP BY category
+  `).all();
+  
+  const counts = result.results || [];
+  counts.forEach(row => {
+    postCounts[row.category] = row.count;
+    totalPosts += row.count;
+  });
+  
+  console.log('📊 Category counts:', postCounts);
+  
+} catch (error) {
+  console.error('Database error:', error);
+}
+---
+
+<BaseLayout title="Categories - Trendlin">
+  <div class="content-width py-12 sm:py-16">
+    
+    <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">Categories</h1>
+    <p class="text-gray-600 text-lg mb-6">
+      {totalPosts} published article{totalPosts > 1 ? 's' : ''} across all categories
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+      {categories.map((category) => {
+        const count = postCounts[category.name] || 0;
+        
+        return (
+          <a 
+            href={`/categories/${category.slug}`}
+            class="group block p-6 bg-white rounded-xl border border-gray-200 hover:border-blue-500 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl group-hover:scale-110 transition-transform duration-300">
+                  {category.icon}
+                </span>
+                <h3 class="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                  {category.name}
+                </h3>
+              </div>
+              <span class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                {count} {count === 1 ? 'post' : 'posts'}
+              </span>
+            </div>
+          </a>
+        );
+      })}
+    </div>
+    
+  </div>
+
+</BaseLayout>
