@@ -1,124 +1,1272 @@
 ---
 // ============================================
-// HOMEPAGE - Trendlin
+// SECTION: Imports & Configuration
 // ============================================
 
-import BaseLayout from '../layouts/BaseLayout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
 
 let posts = [];
 try {
-  const { DB } = Astro.locals.runtime.env;
-  const result = await DB.prepare(`
-    SELECT * FROM posts WHERE is_draft = 0 ORDER BY created_at DESC LIMIT 6
-  `).all();
-  posts = result.results || [];
+  const response = await fetch(`${Astro.url.origin}/api/posts?published=true`);
+  if (response.ok) {
+    posts = await response.json();
+  }
 } catch (error) {
   console.error('Error fetching posts:', error);
 }
 ---
 
-<BaseLayout title="Trendlin - Los Angeles' Trusted Source">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <!-- ============================================
+    SECTION: Head / Meta Tags
+    ============================================ -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trendlin - Los Angeles' Trusted Source</title>
+    <meta name="description" content="Your trusted source for the latest trends, product reviews, and local insights in Los Angeles, California." />
+    
+    <!-- ============================================
+    SECTION: Google Fonts
+    ============================================ -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet" />
+    
+    <!-- ============================================
+    SECTION: All CSS Styles
+    ============================================ -->
+    <style>
+      /* ==========================================
+         SUBSECTION: Reset & Base Styles
+         ========================================== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #ffffff;
+        color: #0f172a;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        padding-top: 64px;
+      }
+      
+      @media (min-width: 768px) {
+        body {
+          padding-top: 80px;
+        }
+      }
+      
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      
+      img {
+        max-width: 100%;
+        display: block;
+      }
+      
+      /* ==========================================
+         SUBSECTION: Container
+         ========================================== */
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+      
+      @media (min-width: 640px) {
+        .container {
+          padding: 0 1.5rem;
+        }
+      }
+      
+      @media (min-width: 1024px) {
+        .container {
+          padding: 0 2rem;
+        }
+      }
+      
+      /* ==========================================
+         SUBSECTION: Location Banner
+         ========================================== */
+      .location-banner {
+        background: linear-gradient(to right, #1e40af, #7c3aed);
+        color: white;
+        padding: 0.6rem 1rem;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 500;
+        letter-spacing: 0.02em;
+      }
+      
+      .location-banner span {
+        opacity: 0.9;
+      }
+      
+      /* ==========================================
+         SUBSECTION: Compact Hero
+         ========================================== */
+      .hero-compact {
+        position: relative;
+        min-height: 40vh;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        background: #0a0a0a;
+      }
+      
+      @media (min-width: 640px) {
+        .hero-compact {
+          min-height: 45vh;
+        }
+      }
+      
+      @media (min-width: 1024px) {
+        .hero-compact {
+          min-height: 50vh;
+        }
+      }
+      
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      
+      .hero-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+      
+      .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.4), rgba(0,0,0,0.7));
+      }
+      
+      .hero-overlay-2 {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to right, rgba(0,0,0,0.3), transparent, rgba(0,0,0,0.3));
+      }
+      
+      .hero-content-compact {
+        position: relative;
+        width: 100%;
+        z-index: 10;
+        padding: 2rem 1rem;
+      }
+      
+      @media (min-width: 640px) {
+        .hero-content-compact {
+          padding: 2.5rem 1.5rem;
+        }
+      }
+      
+      .hero-inner-compact {
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: center;
+      }
+      
+      /* ---- Hero Badge ---- */
+      .badge-compact {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(4px);
+        color: rgba(255,255,255,0.9);
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 0.75rem;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      @media (min-width: 640px) {
+        .badge-compact {
+          padding: 0.375rem 1rem;
+          font-size: 0.8rem;
+        }
+      }
+      
+      .badge-dot {
+        position: relative;
+        display: flex;
+        height: 0.5rem;
+        width: 0.5rem;
+      }
+      
+      .badge-dot-ping {
+        position: absolute;
+        display: inline-flex;
+        height: 100%;
+        width: 100%;
+        border-radius: 50%;
+        background: rgba(96, 165, 250, 0.75);
+        animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+      
+      .badge-dot-static {
+        position: relative;
+        display: inline-flex;
+        border-radius: 50%;
+        height: 0.5rem;
+        width: 0.5rem;
+        background: #3b82f6;
+      }
+      
+      @keyframes ping {
+        75%, 100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
+      
+      /* ---- Hero Heading ---- */
+      .hero-title-compact {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.15;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+      }
+      
+      @media (min-width: 480px) {
+        .hero-title-compact {
+          font-size: 2rem;
+        }
+      }
+      
+      @media (min-width: 640px) {
+        .hero-title-compact {
+          font-size: 2.5rem;
+        }
+      }
+      
+      @media (min-width: 768px) {
+        .hero-title-compact {
+          font-size: 3rem;
+        }
+      }
+      
+      .hero-title-block {
+        display: block;
+      }
+      
+      @media (min-width: 640px) {
+        .hero-title-block {
+          display: inline;
+        }
+      }
+      
+      .hero-title-gradient {
+        display: block;
+        background: linear-gradient(to right, #60a5fa, #a78bfa, #f472b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      
+      @media (min-width: 640px) {
+        .hero-title-gradient {
+          display: inline;
+        }
+      }
+      
+      /* ---- Hero Subtitle ---- */
+      .hero-subtitle-compact {
+        font-size: 0.85rem;
+        color: rgba(255,255,255,0.9);
+        max-width: 600px;
+        margin: 0 auto 1rem;
+        padding: 0 1rem;
+        line-height: 1.6;
+        font-weight: 400;
+        letter-spacing: 0.01em;
+      }
+      
+      @media (min-width: 640px) {
+        .hero-subtitle-compact {
+          font-size: 1rem;
+        }
+      }
+      
+      @media (min-width: 768px) {
+        .hero-subtitle-compact {
+          font-size: 1.1rem;
+        }
+      }
+      
+      /* ---- Hero CTA Buttons ---- */
+      .cta-group-compact {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        justify-content: center;
+        align-items: center;
+        padding: 0 1rem;
+      }
+      
+      @media (min-width: 480px) {
+        .cta-group-compact {
+          flex-direction: row;
+        }
+      }
+      
+      .btn-primary-compact {
+        width: 100%;
+        background: #2563eb;
+        color: #ffffff;
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: none;
+        cursor: pointer;
+        letter-spacing: 0.02em;
+      }
+      
+      @media (min-width: 480px) {
+        .btn-primary-compact {
+          width: auto;
+        }
+      }
+      
+      @media (min-width: 640px) {
+        .btn-primary-compact {
+          padding: 0.6rem 1.5rem;
+          font-size: 0.9rem;
+        }
+      }
+      
+      .btn-primary-compact:hover {
+        background: #1d4ed8;
+        transform: scale(1.03);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+      }
+      
+      .btn-secondary-compact {
+        width: 100%;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(4px);
+        color: #ffffff;
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: 1px solid rgba(255,255,255,0.2);
+        cursor: pointer;
+        letter-spacing: 0.02em;
+      }
+      
+      @media (min-width: 480px) {
+        .btn-secondary-compact {
+          width: auto;
+        }
+      }
+      
+      @media (min-width: 640px) {
+        .btn-secondary-compact {
+          padding: 0.6rem 1.5rem;
+          font-size: 0.9rem;
+        }
+      }
+      
+      .btn-secondary-compact:hover {
+        background: rgba(255,255,255,0.2);
+        transform: scale(1.03);
+      }
+      
+      .btn-icon {
+        width: 0.9rem;
+        height: 0.9rem;
+        transition: transform 0.3s ease;
+      }
+      
+      .btn-primary-compact:hover .btn-icon {
+        transform: translateX(4px);
+      }
+      
+      /* ---- Hero Stats ---- */
+      .stats-compact {
+        margin-top: 1.25rem;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      @media (min-width: 640px) {
+        .stats-compact {
+          margin-top: 1.5rem;
+          gap: 0.75rem;
+          max-width: 350px;
+        }
+      }
+      
+      .stat-item-compact {
+        text-align: center;
+        padding: 0.35rem 0.5rem;
+        background: rgba(255,255,255,0.05);
+        backdrop-filter: blur(4px);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      
+      @media (min-width: 640px) {
+        .stat-item-compact {
+          padding: 0.5rem 0.75rem;
+        }
+      }
+      
+      .stat-number-compact {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+      }
+      
+      @media (min-width: 640px) {
+        .stat-number-compact {
+          font-size: 1.25rem;
+        }
+      }
+      
+      .stat-label-compact {
+        font-size: 0.6rem;
+        color: #d1d5db;
+        font-weight: 400;
+        letter-spacing: 0.03em;
+      }
+      
+      @media (min-width: 640px) {
+        .stat-label-compact {
+          font-size: 0.7rem;
+        }
+      }
+      
+      /* ==========================================
+         SUBSECTION: About Section
+         ========================================== */
+      .about-section {
+        padding: 3rem 0;
+        background: #f8fafc;
+      }
+      
+      @media (min-width: 640px) {
+        .about-section {
+          padding: 4rem 0;
+        }
+      }
+      
+      .about-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        align-items: center;
+      }
+      
+      @media (min-width: 768px) {
+        .about-grid {
+          grid-template-columns: 1fr 1fr;
+          gap: 3rem;
+        }
+      }
+      
+      .about-content h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 1rem;
+        letter-spacing: -0.02em;
+      }
+      
+      @media (min-width: 640px) {
+        .about-content h2 {
+          font-size: 2rem;
+        }
+      }
+      
+      .about-content p {
+        color: #475569;
+        line-height: 1.7;
+        margin-bottom: 1rem;
+        font-weight: 400;
+        font-size: 0.95rem;
+      }
+      
+      .about-highlights {
+        list-style: none;
+        padding: 0;
+        margin-top: 1.5rem;
+      }
+      
+      .about-highlights li {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+        color: #334155;
+        font-weight: 500;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      
+      .about-highlights li:last-child {
+        border-bottom: none;
+      }
+      
+      .about-highlights li svg {
+        flex-shrink: 0;
+        color: #2563eb;
+      }
+      
+      .about-image {
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+      }
+      
+      .about-image img {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+      }
+      
+      @media (min-width: 768px) {
+        .about-image img {
+          height: 400px;
+        }
+      }
+      
+      /* ==========================================
+         SUBSECTION: Section Titles (Reusable)
+         ========================================== */
+      .section-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+      }
+      
+      @media (min-width: 640px) {
+        .section-title {
+          font-size: 1.875rem;
+        }
+      }
+      
+      @media (min-width: 768px) {
+        .section-title {
+          font-size: 2.25rem;
+        }
+      }
+      
+      .section-subtitle {
+        color: #64748b;
+        margin-top: 0.5rem;
+        font-weight: 400;
+        letter-spacing: 0.01em;
+      }
+      
+      /* ==========================================
+         SUBSECTION: Features Cards
+         ========================================== */
+      .features {
+        padding: 3rem 0;
+      }
+      
+      @media (min-width: 640px) {
+        .features {
+          padding: 4rem 0;
+        }
+      }
+      
+      .features-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        margin-top: 3rem;
+      }
+      
+      @media (min-width: 768px) {
+        .features-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      
+      .feature-card {
+        background: #ffffff;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+      }
+      
+      .feature-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        transform: translateY(-8px);
+      }
+      
+      .feature-icon {
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.25rem;
+        transition: transform 0.3s ease;
+      }
+      
+      .feature-card:hover .feature-icon {
+        transform: scale(1.1);
+      }
+      
+      .feature-icon-blue {
+        background: linear-gradient(to bottom right, #3b82f6, #2563eb);
+      }
+      
+      .feature-icon-purple {
+        background: linear-gradient(to bottom right, #8b5cf6, #7c3aed);
+      }
+      
+      .feature-icon-green {
+        background: linear-gradient(to bottom right, #22c55e, #059669);
+      }
+      
+      .feature-icon svg {
+        width: 1.75rem;
+        height: 1.75rem;
+        color: #ffffff;
+      }
+      
+      .feature-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.01em;
+      }
+      
+      .feature-desc {
+        color: #64748b;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        font-weight: 400;
+      }
+      
+      /* ==========================================
+         SUBSECTION: Latest Posts Grid
+         ========================================== */
+      .posts-section {
+        padding-bottom: 4rem;
+      }
+      
+      .posts-header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      @media (min-width: 640px) {
+        .posts-header {
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+        }
+      }
+      
+      .posts-header a {
+        color: #2563eb;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: color 0.3s ease;
+        font-weight: 500;
+      }
+      
+      .posts-header a:hover {
+        color: #1d4ed8;
+      }
+      
+      .posts-header a:hover .btn-icon {
+        transform: translateX(4px);
+      }
+      
+      .posts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      
+      @media (min-width: 768px) {
+        .posts-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      
+      @media (min-width: 1024px) {
+        .posts-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      
+      .post-card {
+        transition: transform 0.3s ease;
+      }
+      
+      .post-card:hover {
+        transform: scale(1.02);
+      }
+      
+      .post-card-inner {
+        overflow: hidden;
+        border-radius: 1rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .post-card-inner:hover {
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+      }
+      
+      .post-image {
+        position: relative;
+        height: 12rem;
+        overflow: hidden;
+        background: #f1f5f9;
+      }
+      
+      .post-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+      }
+      
+      .post-card-inner:hover .post-image img {
+        transform: scale(1.05);
+      }
+      
+      .post-category {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        background: rgba(255,255,255,0.9);
+        backdrop-filter: blur(4px);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #334155;
+        border-radius: 9999px;
+        letter-spacing: 0.02em;
+      }
+      
+      .post-body {
+        padding: 1.25rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      
+      .post-body h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.3;
+        letter-spacing: -0.01em;
+      }
+      
+      .post-body h3 a {
+        transition: color 0.3s ease;
+      }
+      
+      .post-body h3 a:hover {
+        color: #2563eb;
+      }
+      
+      .post-body p {
+        font-size: 0.875rem;
+        color: #64748b;
+        line-height: 1.5;
+        font-weight: 400;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      
+      .post-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        font-weight: 400;
+        margin-top: auto;
+        padding-top: 0.5rem;
+      }
+      
+      .post-empty {
+        text-align: center;
+        padding: 3rem 0;
+        background: #f8fafc;
+        border-radius: 0.75rem;
+      }
+      
+      .post-empty p {
+        color: #64748b;
+        font-weight: 400;
+      }
+      
+      .post-empty a {
+        color: #2563eb;
+        display: inline-block;
+        margin-top: 0.5rem;
+        font-weight: 500;
+      }
+      
+      .post-empty a:hover {
+        text-decoration: underline;
+      }
+      
+      /* ==========================================
+         SUBSECTION: Utility Classes
+         ========================================== */
+      .hidden-xs {
+        display: none;
+      }
+      
+      @media (min-width: 480px) {
+        .hidden-xs {
+          display: inline;
+        }
+      }
+      
+      .text-center {
+        text-align: center;
+      }
+      
+      .text-lg {
+        font-size: 1.125rem;
+      }
+      
+      .text-muted {
+        color: #64748b;
+      }
+      
+      .font-semibold {
+        font-weight: 600;
+      }
+    </style>
+  </head>
   
-  <!-- Location Banner -->
-  <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 text-center text-sm">
-    📍 Serving Los Angeles, California — Your Trusted Local Source
+  <body>
+    <!-- ============================================
+    SECTION: Navbar
+    ============================================ -->
+    <Navbar />
+
+    <!-- ============================================
+    SECTION: Location Banner
+    ============================================ -->
+    <div class="location-banner">
+      <span>📍</span> Serving Los Angeles, California — Your Trusted Local Source for Trends, Reviews &amp; Insights
+    </div>
+
+    <!-- ============================================
+SECTION: Compact Hero - FIXED
+============================================ -->
+<section class="hero-compact" style="
+  position: relative;
+  min-height: calc(100vh - 64px - 40px);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #0a0a0a;
+  padding: 2rem 0;
+">
+  <!-- Background Image -->
+  <div class="hero-bg" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+    <img 
+      src="https://pub-bf1013d046c946448ed23cbf79e38b92.r2.dev/Webstructmedia/webo.jpg" 
+      alt="Trendlin - Los Angeles" 
+      style="width: 100%; height: 100%; object-fit: cover; object-position: center;"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+    />
+    <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.4), rgba(0,0,0,0.7));"></div>
+    <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.3), transparent, rgba(0,0,0,0.3));"></div>
   </div>
 
-  <!-- Hero -->
-  <section class="relative min-h-[50vh] flex items-center overflow-hidden bg-black">
-    <div class="absolute inset-0">
-      <img 
-        src="https://pub-bf1013d046c946448ed23cbf79e38b92.r2.dev/Webstructmedia/webo.jpg" 
-        alt="Los Angeles" 
-        class="w-full h-full object-cover opacity-60"
-      />
-    </div>
-    <div class="relative z-10 container text-white text-center py-16">
-      <h1 class="text-4xl md:text-6xl font-bold mb-4">
-        Discover What's <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Trending in LA</span>
+  <!-- Hero Content -->
+  <div style="position: relative; width: 100%; z-index: 10; padding: 1.5rem 1rem;">
+    <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+      
+      <!-- Badge -->
+      <div style="
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(4px);
+        color: rgba(255,255,255,0.9);
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        border: 1px solid rgba(255,255,255,0.1);
+      ">
+        <span style="position: relative; display: flex; height: 0.5rem; width: 0.5rem;">
+          <span style="position: absolute; display: inline-flex; height: 100%; width: 100%; border-radius: 50%; background: rgba(96, 165, 250, 0.75); animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;"></span>
+          <span style="position: relative; display: inline-flex; border-radius: 50%; height: 0.5rem; width: 0.5rem; background: #3b82f6;"></span>
+        </span>
+        <span>🚀 Trendlin — Los Angeles</span>
+      </div>
+
+      <!-- Heading -->
+      <h1 style="
+        font-size: clamp(1.5rem, 5vw, 3rem);
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.15;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+      ">
+        <span style="display: block;">Discover What's</span>
+        <span style="
+          display: block;
+          background: linear-gradient(to right, #60a5fa, #a78bfa, #f472b6);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        ">Trending in LA</span>
       </h1>
-      <p class="text-xl max-w-2xl mx-auto mb-8">
+
+      <!-- Subtitle -->
+      <p style="
+        font-size: clamp(0.8rem, 1.5vw, 1.1rem);
+        color: rgba(255,255,255,0.9);
+        max-width: 600px;
+        margin: 0 auto 0.75rem;
+        padding: 0 1rem;
+        line-height: 1.5;
+        font-weight: 400;
+      ">
         Your trusted source for honest product reviews, buying guides, and local insights — made for Los Angeles.
       </p>
-      <div class="flex flex-wrap gap-4 justify-center">
-        <a href="/blog" class="px-6 py-3 bg-blue-600 rounded-lg hover:bg-blue-700">Read the Blog</a>
-        <a href="/categories" class="px-6 py-3 bg-white/10 backdrop-blur rounded-lg border border-white/20 hover:bg-white/20">Explore Categories</a>
+
+      <!-- CTA Buttons -->
+      <div style="
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        justify-content: center;
+        align-items: center;
+        padding: 0 1rem;
+      ">
+        <a href="/blog" style="
+          width: 100%;
+          max-width: 200px;
+          background: #2563eb;
+          color: #ffffff;
+          padding: 0.5rem 1.25rem;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          font-size: 0.8rem;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          border: none;
+          cursor: pointer;
+          letter-spacing: 0.02em;
+        ">
+          <span>Read the Blog</span>
+          <svg style="width: 0.9rem; height: 0.9rem; transition: transform 0.3s ease;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+          </svg>
+        </a>
+        <a href="/categories" style="
+          width: 100%;
+          max-width: 200px;
+          background: rgba(255,255,255,0.1);
+          backdrop-filter: blur(4px);
+          color: #ffffff;
+          padding: 0.5rem 1.25rem;
+          border-radius: 0.5rem;
+          font-weight: 600;
+          font-size: 0.8rem;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          border: 1px solid rgba(255,255,255,0.2);
+          cursor: pointer;
+          letter-spacing: 0.02em;
+        ">
+          <svg style="width: 0.9rem; height: 0.9rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+          </svg>
+          <span>Explore Categories</span>
+        </a>
+      </div>
+
+      <!-- Stats -->
+      <div style="
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+      ">
+        <div style="
+          text-align: center;
+          padding: 0.35rem 0.5rem;
+          background: rgba(255,255,255,0.05);
+          backdrop-filter: blur(4px);
+          border-radius: 0.5rem;
+          border: 1px solid rgba(255,255,255,0.1);
+        ">
+          <div style="font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; color: #ffffff;">{posts.length}</div>
+          <div style="font-size: 0.6rem; color: #d1d5db;">Articles Published</div>
+        </div>
+        <div style="
+          text-align: center;
+          padding: 0.35rem 0.5rem;
+          background: rgba(255,255,255,0.05);
+          backdrop-filter: blur(4px);
+          border-radius: 0.5rem;
+          border: 1px solid rgba(255,255,255,0.1);
+        ">
+          <div style="font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; color: #ffffff;">50+</div>
+          <div style="font-size: 0.6rem; color: #d1d5db;">Topics Covered</div>
+        </div>
+        <div style="
+          text-align: center;
+          padding: 0.35rem 0.5rem;
+          background: rgba(255,255,255,0.05);
+          backdrop-filter: blur(4px);
+          border-radius: 0.5rem;
+          border: 1px solid rgba(255,255,255,0.1);
+        ">
+          <div style="font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; color: #ffffff;">100%</div>
+          <div style="font-size: 0.6rem; color: #d1d5db;">Honest Reviews</div>
+        </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
+    <!-- ============================================
+    SECTION: About Trendlin
+    ============================================ -->
+    <section class="about-section">
+      <div class="container">
+        <div class="about-grid">
+          
+          <!-- SUBSECTION: About Left - Content -->
+          <div class="about-content">
+            <h2>Your Trusted Guide for <span style="color: #2563eb;">Everyday Life</span> in LA</h2>
+            <p>
+              Trendlin is your go-to resource for discovering what matters most in your daily life. 
+              Whether you're looking for honest product reviews, local recommendations, or ways to 
+              save money while shopping — we've got you covered.
+            </p>
+            <p>
+              We test, research, and curate the best products and services available in Los Angeles, 
+              so you don't have to. Our mission is to help you make smarter, more informed decisions 
+              for your home, lifestyle, and family.
+            </p>
+            
+            <!-- ---- About Highlights (Bullet Points) ---- -->
+            <ul class="about-highlights">
+              <li>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Get information that actually matters for your everyday life</span>
+              </li>
+              <li>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Save money while shopping with our curated deals and recommendations</span>
+              </li>
+              <li>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <span>Honest reviews from real experiences — no fluff, just facts</span>
+              </li>
+            </ul>
+          </div>
 
-  <!-- About -->
-  <section class="py-16 bg-gray-50">
-    <div class="container">
-      <div class="grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <h2 class="text-3xl font-bold mb-4">Your Trusted Guide for <span class="text-blue-600">Everyday Life</span> in LA</h2>
-          <p class="text-gray-600 mb-4">Trendlin is your go-to resource for discovering what matters most in your daily life.</p>
-          <ul class="space-y-2">
-            <li class="flex items-center gap-2">✅ Honest product reviews</li>
-            <li class="flex items-center gap-2">✅ Save money while shopping</li>
-            <li class="flex items-center gap-2">✅ No fluff, just facts</li>
-          </ul>
-        </div>
-        <div>
-          <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" alt="LA lifestyle" class="rounded-xl shadow-lg" />
+          <!-- SUBSECTION: About Right - Image -->
+          <div class="about-image">
+            <img 
+              src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" 
+              alt="Los Angeles lifestyle - Trendlin" 
+              loading="lazy"
+            />
+          </div>
+
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Features -->
-  <section class="py-16">
-    <div class="container">
-      <h2 class="text-3xl font-bold text-center mb-4">What Matters to Los Angeles</h2>
-      <p class="text-center text-gray-600 mb-12">Honest content, local insights, and actionable recommendations</p>
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="p-6 bg-white rounded-xl border hover:shadow-lg transition">
-          <div class="text-3xl mb-3">📝</div>
-          <h3 class="text-xl font-bold mb-2">Local Product Reviews</h3>
-          <p class="text-gray-600">Honest, in-depth reviews of products available in LA stores and online.</p>
-        </div>
-        <div class="p-6 bg-white rounded-xl border hover:shadow-lg transition">
-          <div class="text-3xl mb-3">🌴</div>
-          <h3 class="text-xl font-bold mb-2">LA Lifestyle & Culture</h3>
-          <p class="text-gray-600">Insightful articles on Los Angeles lifestyle, events, and what's trending.</p>
-        </div>
-        <div class="p-6 bg-white rounded-xl border hover:shadow-lg transition">
-          <div class="text-3xl mb-3">💰</div>
-          <h3 class="text-xl font-bold mb-2">Local Affiliate Deals</h3>
-          <p class="text-gray-600">Find the best deals on products and services in the Los Angeles area.</p>
-        </div>
+    <!-- ============================================
+    SECTION: Features Cards
+    ============================================ -->
+    <section class="container features">
+      <div class="text-center">
+        <h2 class="section-title">What Matters to Los Angeles</h2>
+        <p class="section-subtitle">Honest content, local insights, and actionable recommendations for LA residents</p>
       </div>
-    </div>
-  </section>
 
-  <!-- Latest Posts -->
-  <section class="py-16 bg-gray-50">
-    <div class="container">
-      <div class="flex justify-between items-center mb-8">
-        <h2 class="text-3xl font-bold">Latest in LA</h2>
-        <a href="/search" class="text-blue-600 hover:underline">View All →</a>
+      <div class="features-grid">
+        
+        <!-- ---- Feature Card 1 ---- -->
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-blue">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Local Product Reviews</h3>
+          <p class="feature-desc">Honest, in-depth reviews of products available in Los Angeles stores and online.</p>
+        </div>
+
+        <!-- ---- Feature Card 2 ---- -->
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-purple">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">LA Lifestyle &amp; Culture</h3>
+          <p class="feature-desc">Insightful articles on Los Angeles lifestyle, events, and what's trending in the city.</p>
+        </div>
+
+        <!-- ---- Feature Card 3 ---- -->
+        <div class="feature-card">
+          <div class="feature-icon feature-icon-green">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Local Affiliate Deals</h3>
+          <p class="feature-desc">Find the best deals on products and services available in the Los Angeles area.</p>
+        </div>
+
       </div>
+    </section>
+
+    <!-- ============================================
+    SECTION: Latest Posts
+    ============================================ -->
+    <section class="container posts-section">
       
+      <!-- SUBSECTION: Posts Header -->
+      <div class="posts-header">
+        <h2 class="section-title">Latest in LA</h2>
+        <a href="/search">
+          View All
+          <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </a>
+      </div>
+
+      <!-- SUBSECTION: Posts Grid -->
       {posts.length > 0 ? (
-        <div class="grid md:grid-cols-3 gap-6">
-          {posts.map((post) => (
-            <div class="bg-white rounded-xl border overflow-hidden hover:shadow-lg transition">
-              <div class="p-6">
-                <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">{post.category}</span>
-                <h3 class="text-xl font-bold mt-2 mb-2">
-                  <a href={`/posts/${post.slug}`} class="hover:text-blue-600">{post.title}</a>
-                </h3>
-                <p class="text-gray-600 text-sm">{post.excerpt || 'Read more...'}</p>
-                <a href={`/posts/${post.slug}`} class="inline-block mt-3 text-blue-600 font-medium">Read More →</a>
-              </div>
+        <div class="posts-grid">
+          {posts.slice(0, 6).map((post) => (
+            <div class="post-card">
+              <article class="post-card-inner">
+                
+                <!-- ---- Post Image ---- -->
+                {post.cover_image && (
+                  <div class="post-image">
+                    <img src={post.cover_image} alt={post.title} loading="lazy" />
+                    {post.category_name && (
+                      <span class="post-category">{post.category_name}</span>
+                    )}
+                  </div>
+                )}
+                
+                <!-- ---- Post Body ---- -->
+                <div class="post-body">
+                  <h3>
+                    <a href={`/article/${post.slug}`}>{post.title}</a>
+                  </h3>
+                  {post.excerpt && <p>{post.excerpt}</p>}
+                  <div class="post-meta">
+                    <span>{new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span>5 min read</span>
+                  </div>
+                </div>
+
+              </article>
             </div>
           ))}
         </div>
       ) : (
-        <p class="text-center text-gray-500 py-12">No posts yet. <a href="/admin/new" class="text-blue-600 hover:underline">Create your first post →</a></p>
+        <!-- ---- Empty State ---- -->
+        <div class="post-empty">
+          <p>No posts yet. Check back soon for the latest from Los Angeles!</p>
+          <a href="/admin/posts/new">Create your first post →</a>
+        </div>
       )}
-    </div>
-  </section>
+    </section>
 
-</BaseLayout>
+    <!-- ============================================
+    SECTION: Footer
+    ============================================ -->
+    <Footer />
+  </body>
+</html>
