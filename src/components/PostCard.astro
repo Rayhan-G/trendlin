@@ -13,45 +13,62 @@ export interface Props {
 const { post } = Astro.props;
 ---
 
-<a href={`/posts/${post.slug}`} class="group block">
-  <article class="border-b border-gray-200 dark:border-gray-800 py-8 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition -mx-4 px-4 rounded-xl">
-    <div class="flex flex-col md:flex-row gap-6">
+<a href={`/posts/${post.slug}`} class="group block relative decoration-transparent">
+  <article class="relative border-b border-gray-100 dark:border-gray-900/60 py-8 px-4 sm:px-6 -mx-4 sm:-mx-6 rounded-2xl transition-all duration-300 hover:bg-gray-50/60 dark:hover:bg-gray-900/30">
+    <div class="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+      
       {post.featured_image && (
-        <div class="md:w-48 flex-shrink-0">
+        <div class="w-full sm:w-44 md:w-52 aspect-[16/10] sm:aspect-[4/3] flex-shrink-0 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800/40 relative shadow-sm">
           <img 
             src={post.featured_image} 
             alt={post.title}
-            class="w-full h-32 object-cover rounded-lg"
+            class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-103 filter grayscale-[5%] group-hover:grayscale-0"
+            loading="lazy"
           />
+          <div class="absolute inset-0 bg-black/5 dark:bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </div>
       )}
       
-      <div class="flex-1 space-y-3">
-        <h2 class="text-2xl font-bold group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
+      <div class="flex-1 space-y-3.5 w-full">
+        <!-- Meta Row -->
+        <div class="flex items-center gap-3 text-xs tracking-wider" style="font-family: 'Space Grotesk', sans-serif;">
+          {post.category && (
+            <span class="font-bold uppercase bg-gray-900 text-white dark:bg-white dark:text-black px-2 py-0.5 rounded-md text-[10px]">
+              {post.category}
+            </span>
+          )}
+          {post.published_at && (
+            <time class="text-gray-400 dark:text-gray-500 font-light font-sans">
+              {new Date(post.published_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </time>
+          )}
+        </div>
+        
+        <!-- Headline -->
+        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 tracking-tight leading-snug group-hover:text-black dark:group-hover:text-white transition-colors duration-200" style="font-family: 'Space Grotesk', sans-serif;">
           {post.title}
         </h2>
         
+        <!-- Excerpt -->
         {post.excerpt && (
-          <p class="text-gray-600 dark:text-gray-400 line-clamp-2">
+          <p class="text-gray-500 dark:text-gray-400 text-sm sm:text-base line-clamp-2 font-light leading-relaxed max-w-3xl">
             {post.excerpt}
           </p>
         )}
         
-        <div class="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-500">
-          {post.published_at && (
-            <time>{new Date(post.published_at).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })}</time>
-          )}
-          {post.category && (
-            <span class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
-              {post.category}
-            </span>
-          )}
+        <!-- Premium Micro-Interaction Indicator -->
+        <div class="pt-1 flex items-center gap-1.5 text-xs font-bold text-gray-900 dark:text-gray-100 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ease-out" style="font-family: 'Space Grotesk', sans-serif;">
+          <span>Read Article</span>
+          <svg class="w-3 h-3 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+          </svg>
         </div>
       </div>
+      
     </div>
   </article>
 </a>
