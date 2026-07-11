@@ -11,7 +11,8 @@ export class EmailService {
       throw new Error('Resend API key is required');
     }
     this.resend = new Resend(apiKey);
-    this.fromEmail = 'noreply@trendlin.com'; // Must be verified in Resend
+    // IMPORTANT: Use contact@trendlin.com for professional replies
+    this.fromEmail = 'contact@trendlin.com'; // Must be verified in Resend
   }
 
   async sendContactEmail(data) {
@@ -20,8 +21,8 @@ export class EmailService {
       
       // Send notification to admin
       const adminResult = await this.resend.emails.send({
-        from: this.fromEmail,
-        to: 'contact@trendlin.com', // Your admin email
+        from: `Trendlin <${this.fromEmail}>`,
+        to: 'contact@trendlin.com',
         subject: `📬 New Contact: ${subject}`,
         html: contactEmailTemplate({
           name,
@@ -38,7 +39,7 @@ export class EmailService {
 
       // Send auto-reply to user
       const autoReplyResult = await this.resend.emails.send({
-        from: this.fromEmail,
+        from: `Trendlin <${this.fromEmail}>`,
         to: email,
         subject: 'Thank You for Contacting Trendlin',
         html: autoReplyTemplate({
@@ -64,7 +65,7 @@ export class EmailService {
       const { to, title, message, cta } = data;
       
       const result = await this.resend.emails.send({
-        from: this.fromEmail,
+        from: `Trendlin <${this.fromEmail}>`,
         to: to,
         subject: title,
         html: notificationEmailTemplate({
@@ -87,7 +88,7 @@ export class EmailService {
   async sendWelcomeEmail(email, name) {
     try {
       const result = await this.resend.emails.send({
-        from: this.fromEmail,
+        from: `Trendlin <${this.fromEmail}>`,
         to: email,
         subject: 'Welcome to Trendlin!',
         html: `

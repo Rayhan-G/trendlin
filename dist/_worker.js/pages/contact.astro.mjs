@@ -20,7 +20,9 @@ SEND MESSAGE
 CONTACT INFORMATION
 </h2> <div> <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1" style="font-family: 'Inter', sans-serif;">
 EMAIL
-</h3> <p class="text-gray-600 dark:text-gray-400" style="font-family: 'Inter', sans-serif;"> <a href="mailto:contact@trendlin.com" class="hover:text-blue-600 transition-colors">contact@trendlin.com</a> </p> </div> </div> </div> </div> ${renderScript($$result2, "P:/Projects/trendlin/src/pages/contact.astro?astro&type=script&index=0&lang.ts")} ` })}`;
+</h3> <p class="text-gray-600 dark:text-gray-400" style="font-family: 'Inter', sans-serif;"> <a href="mailto:contact@trendlin.com" class="hover:text-blue-600 transition-colors">contact@trendlin.com</a> </p> <!-- Gmail Link Option --> <p class="text-xs text-gray-400 dark:text-gray-500 mt-1"> <a href="https://mail.google.com/mail/?view=cm&fs=1&to=contact@trendlin.com" target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 transition-colors">
+Open in Gmail →
+</a> </p> </div> </div> </div> </div> ${renderScript($$result2, "P:/Projects/trendlin/src/pages/contact.astro?astro&type=script&index=0&lang.ts")} ` })}`;
 }, "P:/Projects/trendlin/src/pages/contact.astro", void 0);
 
 const $$file = "P:/Projects/trendlin/src/pages/contact.astro";

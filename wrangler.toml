@@ -18,4 +18,4 @@ ADMIN_PASSWORD_HASH = "$2b$10$m.6/D1LMwG/D6V7Rzdv/FeUJQTUmfEykNcekY9nX29lLukMq9j
 R2_PUBLIC_URL = "https://pub-efd12abaa5114844a7a358cc14a217de.r2.dev"
 RESEND_API_KEY = "re_hNNZwqYV_LbLE6vDNxGAeau5kiZHraApW"  # Add your Resend API key
 CONTACT_EMAIL = "contact@trendlin.com"  # Your contact email
-FROM_EMAIL = "noreply@trendlin.com"     # Sender email (must be verified in Resend)
+FROM_EMAIL = "contact@trendlin.com"  # Use the same for professional replies
