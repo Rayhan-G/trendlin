@@ -96,6 +96,15 @@ import Layout from '../layouts/BaseLayout.astro';
           <p class="text-gray-600 dark:text-gray-400" style="font-family: 'Inter', sans-serif;">
             <a href="mailto:contact@trendlin.com" class="hover:text-blue-600 transition-colors">contact@trendlin.com</a>
           </p>
+          <!-- Gmail Link Option -->
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=contact@trendlin.com" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               class="hover:text-blue-600 transition-colors">
+              Open in Gmail →
+            </a>
+          </p>
         </div>
       </div>
 
@@ -115,7 +124,6 @@ import Layout from '../layouts/BaseLayout.astro';
         message: document.getElementById('message').value.trim()
       };
       
-      // Validation
       if (!data.name || !data.email || !data.message) {
         statusMsg.className = 'p-3 rounded-lg text-sm bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800';
         statusMsg.textContent = 'All fields are required.';
