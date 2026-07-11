@@ -8,7 +8,12 @@ import {
   autoReplyTemplate, 
   notificationEmailTemplate,
   privacyAutoReplyTemplate,
-  legalAutoReplyTemplate 
+  legalAutoReplyTemplate,
+  cookieAutoReplyTemplate,
+  termsAutoReplyTemplate,
+  partnershipAutoReplyTemplate,
+  feedbackAutoReplyTemplate,
+  technicalAutoReplyTemplate
 } from './email-templates.js';
 
 export class EmailService {
@@ -21,6 +26,9 @@ export class EmailService {
     this.fromEmail = 'contact@trendlin.com'; // Must be verified in Resend
   }
 
+  // ============================================
+  // Send Contact Form Email (with subject-based auto-reply)
+  // ============================================
   async sendContactEmail(data) {
     try {
       const { name, email, subject, message, phone, ip, userAgent } = data;
@@ -43,16 +51,45 @@ export class EmailService {
         replyTo: email,
       });
 
-      // Send auto-reply to user
+      // ============================================
+      // Send subject-based auto-reply to user
+      // ============================================
+      let autoReplyHtml = '';
+      let autoReplySubject = '';
+
+      // Determine which template to use based on subject
+      if (subject.includes('Privacy')) {
+        autoReplySubject = 'Privacy Inquiry Received - Trendlin';
+        autoReplyHtml = privacyAutoReplyTemplate({ name });
+      } else if (subject.includes('Legal')) {
+        autoReplySubject = 'Legal Inquiry Received - Trendlin';
+        autoReplyHtml = legalAutoReplyTemplate({ name });
+      } else if (subject.includes('Cookie')) {
+        autoReplySubject = 'Cookie Policy Question - Trendlin';
+        autoReplyHtml = cookieAutoReplyTemplate({ name });
+      } else if (subject.includes('Terms')) {
+        autoReplySubject = 'Terms of Service Question - Trendlin';
+        autoReplyHtml = termsAutoReplyTemplate({ name });
+      } else if (subject.includes('Partnership')) {
+        autoReplySubject = 'Partnership Opportunity - Trendlin';
+        autoReplyHtml = partnershipAutoReplyTemplate({ name });
+      } else if (subject.includes('Feedback')) {
+        autoReplySubject = 'Feedback Received - Trendlin';
+        autoReplyHtml = feedbackAutoReplyTemplate({ name });
+      } else if (subject.includes('Technical')) {
+        autoReplySubject = 'Technical Issue Received - Trendlin';
+        autoReplyHtml = technicalAutoReplyTemplate({ name });
+      } else {
+        // Default General Inquiry
+        autoReplySubject = 'Thank You for Contacting Trendlin';
+        autoReplyHtml = autoReplyTemplate({ name, subject, message });
+      }
+
       const autoReplyResult = await this.resend.emails.send({
         from: `Trendlin <${this.fromEmail}>`,
         to: email,
-        subject: 'Thank You for Contacting Trendlin',
-        html: autoReplyTemplate({
-          name,
-          subject,
-          message
-        }),
+        subject: autoReplySubject,
+        html: autoReplyHtml
       });
 
       return {
@@ -66,7 +103,9 @@ export class EmailService {
     }
   }
 
-  // NEW: Send auto-reply for direct emails to specific addresses
+  // ============================================
+  // Send Direct Email Auto-Reply (for privacy@, legal@, etc.)
+  // ============================================
   async sendDirectEmailAutoReply(data) {
     try {
       const { to, from, subject, message } = data;
@@ -143,6 +182,9 @@ export class EmailService {
     }
   }
 
+  // ============================================
+  // Send Notification
+  // ============================================
   async sendNotification(data) {
     try {
       const { to, title, message, cta } = data;
@@ -168,6 +210,9 @@ export class EmailService {
     }
   }
 
+  // ============================================
+  // Send Welcome Email
+  // ============================================
   async sendWelcomeEmail(email, name) {
     try {
       const result = await this.resend.emails.send({
