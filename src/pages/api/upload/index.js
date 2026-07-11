@@ -1,26 +1,28 @@
 // ============================================
-// API: Upload Image to R2
+// API: Upload Image to R2 with Folder Support
 // ============================================
 
 export async function POST({ request, locals }) {
   try {
-    const { R2_BUCKET } = locals.runtime.env;
+    const { R2_BUCKET, R2, DB } = locals.runtime.env;
     
-    // Check if R2 is configured
-    if (!R2_BUCKET) {
-      console.error('R2_BUCKET not configured in environment');
+    // Try both binding names (R2_BUCKET is what worked before)
+    const R2_BINDING = R2_BUCKET || R2;
+    
+    if (!R2_BINDING) {
+      console.error('❌ R2 binding not found. Available:', Object.keys(locals.runtime.env));
       return new Response(JSON.stringify({
         success: false,
-        error: 'Storage not configured. Please set up R2 bucket.'
+        error: 'Storage not configured. R2 binding not found.'
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
     
-    // Get the uploaded file from the form data
     const formData = await request.formData();
     const file = formData.get('image');
+    const folder = formData.get('folder') || '';
     
     if (!file) {
       return new Response(JSON.stringify({
@@ -33,11 +35,11 @@ export async function POST({ request, locals }) {
     }
 
     // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
     if (!validTypes.includes(file.type)) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Invalid file type. Please upload JPEG, PNG, WebP, or GIF.'
+        error: 'Invalid file type. Please upload JPEG, PNG, WebP, GIF, or SVG.'
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -55,43 +57,59 @@ export async function POST({ request, locals }) {
       });
     }
 
-    // Generate unique filename
+    // Generate unique filename with folder prefix
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     const extension = file.name.split('.').pop();
-    const filename = `posts/${timestamp}-${random}.${extension}`;
+    const filename = folder 
+      ? `${folder}/${timestamp}-${random}.${extension}`
+      : `${timestamp}-${random}.${extension}`;
 
     // Convert file to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
     // Upload to R2
-    await R2_BUCKET.put(filename, uint8Array, {
+    await R2_BINDING.put(filename, uint8Array, {
       httpMetadata: {
         contentType: file.type,
-        cacheControl: 'public, max-age=31536000' // Cache for 1 year
+        cacheControl: 'public, max-age=31536000'
       }
     });
 
-    // Construct the URL
-    // Option 1: If using R2 public bucket with custom domain
-    const url = `https://cdn.yourdomain.com/${filename}`;
-    
-    // Option 2: If using R2 with public access
-    // const url = `https://your-bucket-name.r2.cloudflarestorage.com/${filename}`;
-    
-    // Option 3: If using R2 with custom domain and worker
-    // const url = `https://images.yourdomain.com/${filename}`;
+    // Generate public URL
+    const url = `https://pub-efd12abaa5114844a7a358cc14a217de.r2.dev/${filename}`;
 
     console.log('✅ Image uploaded:', filename);
+    console.log('📁 Folder:', folder || 'Root');
+
+    // Save to database with folder info
+    const result = await DB.prepare(`
+      INSERT INTO media (filename, original_name, url, file_size, mime_type, folder, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    `).bind(
+      filename,
+      file.name,
+      url,
+      file.size,
+      file.type,
+      folder || ''
+    ).run();
+
+    const mediaId = result.meta.last_row_id;
 
     return new Response(JSON.stringify({
       success: true,
       url: url,
-      filename: filename
+      filename: filename,
+      folder: folder || '',
+      mediaId: mediaId
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
     });
 
   } catch (error) {
@@ -101,7 +119,10 @@ export async function POST({ request, locals }) {
       error: error.message || 'Failed to upload image'
     }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
     });
   }
 }

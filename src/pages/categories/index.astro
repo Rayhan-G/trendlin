@@ -1,10 +1,10 @@
-
 ---
 // ============================================
 // CATEGORIES PAGE - Refined Premium Design
 // ============================================
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
 
 const categories = [
   { 
@@ -139,8 +139,6 @@ try {
         const count = postCounts[category.name] || 0;
         const posts = allPosts.filter(p => p.category === category.name);
         const isImageRight = index % 2 === 0;
-        
-        // Fix: Pre-lift variable definitions to break out of nested closures safely
         const targetGradient = category.gradient;
         
         return (
@@ -209,7 +207,7 @@ try {
 
               </div>
 
-              <!-- STATE 2: Expanded Posts -->
+              <!-- STATE 2: Expanded Posts with Floating PostCard -->
               <div class="state-slider hidden flex-col transition-all duration-500">
                 <div class="bg-gray-900 px-6 py-4 flex items-center justify-between border-b border-gray-800">
                   <div class="flex items-center gap-3 text-white">
@@ -217,10 +215,10 @@ try {
                     <h3 class="font-bold tracking-tight text-sm sm:text-base" style="font-family: 'Space Grotesk', sans-serif;">
                       {category.name} Archive
                     </h3>
-                    <span class="text-xs text-gray-400 font-normal">/ showing {count} entries</span>
+                    <span class="text-xs text-gray-400 font-normal">/ {count} entries</span>
                   </div>
                   <button 
-                    class="close-matrix-btn text-xs text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors duration-200 px-2.5 py-1 rounded-md border border-gray-800 hover:border-gray-700 bg-gray-850"
+                    class="close-matrix-btn text-xs text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors duration-200 px-2.5 py-1 rounded-md border border-gray-800 hover:border-gray-700"
                     data-category={category.slug}
                   >
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -230,57 +228,35 @@ try {
                   </button>
                 </div>
 
-                <div class="flex overflow-x-auto gap-6 p-8 scroll-smooth bg-gray-50/70 auto-cols-max" style="scrollbar-width: thin;">
+                <!-- HORIZONTAL SCROLL - NO VISIBLE SCROLLBAR -->
+                <div class="flex overflow-x-auto gap-5 p-6 sm:p-8 bg-gray-50/70 dark:bg-gray-900/30 scroll-smooth" 
+                     style="scrollbar-width: none; -ms-overflow-style: none; overflow-x: auto;">
+                  <style>
+                    .flex.overflow-x-auto::-webkit-scrollbar {
+                      display: none;
+                    }
+                  </style>
+                  
                   {posts.length > 0 ? (
                     posts.map((post) => (
-                      <a 
-                        href={`/posts/${post.slug}`}
-                        class="flex-shrink-0 w-[300px] bg-white rounded-2xl border border-gray-200/60 hover:border-gray-300/80 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group overflow-hidden flex flex-col justify-between"
-                        key={post.id}
-                      >
-                        <div>
-                          {post.cover_image ? (
-                            <div class="h-44 overflow-hidden relative">
-                              <img 
-                                src={post.cover_image} 
-                                alt={post.title} 
-                                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
-                              />
-                              <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                            </div>
-                          ) : (
-                            <div class="h-44 bg-gray-100 flex items-center justify-center text-gray-400">
-                              <span class="text-3xl">📄</span>
-                            </div>
-                          )}
-                          <div class="p-5">
-                            {/* Fixed Scope Reference Here */}
-                            <span class={`text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r ${targetGradient} bg-clip-text text-transparent`}>
-                              {post.category}
-                            </span>
-                            <h4 class="font-bold text-gray-900 mt-2 text-base leading-snug line-clamp-2 group-hover:text-black transition-colors" style="font-family: 'Space Grotesk', sans-serif;">
-                              {post.title}
-                            </h4>
-                            <p class="text-sm text-gray-500 line-clamp-2 mt-2 font-light leading-relaxed">
-                              {post.excerpt || post.content?.replace(/<[^>]*>/g, '').substring(0, 80) || 'Read more...'}
-                            </p>
-                          </div>
-                        </div>
-                        <div class="p-5 pt-0">
-                          <span class="inline-flex items-center gap-1.5 text-xs font-bold text-gray-900 group-hover:gap-2.5 transition-all">
-                            Read Article
-                            <svg class="w-3 h-3 text-gray-900" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                            </svg>
-                          </span>
-                        </div>
-                      </a>
+                      <PostCard post={post} />
                     ))
                   ) : (
                     <div class="w-full text-center py-12 text-gray-400 font-light text-sm">
-                      No active publications found in this category.
+                      No publications found in this category.
                     </div>
                   )}
+                </div>
+                
+                <!-- Scroll Hint -->
+                <div class="flex justify-center items-center gap-1 py-3 text-[10px] font-medium text-gray-400 dark:text-gray-500 tracking-widest uppercase bg-gray-50/70 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-800">
+                  <svg class="w-3.5 h-3.5 animate-bounce-x" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                  </svg>
+                  <span>Scroll to explore</span>
+                  <svg class="w-3.5 h-3.5 animate-bounce-x" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                  </svg>
                 </div>
               </div>
 
@@ -316,6 +292,15 @@ try {
   .scroll-smooth::-webkit-scrollbar-thumb:hover {
     background: #d1d5db;
   }
+  
+  @keyframes bounce-x {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(6px); }
+  }
+  
+  .animate-bounce-x {
+    animation: bounce-x 1.8s ease-in-out infinite;
+  }
 </style>
 
 <script>
@@ -324,7 +309,7 @@ try {
       const section = s.closest('.category-section');
       const splitState = section?.querySelector('.state-split');
       const wrapper = section?.querySelector('.view-wrapper');
-      const customRing = (section as HTMLElement)?.dataset.ring || 'ring-gray-900/10';
+      const customRing = (section)?.dataset?.ring || 'ring-gray-900/10';
       
       s.classList.add('hidden');
       s.classList.remove('flex');
@@ -335,7 +320,7 @@ try {
 
   document.querySelectorAll('.explore-matrix-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      const section = this.closest('.category-section') as HTMLElement;
+      const section = this.closest('.category-section');
       const splitState = section.querySelector('.state-split');
       const sliderState = section.querySelector('.state-slider');
       const wrapper = section.querySelector('.view-wrapper');
@@ -365,7 +350,7 @@ try {
   
   document.querySelectorAll('.close-matrix-btn').forEach(btn => {
     btn.addEventListener('click', function() {
-      const section = this.closest('.category-section') as HTMLElement;
+      const section = this.closest('.category-section');
       const splitState = section.querySelector('.state-split');
       const sliderState = section.querySelector('.state-slider');
       const wrapper = section.querySelector('.view-wrapper');
@@ -384,5 +369,3 @@ try {
     }
   });
 </script>
-
-```

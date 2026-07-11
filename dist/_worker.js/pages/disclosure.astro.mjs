@@ -1,0 +1,75 @@
+globalThis.process ??= {}; globalThis.process.env ??= {};
+/* empty css                                 */
+import { a as createComponent, g as renderComponent, d as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DVHrQl8d.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_CGfDT0zE.mjs';
+export { renderers } from '../renderers.mjs';
+
+const $$Disclosure = createComponent(($$result, $$props, $$slots) => {
+  return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": "Affiliate Disclosure - Trendlin" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="max-w-4xl mx-auto px-4 py-12 sm:py-16"> <!-- Header --> <div class="mb-10"> <span class="inline-flex items-center gap-2 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full mb-4"> <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+Transparency
+</span> <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+Affiliate Disclosure
+</h1> <p class="text-lg text-gray-600 mt-2">
+Transparency is at the heart of everything we do.
+</p> </div> <!-- Content --> <div class="space-y-8"> <!-- Section 1 --> <section class="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"> <h2 class="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2"> <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+What Are Affiliate Links?
+</h2> <p class="text-gray-600 leading-relaxed">
+Some of the links on this website are affiliate links. This means that if you click on the link and make a purchase, 
+          we may receive a small commission at <strong>no extra cost to you</strong>.
+</p> <p class="text-gray-600 leading-relaxed mt-3">
+These commissions help us maintain and improve the website, allowing us to continue providing high-quality, 
+          unbiased content for our readers in Los Angeles and beyond.
+</p> </section> <!-- Section 2 --> <section class="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"> <h2 class="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2"> <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+Our Commitment to Honesty
+</h2> <p class="text-gray-600 leading-relaxed">
+Our recommendations are always based on our honest opinions, research, and real experience. 
+          We <strong>never</strong> recommend products solely for the sake of earning commissions.
+</p> <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4"> <div class="flex items-start gap-3 p-4 bg-emerald-50/50 rounded-xl"> <svg class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700">Honest reviews with pros and cons</span> </div> <div class="flex items-start gap-3 p-4 bg-emerald-50/50 rounded-xl"> <svg class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700">Independent research and testing</span> </div> <div class="flex items-start gap-3 p-4 bg-emerald-50/50 rounded-xl"> <svg class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700">Clear disclosure of affiliate relationships</span> </div> <div class="flex items-start gap-3 p-4 bg-emerald-50/50 rounded-xl"> <svg class="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700">We only recommend what we trust</span> </div> </div> </section> <!-- Section 3 --> <section class="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"> <h2 class="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2"> <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+How We Earn
+</h2> <p class="text-gray-600 leading-relaxed">
+We participate in several affiliate programs, including:
+</p> <ul class="mt-3 space-y-2"> <li class="flex items-center gap-3 text-gray-600"> <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+Amazon Associates Program
+</li> <li class="flex items-center gap-3 text-gray-600"> <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+ShareASale
+</li> <li class="flex items-center gap-3 text-gray-600"> <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+CJ Affiliate (Commission Junction)
+</li> <li class="flex items-center gap-3 text-gray-600"> <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+Impact Radius
+</li> <li class="flex items-center gap-3 text-gray-600"> <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+Other affiliate networks and direct partnerships
+</li> </ul> <div class="mt-4 p-4 bg-amber-50/70 rounded-xl border border-amber-200/30"> <p class="text-sm text-gray-600"> <strong>As an Amazon Associate,</strong> we earn from qualifying purchases.
+</p> </div> </section> <!-- Section 4 --> <section class="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"> <h2 class="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2"> <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+Your Trust Matters
+</h2> <p class="text-gray-600 leading-relaxed">
+We understand that trust is earned, and we work hard to maintain it. 
+          If you ever feel that a review or recommendation isn't transparent, 
+          please <a href="/contact" class="text-emerald-600 hover:text-emerald-700 underline">let us know</a>.
+</p> <div class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200/50"> <p class="text-sm text-gray-500"> <strong>Note:</strong> Prices and availability of products mentioned are subject to change. 
+            We recommend checking the product page for the most current information.
+</p> </div> </section> <!-- Section 5 --> <section class="bg-white rounded-2xl p-6 sm:p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"> <h2 class="text-xl font-semibold text-gray-900 mb-3 flex items-center gap-2"> <span class="w-1.5 h-6 bg-emerald-500 rounded-full"></span>
+Transparency Badge
+</h2> <p class="text-gray-600 leading-relaxed">
+We display a disclosure badge on all affiliate links to make it easy for you to identify them:
+</p> <div class="mt-4 flex items-center gap-3 p-4 border rounded-xl bg-gray-50/50"> <span class="px-3 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-lg">
+Affiliate Link
+</span> <span class="text-sm text-gray-500">This link earns a commission for us</span> </div> <div class="mt-4 p-4 bg-emerald-50/50 rounded-xl border-l-4 border-emerald-500"> <p class="text-sm text-gray-700"> <strong>Disclosure:</strong> This post contains affiliate links. 
+            We may earn a commission if you make a purchase through these links, 
+            at no additional cost to you. As an Amazon Associate, we earn from 
+            qualifying purchases.
+</p> </div> </section> <!-- Last Updated --> <div class="text-center text-sm text-gray-400 pt-4 border-t border-gray-100"> <p>Last updated: ${(/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p> </div> </div> </div> ` })}`;
+}, "P:/Projects/trendlin/src/pages/disclosure.astro", void 0);
+
+const $$file = "P:/Projects/trendlin/src/pages/disclosure.astro";
+const $$url = "/disclosure";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Disclosure,
+  file: $$file,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

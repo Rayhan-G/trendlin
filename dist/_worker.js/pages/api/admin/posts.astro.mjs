@@ -5,7 +5,23 @@ async function GET({ locals }) {
   try {
     const { DB } = locals.runtime.env;
     const result = await DB.prepare(`
-      SELECT * FROM posts ORDER BY created_at DESC
+      SELECT 
+        id, 
+        title, 
+        slug, 
+        content, 
+        excerpt, 
+        category, 
+        tags, 
+        cover_image, 
+        is_draft, 
+        is_published,
+        published_at,
+        views, 
+        created_at, 
+        updated_at 
+      FROM posts 
+      ORDER BY created_at DESC
     `).all();
     const posts = result.results || [];
     return new Response(JSON.stringify({
@@ -38,8 +54,9 @@ async function POST({ request, locals }) {
   try {
     const { DB } = locals.runtime.env;
     const data = await request.json();
+    console.log("📥 Received data:", data);
     let slug = data.slug;
-    if (!slug) {
+    if (!slug || slug.trim() === "") {
       slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     }
     const existing = await DB.prepare("SELECT id FROM posts WHERE slug = ?").bind(slug).first();
@@ -49,8 +66,17 @@ async function POST({ request, locals }) {
     }
     const result = await DB.prepare(`
       INSERT INTO posts (
-        title, slug, content, excerpt, category, tags, cover_image,
-        is_draft, is_published, created_at, updated_at
+        title, 
+        slug, 
+        content, 
+        excerpt, 
+        category, 
+        tags, 
+        cover_image,
+        is_draft, 
+        is_published,
+        created_at, 
+        updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
     `).bind(
       data.title,
@@ -60,10 +86,29 @@ async function POST({ request, locals }) {
       data.category || "Uncategorized",
       data.tags || "",
       data.cover_image || "",
+      // This is the R2 image URL
       data.is_draft === "1" ? 1 : 0,
       data.is_published === "1" ? 1 : 0
     ).run();
-    const newPost = await DB.prepare("SELECT * FROM posts WHERE id = ?").bind(result.meta.last_row_id).first();
+    const newPost = await DB.prepare(`
+      SELECT 
+        id, 
+        title, 
+        slug, 
+        content, 
+        excerpt, 
+        category, 
+        tags, 
+        cover_image, 
+        is_draft, 
+        is_published,
+        views, 
+        created_at, 
+        updated_at 
+      FROM posts 
+      WHERE id = ?
+    `).bind(result.meta.last_row_id).first();
+    console.log("✅ Post created:", newPost);
     return new Response(JSON.stringify({
       success: true,
       post: newPost,
@@ -76,7 +121,7 @@ async function POST({ request, locals }) {
       }
     });
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("❌ Error creating post:", error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message || "Failed to create post"

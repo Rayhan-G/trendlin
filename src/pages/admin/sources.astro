@@ -1,0 +1,330 @@
+---
+// ============================================
+// SOURCES MANAGEMENT - Trendlin
+// ============================================
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Sources Management">
+  <div class="max-w-6xl">
+    <!-- Header -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">📚 Trusted Sources</h1>
+        <p class="text-sm text-gray-500 mt-1">Manage your content sources by category</p>
+      </div>
+      <button 
+        id="addSourceBtn" 
+        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+      >
+        <span>+</span> Add Source
+      </button>
+    </div>
+
+    <!-- Sources Grid -->
+    <div id="sourcesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Will be populated by JavaScript -->
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="text-gray-500 mt-2">Loading sources...</p>
+    </div>
+
+    <!-- Modal for Add/Edit -->
+    <div id="sourceModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 id="modalTitle" class="text-xl font-bold">Add Source</h2>
+          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+        
+        <form id="sourceForm" class="space-y-4">
+          <input type="hidden" id="editId" value="">
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Source Name *</label>
+            <input type="text" id="sourceName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">URL *</label>
+            <input type="url" id="sourceUrl" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="https://..." />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+            <select id="sourceCategory" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              <option value="">Select Category</option>
+              <option value="Health & Wellness">Health & Wellness</option>
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Lifestyle">Lifestyle</option>
+              <option value="Technology">Technology</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Real Estate">Real Estate</option>
+              <option value="Finance">Finance</option>
+              <option value="Travel">Travel</option>
+              <option value="Fashion">Fashion</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Source Type</label>
+            <select id="sourceType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+              <option value="official">Official</option>
+              <option value="review">Review</option>
+              <option value="news">News</option>
+              <option value="community">Community</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea id="sourceDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL (optional)</label>
+            <input type="url" id="sourceLogo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="https://..." />
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="sourceActive" checked class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+            <label class="text-sm text-gray-700">Active</label>
+          </div>
+          
+          <div id="modalMessage" class="hidden p-3 rounded-lg text-sm"></div>
+          
+          <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-200">
+            Save Source
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-4 right-4 max-w-sm p-4 rounded-xl shadow-lg z-50"></div>
+  </div>
+</AdminLayout>
+
+<script>
+  let sources = [];
+  let currentCategory = '';
+
+  // Toast notification
+  function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `fixed bottom-4 right-4 max-w-sm p-4 rounded-xl shadow-lg z-50 ${
+      type === 'success' ? 'bg-green-500 text-white' : 
+      type === 'error' ? 'bg-red-500 text-white' : 
+      'bg-blue-500 text-white'
+    }`;
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 3000);
+  }
+
+  // Load sources
+  async function loadSources() {
+    try {
+      document.getElementById('loadingState').classList.remove('hidden');
+      document.getElementById('sourcesGrid').classList.add('hidden');
+      
+      const response = await fetch('/api/admin/sources');
+      const result = await response.json();
+      
+      if (result.success) {
+        sources = result.sources || [];
+        renderSources();
+      } else {
+        showToast('Failed to load sources: ' + result.error, 'error');
+      }
+    } catch (error) {
+      console.error('Error loading sources:', error);
+      showToast('Failed to load sources', 'error');
+    } finally {
+      document.getElementById('loadingState').classList.add('hidden');
+    }
+  }
+
+  // Render sources
+  function renderSources() {
+    const grid = document.getElementById('sourcesGrid');
+    
+    if (sources.length === 0) {
+      grid.innerHTML = `
+        <div class="col-span-full text-center py-12 text-gray-500">
+          <p class="text-4xl mb-2">📚</p>
+          <p>No sources added yet. Click "Add Source" to get started.</p>
+        </div>
+      `;
+      grid.classList.remove('hidden');
+      return;
+    }
+    
+    // Group by category
+    const grouped = {};
+    sources.forEach(source => {
+      if (!grouped[source.category]) grouped[source.category] = [];
+      grouped[source.category].push(source);
+    });
+    
+    grid.innerHTML = Object.keys(grouped).sort().map(category => `
+      <div class="bg-white rounded-xl border border-gray-200 p-4">
+        <h3 class="font-semibold text-gray-900 mb-3">${getCategoryIcon(category)} ${category}</h3>
+        <ul class="space-y-2">
+          ${grouped[category].map(source => `
+            <li class="flex items-center justify-between gap-2 text-sm group">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="w-1.5 h-1.5 ${source.is_active ? 'bg-green-500' : 'bg-gray-300'} rounded-full flex-shrink-0"></span>
+                <a href="${source.url}" target="_blank" class="text-blue-600 hover:underline truncate">${source.name}</a>
+                <span class="text-xs text-gray-400 flex-shrink-0">${source.source_type || 'official'}</span>
+              </div>
+              <div class="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="editSource(${source.id})" class="text-blue-600 hover:text-blue-800 text-sm">✏️</button>
+                <button onclick="deleteSource(${source.id})" class="text-red-600 hover:text-red-800 text-sm">🗑️</button>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `).join('');
+    
+    grid.classList.remove('hidden');
+  }
+
+  function getCategoryIcon(category) {
+    const icons = {
+      'Health & Wellness': '🏥',
+      'Food & Dining': '🍽️',
+      'Entertainment': '🎬',
+      'Lifestyle': '🏠',
+      'Technology': '💻',
+      'Shopping': '🛍️',
+      'Real Estate': '🏡',
+      'Finance': '💰',
+      'Travel': '✈️',
+      'Fashion': '👗'
+    };
+    return icons[category] || '📁';
+  }
+
+  // Open modal for add
+  document.getElementById('addSourceBtn').addEventListener('click', () => {
+    document.getElementById('modalTitle').textContent = 'Add Source';
+    document.getElementById('editId').value = '';
+    document.getElementById('sourceForm').reset();
+    document.getElementById('sourceActive').checked = true;
+    document.getElementById('modalMessage').classList.add('hidden');
+    document.getElementById('sourceModal').classList.remove('hidden');
+    document.getElementById('sourceModal').style.display = 'flex';
+  });
+
+  // Close modal
+  window.closeModal = function() {
+    document.getElementById('sourceModal').style.display = 'none';
+    document.getElementById('sourceModal').classList.add('hidden');
+  };
+
+  // Edit source
+  window.editSource = function(id) {
+    const source = sources.find(s => s.id === id);
+    if (!source) return;
+    
+    document.getElementById('modalTitle').textContent = 'Edit Source';
+    document.getElementById('editId').value = source.id;
+    document.getElementById('sourceName').value = source.name;
+    document.getElementById('sourceUrl').value = source.url;
+    document.getElementById('sourceCategory').value = source.category;
+    document.getElementById('sourceType').value = source.source_type || 'official';
+    document.getElementById('sourceDescription').value = source.description || '';
+    document.getElementById('sourceLogo').value = source.logo_url || '';
+    document.getElementById('sourceActive').checked = source.is_active === 1;
+    document.getElementById('modalMessage').classList.add('hidden');
+    document.getElementById('sourceModal').classList.remove('hidden');
+    document.getElementById('sourceModal').style.display = 'flex';
+  };
+
+  // Delete source
+  window.deleteSource = async function(id) {
+    if (!confirm('Are you sure you want to delete this source?')) return;
+    
+    try {
+      const response = await fetch('/api/admin/sources', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showToast('✅ Source deleted successfully');
+        loadSources();
+      } else {
+        showToast('Failed to delete: ' + result.error, 'error');
+      }
+    } catch (error) {
+      showToast('Failed to delete source', 'error');
+    }
+  };
+
+  // Submit form
+  document.getElementById('sourceForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const id = document.getElementById('editId').value;
+    const name = document.getElementById('sourceName').value.trim();
+    const url = document.getElementById('sourceUrl').value.trim();
+    const category = document.getElementById('sourceCategory').value;
+    const source_type = document.getElementById('sourceType').value;
+    const description = document.getElementById('sourceDescription').value.trim();
+    const logo_url = document.getElementById('sourceLogo').value.trim();
+    const is_active = document.getElementById('sourceActive').checked ? 1 : 0;
+    
+    if (!name || !url || !category) {
+      const msg = document.getElementById('modalMessage');
+      msg.textContent = 'Name, URL, and category are required';
+      msg.className = 'p-3 rounded-lg text-sm bg-red-50 text-red-700';
+      msg.classList.remove('hidden');
+      return;
+    }
+    
+    const data = { name, url, category, description, source_type, logo_url, is_active };
+    
+    try {
+      const method = id ? 'PUT' : 'POST';
+      if (id) data.id = parseInt(id);
+      
+      const response = await fetch('/api/admin/sources', {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showToast(id ? '✅ Source updated successfully' : '✅ Source added successfully');
+        closeModal();
+        loadSources();
+      } else {
+        const msg = document.getElementById('modalMessage');
+        msg.textContent = result.error || 'Failed to save source';
+        msg.className = 'p-3 rounded-lg text-sm bg-red-50 text-red-700';
+        msg.classList.remove('hidden');
+      }
+    } catch (error) {
+      const msg = document.getElementById('modalMessage');
+      msg.textContent = 'Failed to save source';
+      msg.className = 'p-3 rounded-lg text-sm bg-red-50 text-red-700';
+      msg.classList.remove('hidden');
+    }
+  });
+
+  // Load on page load
+  loadSources();
+</script>

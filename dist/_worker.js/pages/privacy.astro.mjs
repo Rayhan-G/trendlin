@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                 */
-import { a as createComponent, f as renderComponent, d as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_C5D88m4V.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_o7T6o6BI.mjs';
+import { a as createComponent, g as renderComponent, d as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DVHrQl8d.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_CGfDT0zE.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Privacy = createComponent(($$result, $$props, $$slots) => {

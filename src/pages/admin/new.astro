@@ -1,6 +1,6 @@
 ---
 // ============================================
-// NEW POST - Trendlin (Auto Slug + Cover Image)
+// NEW POST - Trendlin (Auto Slug + Cover Image + Media Library with Folders)
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
@@ -94,9 +94,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </div>
       </div>
 
-      <!-- HTML Editor -->
+      <!-- HTML Editor with Media Library Button -->
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1.5">HTML Content *</label>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-sm font-medium text-gray-700">HTML Content *</label>
+          <button 
+            type="button" 
+            id="mediaLibraryBtn" 
+            class="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1.5"
+          >
+            🖼️ Insert from Media Library
+          </button>
+        </div>
         <textarea 
           id="content" 
           name="content" 
@@ -176,7 +185,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 </AdminLayout>
 
 <!-- ============================================
-JAVASCRIPT - Auto Slug + Preview + R2 Upload + Submit
+JAVASCRIPT - Auto Slug + Preview + R2 Upload + Media Library with Folders + Submit
 ============================================ -->
 <script>
   // ============================================
@@ -223,7 +232,7 @@ JAVASCRIPT - Auto Slug + Preview + R2 Upload + Submit
     coverPreview.classList.add('hidden');
   });
 
-  // Upload to R2 (blog-assets)
+  // Upload to R2
   uploadBtn.addEventListener('click', () => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -233,19 +242,15 @@ JAVASCRIPT - Auto Slug + Preview + R2 Upload + Submit
       const file = e.target.files[0];
       if (!file) return;
       
-      // Disable button during upload
       uploadBtn.disabled = true;
-      const originalText = uploadBtn.textContent;
       uploadBtn.textContent = '⏳ Uploading...';
       
-      // Show upload status
       const statusMsg = document.getElementById('statusMessage');
       statusMsg.className = 'p-4 rounded-xl bg-blue-50 text-blue-700';
-      statusMsg.textContent = `⏳ Uploading ${file.name} to blog-assets...`;
+      statusMsg.textContent = `⏳ Uploading ${file.name}...`;
       statusMsg.classList.remove('hidden');
       
       try {
-        // Upload to R2 via our API
         const formData = new FormData();
         formData.append('image', file);
         
@@ -262,15 +267,12 @@ JAVASCRIPT - Auto Slug + Preview + R2 Upload + Submit
         const result = await response.json();
         
         if (result.success) {
-          // Set the URL from R2 blog-assets
           coverImageInput.value = result.url;
           updateCoverPreview();
           
-          // Show success
           statusMsg.className = 'p-4 rounded-xl bg-green-50 text-green-700';
-          statusMsg.textContent = `✅ Image uploaded successfully to blog-assets!`;
+          statusMsg.textContent = `✅ Image uploaded successfully!`;
           
-          // Hide success message after 3 seconds
           setTimeout(() => {
             statusMsg.classList.add('hidden');
           }, 3000);
@@ -282,7 +284,6 @@ JAVASCRIPT - Auto Slug + Preview + R2 Upload + Submit
         statusMsg.className = 'p-4 rounded-xl bg-red-50 text-red-700';
         statusMsg.textContent = `❌ Upload failed: ${error.message}`;
       } finally {
-        // Re-enable button
         uploadBtn.disabled = false;
         uploadBtn.textContent = '📤 Upload';
       }
@@ -290,6 +291,194 @@ JAVASCRIPT - Auto Slug + Preview + R2 Upload + Submit
     
     fileInput.click();
   });
+
+  // ============================================
+  // MEDIA LIBRARY - INSERT INTO CONTENT (WITH FOLDERS)
+  // ============================================
+  document.getElementById('mediaLibraryBtn').addEventListener('click', async function() {
+    try {
+      const response = await fetch('/api/admin/media');
+      const result = await response.json();
+      
+      if (!result.success) {
+        alert('Failed to load media library');
+        return;
+      }
+      
+      const mediaItems = result.media || [];
+      const folders = result.folders || [];
+      
+      if (mediaItems.length === 0 && folders.length === 0) {
+        alert('No media found. Please upload some images first.');
+        return;
+      }
+      
+      // Create modal with folder navigation
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Media Library</h2>
+            <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+          <div class="p-4 overflow-y-auto flex-1" id="mediaModalContent">
+            <div id="modalFolderNav" class="flex items-center gap-2 mb-4 text-sm">
+              <button onclick="renderModalFolder('')" class="text-blue-600 hover:text-blue-800 font-medium">📁 Root</button>
+              <span id="modalFolderPath" class="text-gray-400"></span>
+            </div>
+            <div id="modalMediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              ${renderModalItems(mediaItems, folders, '')}
+            </div>
+          </div>
+          <div class="p-3 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500">
+            Click on any image to insert it into your content
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Store data for modal navigation
+      window.modalData = { mediaItems, folders, currentFolder: '' };
+      
+    } catch (error) {
+      console.error('Error opening media library:', error);
+      alert('Failed to open media library: ' + error.message);
+    }
+  });
+
+  // Render modal items
+  function renderModalItems(mediaItems, folders, currentFolder) {
+    // Get subfolders
+    const subFolders = folders.filter(f => {
+      if (!currentFolder) {
+        return !f.includes('/');
+      }
+      return f.startsWith(currentFolder + '/') && 
+             f.split('/').length === currentFolder.split('/').length + 1;
+    });
+    
+    // Get files in current folder
+    const files = mediaItems.filter(item => {
+      if (!currentFolder) {
+        return !item.folder || item.folder === '';
+      }
+      return item.folder === currentFolder;
+    });
+    
+    let html = '';
+    
+    // Render folders first
+    subFolders.forEach(folder => {
+      const folderName = folder.split('/').pop();
+      html += `
+        <div class="cursor-pointer hover:ring-2 hover:ring-blue-500 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-dashed border-blue-200" onclick="renderModalFolder('${folder}')">
+          <div class="aspect-square flex flex-col items-center justify-center p-4">
+            <div class="text-5xl mb-2">📁</div>
+            <p class="text-sm font-semibold text-gray-700 text-center truncate w-full">${folderName}</p>
+          </div>
+        </div>
+      `;
+    });
+    
+    // Render files
+    files.forEach(item => {
+      const isVideo = item.mime_type && item.mime_type.startsWith('video/');
+      const imageUrl = item.url || '';
+      const altText = item.alt_text || item.original_name || 'Image';
+      const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
+      
+      html += `
+        <div class="cursor-pointer hover:ring-2 hover:ring-blue-500 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700" onclick="insertMedia('${imageUrl}', '${altText}')">
+          <div class="aspect-square bg-gray-100 dark:bg-gray-600 relative">
+            ${isVideo ? `
+              <div class="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                <span class="text-4xl">🎬</span>
+              </div>
+            ` : `
+              <img src="${imageUrl}" alt="${altText}" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f3f4f6%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239ca3af%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'" />
+            `}
+            <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+              ${displayName}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    if (html === '') {
+      html = `
+        <div class="col-span-full text-center py-8 text-gray-500">
+          <p>📂 This folder is empty</p>
+        </div>
+      `;
+    }
+    
+    return html;
+  }
+
+  // Navigate modal folder
+  window.renderModalFolder = function(folder) {
+    const { mediaItems, folders } = window.modalData;
+    const grid = document.getElementById('modalMediaGrid');
+    const pathElement = document.getElementById('modalFolderPath');
+    
+    // Update current folder
+    window.modalData.currentFolder = folder;
+    
+    // Render items
+    grid.innerHTML = renderModalItems(mediaItems, folders, folder);
+    
+    // Update breadcrumb
+    if (folder) {
+      const parts = folder.split('/');
+      let html = ' <span class="text-gray-400 mx-1">/</span> ';
+      let path = '';
+      parts.forEach((part, index) => {
+        path += (index > 0 ? '/' : '') + part;
+        html += `<button onclick="renderModalFolder('${path}')" class="text-blue-600 hover:text-blue-800 font-medium">${part}</button>`;
+        if (index < parts.length - 1) {
+          html += ' <span class="text-gray-400 mx-1">/</span> ';
+        }
+      });
+      pathElement.innerHTML = html;
+    } else {
+      pathElement.innerHTML = '';
+    }
+  };
+
+  // Insert media into content
+  window.insertMedia = function(url, alt) {
+    const contentTextarea = document.getElementById('content');
+    const markdown = `<img src="${url}" alt="${alt || 'Image'}" />`;
+    
+    // Insert at cursor position or at the end
+    const start = contentTextarea.selectionStart;
+    const end = contentTextarea.selectionEnd;
+    const text = contentTextarea.value;
+    
+    contentTextarea.value = text.substring(0, start) + markdown + text.substring(end);
+    contentTextarea.dispatchEvent(new Event('input'));
+    contentTextarea.focus();
+    
+    // Update preview
+    updatePreview();
+    
+    // Close modal
+    const modal = document.querySelector('.fixed.bg-black\\/50');
+    if (modal) modal.remove();
+    
+    // Show success message
+    const statusMsg = document.getElementById('statusMessage');
+    statusMsg.className = 'p-4 rounded-xl bg-green-50 text-green-700';
+    statusMsg.textContent = '✅ Image inserted into content!';
+    statusMsg.classList.remove('hidden');
+    
+    setTimeout(() => {
+      statusMsg.classList.add('hidden');
+    }, 2000);
+  };
 
   // ============================================
   // PREVIEW
