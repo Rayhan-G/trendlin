@@ -1,5 +1,5 @@
 // ============================================
-// EMAIL TEMPLATES - Trendlin (Clean Black & White)
+// EMAIL TEMPLATES - Trendlin (Professional)
 // ============================================
 
 function baseTemplate(content, label, tag) {
@@ -72,7 +72,7 @@ function baseTemplate(content, label, tag) {
   `;
 }
 
-// ----- 1. ADMIN NOTIFICATION -----
+// ----- 1. ADMIN NOTIFICATION (NO automated message) -----
 export function contactEmailTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -99,12 +99,11 @@ export function contactEmailTemplate(data) {
     </div>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
     </div>
   `, 'New Contact', 'Admin');
 }
 
-// ----- 2. GENERAL AUTO-REPLY -----
+// ----- 2. GENERAL AUTO-REPLY (WITH automated message) -----
 export function autoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -121,12 +120,12 @@ export function autoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">Explore <a href="#" class="link">Trendlin</a></p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'General Inquiry', 'Auto-reply');
 }
 
-// ----- 3. PRIVACY AUTO-REPLY -----
+// ----- 3. PRIVACY AUTO-REPLY (WITH automated message) -----
 export function privacyAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -142,12 +141,12 @@ export function privacyAutoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Privacy Policy</a></p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'Privacy Inquiry', 'Privacy Team');
 }
 
-// ----- 4. LEGAL AUTO-REPLY -----
+// ----- 4. LEGAL AUTO-REPLY (WITH automated message) -----
 export function legalAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -163,12 +162,12 @@ export function legalAutoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Terms of Service</a></p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'Legal Inquiry', 'Legal Team');
 }
 
-// ----- 5. COOKIE AUTO-REPLY -----
+// ----- 5. COOKIE AUTO-REPLY (WITH automated message) -----
 export function cookieAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -184,12 +183,12 @@ export function cookieAutoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Cookie Policy</a></p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'Cookie Policy', 'Support Team');
 }
 
-// ----- 6. TERMS AUTO-REPLY -----
+// ----- 6. TERMS AUTO-REPLY (WITH automated message) -----
 export function termsAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -205,12 +204,12 @@ export function termsAutoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Terms of Service</a></p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'Terms of Service', 'Legal Team');
 }
 
-// ----- 7. PARTNERSHIP AUTO-REPLY -----
+// ----- 7. PARTNERSHIP AUTO-REPLY (WITH automated message) -----
 export function partnershipAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -226,12 +225,12 @@ export function partnershipAutoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">We look forward to working together</p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'Partnership', 'Partnership Team');
 }
 
-// ----- 8. FEEDBACK AUTO-REPLY -----
+// ----- 8. FEEDBACK AUTO-REPLY (WITH automated message) -----
 export function feedbackAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -247,12 +246,12 @@ export function feedbackAutoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">We may reach out if we need more details</p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'Feedback', 'Feedback Team');
 }
 
-// ----- 9. TECHNICAL AUTO-REPLY -----
+// ----- 9. TECHNICAL AUTO-REPLY (WITH automated message) -----
 export function technicalAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -268,12 +267,12 @@ export function technicalAutoReplyTemplate(data) {
     <p style="color:#666666;font-size:14px;margin:0;">We appreciate your patience</p>
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
     </div>
   `, 'Technical Issue', 'Tech Support');
 }
 
-// ----- 10. NOTIFICATION -----
+// ----- 10. NOTIFICATION (NO automated message) -----
 export function notificationEmailTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -284,7 +283,6 @@ export function notificationEmailTemplate(data) {
     ${data.cta ? `<div style="height:16px;"></div><a href="${data.cta.url}" class="btn">${data.cta.text}</a>` : ''}
     <div class="footer">
       Trendlin
-      <div class="small">Automated message</div>
     </div>
   `, 'Notification', 'System');
 }
