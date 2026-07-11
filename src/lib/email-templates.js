@@ -1,5 +1,78 @@
 // ============================================
-// 1. GENERAL INQUIRY
+// Email Templates
+// ============================================
+
+// ============================================
+// 1. CONTACT EMAIL TEMPLATE (Admin Notification)
+// ============================================
+
+export function contactEmailTemplate(data) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>New Contact Message</title>
+      <style>
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #0f172a; font-size: 24px; }
+        .field { margin-bottom: 20px; }
+        .field-label { font-weight: 600; color: #475569; font-size: 14px; margin-bottom: 5px; }
+        .field-value { background: #f8fafc; padding: 12px 16px; border-radius: 8px; color: #0f172a; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0; font-size: 14px; color: #64748b; text-align: center; }
+        .badge { display: inline-block; background: #3b82f6; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .message { white-space: pre-wrap; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>📬 New Contact Message</h1>
+          <span class="badge">${data.timestamp || 'New'}</span>
+        </div>
+        
+        <div class="field">
+          <div class="field-label">Name</div>
+          <div class="field-value">${data.name}</div>
+        </div>
+        
+        <div class="field">
+          <div class="field-label">Email</div>
+          <div class="field-value"><a href="mailto:${data.email}">${data.email}</a></div>
+        </div>
+        
+        ${data.phone ? `
+        <div class="field">
+          <div class="field-label">Phone</div>
+          <div class="field-value">${data.phone}</div>
+        </div>
+        ` : ''}
+        
+        <div class="field">
+          <div class="field-label">Subject</div>
+          <div class="field-value">${data.subject}</div>
+        </div>
+        
+        <div class="field">
+          <div class="field-label">Message</div>
+          <div class="field-value message">${data.message}</div>
+        </div>
+        
+        <div class="footer">
+          <p>Message sent from Trendlin Contact Form</p>
+          <p style="font-size: 12px;">IP: ${data.ip || 'N/A'} • User Agent: ${data.userAgent || 'N/A'}</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// ============================================
+// 2. AUTO-REPLY TEMPLATE (General)
 // ============================================
 
 export function autoReplyTemplate(data) {
@@ -11,92 +84,41 @@ export function autoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Thank You for Contacting Trendlin</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
-        .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .content { margin: 32px 0; }
-        .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
-        .badge { 
-          display: inline-block; 
-          background: #3b82f6; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
-        .btn { 
-          display: inline-block; 
-          background: #3b82f6; 
-          color: white; 
-          padding: 12px 28px; 
-          border-radius: 10px; 
-          text-decoration: none; 
-          margin: 16px 0 8px; 
-          font-weight: 500;
-          transition: background 0.2s;
-        }
-        .btn:hover { background: #2563eb; }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; }
+        .header p { color: #64748b; margin: 5px 0 0; }
+        .content { margin: 30px 0; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0; font-size: 14px; color: #64748b; text-align: center; }
+        .btn { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 20px 0; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <div class="icon">👋</div>
-          <h1>Thank You for Contacting Us!</h1>
+          <h1>👋 Thank You for Contacting Us!</h1>
           <p>We appreciate you reaching out to Trendlin</p>
         </div>
+        
         <div class="content">
-          <p style="font-size: 18px; font-weight: 500; color: #0f172a;">Hi ${data.name},</p>
+          <p>Hi ${data.name},</p>
           <p>Thank you for contacting Trendlin. We have received your message and will get back to you as soon as possible (usually within 24-48 hours).</p>
           
-          <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0;">
-            <p style="font-size: 13px; color: #64748b; margin: 0 0 8px; font-weight: 500;">📋 Summary of your message</p>
-            <p style="margin: 0; color: #0f172a;"><strong>Subject:</strong> ${data.subject}</p>
-            <p style="margin: 4px 0 0; color: #64748b;">${data.message.substring(0, 200)}${data.message.length > 200 ? '...' : ''}</p>
+          <p>Here's a summary of your message:</p>
+          <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin: 16px 0;">
+            <strong>Subject:</strong> ${data.subject}<br>
+            <strong>Message:</strong> ${data.message.substring(0, 200)}${data.message.length > 200 ? '...' : ''}
           </div>
           
-          <p style="color: #64748b;">In the meantime, you can:</p>
-          <ul style="color: #475569; padding-left: 20px;">
-            <li>📚 <a href="https://trendlin.com" style="color: #3b82f6; text-decoration: none;">Read our latest articles</a></li>
-            <li>📱 <a href="https://trendlin.com/categories" style="color: #3b82f6; text-decoration: none;">Explore our categories</a></li>
+          <p>In the meantime, you can:</p>
+          <ul>
+            <li>📚 <a href="https://trendlin.com">Read our latest articles</a></li>
+            <li>📱 <a href="https://trendlin.com/categories">Explore our categories</a></li>
+            <li>💬 <a href="https://trendlin.com/contact">Send us another message</a></li>
           </ul>
         </div>
+        
         <div class="footer">
           <p>— The Trendlin Team</p>
           <p style="font-size: 12px;">This is an automated reply. Please do not reply to this email.</p>
@@ -108,7 +130,53 @@ export function autoReplyTemplate(data) {
 }
 
 // ============================================
-// 2. PRIVACY INQUIRY
+// 3. NOTIFICATION TEMPLATE
+// ============================================
+
+export function notificationEmailTemplate(data) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Trendlin Notification</title>
+      <style>
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+        .header h1 { margin: 0; color: #0f172a; font-size: 24px; }
+        .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0; font-size: 14px; color: #64748b; text-align: center; }
+        .info { background: #f8fafc; padding: 16px; border-radius: 8px; margin: 16px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>📨 ${data.title}</h1>
+        </div>
+        
+        <div class="info">
+          ${data.message}
+        </div>
+        
+        ${data.cta ? `
+        <a href="${data.cta.url}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin: 20px 0;">
+          ${data.cta.text}
+        </a>
+        ` : ''}
+        
+        <div class="footer">
+          <p>— Trendlin</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// ============================================
+// 4. PRIVACY TEAM AUTO-REPLY
 // ============================================
 
 export function privacyAutoReplyTemplate(data) {
@@ -120,56 +188,15 @@ export function privacyAutoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Privacy Request Received</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-          border-top: 4px solid #8b5cf6;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 16px; padding: 48px 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-top: 4px solid #8b5cf6; }
+        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 32px; }
         .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .badge { 
-          display: inline-block; 
-          background: #8b5cf6; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+        .badge { display: inline-block; background: #8b5cf6; color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .content { margin: 32px 0; }
         .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 2px solid #f1f5f9; font-size: 14px; color: #94a3b8; text-align: center; }
         .shield { color: #8b5cf6; }
       </style>
     </head>
@@ -202,7 +229,7 @@ export function privacyAutoReplyTemplate(data) {
 }
 
 // ============================================
-// 3. LEGAL INQUIRY
+// 5. LEGAL TEAM AUTO-REPLY
 // ============================================
 
 export function legalAutoReplyTemplate(data) {
@@ -214,56 +241,15 @@ export function legalAutoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Legal Inquiry Received</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-          border-top: 4px solid #ef4444;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 16px; padding: 48px 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-top: 4px solid #ef4444; }
+        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 32px; }
         .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .badge { 
-          display: inline-block; 
-          background: #ef4444; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+        .badge { display: inline-block; background: #ef4444; color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .content { margin: 32px 0; }
         .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 2px solid #f1f5f9; font-size: 14px; color: #94a3b8; text-align: center; }
       </style>
     </head>
     <body>
@@ -295,7 +281,7 @@ export function legalAutoReplyTemplate(data) {
 }
 
 // ============================================
-// 4. COOKIE POLICY QUESTION
+// 6. COOKIE POLICY AUTO-REPLY
 // ============================================
 
 export function cookieAutoReplyTemplate(data) {
@@ -307,56 +293,15 @@ export function cookieAutoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Cookie Policy Question</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-          border-top: 4px solid #f59e0b;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 16px; padding: 48px 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-top: 4px solid #f59e0b; }
+        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 32px; }
         .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .badge { 
-          display: inline-block; 
-          background: #f59e0b; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+        .badge { display: inline-block; background: #f59e0b; color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .content { margin: 32px 0; }
         .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 2px solid #f1f5f9; font-size: 14px; color: #94a3b8; text-align: center; }
       </style>
     </head>
     <body>
@@ -388,7 +333,7 @@ export function cookieAutoReplyTemplate(data) {
 }
 
 // ============================================
-// 5. TERMS OF SERVICE QUESTION
+// 7. TERMS OF SERVICE AUTO-REPLY
 // ============================================
 
 export function termsAutoReplyTemplate(data) {
@@ -400,56 +345,15 @@ export function termsAutoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Terms of Service Question</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-          border-top: 4px solid #6366f1;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 16px; padding: 48px 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-top: 4px solid #6366f1; }
+        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 32px; }
         .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .badge { 
-          display: inline-block; 
-          background: #6366f1; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+        .badge { display: inline-block; background: #6366f1; color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .content { margin: 32px 0; }
         .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 2px solid #f1f5f9; font-size: 14px; color: #94a3b8; text-align: center; }
       </style>
     </head>
     <body>
@@ -481,7 +385,7 @@ export function termsAutoReplyTemplate(data) {
 }
 
 // ============================================
-// 6. PARTNERSHIP OPPORTUNITY
+// 8. PARTNERSHIP AUTO-REPLY
 // ============================================
 
 export function partnershipAutoReplyTemplate(data) {
@@ -493,57 +397,15 @@ export function partnershipAutoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Partnership Opportunity</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-          border-top: 4px solid #10b981;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 16px; padding: 48px 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-top: 4px solid #10b981; }
+        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 32px; }
         .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .badge { 
-          display: inline-block; 
-          background: #10b981; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+        .badge { display: inline-block; background: #10b981; color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .content { margin: 32px 0; }
         .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
-        .partner-icon { color: #10b981; }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 2px solid #f1f5f9; font-size: 14px; color: #94a3b8; text-align: center; }
       </style>
     </head>
     <body>
@@ -559,7 +421,7 @@ export function partnershipAutoReplyTemplate(data) {
           <p>We have received your partnership inquiry and will review it within <strong>24-48 hours</strong>.</p>
           <div style="background: #ecfdf5; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #10b981;">
             <p style="margin: 0; color: #065f46; font-size: 14px;">
-              <span class="partner-icon">✨</span> Our partnerships team will reach out to you shortly to discuss potential collaboration.
+              ✨ Our partnerships team will reach out to you shortly to discuss potential collaboration.
             </p>
           </div>
           <p style="color: #64748b;">We look forward to exploring how we can work together!</p>
@@ -575,7 +437,7 @@ export function partnershipAutoReplyTemplate(data) {
 }
 
 // ============================================
-// 7. FEEDBACK
+// 9. FEEDBACK AUTO-REPLY
 // ============================================
 
 export function feedbackAutoReplyTemplate(data) {
@@ -587,56 +449,15 @@ export function feedbackAutoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Feedback Received</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-          border-top: 4px solid #6366f1;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 16px; padding: 48px 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-top: 4px solid #6366f1; }
+        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 32px; }
         .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .badge { 
-          display: inline-block; 
-          background: #6366f1; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+        .badge { display: inline-block; background: #6366f1; color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .content { margin: 32px 0; }
         .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 2px solid #f1f5f9; font-size: 14px; color: #94a3b8; text-align: center; }
       </style>
     </head>
     <body>
@@ -668,7 +489,7 @@ export function feedbackAutoReplyTemplate(data) {
 }
 
 // ============================================
-// 8. TECHNICAL ISSUE
+// 10. TECHNICAL ISSUE AUTO-REPLY
 // ============================================
 
 export function technicalAutoReplyTemplate(data) {
@@ -680,56 +501,15 @@ export function technicalAutoReplyTemplate(data) {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Technical Issue Received</title>
       <style>
-        body { 
-          font-family: 'Inter', -apple-system, sans-serif; 
-          line-height: 1.6; 
-          color: #1a1a1a; 
-          max-width: 600px; 
-          margin: 0 auto; 
-          padding: 20px; 
-          background: #f8fafc; 
-        }
-        .container { 
-          background: white; 
-          border-radius: 16px; 
-          padding: 48px 40px; 
-          box-shadow: 0 4px 24px rgba(0,0,0,0.06); 
-          border-top: 4px solid #06b6d4;
-        }
-        .header { 
-          text-align: center; 
-          border-bottom: 2px solid #f1f5f9; 
-          padding-bottom: 24px; 
-          margin-bottom: 32px; 
-        }
+        body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+        .container { background: white; border-radius: 16px; padding: 48px 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); border-top: 4px solid #06b6d4; }
+        .header { text-align: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 24px; margin-bottom: 32px; }
         .header .icon { font-size: 48px; margin-bottom: 8px; }
-        .header h1 { 
-          margin: 0; 
-          color: #0f172a; 
-          font-size: 28px; 
-          font-weight: 700; 
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        .header p { color: #64748b; margin: 4px 0 0; font-size: 16px; }
-        .badge { 
-          display: inline-block; 
-          background: #06b6d4; 
-          color: white; 
-          padding: 4px 16px; 
-          border-radius: 20px; 
-          font-size: 12px; 
-          font-weight: 500; 
-        }
+        .header h1 { margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+        .badge { display: inline-block; background: #06b6d4; color: white; padding: 4px 16px; border-radius: 20px; font-size: 12px; font-weight: 500; }
         .content { margin: 32px 0; }
         .content p { color: #334155; }
-        .footer { 
-          margin-top: 32px; 
-          padding-top: 24px; 
-          border-top: 2px solid #f1f5f9; 
-          font-size: 14px; 
-          color: #94a3b8; 
-          text-align: center; 
-        }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 2px solid #f1f5f9; font-size: 14px; color: #94a3b8; text-align: center; }
       </style>
     </head>
     <body>
