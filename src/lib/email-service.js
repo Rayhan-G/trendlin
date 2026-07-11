@@ -3,7 +3,13 @@
 // ============================================
 
 import { Resend } from 'resend';
-import { contactEmailTemplate, autoReplyTemplate, notificationEmailTemplate } from './email-templates.js';
+import { 
+  contactEmailTemplate, 
+  autoReplyTemplate, 
+  notificationEmailTemplate,
+  privacyAutoReplyTemplate,
+  legalAutoReplyTemplate 
+} from './email-templates.js';
 
 export class EmailService {
   constructor(apiKey) {
@@ -57,6 +63,83 @@ export class EmailService {
     } catch (error) {
       console.error('❌ Email sending error:', error);
       throw new Error(`Failed to send email: ${error.message}`);
+    }
+  }
+
+  // NEW: Send auto-reply for direct emails to specific addresses
+  async sendDirectEmailAutoReply(data) {
+    try {
+      const { to, from, subject, message } = data;
+      
+      let replySubject = '';
+      let replyHtml = '';
+      const senderName = from.split('@')[0] || 'User';
+
+      // Determine which team the email is for
+      if (to.includes('privacy@trendlin.com')) {
+        replySubject = 'Privacy Request Received - Trendlin';
+        replyHtml = privacyAutoReplyTemplate({ name: senderName });
+      } else if (to.includes('legal@trendlin.com')) {
+        replySubject = 'Legal Inquiry Received - Trendlin';
+        replyHtml = legalAutoReplyTemplate({ name: senderName });
+      } else if (to.includes('contact@trendlin.com')) {
+        replySubject = 'Thank You for Contacting Trendlin';
+        replyHtml = autoReplyTemplate({ 
+          name: senderName, 
+          subject: subject || 'General Inquiry',
+          message: message || 'We have received your email.'
+        });
+      } else {
+        // Default auto-reply for other addresses
+        replySubject = 'Thank You for Contacting Trendlin';
+        replyHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Thank You</title>
+            <style>
+              body { font-family: 'Inter', -apple-system, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; }
+              .container { background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+              .header { border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+              .header h1 { margin: 0; color: #0f172a; font-size: 24px; }
+              .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0; font-size: 14px; color: #64748b; text-align: center; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>📨 Thank You for Contacting Trendlin</h1>
+              </div>
+              <p>Hi ${senderName},</p>
+              <p>We have received your email and will respond within <strong>24-48 hours</strong>.</p>
+              <br>
+              <div class="footer">
+                <p>— The Trendlin Team</p>
+                <p style="font-size: 12px; color: #94a3b8;">This is an automated reply. Please do not reply to this email.</p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `;
+      }
+
+      // Send auto-reply
+      const result = await this.resend.emails.send({
+        from: `Trendlin <${to}>`,
+        to: [from],
+        subject: replySubject,
+        html: replyHtml
+      });
+
+      return {
+        success: true,
+        result
+      };
+    } catch (error) {
+      console.error('❌ Auto-reply error:', error);
+      throw new Error(`Failed to send auto-reply: ${error.message}`);
     }
   }
 
