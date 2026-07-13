@@ -10,6 +10,8 @@ async function GET({ locals }) {
   try {
     const { DB } = locals.runtime.env;
     
+    console.log('📡 Fetching states...');
+    
     const result = await DB.prepare(`
       SELECT 
         id, name, code, abbreviation, region,
@@ -18,6 +20,8 @@ async function GET({ locals }) {
       WHERE is_active = 1
       ORDER BY name ASC
     `).all();
+    
+    console.log(`✅ Found ${result.results?.length || 0} states`);
     
     return new Response(JSON.stringify({
       success: true,
@@ -28,7 +32,7 @@ async function GET({ locals }) {
     });
     
   } catch (error) {
-    console.error('Error fetching states:', error);
+    console.error('❌ Error fetching states:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message

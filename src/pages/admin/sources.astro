@@ -14,22 +14,16 @@ let error = null;
 try {
   // Fetch sources
   const sourcesResponse = await fetch(`${Astro.url.origin}/api/admin/sources`);
-  console.log('Sources Response Status:', sourcesResponse.status);
   
   if (sourcesResponse.ok) {
     const data = await sourcesResponse.json();
-    console.log('Sources Data:', data);
-    
     if (data && data.success) {
       masterSources = data.master || [];
       stateSources = data.state || [];
-      console.log(`✅ Loaded ${masterSources.length} master sources and ${stateSources.length} state sources`);
     } else {
-      console.error('API returned error:', data?.error);
       error = data?.error || 'Failed to load sources';
     }
   } else {
-    console.error('API response not OK:', sourcesResponse.status);
     error = `Server error: ${sourcesResponse.status}`;
   }
   
@@ -39,7 +33,6 @@ try {
     const data = await categoriesResponse.json();
     if (data && data.success) {
       categories = data.categories || [];
-      console.log(`✅ Loaded ${categories.length} categories`);
     }
   }
   
@@ -49,13 +42,12 @@ try {
     const data = await statesResponse.json();
     if (data && data.success) {
       states = data.states || [];
-      console.log(`✅ Loaded ${states.length} states`);
     }
   }
   
-} catch (error) {
-  console.error('❌ Error fetching sources:', error);
-  error = error.message;
+} catch (err) {
+  console.error('Error fetching sources:', err);
+  error = err.message;
 }
 
 const totalSources = masterSources.length + stateSources.length;
@@ -66,18 +58,12 @@ const totalCategories = categories.length;
 
 <AdminLayout title="Sources Management - Trendlin">
   
-  <!-- Debug Info - Remove after fixing -->
+  <!-- Error Alert -->
   {error && (
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
       <strong>Error:</strong> {error}
     </div>
   )}
-  
-  <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
-    <strong>Debug Info:</strong> 
-    Master: {masterSources.length}, State: {stateSources.length}, 
-    Categories: {categories.length}, States: {states.length}
-  </div>
 
   <!-- Header -->
   <div class="mb-8">
@@ -243,7 +229,7 @@ const totalCategories = categories.length;
       ))}
     </select>
 
-    <button onclick="refreshSources()" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors flex items-center gap-1">
+    <button onclick="window.location.reload()" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors flex items-center gap-1">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
       </svg>
@@ -255,13 +241,14 @@ const totalCategories = categories.length;
     </div>
   </div>
 
-  <!-- Sources Grid -->
-  <div id="masterSources" class="mb-8">
+  <!-- Master Sources Grid -->
+  <div id="masterSources">
     <div id="masterSourcesList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
       <!-- Populated by JavaScript -->
     </div>
   </div>
 
+  <!-- State Sources Grid -->
   <div id="stateSources" class="hidden">
     <div id="stateSourcesList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
       <!-- Populated by JavaScript -->
@@ -279,23 +266,17 @@ const totalCategories = categories.length;
     </div>
   </div>
 
-  <!-- Loading State -->
-  <div id="loadingState" class="hidden text-center py-16">
-    <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-600"></div>
-    <p class="text-gray-500 mt-3">Loading sources...</p>
-  </div>
-
   <!-- ============================================ -->
   <!-- SOURCE MODAL (Add/Edit) -->
   <!-- ============================================ -->
-  <div id="sourceModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+  <div id="sourceModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div class="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b border-gray-200">
         <h2 id="modalTitle" class="text-xl font-bold text-gray-900">Add Source</h2>
-        <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        <button type="button" onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
       </div>
       <div class="p-6">
-        <form id="sourceForm" class="space-y-4">
+        <form id="sourceForm" class="space-y-4" onsubmit="return false;">
           <input type="hidden" id="editId" />
           <input type="hidden" id="editType" />
           
@@ -436,7 +417,8 @@ const totalCategories = categories.length;
           
           <!-- Submit -->
           <button 
-            type="submit" 
+            type="button"
+            id="saveSourceBtn"
             class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25"
           >
             Save Source
@@ -460,62 +442,67 @@ const totalCategories = categories.length;
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT -->
+<!-- JAVASCRIPT - COMPLETE -->
 <!-- ============================================ -->
 <script>
   // ============================================
-  // DATA - Parse from server
+  // DATA
   // ============================================
   const masterData = JSON.parse(`[${masterSources.map(s => JSON.stringify(s)).join(',')}]`);
   const stateData = JSON.parse(`[${stateSources.map(s => JSON.stringify(s)).join(',')}]`);
   const categoriesData = JSON.parse(`[${categories.map(c => JSON.stringify(c)).join(',')}]`);
   const statesData = JSON.parse(`[${states.map(s => JSON.stringify(s)).join(',')}]`);
 
-  console.log('📊 Master Data:', masterData);
-  console.log('📊 State Data:', stateData);
-  console.log('📊 Categories:', categoriesData);
-  console.log('📊 States:', statesData);
-
   let allSources = { master: masterData, state: stateData };
   let filteredSources = { master: [], state: [] };
   let currentTab = 'master';
   let isSubmitting = false;
 
+  console.log('📊 Master Sources:', masterData.length);
+  console.log('📊 State Sources:', stateData.length);
+  console.log('📊 Categories:', categoriesData.length);
+  console.log('📊 States:', statesData.length);
+
   // ============================================
   // DOM READY
   // ============================================
   document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM Ready - Rendering sources...');
+    console.log('🚀 DOM Ready - Setting up event listeners');
     
-    document.getElementById('addMasterBtn').addEventListener('click', () => openModal('master'));
-    document.getElementById('addStateBtn').addEventListener('click', () => openModal('state'));
-    document.getElementById('sourceForm').addEventListener('submit', handleFormSubmit);
+    // Add click handlers
+    document.getElementById('addMasterBtn').addEventListener('click', function() {
+      console.log('🔵 Add Master Source clicked');
+      openModal('master');
+    });
     
+    document.getElementById('addStateBtn').addEventListener('click', function() {
+      console.log('🟢 Add State Source clicked');
+      openModal('state');
+    });
+    
+    // Save button handler
+    document.getElementById('saveSourceBtn').addEventListener('click', function() {
+      console.log('💾 Save button clicked');
+      handleFormSubmit();
+    });
+    
+    // Close modal on background click
     document.getElementById('sourceModal').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
     });
     
-    // Show state filter only for state tab
+    // Initial render
     switchTab('master');
     filterSources();
   });
 
   // ============================================
-  // REFRESH SOURCES
-  // ============================================
-  window.refreshSources = function() {
-    showLoading(true);
-    window.location.reload();
-  };
-
-  // ============================================
   // SWITCH TAB
   // ============================================
   window.switchTab = function(tab) {
-    currentTab = tab;
     console.log('📑 Switching to tab:', tab);
+    currentTab = tab;
     
-    // Update tab styles
     document.getElementById('masterTab').className = tab === 'master' 
       ? 'py-3 px-1 border-b-2 border-cyan-600 text-cyan-600 font-medium text-sm transition-colors flex items-center gap-2'
       : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
@@ -524,11 +511,9 @@ const totalCategories = categories.length;
       ? 'py-3 px-1 border-b-2 border-teal-600 text-teal-600 font-medium text-sm transition-colors flex items-center gap-2'
       : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
     
-    // Show/hide content
     document.getElementById('masterSources').className = tab === 'master' ? '' : 'hidden';
     document.getElementById('stateSources').className = tab === 'state' ? '' : 'hidden';
     
-    // Show/hide state filter
     const stateFilter = document.getElementById('stateFilter');
     if (tab === 'state') {
       stateFilter.classList.remove('hidden');
@@ -547,8 +532,6 @@ const totalCategories = categories.length;
     const category = document.getElementById('categoryFilter').value;
     const state = document.getElementById('stateFilter').value;
     
-    console.log('🔍 Filtering - Search:', search, 'Category:', category, 'State:', state);
-    
     if (currentTab === 'master') {
       filteredSources.master = allSources.master.filter(source => {
         const matchSearch = source.name.toLowerCase().includes(search) || 
@@ -556,7 +539,6 @@ const totalCategories = categories.length;
         const matchCategory = !category || source.category_id == category;
         return matchSearch && matchCategory;
       });
-      console.log('✅ Filtered Master:', filteredSources.master.length);
       renderSources('master');
     } else {
       filteredSources.state = allSources.state.filter(source => {
@@ -566,7 +548,6 @@ const totalCategories = categories.length;
         const matchState = !state || source.state_id == state;
         return matchSearch && matchCategory && matchState;
       });
-      console.log('✅ Filtered State:', filteredSources.state.length);
       renderSources('state');
     }
   };
@@ -578,8 +559,6 @@ const totalCategories = categories.length;
     const container = document.getElementById(type === 'master' ? 'masterSourcesList' : 'stateSourcesList');
     const sources = type === 'master' ? filteredSources.master : filteredSources.state;
     const empty = document.getElementById('emptyState');
-    
-    console.log(`🎨 Rendering ${type} sources:`, sources.length);
     
     if (sources.length === 0) {
       container.innerHTML = '';
@@ -644,12 +623,15 @@ const totalCategories = categories.length;
   // OPEN MODAL
   // ============================================
   window.openModal = function(type, data = null) {
+    console.log('📝 Opening modal for:', type, data);
+    
     const modal = document.getElementById('sourceModal');
     const title = document.getElementById('modalTitle');
     const stateWrapper = document.getElementById('stateSelectWrapper');
     const stateExtra = document.getElementById('stateExtraFields');
     const form = document.getElementById('sourceForm');
     
+    // Reset form
     form.reset();
     document.getElementById('editId').value = '';
     document.getElementById('editType').value = type;
@@ -688,23 +670,25 @@ const totalCategories = categories.length;
       }
     }
     
-    modal.style.display = 'flex';
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   };
 
   // ============================================
   // CLOSE MODAL
   // ============================================
   window.closeModal = function() {
+    console.log('🔒 Closing modal');
     const modal = document.getElementById('sourceModal');
-    modal.style.display = 'none';
     modal.classList.add('hidden');
+    modal.style.display = 'none';
   };
 
   // ============================================
   // EDIT SOURCE
   // ============================================
   window.editSource = function(id, type) {
+    console.log('✏️ Editing source:', id, type);
     const source = allSources[type === 'master' ? 'master' : 'state'].find(s => s.id === id);
     if (source) {
       openModal(type === 'master' ? 'master' : 'state', source);
@@ -717,6 +701,8 @@ const totalCategories = categories.length;
   // DELETE SOURCE
   // ============================================
   window.deleteSource = async function(id, type) {
+    console.log('🗑️ Deleting source:', id, type);
+    
     if (!confirm('Are you sure you want to delete this source? This action cannot be undone.')) {
       return;
     }
@@ -738,7 +724,6 @@ const totalCategories = categories.length;
       
       if (result.success) {
         showToast('✅ Source deleted successfully', 'success');
-        // Reload page to refresh data
         window.location.reload();
       } else {
         showToast('❌ Failed to delete source: ' + (result.error || 'Unknown error'), 'error');
@@ -754,10 +739,13 @@ const totalCategories = categories.length;
   // ============================================
   // HANDLE FORM SUBMIT
   // ============================================
-  async function handleFormSubmit(e) {
-    e.preventDefault();
+  async function handleFormSubmit() {
+    console.log('📤 Handling form submit...');
     
-    if (isSubmitting) return;
+    if (isSubmitting) {
+      console.log('⏳ Already submitting, please wait...');
+      return;
+    }
     
     const id = document.getElementById('editId').value;
     const type = document.getElementById('editType').value;
@@ -769,6 +757,8 @@ const totalCategories = categories.length;
     const logo_url = document.getElementById('sourceLogo').value.trim();
     const is_active = document.getElementById('sourceActive').checked ? 1 : 0;
     const is_featured = document.getElementById('sourceFeatured').checked ? 1 : 0;
+    
+    console.log('📝 Form data:', { id, type, name, url, category_id, description, source_type, logo_url, is_active, is_featured });
     
     if (!name || !url || !category_id) {
       showModalMessage('Name, URL, and category are required', 'error');
@@ -796,6 +786,8 @@ const totalCategories = categories.length;
     const method = id ? 'PUT' : 'POST';
     const urlPath = id ? `/api/admin/sources/${id}` : '/api/admin/sources';
     
+    console.log(`📤 ${method} request to ${urlPath}`, data);
+    
     isSubmitting = true;
     showLoading(true);
     
@@ -807,6 +799,7 @@ const totalCategories = categories.length;
       });
       
       const result = await response.json();
+      console.log('📥 Response:', result);
       
       if (!response.ok) {
         throw new Error(result.error || 'Failed to save source');
@@ -815,7 +808,6 @@ const totalCategories = categories.length;
       if (result.success) {
         showToast(id ? '✅ Source updated successfully' : '✅ Source created successfully', 'success');
         closeModal();
-        // Reload page to refresh data
         setTimeout(() => window.location.reload(), 500);
       } else {
         showModalMessage(result.error || 'Failed to save source', 'error');
@@ -867,17 +859,6 @@ const totalCategories = categories.length;
       ? 'fixed inset-0 bg-black/30 flex items-center justify-center z-40'
       : 'fixed inset-0 bg-black/30 flex items-center justify-center z-40 hidden';
   }
-
-  // ============================================
-  // INITIAL RENDER - Fallback
-  // ============================================
-  // If data is loaded but not rendered, try again
-  setTimeout(() => {
-    if (allSources.master.length > 0 || allSources.state.length > 0) {
-      console.log('🔄 Fallback render attempt...');
-      filterSources();
-    }
-  }, 500);
 </script>
 
 <style is:global>

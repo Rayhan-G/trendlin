@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                    */
 import { a as createComponent, g as renderComponent, e as renderScript, f as renderTemplate, m as maybeRenderHead } from '../../chunks/astro/server_DJuXqbzQ.mjs';
-import { $ as $$AdminLayout } from '../../chunks/AdminLayout_DdjBGSOK.mjs';
+import { $ as $$AdminLayout } from '../../chunks/AdminLayout_zDHvTD6y.mjs';
 /* empty css                                  */
 export { renderers } from '../../renderers.mjs';
 
