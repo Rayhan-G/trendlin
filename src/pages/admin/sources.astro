@@ -17,12 +17,10 @@ try {
   
   if (sourcesResponse.ok) {
     const data = await sourcesResponse.json();
-    console.log('📥 Server Response:', data);
     
     if (data && data.success) {
       masterSources = Array.isArray(data.master) ? data.master : [];
       stateSources = Array.isArray(data.state) ? data.state : [];
-      console.log(`✅ Loaded ${masterSources.length} master, ${stateSources.length} state`);
     } else {
       error = data?.error || 'Failed to load sources';
     }
@@ -49,7 +47,7 @@ try {
   }
   
 } catch (err) {
-  console.error('❌ Error fetching sources:', err);
+  console.error('Error fetching sources:', err);
   error = err.message;
 }
 
@@ -380,29 +378,61 @@ const totalCategories = categories.length;
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT - FIXED -->
+<!-- JAVASCRIPT - FIXED WITH SAFE DATA HANDLING -->
 <!-- ============================================ -->
 <script>
   // ============================================
-  // DATA - Direct assignment from server
+  // SAFE DATA - Use the data directly from server
   // ============================================
-  // These come from the server-side variables
-  const masterData = JSON.parse(`[${masterSources.map(s => JSON.stringify(s)).join(',')}]`);
-  const stateData = JSON.parse(`[${stateSources.map(s => JSON.stringify(s)).join(',')}]`);
-  const categoriesData = JSON.parse(`[${categories.map(c => JSON.stringify(c)).join(',')}]`);
-  const statesData = JSON.parse(`[${states.map(s => JSON.stringify(s)).join(',')}]`);
+  // These are passed from the server-side
+  // We use a different approach to avoid the map error
+  
+  // Get the data as JSON strings from the server
+  // Using a safer approach - define as global variables
+  window.__MASTER_SOURCES = `[${masterSources.map(s => JSON.stringify(s)).join(',')}]`;
+  window.__STATE_SOURCES = `[${stateSources.map(s => JSON.stringify(s)).join(',')}]`;
+  window.__CATEGORIES = `[${categories.map(c => JSON.stringify(c)).join(',')}]`;
+  window.__STATES = `[${states.map(s => JSON.stringify(s)).join(',')}]`;
+
+  console.log('📊 Master Sources String Length:', window.__MASTER_SOURCES.length);
+  console.log('📊 State Sources String Length:', window.__STATE_SOURCES.length);
+
+  // Parse the data safely
+  let masterData = [];
+  let stateData = [];
+  let categoriesData = [];
+  let statesData = [];
+
+  try {
+    masterData = JSON.parse(window.__MASTER_SOURCES || '[]');
+    stateData = JSON.parse(window.__STATE_SOURCES || '[]');
+    categoriesData = JSON.parse(window.__CATEGORIES || '[]');
+    statesData = JSON.parse(window.__STATES || '[]');
+  } catch (e) {
+    console.error('❌ Error parsing data:', e);
+    masterData = [];
+    stateData = [];
+    categoriesData = [];
+    statesData = [];
+  }
+
+  // Ensure we have arrays
+  if (!Array.isArray(masterData)) masterData = [];
+  if (!Array.isArray(stateData)) stateData = [];
+  if (!Array.isArray(categoriesData)) categoriesData = [];
+  if (!Array.isArray(statesData)) statesData = [];
 
   console.log('📊 Master Data:', masterData.length);
   console.log('📊 State Data:', stateData.length);
   console.log('📊 Categories:', categoriesData.length);
   console.log('📊 States:', statesData.length);
 
-  // Show the actual data in console
+  // Show first item if exists
   if (masterData.length > 0) {
-    console.log('📋 First master source:', masterData[0]);
+    console.log('📋 First Master Source:', masterData[0]);
   }
   if (stateData.length > 0) {
-    console.log('📋 First state source:', stateData[0]);
+    console.log('📋 First State Source:', stateData[0]);
   }
 
   let allSources = { master: masterData, state: stateData };
@@ -418,27 +448,40 @@ const totalCategories = categories.length;
     console.log('📊 Total sources to render:', allSources.master.length + allSources.state.length);
     
     // Setup buttons
-    document.getElementById('addMasterBtn').addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('🔵 Add Master Source clicked');
-      openModal('master');
-    });
+    const addMasterBtn = document.getElementById('addMasterBtn');
+    const addStateBtn = document.getElementById('addStateBtn');
+    const saveSourceBtn = document.getElementById('saveSourceBtn');
+    const modal = document.getElementById('sourceModal');
     
-    document.getElementById('addStateBtn').addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('🟢 Add State Source clicked');
-      openModal('state');
-    });
+    if (addMasterBtn) {
+      addMasterBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('🔵 Add Master Source clicked');
+        openModal('master');
+      });
+    }
     
-    document.getElementById('saveSourceBtn').addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('💾 Save button clicked');
-      handleFormSubmit();
-    });
+    if (addStateBtn) {
+      addStateBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('🟢 Add State Source clicked');
+        openModal('state');
+      });
+    }
     
-    document.getElementById('sourceModal').addEventListener('click', function(e) {
-      if (e.target === this) closeModal();
-    });
+    if (saveSourceBtn) {
+      saveSourceBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('💾 Save button clicked');
+        handleFormSubmit();
+      });
+    }
+    
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+      });
+    }
     
     // Initial render
     switchTab('master');
@@ -447,7 +490,7 @@ const totalCategories = categories.length;
     setTimeout(function() {
       console.log('🔄 Force rendering...');
       filterSources();
-    }, 200);
+    }, 300);
   });
 
   // ============================================
@@ -457,22 +500,38 @@ const totalCategories = categories.length;
     console.log('📑 Switching to tab:', tab);
     currentTab = tab;
     
-    document.getElementById('masterTab').className = tab === 'master' 
-      ? 'py-3 px-1 border-b-2 border-cyan-600 text-cyan-600 font-medium text-sm transition-colors flex items-center gap-2'
-      : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
-    
-    document.getElementById('stateTab').className = tab === 'state'
-      ? 'py-3 px-1 border-b-2 border-teal-600 text-teal-600 font-medium text-sm transition-colors flex items-center gap-2'
-      : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
-    
-    document.getElementById('masterSources').className = tab === 'master' ? '' : 'hidden';
-    document.getElementById('stateSources').className = tab === 'state' ? '' : 'hidden';
-    
+    const masterTab = document.getElementById('masterTab');
+    const stateTab = document.getElementById('stateTab');
+    const masterSourcesEl = document.getElementById('masterSources');
+    const stateSourcesEl = document.getElementById('stateSources');
     const stateFilter = document.getElementById('stateFilter');
-    if (tab === 'state') {
-      stateFilter.classList.remove('hidden');
-    } else {
-      stateFilter.classList.add('hidden');
+    
+    if (masterTab) {
+      masterTab.className = tab === 'master' 
+        ? 'py-3 px-1 border-b-2 border-cyan-600 text-cyan-600 font-medium text-sm transition-colors flex items-center gap-2'
+        : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
+    }
+    
+    if (stateTab) {
+      stateTab.className = tab === 'state'
+        ? 'py-3 px-1 border-b-2 border-teal-600 text-teal-600 font-medium text-sm transition-colors flex items-center gap-2'
+        : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
+    }
+    
+    if (masterSourcesEl) {
+      masterSourcesEl.className = tab === 'master' ? '' : 'hidden';
+    }
+    
+    if (stateSourcesEl) {
+      stateSourcesEl.className = tab === 'state' ? '' : 'hidden';
+    }
+    
+    if (stateFilter) {
+      if (tab === 'state') {
+        stateFilter.classList.remove('hidden');
+      } else {
+        stateFilter.classList.add('hidden');
+      }
     }
     
     filterSources();
@@ -482,9 +541,13 @@ const totalCategories = categories.length;
   // FILTER SOURCES
   // ============================================
   window.filterSources = function() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const category = document.getElementById('categoryFilter').value;
-    const state = document.getElementById('stateFilter').value;
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const stateFilter = document.getElementById('stateFilter');
+    
+    const search = searchInput ? searchInput.value.toLowerCase() : '';
+    const category = categoryFilter ? categoryFilter.value : '';
+    const state = stateFilter ? stateFilter.value : '';
     
     console.log('🔍 Filtering - Search:', search, 'Category:', category, 'State:', state);
     
@@ -517,6 +580,7 @@ const totalCategories = categories.length;
     const container = document.getElementById(type === 'master' ? 'masterSourcesList' : 'stateSourcesList');
     const sources = type === 'master' ? filteredSources.master : filteredSources.state;
     const empty = document.getElementById('emptyState');
+    const visibleCount = document.getElementById('visibleCount');
     
     console.log(`🎨 Rendering ${type} sources:`, sources.length);
     
@@ -528,13 +592,13 @@ const totalCategories = categories.length;
     if (sources.length === 0) {
       container.innerHTML = '';
       if (empty) empty.classList.remove('hidden');
-      document.getElementById('visibleCount').textContent = '0';
+      if (visibleCount) visibleCount.textContent = '0';
       console.log('📭 No sources to display');
       return;
     }
     
     if (empty) empty.classList.add('hidden');
-    document.getElementById('visibleCount').textContent = sources.length;
+    if (visibleCount) visibleCount.textContent = sources.length;
     
     container.innerHTML = sources.map(source => {
       const categoryIcon = categoriesData.find(c => c.id === source.category_id)?.icon || '📁';
