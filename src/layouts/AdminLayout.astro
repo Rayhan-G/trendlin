@@ -1,6 +1,6 @@
 ---
 // ============================================
-// ADMIN LAYOUT - Trendlin (Full Version with Products & Templates)
+// ADMIN LAYOUT - Trendlin (Complete)
 // ============================================
 
 export interface Props {
@@ -446,37 +446,51 @@ if (!user) {
     </header>
 
     <!-- ==========================================
-    SIDEBAR - UPDATED WITH ALL LINKS
+    SIDEBAR - 5 FEATURES + Dashboard
     ========================================== -->
     <aside class="sidebar" id="sidebar">
       <nav class="sidebar-nav">
+        <!-- MAIN SECTION -->
         <div class="nav-label">Main</div>
         <a href="/admin/dashboard" class={Astro.url.pathname === '/admin/dashboard' ? 'active' : ''}>
           <span class="icon">📊</span> Dashboard
         </a>
-        <a href="/admin/new" class={Astro.url.pathname === '/admin/new' ? 'active' : ''}>
-          <span class="icon">✏️</span> New Post
+        
+        <!-- CONTENT SECTION - 5 FEATURES -->
+        <div class="nav-label" style="margin-top: 0.5rem;">Content</div>
+        
+        <!-- 1. POSTS -->
+        <a href="/admin/posts" class={Astro.url.pathname === '/admin/posts' ? 'active' : ''}>
+          <span class="icon">📄</span> Posts
         </a>
         
-        <div class="nav-label" style="margin-top: 0.5rem;">Content</div>
-        <a href="/admin/media" class={Astro.url.pathname.startsWith('/admin/media') ? 'active' : ''}>
-          <span class="icon">🖼️</span> Media Library
-        </a>
+        <!-- 2. PRODUCTS -->
         <a href="/admin/products" class={Astro.url.pathname.startsWith('/admin/products') ? 'active' : ''}>
           <span class="icon">📦</span> Products
         </a>
+        
+        <!-- 3. MEDIA -->
+        <a href="/admin/media" class={Astro.url.pathname.startsWith('/admin/media') ? 'active' : ''}>
+          <span class="icon">🖼️</span> Media Library
+        </a>
+        
+        <!-- 4. TEMPLATES -->
         <a href="/admin/templates" class={Astro.url.pathname === '/admin/templates' ? 'active' : ''}>
           <span class="icon">📋</span> Templates
         </a>
+        
+        <!-- 5. SOURCES -->
         <a href="/admin/sources" class={Astro.url.pathname === '/admin/sources' ? 'active' : ''}>
           <span class="icon">📚</span> Sources
         </a>
         
+        <!-- SYSTEM SECTION -->
         <div class="nav-label" style="margin-top: 0.5rem;">System</div>
         <a href="/" target="_blank">
           <span class="icon">🌐</span> View Site
         </a>
         
+        <!-- LOGOUT -->
         <div style="border-top: 1px solid var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
           <form method="POST" action="/api/auth/logout">
             <button type="submit" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.625rem 0.75rem;border:none;background:transparent;border-radius:0.5rem;font-size:0.875rem;font-weight:500;color:#dc2626;cursor:pointer;transition:background 0.2s;font-family:inherit;">
@@ -492,12 +506,6 @@ if (!user) {
     ========================================== -->
     <div class="admin-wrapper">
       <div class="main-content">
-        <!-- Page Header -->
-        <div class="page-header">
-          <h1>{title}</h1>
-          {description && <p>{description}</p>}
-        </div>
-        
         <!-- Slot content -->
         <slot />
       </div>
