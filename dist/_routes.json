@@ -4,6 +4,8 @@
     "/*"
   ],
   "exclude": [
-    "/_astro/*"
+    "/_astro/*",
+    "/popup-controller.js",
+    "/scripts/*"
   ]
 }

@@ -1,0 +1,755 @@
+---
+// ============================================
+// ADMIN - PRODUCT RESOURCES MANAGEMENT
+// ============================================
+
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+
+const { id } = Astro.params;
+
+let product = null;
+let resources = [];
+let error = null;
+let success = false;
+let deleteSuccess = false;
+
+try {
+  const { DB } = Astro.locals.runtime.env;
+  
+  // Get product
+  const productResult = await DB.prepare(`
+    SELECT id, name, slug, cover_image, category, brand, in_stock, is_top_pick, is_newly_released
+    FROM products WHERE id = ?
+  `).bind(id).first();
+  
+  product = productResult;
+  
+  // Get existing resources
+  const resourcesResult = await DB.prepare(`
+    SELECT id, platform, url, title, description, author, shop_name, is_featured, display_order
+    FROM product_resources
+    WHERE product_id = ?
+    ORDER BY display_order ASC
+  `).bind(id).all();
+  
+  resources = resourcesResult.results || [];
+  
+} catch (e) {
+  error = e.message;
+}
+
+// Handle resource operations
+if (Astro.request.method === 'POST') {
+  try {
+    const { DB } = Astro.locals.runtime.env;
+    const formData = await Astro.request.formData();
+    
+    const action = formData.get('_action');
+    
+    // Handle DELETE
+    if (action === 'delete') {
+      const resourceId = formData.get('resource_id');
+      
+      await DB.prepare(`
+        DELETE FROM product_resources WHERE id = ? AND product_id = ?
+      `).bind(resourceId, id).run();
+      
+      deleteSuccess = true;
+      
+      // Refresh resources
+      const resourcesResult = await DB.prepare(`
+        SELECT id, platform, url, title, description, author, shop_name, is_featured, display_order
+        FROM product_resources
+        WHERE product_id = ?
+        ORDER BY display_order ASC
+      `).bind(id).all();
+      
+      resources = resourcesResult.results || [];
+      
+    } else {
+      // Handle ADD
+      const platform = formData.get('platform');
+      const url = formData.get('url');
+      const title = formData.get('title');
+      const description = formData.get('description');
+      const author = formData.get('author');
+      const shop_name = formData.get('shop_name');
+      const is_featured = formData.get('is_featured') ? 1 : 0;
+      
+      // Validation - only 4 platforms allowed
+      const allowedPlatforms = ['reddit', 'youtube', 'tiktok', 'shop'];
+      if (!platform || !allowedPlatforms.includes(platform)) {
+        throw new Error('Platform must be: reddit, youtube, tiktok, or shop');
+      }
+      
+      if (!url || !title) {
+        throw new Error('URL and Title are required');
+      }
+      
+      // Get current max display order
+      const maxOrderResult = await DB.prepare(`
+        SELECT MAX(display_order) as max_order
+        FROM product_resources
+        WHERE product_id = ?
+      `).bind(id).first();
+      
+      const display_order = (maxOrderResult?.max_order || 0) + 1;
+      
+      await DB.prepare(`
+        INSERT INTO product_resources (
+          product_id, platform, url, title, description, 
+          author, shop_name, is_featured, display_order
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        id, platform, url, title, description, 
+        author, shop_name, is_featured, display_order
+      ).run();
+      
+      success = true;
+      
+      // Refresh resources
+      const resourcesResult = await DB.prepare(`
+        SELECT id, platform, url, title, description, author, shop_name, is_featured, display_order
+        FROM product_resources
+        WHERE product_id = ?
+        ORDER BY display_order ASC
+      `).bind(id).all();
+      
+      resources = resourcesResult.results || [];
+    }
+    
+  } catch (e) {
+    error = e.message;
+    console.error('Error:', e);
+  }
+}
+---
+
+<AdminLayout title={`Resources: ${product?.name || 'Product'}`}>
+  
+  <!-- Alerts -->
+  {error && (
+    <div class="alert alert-error">
+      <strong>Error:</strong> {error}
+    </div>
+  )}
+  
+  {success && (
+    <div class="alert alert-success">
+      <strong>✅ Success!</strong> Resource added successfully.
+    </div>
+  )}
+  
+  {deleteSuccess && (
+    <div class="alert alert-success">
+      <strong>✅ Success!</strong> Resource deleted successfully.
+    </div>
+  )}
+
+  <!-- Product Info Bar -->
+  <div class="product-info-bar">
+    <div class="product-info">
+      {product?.cover_image && (
+        <img src={product.cover_image} alt={product.name} class="product-avatar" />
+      )}
+      <span class="product-name">{product?.name || 'Loading...'}</span>
+      <span class="product-slug">/products/{product?.slug}</span>
+      <div class="product-status-badges">
+        {product?.in_stock && <span class="badge in-stock">✅ In Stock</span>}
+        {product?.is_top_pick && <span class="badge top-pick">⭐ Top Pick</span>}
+        {product?.is_newly_released && <span class="badge new-release">✨ New</span>}
+      </div>
+      <span class="resource-count-badge">{resources.length} resources</span>
+    </div>
+    <div class="product-actions">
+      <a href="/admin/products" class="btn-sm btn-back">← Back</a>
+      <a href={`/products/${product?.slug}`} class="btn-sm btn-view" target="_blank">🔗 View</a>
+    </div>
+  </div>
+  
+  <!-- Two Column Layout -->
+  <div class="two-col">
+    
+    <!-- LEFT: Add Resource Form -->
+    <div class="card">
+      <div class="card-header">
+        <span>➕ Add Resource</span>
+        <span class="platform-hint">reddit · youtube · tiktok · shop</span>
+      </div>
+      
+      <form method="POST" class="resource-form" id="resourceForm">
+        <div class="form-group">
+          <label for="platform">Platform *</label>
+          <select id="platform" name="platform" required class="form-select">
+            <option value="">Select platform...</option>
+            <option value="reddit">Reddit</option>
+            <option value="youtube">YouTube</option>
+            <option value="tiktok">TikTok</option>
+            <option value="shop">Shop / Affiliate</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="url">URL *</label>
+          <input type="url" id="url" name="url" required placeholder="https://..." class="form-input" />
+        </div>
+        
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <input type="text" id="title" name="title" required placeholder="Resource title..." class="form-input" />
+        </div>
+        
+        <div class="form-group">
+          <label for="description">Description</label>
+          <input type="text" id="description" name="description" placeholder="Optional description..." class="form-input" />
+        </div>
+        
+        <div class="form-group">
+          <label for="author">Author / Username</label>
+          <input type="text" id="author" name="author" placeholder="e.g. u/username or @username" class="form-input" />
+        </div>
+        
+        <div class="form-group" id="shopNameGroup" style="display:none;">
+          <label for="shop_name">Shop Name</label>
+          <input type="text" id="shop_name" name="shop_name" placeholder="e.g. Amazon, eBay, Walmart" class="form-input" />
+        </div>
+        
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="is_featured" name="is_featured" />
+            <span>⭐ Featured Resource</span>
+          </label>
+        </div>
+        
+        <button type="submit" class="btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Resource
+        </button>
+      </form>
+    </div>
+    
+    <!-- RIGHT: Existing Resources -->
+    <div class="card">
+      <div class="card-header">
+        <span>📋 Existing Resources</span>
+        <span class="resource-count">{resources.length}</span>
+      </div>
+      
+      {resources.length === 0 ? (
+        <div class="empty-resources">
+          <div class="empty-icon">🔗</div>
+          <p>No resources added yet.</p>
+          <p class="text-muted">Add Reddit, YouTube, TikTok, or Shop links above.</p>
+        </div>
+      ) : (
+        <div class="resource-list">
+          {resources.map((r, index) => (
+            <div class="resource-item" key={r.id}>
+              <div class="resource-info">
+                <span class={`platform-badge platform-${r.platform}`}>
+                  {r.platform}
+                </span>
+                <strong>{r.title}</strong>
+                {r.author && <span class="resource-author">by {r.author}</span>}
+                {r.shop_name && <span class="shop-tag">🛒 {r.shop_name}</span>}
+                {r.is_featured === 1 && <span class="featured-tag">⭐ Featured</span>}
+                <span class="resource-order">#{index + 1}</span>
+              </div>
+              <div class="resource-actions">
+                <a href={r.url} target="_blank" class="btn-sm btn-view" title="Open URL">🔗</a>
+                <form method="POST" style="display:inline;" onsubmit="return confirm('Remove this resource?')">
+                  <input type="hidden" name="_action" value="delete" />
+                  <input type="hidden" name="resource_id" value={r.id} />
+                  <button type="submit" class="btn-sm btn-delete" title="Delete">✕</button>
+                </form>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+  
+  <!-- Bottom Actions -->
+  <div class="form-actions">
+    <a href="/admin/products" class="btn-secondary">← Back to Products</a>
+    <a href="/admin/products/new" class="btn-secondary">+ Add New Product</a>
+  </div>
+  
+</AdminLayout>
+
+<!-- ============================================ -->
+<!-- STYLES -->
+<!-- ============================================ -->
+<style>
+  /* Alerts */
+  .alert {
+    padding: 0.875rem 1.25rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+  }
+  
+  .alert-success {
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+  }
+  
+  /* Product Info Bar */
+  .product-info-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .product-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  
+  .product-avatar {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .product-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  
+  .product-slug {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+  
+  .product-status-badges {
+    display: flex;
+    gap: 0.25rem;
+  }
+  
+  .badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 0.0625rem 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .badge.in-stock {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  
+  .badge.top-pick {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  .badge.new-release {
+    background: #ecfdf5;
+    color: #059669;
+  }
+  
+  .resource-count-badge {
+    font-size: 0.75rem;
+    background: #eef2ff;
+    color: #2563eb;
+    padding: 0.125rem 0.625rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  
+  .product-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Buttons */
+  .btn-sm {
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .btn-back {
+    background: #f1f5f9;
+    color: #475569;
+  }
+  
+  .btn-back:hover {
+    background: #e2e8f0;
+  }
+  
+  .btn-view {
+    background: #eef2ff;
+    color: #2563eb;
+  }
+  
+  .btn-view:hover {
+    background: #e0e7ff;
+  }
+  
+  .btn-delete {
+    background: #fef2f2;
+    color: #dc2626;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-delete:hover {
+    background: #fee2e2;
+  }
+  
+  /* Two Column Layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Cards */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 1.25rem;
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: #0f172a;
+  }
+  
+  .platform-hint {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: #94a3b8;
+  }
+  
+  .resource-count {
+    font-size: 0.75rem;
+    background: #f1f5f9;
+    padding: 0.125rem 0.625rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  
+  /* Form */
+  .form-group {
+    margin-bottom: 0.875rem;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: #0f172a;
+  }
+  
+  .form-input,
+  .form-select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: #fff;
+  }
+  
+  .form-input:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .checkbox-group {
+    margin-top: 0.25rem;
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+  
+  .checkbox-label input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+    accent-color: #2563eb;
+  }
+  
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+  
+  /* Empty State */
+  .empty-resources {
+    text-align: center;
+    padding: 2rem 0;
+  }
+  
+  .empty-resources .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .empty-resources p {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    margin: 0.25rem 0;
+  }
+  
+  .empty-resources .text-muted {
+    font-size: 0.8rem;
+  }
+  
+  /* Resource List */
+  .resource-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 450px;
+    overflow-y: auto;
+  }
+  
+  .resource-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.625rem 0.75rem;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    border: 1px solid #f1f5f9;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+  }
+  
+  .resource-item:hover {
+    background: #f1f5f9;
+  }
+  
+  .resource-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
+  }
+  
+  /* Platform Badges */
+  .platform-badge {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  
+  .platform-reddit { background: #ff4500; color: #fff; }
+  .platform-youtube { background: #ff0000; color: #fff; }
+  .platform-tiktok { background: #000; color: #fff; }
+  .platform-shop { background: #f59e0b; color: #fff; }
+  
+  .platform-badge:not(.platform-reddit):not(.platform-youtube):not(.platform-tiktok):not(.platform-shop) {
+    background: #94a3b8;
+    color: #fff;
+  }
+  
+  .resource-author {
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+  
+  .shop-tag {
+    font-size: 0.65rem;
+    background: #fef3c7;
+    color: #d97706;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  
+  .featured-tag {
+    font-size: 0.65rem;
+    background: #eef2ff;
+    color: #2563eb;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  
+  .resource-order {
+    font-size: 0.6rem;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+  
+  .resource-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+  
+  /* Bottom Actions */
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+  }
+  
+  .btn-secondary {
+    padding: 0.625rem 1.25rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  
+  .btn-secondary:hover {
+    background: #e2e8f0;
+  }
+  
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .two-col {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .product-info-bar {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .product-actions {
+      width: 100%;
+    }
+    
+    .product-actions .btn-sm {
+      flex: 1;
+      justify-content: center;
+    }
+    
+    .resource-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    
+    .resource-info {
+      width: 100%;
+    }
+    
+    .resource-actions {
+      width: 100%;
+      justify-content: flex-end;
+    }
+    
+    .form-actions {
+      flex-direction: column;
+    }
+    
+    .form-actions a {
+      text-align: center;
+      justify-content: center;
+    }
+  }
+</style>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const platformSelect = document.getElementById('platform');
+    const shopNameGroup = document.getElementById('shopNameGroup');
+    
+    if (platformSelect && shopNameGroup) {
+      platformSelect.addEventListener('change', function() {
+        if (this.value === 'shop') {
+          shopNameGroup.style.display = 'block';
+        } else {
+          shopNameGroup.style.display = 'none';
+        }
+      });
+    }
+  });
+</script>

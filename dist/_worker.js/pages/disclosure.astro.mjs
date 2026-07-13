@@ -8,44 +8,27 @@ const $$Disclosure = createComponent(($$result, $$props, $$slots) => {
   return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": "Affiliate Disclosure - Trendlin" }, { "default": ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="max-w-4xl mx-auto px-4 py-12 sm:py-16"> <!-- Header --> <div class="text-center mb-12"> <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
 Affiliate Disclosure
 </h1> <div class="w-20 h-1 bg-gradient-to-r from-blue-600 to-purple-600 mx-auto rounded-full"></div> <p class="text-gray-600 dark:text-gray-300 mt-6 max-w-2xl mx-auto">
-Transparency is at the heart of everything we do.
-</p> </div> <div class="space-y-6"> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">What Are Affiliate Links?</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-Some of the links on this website are affiliate links. This means that if you click on the link and make a purchase, 
-          we may receive a small commission at <strong>no extra cost to you</strong>.
-</p> <p class="text-gray-600 dark:text-gray-300 leading-relaxed mt-4">
-These commissions help us maintain and improve the website, allowing us to continue providing high-quality, 
-          unbiased content for our readers.
-</p> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Our Commitment to Honesty</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-Our recommendations are always based on our honest opinions, research, and real experience. 
-          We <strong>never</strong> recommend products solely for the sake of earning commissions.
-</p> <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4"> <div class="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl"> <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700 dark:text-gray-300">Honest reviews with pros and cons</span> </div> <div class="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl"> <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700 dark:text-gray-300">Independent research and testing</span> </div> <div class="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl"> <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700 dark:text-gray-300">Clear disclosure of affiliate relationships</span> </div> <div class="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl"> <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg> <span class="text-sm text-gray-700 dark:text-gray-300">We only recommend what we trust</span> </div> </div> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">How We Earn</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-We participate in several affiliate programs, including:
-</p> <ul class="mt-3 space-y-2"> <li class="flex items-center gap-3 text-gray-600 dark:text-gray-300"> <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-Amazon Associates Program
-</li> <li class="flex items-center gap-3 text-gray-600 dark:text-gray-300"> <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-ShareASale
-</li> <li class="flex items-center gap-3 text-gray-600 dark:text-gray-300"> <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-CJ Affiliate (Commission Junction)
-</li> <li class="flex items-center gap-3 text-gray-600 dark:text-gray-300"> <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-Impact Radius
-</li> <li class="flex items-center gap-3 text-gray-600 dark:text-gray-300"> <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-Other affiliate networks and direct partnerships
-</li> </ul> <div class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/30"> <p class="text-sm text-gray-600 dark:text-gray-300"> <strong>As an Amazon Associate,</strong> we earn from qualifying purchases.
-</p> </div> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your Trust Matters</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-We understand that trust is earned, and we work hard to maintain it. 
-          If you ever feel that a review or recommendation isn't transparent, 
-          please <a href="/contact?subject=feedback" class="text-blue-600 dark:text-blue-400 hover:underline">let us know</a>.
-</p> <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700"> <p class="text-sm text-gray-500 dark:text-gray-400"> <strong>Note:</strong> Prices and availability of products mentioned are subject to change. 
-            We recommend checking the product page for the most current information.
-</p> </div> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Transparency Badge</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
-We display a disclosure badge on all affiliate links to make it easy for you to identify them:
-</p> <div class="mt-4 flex items-center gap-3 p-4 border rounded-xl bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"> <span class="px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium rounded-lg">
-Affiliate Link
-</span> <span class="text-sm text-gray-500 dark:text-gray-400">This link earns a commission for us</span> </div> <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border-l-4 border-blue-500"> <p class="text-sm text-gray-700 dark:text-gray-300"> <strong>Disclosure:</strong> This post contains affiliate links. 
-            We may earn a commission if you make a purchase through these links, 
-            at no additional cost to you. As an Amazon Associate, we earn from 
-            qualifying purchases.
-</p> </div> </div> <div class="text-center text-sm text-gray-400 dark:text-gray-500 pt-4 border-t border-gray-200 dark:border-gray-700"> <p>Last updated: ${(/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p> </div> </div> </div> ` })}`;
+We believe in honesty. Here's how we make money.
+</p> </div> <div class="space-y-6"> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">How It Works</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+Some links on Trendlin are affiliate links. If you click and make a purchase, 
+          we may earn a small commission — <strong class="text-gray-900 dark:text-white">at no extra cost to you</strong>.
+</p> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Why We Do This</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+These commissions help cover the costs of running this site — hosting, research, 
+          and the time we put into creating honest, useful content for our readers.
+</p> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Our Promise to You</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+We <strong class="text-gray-900 dark:text-white">never</strong> recommend products just for the money. 
+          Every review and recommendation is based on real research, testing, and honest opinion. 
+          Your trust is more important to us than any commission.
+</p> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Our Affiliate Partners</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed mb-3">We work with trusted affiliate programs including:</p> <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1"> <li>Amazon Associates</li> <li>ShareASale</li> <li>CJ Affiliate</li> <li>Impact Radius</li> </ul> <p class="text-sm text-gray-400 dark:text-gray-500 mt-3">
+As an Amazon Associate, we earn from qualifying purchases.
+</p> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">How to Spot Affiliate Links</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
+We mark affiliate links clearly so you always know when a link supports our work.
+</p> <div class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300"> <span>🔗</span> <span class="font-medium">Affiliate Link</span> <span class="text-gray-400 dark:text-gray-500">—</span> <span class="text-gray-500 dark:text-gray-400">We may earn a commission</span> </div> </div> <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 sm:p-8 shadow-sm border border-gray-200 dark:border-gray-700"> <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Questions?</h2> <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
+If you have any questions about our affiliate relationships or how we operate, 
+          don't hesitate to reach out.
+</p> <div class="mt-4"> <a href="/contact?subject=affiliate" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path> </svg>
+Contact Us
+</a> </div> </div> <div class="text-center text-sm text-gray-400 dark:text-gray-500 pt-4 border-t border-gray-200 dark:border-gray-700"> <p>Updated: ${(/* @__PURE__ */ new Date()).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</p> </div> </div> </div> ` })}`;
 }, "P:/Projects/trendlin/src/pages/disclosure.astro", void 0);
 
 const $$file = "P:/Projects/trendlin/src/pages/disclosure.astro";

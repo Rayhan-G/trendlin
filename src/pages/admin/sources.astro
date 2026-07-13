@@ -1,330 +1,746 @@
 ---
 // ============================================
-// SOURCES MANAGEMENT - Trendlin
+// TEMPLATES MANAGEMENT - Trendlin Admin
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
+
+let templates = [];
+let categories = [];
+
+try {
+  // Fetch templates
+  const templatesResponse = await fetch(`${Astro.url.origin}/api/admin/templates`);
+  if (templatesResponse.ok) {
+    const data = await templatesResponse.json();
+    if (data && data.templates && Array.isArray(data.templates)) {
+      templates = data.templates;
+    }
+  }
+  
+  // Fetch categories
+  const categoriesResponse = await fetch(`${Astro.url.origin}/api/admin/templates/categories`);
+  if (categoriesResponse.ok) {
+    const data = await categoriesResponse.json();
+    if (data && data.categories && Array.isArray(data.categories)) {
+      categories = data.categories;
+    }
+  }
+  
+} catch (error) {
+  console.error('Error fetching templates:', error);
+}
+
+const categoryOptions = [
+  'Health & Wellness',
+  'Food & Dining',
+  'Entertainment',
+  'Lifestyle',
+  'Technology',
+  'Shopping',
+  'Real Estate'
+];
 ---
 
-<AdminLayout title="Sources Management">
-  <div class="max-w-6xl">
-    <!-- Header -->
-    <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+<AdminLayout title="Templates Management - Trendlin">
+  
+  <!-- Header -->
+  <div class="mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">📚 Trusted Sources</h1>
-        <p class="text-sm text-gray-500 mt-1">Manage your content sources by category</p>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+          📋 Content Templates
+        </h1>
+        <p class="text-sm text-gray-500 mt-1">
+          Manage templates for each category ({templates.length} total)
+        </p>
       </div>
       <button 
-        id="addSourceBtn" 
-        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium flex items-center gap-2"
+        id="openAddTemplateModal" 
+        class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105"
       >
-        <span>+</span> Add Source
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Template
       </button>
     </div>
+  </div>
 
-    <!-- Sources Grid -->
-    <div id="sourcesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <!-- Will be populated by JavaScript -->
-    </div>
-
-    <!-- Loading State -->
-    <div id="loadingState" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="text-gray-500 mt-2">Loading sources...</p>
-    </div>
-
-    <!-- Modal for Add/Edit -->
-    <div id="sourceModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h2 id="modalTitle" class="text-xl font-bold">Add Source</h2>
-          <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-2xl p-5 border border-gray-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Templates</p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">{templates.length}</p>
         </div>
-        
-        <form id="sourceForm" class="space-y-4">
-          <input type="hidden" id="editId" value="">
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Source Name *</label>
-            <input type="text" id="sourceName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" />
+        <div class="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+        <span>Content templates</span>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl p-5 border border-gray-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Categories</p>
+          <p class="text-2xl font-bold text-purple-600 mt-1">{categories.length}</p>
+        </div>
+        <div class="w-11 h-11 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+        <span>Unique categories</span>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl p-5 border border-gray-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Active</p>
+          <p class="text-2xl font-bold text-green-600 mt-1">
+            {templates.filter(t => t.is_active === 1).length}
+          </p>
+        </div>
+        <div class="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+        <span>Available for use</span>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl p-5 border border-gray-100">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Usage</p>
+          <p class="text-2xl font-bold text-orange-600 mt-1">
+            {templates.reduce((sum, t) => sum + (t.usage_count || 0), 0)}
+          </p>
+        </div>
+        <div class="w-11 h-11 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
+        <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+        <span>Times used</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Breakdown -->
+  <div class="mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">📊 Category Breakdown</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+      {categories.map(cat => (
+        <div class="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-all">
+          <div class="flex items-center justify-between">
+            <span class="font-medium text-sm text-gray-700">{cat.category}</span>
+            <span class="text-sm font-bold text-indigo-600">{cat.template_count}</span>
           </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">URL *</label>
-            <input type="url" id="sourceUrl" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="https://..." />
+          <div class="mt-1 flex items-center gap-2 text-xs text-gray-400">
+            <span>{cat.active_count} active</span>
+            <span>•</span>
+            <span>{cat.total_usage || 0} uses</span>
           </div>
-          
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- Templates Table -->
+  <div>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900">All Templates</h2>
+        <p class="text-sm text-gray-500">Manage your content templates by category</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <input 
+            type="text" 
+            id="searchInput"
+            placeholder="Search templates..." 
+            class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-40 sm:w-48"
+            oninput="filterTemplates()"
+          />
+          <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+        <select 
+          id="categoryFilter" 
+          class="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          onchange="filterTemplates()"
+        >
+          <option value="">All Categories</option>
+          {categoryOptions.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl overflow-hidden border border-gray-100">
+      {templates.length > 0 ? (
+        <div class="overflow-x-auto">
+          <table class="w-full" id="templatesTable">
+            <thead>
+              <tr class="bg-gray-50">
+                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Description</th>
+                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Usage</th>
+                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
+                <th class="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100" id="templatesTableBody">
+              {templates.map((template) => (
+                <tr key={template.id} class="hover:bg-gray-50 transition-colors duration-150 template-row" data-name={template.name.toLowerCase()} data-category={template.category}>
+                  <td class="px-5 py-4">
+                    <div class="font-medium text-gray-900 text-sm">{template.name}</div>
+                  </td>
+                  <td class="px-5 py-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                      {template.category}
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-sm text-gray-500 hidden md:table-cell max-w-xs truncate">
+                    {template.description || '—'}
+                  </td>
+                  <td class="px-5 py-4 text-sm text-gray-500 hidden lg:table-cell">
+                    {template.usage_count || 0} uses
+                  </td>
+                  <td class="px-5 py-4 hidden sm:table-cell">
+                    <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                      template.is_active === 1
+                        ? 'bg-green-50 text-green-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      <span class={`w-1.5 h-1.5 rounded-full ${template.is_active === 1 ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                      {template.is_active === 1 ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button 
+                        class="edit-template-btn px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
+                        data-id={template.id}
+                        data-name={template.name}
+                        data-category={template.category}
+                        data-content={template.content}
+                        data-description={template.description || ''}
+                        data-is-active={template.is_active}
+                      >
+                        Edit
+                      </button>
+                      <span class="text-gray-300">|</span>
+                      <button 
+                        class="delete-template-btn px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                        data-id={template.id}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div class="py-12 text-center">
+          <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <p class="text-gray-500 text-sm">No templates yet</p>
+          <p class="text-gray-400 text-xs mt-1">Click "Add Template" to create your first one</p>
+        </div>
+      )}
+    </div>
+
+    {templates.length > 0 && (
+      <div class="mt-4 flex items-center justify-between text-sm text-gray-400">
+        <span>Showing <span id="visibleCount">{templates.length}</span> template{templates.length > 1 ? 's' : ''}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400">
+            {templates.filter(t => t.is_active === 1).length} active
+          </span>
+        </div>
+      </div>
+    )}
+  </div>
+
+  <!-- ============================================ -->
+  <!-- ADD TEMPLATE MODAL -->
+  <!-- ============================================ -->
+  <div id="addTemplateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-900">Add New Template</h2>
+        <button onclick="closeAddTemplateModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1">
+        <form id="addTemplateForm" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-            <select id="sourceCategory" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-              <option value="">Select Category</option>
-              <option value="Health & Wellness">Health & Wellness</option>
-              <option value="Food & Dining">Food & Dining</option>
-              <option value="Entertainment">Entertainment</option>
-              <option value="Lifestyle">Lifestyle</option>
-              <option value="Technology">Technology</option>
-              <option value="Shopping">Shopping</option>
-              <option value="Real Estate">Real Estate</option>
-              <option value="Finance">Finance</option>
-              <option value="Travel">Travel</option>
-              <option value="Fashion">Fashion</option>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Template Name *</label>
+            <input 
+              type="text" 
+              id="templateName" 
+              required
+              placeholder="e.g., Health & Wellness - Basic"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
+            <select 
+              id="templateCategory" 
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Select a category</option>
+              {categoryOptions.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
             </select>
           </div>
-          
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Source Type</label>
-            <select id="sourceType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-              <option value="official">Official</option>
-              <option value="review">Review</option>
-              <option value="news">News</option>
-              <option value="community">Community</option>
-            </select>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+            <input 
+              type="text" 
+              id="templateDescription" 
+              placeholder="Brief description of this template"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
           </div>
-          
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea id="sourceDescription" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">HTML Content *</label>
+            <textarea 
+              id="templateContent" 
+              rows="8"
+              required
+              placeholder="<h1>Your heading</h1><p>Your content...</p>"
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm resize-none"
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-400">Enter HTML content for the template</p>
           </div>
-          
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Logo URL (optional)</label>
-            <input type="url" id="sourceLogo" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="https://..." />
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="templateActive" checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+              <span class="text-sm font-medium text-gray-700">Active (available for use)</span>
+            </label>
           </div>
-          
-          <div class="flex items-center gap-2">
-            <input type="checkbox" id="sourceActive" checked class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-            <label class="text-sm text-gray-700">Active</label>
-          </div>
-          
-          <div id="modalMessage" class="hidden p-3 rounded-lg text-sm"></div>
-          
-          <button type="submit" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-200">
-            Save Source
-          </button>
         </form>
       </div>
+      <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        <button 
+          onclick="closeAddTemplateModal()" 
+          class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          form="addTemplateForm"
+          id="saveTemplateBtn"
+          class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/25"
+        >
+          Save Template
+        </button>
+      </div>
     </div>
-
-    <!-- Toast -->
-    <div id="toast" class="hidden fixed bottom-4 right-4 max-w-sm p-4 rounded-xl shadow-lg z-50"></div>
   </div>
+
+  <!-- ============================================ -->
+  <!-- EDIT TEMPLATE MODAL -->
+  <!-- ============================================ -->
+  <div id="editTemplateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-6 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-900">Edit Template</h2>
+        <button onclick="closeEditTemplateModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1">
+        <form id="editTemplateForm" class="space-y-4">
+          <input type="hidden" id="editTemplateId" />
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Template Name *</label>
+            <input 
+              type="text" 
+              id="editTemplateName" 
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
+            <select 
+              id="editTemplateCategory" 
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {categoryOptions.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+            <input 
+              type="text" 
+              id="editTemplateDescription" 
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">HTML Content *</label>
+            <textarea 
+              id="editTemplateContent" 
+              rows="8"
+              required
+              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm resize-none"
+            ></textarea>
+          </div>
+          <div>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" id="editTemplateActive" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+              <span class="text-sm font-medium text-gray-700">Active (available for use)</span>
+            </label>
+          </div>
+        </form>
+      </div>
+      <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+        <button 
+          onclick="closeEditTemplateModal()" 
+          class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          form="editTemplateForm"
+          id="updateTemplateBtn"
+          class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/25"
+        >
+          Update Template
+        </button>
+      </div>
+    </div>
+  </div>
+
 </AdminLayout>
 
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
 <script>
-  let sources = [];
-  let currentCategory = '';
-
-  // Toast notification
-  function showToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.className = `fixed bottom-4 right-4 max-w-sm p-4 rounded-xl shadow-lg z-50 ${
-      type === 'success' ? 'bg-green-500 text-white' : 
-      type === 'error' ? 'bg-red-500 text-white' : 
-      'bg-blue-500 text-white'
-    }`;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 3000);
-  }
-
-  // Load sources
-  async function loadSources() {
-    try {
-      document.getElementById('loadingState').classList.remove('hidden');
-      document.getElementById('sourcesGrid').classList.add('hidden');
-      
-      const response = await fetch('/api/admin/sources');
-      const result = await response.json();
-      
-      if (result.success) {
-        sources = result.sources || [];
-        renderSources();
-      } else {
-        showToast('Failed to load sources: ' + result.error, 'error');
-      }
-    } catch (error) {
-      console.error('Error loading sources:', error);
-      showToast('Failed to load sources', 'error');
-    } finally {
-      document.getElementById('loadingState').classList.add('hidden');
-    }
-  }
-
-  // Render sources
-  function renderSources() {
-    const grid = document.getElementById('sourcesGrid');
+  document.addEventListener('DOMContentLoaded', function() {
     
-    if (sources.length === 0) {
-      grid.innerHTML = `
-        <div class="col-span-full text-center py-12 text-gray-500">
-          <p class="text-4xl mb-2">📚</p>
-          <p>No sources added yet. Click "Add Source" to get started.</p>
-        </div>
-      `;
-      grid.classList.remove('hidden');
-      return;
-    }
+    // ============================================
+    // FILTER TEMPLATES
+    // ============================================
+    window.filterTemplates = function() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const category = document.getElementById('categoryFilter').value;
+      const rows = document.querySelectorAll('.template-row');
+      let visible = 0;
+      
+      rows.forEach(row => {
+        const name = row.dataset.name || '';
+        const rowCategory = row.dataset.category || '';
+        let show = true;
+        
+        if (search && !name.includes(search)) {
+          show = false;
+        }
+        
+        if (category && rowCategory !== category) {
+          show = false;
+        }
+        
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+      });
+      
+      document.getElementById('visibleCount').textContent = visible;
+    };
     
-    // Group by category
-    const grouped = {};
-    sources.forEach(source => {
-      if (!grouped[source.category]) grouped[source.category] = [];
-      grouped[source.category].push(source);
+    // ============================================
+    // ADD TEMPLATE MODAL
+    // ============================================
+    document.getElementById('openAddTemplateModal').addEventListener('click', function() {
+      document.getElementById('addTemplateModal').classList.remove('hidden');
+      document.getElementById('addTemplateForm').reset();
+      document.getElementById('templateActive').checked = true;
     });
     
-    grid.innerHTML = Object.keys(grouped).sort().map(category => `
-      <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <h3 class="font-semibold text-gray-900 mb-3">${getCategoryIcon(category)} ${category}</h3>
-        <ul class="space-y-2">
-          ${grouped[category].map(source => `
-            <li class="flex items-center justify-between gap-2 text-sm group">
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <span class="w-1.5 h-1.5 ${source.is_active ? 'bg-green-500' : 'bg-gray-300'} rounded-full flex-shrink-0"></span>
-                <a href="${source.url}" target="_blank" class="text-blue-600 hover:underline truncate">${source.name}</a>
-                <span class="text-xs text-gray-400 flex-shrink-0">${source.source_type || 'official'}</span>
-              </div>
-              <div class="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onclick="editSource(${source.id})" class="text-blue-600 hover:text-blue-800 text-sm">✏️</button>
-                <button onclick="deleteSource(${source.id})" class="text-red-600 hover:text-red-800 text-sm">🗑️</button>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-      </div>
-    `).join('');
-    
-    grid.classList.remove('hidden');
-  }
-
-  function getCategoryIcon(category) {
-    const icons = {
-      'Health & Wellness': '🏥',
-      'Food & Dining': '🍽️',
-      'Entertainment': '🎬',
-      'Lifestyle': '🏠',
-      'Technology': '💻',
-      'Shopping': '🛍️',
-      'Real Estate': '🏡',
-      'Finance': '💰',
-      'Travel': '✈️',
-      'Fashion': '👗'
+    window.closeAddTemplateModal = function() {
+      document.getElementById('addTemplateModal').classList.add('hidden');
     };
-    return icons[category] || '📁';
-  }
-
-  // Open modal for add
-  document.getElementById('addSourceBtn').addEventListener('click', () => {
-    document.getElementById('modalTitle').textContent = 'Add Source';
-    document.getElementById('editId').value = '';
-    document.getElementById('sourceForm').reset();
-    document.getElementById('sourceActive').checked = true;
-    document.getElementById('modalMessage').classList.add('hidden');
-    document.getElementById('sourceModal').classList.remove('hidden');
-    document.getElementById('sourceModal').style.display = 'flex';
-  });
-
-  // Close modal
-  window.closeModal = function() {
-    document.getElementById('sourceModal').style.display = 'none';
-    document.getElementById('sourceModal').classList.add('hidden');
-  };
-
-  // Edit source
-  window.editSource = function(id) {
-    const source = sources.find(s => s.id === id);
-    if (!source) return;
     
-    document.getElementById('modalTitle').textContent = 'Edit Source';
-    document.getElementById('editId').value = source.id;
-    document.getElementById('sourceName').value = source.name;
-    document.getElementById('sourceUrl').value = source.url;
-    document.getElementById('sourceCategory').value = source.category;
-    document.getElementById('sourceType').value = source.source_type || 'official';
-    document.getElementById('sourceDescription').value = source.description || '';
-    document.getElementById('sourceLogo').value = source.logo_url || '';
-    document.getElementById('sourceActive').checked = source.is_active === 1;
-    document.getElementById('modalMessage').classList.add('hidden');
-    document.getElementById('sourceModal').classList.remove('hidden');
-    document.getElementById('sourceModal').style.display = 'flex';
-  };
-
-  // Delete source
-  window.deleteSource = async function(id) {
-    if (!confirm('Are you sure you want to delete this source?')) return;
+    document.getElementById('addTemplateModal').addEventListener('click', function(e) {
+      if (e.target === this) closeAddTemplateModal();
+    });
     
-    try {
-      const response = await fetch('/api/admin/sources', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
-      });
+    // ============================================
+    // EDIT TEMPLATE MODAL
+    // ============================================
+    window.closeEditTemplateModal = function() {
+      document.getElementById('editTemplateModal').classList.add('hidden');
+    };
+    
+    document.getElementById('editTemplateModal').addEventListener('click', function(e) {
+      if (e.target === this) closeEditTemplateModal();
+    });
+    
+    // ============================================
+    // SAVE TEMPLATE
+    // ============================================
+    document.getElementById('addTemplateForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
       
-      const result = await response.json();
+      const name = document.getElementById('templateName').value.trim();
+      const category = document.getElementById('templateCategory').value;
+      const description = document.getElementById('templateDescription').value.trim();
+      const content = document.getElementById('templateContent').value.trim();
+      const is_active = document.getElementById('templateActive').checked ? 1 : 0;
       
-      if (result.success) {
-        showToast('✅ Source deleted successfully');
-        loadSources();
-      } else {
-        showToast('Failed to delete: ' + result.error, 'error');
+      if (!name || !category || !content) {
+        alert('Please fill in all required fields');
+        return;
       }
-    } catch (error) {
-      showToast('Failed to delete source', 'error');
-    }
-  };
-
-  // Submit form
-  document.getElementById('sourceForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const id = document.getElementById('editId').value;
-    const name = document.getElementById('sourceName').value.trim();
-    const url = document.getElementById('sourceUrl').value.trim();
-    const category = document.getElementById('sourceCategory').value;
-    const source_type = document.getElementById('sourceType').value;
-    const description = document.getElementById('sourceDescription').value.trim();
-    const logo_url = document.getElementById('sourceLogo').value.trim();
-    const is_active = document.getElementById('sourceActive').checked ? 1 : 0;
-    
-    if (!name || !url || !category) {
-      const msg = document.getElementById('modalMessage');
-      msg.textContent = 'Name, URL, and category are required';
-      msg.className = 'p-3 rounded-lg text-sm bg-red-50 text-red-700';
-      msg.classList.remove('hidden');
-      return;
-    }
-    
-    const data = { name, url, category, description, source_type, logo_url, is_active };
-    
-    try {
-      const method = id ? 'PUT' : 'POST';
-      if (id) data.id = parseInt(id);
       
-      const response = await fetch('/api/admin/sources', {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
+      const saveBtn = document.getElementById('saveTemplateBtn');
+      const originalText = saveBtn.textContent;
+      saveBtn.textContent = 'Saving...';
+      saveBtn.disabled = true;
       
-      const result = await response.json();
-      
-      if (result.success) {
-        showToast(id ? '✅ Source updated successfully' : '✅ Source added successfully');
-        closeModal();
-        loadSources();
-      } else {
-        const msg = document.getElementById('modalMessage');
-        msg.textContent = result.error || 'Failed to save source';
-        msg.className = 'p-3 rounded-lg text-sm bg-red-50 text-red-700';
-        msg.classList.remove('hidden');
+      try {
+        console.log('📤 Creating template:', { name, category, description, contentLength: content.length });
+        
+        const response = await fetch('/api/admin/templates', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, category, description, content, is_active })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Response error:', errorText);
+          let errorMsg = 'Failed to save template';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMsg = errorJson.error || errorMsg;
+          } catch (parseError) {
+            errorMsg = `Server error: ${response.status}`;
+          }
+          throw new Error(errorMsg);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Create response:', result);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to save template');
+        }
+        
+        alert('✅ Template saved successfully!');
+        closeAddTemplateModal();
+        window.location.reload();
+        
+      } catch (error) {
+        console.error('❌ Error saving template:', error);
+        alert('❌ Failed to save template: ' + error.message);
+      } finally {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
       }
-    } catch (error) {
-      const msg = document.getElementById('modalMessage');
-      msg.textContent = 'Failed to save source';
-      msg.className = 'p-3 rounded-lg text-sm bg-red-50 text-red-700';
-      msg.classList.remove('hidden');
-    }
+    });
+    
+    // ============================================
+    // EDIT TEMPLATE - Open Modal
+    // ============================================
+    document.querySelectorAll('.edit-template-btn').forEach(function(button) {
+      button.addEventListener('click', function() {
+        const id = this.dataset.id;
+        const name = this.dataset.name;
+        const category = this.dataset.category;
+        const content = this.dataset.content;
+        const description = this.dataset.description;
+        const isActive = this.dataset.isActive;
+        
+        document.getElementById('editTemplateId').value = id;
+        document.getElementById('editTemplateName').value = name;
+        document.getElementById('editTemplateCategory').value = category;
+        document.getElementById('editTemplateContent').value = content;
+        document.getElementById('editTemplateDescription').value = description;
+        document.getElementById('editTemplateActive').checked = isActive == 1;
+        
+        document.getElementById('editTemplateModal').classList.remove('hidden');
+      });
+    });
+    
+    // ============================================
+    // UPDATE TEMPLATE
+    // ============================================
+    document.getElementById('editTemplateForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const id = document.getElementById('editTemplateId').value;
+      const name = document.getElementById('editTemplateName').value.trim();
+      const category = document.getElementById('editTemplateCategory').value;
+      const description = document.getElementById('editTemplateDescription').value.trim();
+      const content = document.getElementById('editTemplateContent').value.trim();
+      const is_active = document.getElementById('editTemplateActive').checked ? 1 : 0;
+      
+      if (!name || !category || !content) {
+        alert('Please fill in all required fields');
+        return;
+      }
+      
+      const updateBtn = document.getElementById('updateTemplateBtn');
+      const originalText = updateBtn.textContent;
+      updateBtn.textContent = 'Updating...';
+      updateBtn.disabled = true;
+      
+      try {
+        console.log('📤 Updating template ID:', id);
+        
+        const response = await fetch(`/api/admin/templates/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name, category, description, content, is_active })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Response error:', errorText);
+          let errorMsg = 'Failed to update template';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMsg = errorJson.error || errorMsg;
+          } catch (parseError) {
+            errorMsg = `Server error: ${response.status}`;
+          }
+          throw new Error(errorMsg);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Update response:', result);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to update template');
+        }
+        
+        alert('✅ Template updated successfully!');
+        closeEditTemplateModal();
+        window.location.reload();
+        
+      } catch (error) {
+        console.error('❌ Error updating template:', error);
+        alert('❌ Failed to update template: ' + error.message);
+      } finally {
+        updateBtn.textContent = originalText;
+        updateBtn.disabled = false;
+      }
+    });
+    
+    // ============================================
+    // DELETE TEMPLATE
+    // ============================================
+    document.querySelectorAll('.delete-template-btn').forEach(function(button) {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const templateId = this.dataset.id;
+        
+        if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+          return;
+        }
+        
+        const originalText = this.textContent;
+        this.textContent = 'Deleting...';
+        this.disabled = true;
+        this.classList.add('opacity-50');
+        
+        try {
+          console.log('🗑️ Deleting template ID:', templateId);
+          
+          const response = await fetch(`/api/admin/templates/${templateId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Response error:', errorText);
+            let errorMsg = 'Failed to delete template';
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorMsg = errorJson.error || errorMsg;
+            } catch (parseError) {
+              errorMsg = `Server error: ${response.status}`;
+            }
+            throw new Error(errorMsg);
+          }
+          
+          const result = await response.json();
+          console.log('✅ Delete response:', result);
+          
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to delete template');
+          }
+          
+          alert('✅ Template deleted successfully!');
+          window.location.reload();
+          
+        } catch (error) {
+          console.error('❌ Error deleting template:', error);
+          alert('❌ Failed to delete template: ' + error.message);
+          
+          this.textContent = originalText;
+          this.disabled = false;
+          this.classList.remove('opacity-50');
+        }
+      });
+    });
+    
   });
-
-  // Load on page load
-  loadSources();
 </script>
+
+<style is:global>
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>

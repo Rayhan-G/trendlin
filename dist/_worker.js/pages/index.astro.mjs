@@ -1,173 +1,160 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                 */
-import { c as createAstro, a as createComponent, r as renderHead, g as renderComponent, b as addAttribute, d as renderTemplate } from '../chunks/astro/server_DVHrQl8d.mjs';
-import { $ as $$Navbar, a as $$Footer } from '../chunks/Footer_Ab-J9Ue-.mjs';
+import { c as createAstro, a as createComponent, m as maybeRenderHead, b as addAttribute, d as renderTemplate, f as renderScript, g as renderComponent, r as renderHead } from '../chunks/astro/server_DVHrQl8d.mjs';
+import { a as $$Footer, $ as $$Navbar } from '../chunks/Footer_Ab-J9Ue-.mjs';
+import { $ as $$PostCard } from '../chunks/PostCard_vvNbTLxS.mjs';
 /* empty css                                 */
 export { renderers } from '../renderers.mjs';
 
+const $$Astro$1 = createAstro("https://b484b1fd.my-content-site.pages.dev");
+const $$ProductCard = createComponent(($$result, $$props, $$slots) => {
+  const Astro2 = $$result.createAstro($$Astro$1, $$props, $$slots);
+  Astro2.self = $$ProductCard;
+  const { product } = Astro2.props;
+  const resources = product.social_resources || [];
+  const redditResources = resources.filter((r) => r.platform === "reddit");
+  const youtubeResources = resources.filter((r) => r.platform === "youtube");
+  const tiktokResources = resources.filter((r) => r.platform === "tiktok");
+  const shopResources = resources.filter((r) => r.platform === "shop");
+  const redditJson = JSON.stringify(redditResources);
+  const youtubeJson = JSON.stringify(youtubeResources);
+  const tiktokJson = JSON.stringify(tiktokResources);
+  const shopJson = JSON.stringify(shopResources);
+  return renderTemplate`${maybeRenderHead()}<div class="product-wrapper"${addAttribute(product.id, "data-product-id")} data-astro-cid-tjdfhdqb> <div class="product-card" data-astro-cid-tjdfhdqb> <a${addAttribute(`/products/${product.slug}`, "href")} class="product-link" data-astro-cid-tjdfhdqb> <div class="product-image" data-astro-cid-tjdfhdqb> ${product.cover_image ? renderTemplate`<img${addAttribute(product.cover_image, "src")}${addAttribute(product.title, "alt")} loading="lazy" width="400" height="300" data-astro-cid-tjdfhdqb>` : renderTemplate`<img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop&q=80"${addAttribute(product.title, "alt")} loading="lazy" width="400" height="300" data-astro-cid-tjdfhdqb>`} </div> <div class="product-gradient" data-astro-cid-tjdfhdqb></div> ${product.category && renderTemplate`<span class="product-badge" data-astro-cid-tjdfhdqb>${product.category}</span>`} ${product.brand && renderTemplate`<span class="product-brand" data-astro-cid-tjdfhdqb>${product.brand}</span>`} <div class="product-title" data-astro-cid-tjdfhdqb>${product.title}</div> </a> <div class="social-buttons" data-astro-cid-tjdfhdqb> <!-- Reddit --> <button class="social-btn reddit" data-platform="reddit"${addAttribute(redditJson, "data-resources")} onclick="window.openResourcePopup(event, 'reddit', this)" aria-label="View Reddit discussions" data-astro-cid-tjdfhdqb> <svg viewBox="0 0 24 24" fill="currentColor" data-astro-cid-tjdfhdqb> <path d="M14.5 15.5c-.7.7-2 .8-2.5.8s-1.8-.1-2.5-.8a.5.5 0 1 1 .7-.7c.4.4 1.3.6 1.8.6s1.4-.2 1.8-.6a.5.5 0 1 1 .7.7zM9.5 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm5 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm7-1.2a2.2 2.2 0 0 0-3.7-1.6c-1.3-.9-3-1.5-4.8-1.6l.8-3 2.1.5a1.8 1.8 0 1 0 .3-1l-2.6-.6a.5.5 0 0 0-.6.4l-.9 3.5c-1.9.1-3.6.7-4.9 1.6A2.2 2.2 0 0 0 2.5 10.8c0 .9.5 1.7 1.2 2-.1.3-.2.7-.2 1 0 3.2 3.7 5.8 8.5 5.8s8.5-2.6 8.5-5.8c0-.3-.1-.7-.2-1 .7-.3 1.2-1.1 1.2-2z" data-astro-cid-tjdfhdqb></path> </svg> <span class="tooltip" data-astro-cid-tjdfhdqb>Reddit</span> </button> <!-- YouTube --> <button class="social-btn youtube" data-platform="youtube"${addAttribute(youtubeJson, "data-resources")} onclick="window.openResourcePopup(event, 'youtube', this)" aria-label="View YouTube reviews" data-astro-cid-tjdfhdqb> <svg viewBox="0 0 24 24" fill="currentColor" data-astro-cid-tjdfhdqb> <path d="M23.5 6.2c-.3-1.2-1.2-2.1-2.4-2.4C19.1 3.3 12 3.3 12 3.3s-7.1 0-9.1.5C1.7 4.1.8 5 .5 6.2 0 8.2 0 12 0 12s0 3.8.5 5.8c.3 1.2 1.2 2.1 2.4 2.4 2 .5 9.1.5 9.1.5s7.1 0 9.1-.5c1.2-.3 2.1-1.2 2.4-2.4.5-2 .5-5.8.5-5.8s0-3.8-.5-5.8zM9.5 15.5v-7l6 3.5-6 3.5z" data-astro-cid-tjdfhdqb></path> </svg> <span class="tooltip" data-astro-cid-tjdfhdqb>YouTube</span> </button> <!-- TikTok --> <button class="social-btn tiktok" data-platform="tiktok"${addAttribute(tiktokJson, "data-resources")} onclick="window.openResourcePopup(event, 'tiktok', this)" aria-label="View TikTok videos" data-astro-cid-tjdfhdqb> <svg viewBox="0 0 24 24" fill="currentColor" data-astro-cid-tjdfhdqb> <path d="M16.6 2h-3.1v13.2a2.8 2.8 0 1 1-2.8-2.8c.3 0 .6 0 .9.1V9.3a6 6 0 1 0 5.9 6V8.9c1.2.9 2.7 1.5 4.3 1.6V7.4c-2-.1-3.8-1.7-4.2-3.9V2z" data-astro-cid-tjdfhdqb></path> </svg> <span class="tooltip" data-astro-cid-tjdfhdqb>TikTok</span> </button> <!-- Shop --> <button class="social-btn shop" data-platform="shop"${addAttribute(shopJson, "data-resources")} onclick="window.openResourcePopup(event, 'shop', this)" aria-label="View shop listings" data-astro-cid-tjdfhdqb> <svg viewBox="0 0 24 24" fill="currentColor" data-astro-cid-tjdfhdqb> <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.2 14h9.9c.8 0 1.5-.5 1.8-1.2l3-6.8A1 1 0 0 0 21 4H6.2L5.3 2H2v2h2l3.6 7.6-1.3 2.4A2 2 0 0 0 8 17h12v-2H8l1.2-2z" data-astro-cid-tjdfhdqb></path> </svg> <span class="tooltip" data-astro-cid-tjdfhdqb>Shop</span> </button> </div> </div> </div> `;
+}, "P:/Projects/trendlin/src/components/ProductCard.astro", void 0);
+
+const $$ResourcePopup = createComponent(($$result, $$props, $$slots) => {
+  return renderTemplate`${maybeRenderHead()}<div id="resource-popup" class="resource-popup"> <div class="resource-popup-overlay" id="popup-overlay"></div> <div class="resource-popup-content"> <button class="resource-popup-close" id="popup-close" aria-label="Close popup"> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line> </svg> </button> <div id="popup-body"></div> </div> </div>  ${renderScript($$result, "P:/Projects/trendlin/src/components/ResourcePopup.astro?astro&type=script&index=0&lang.ts")}`;
+}, "P:/Projects/trendlin/src/components/ResourcePopup.astro", void 0);
+
+var __freeze = Object.freeze;
+var __defProp = Object.defineProperty;
+var __template = (cooked, raw) => __freeze(__defProp(cooked, "raw", { value: __freeze(cooked.slice()) }));
+var _a;
 const $$Astro = createAstro("https://b484b1fd.my-content-site.pages.dev");
 const $$Index = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Index;
   let posts = [];
+  let products = [];
   try {
-    const response = await fetch(`${Astro2.url.origin}/api/posts?published=true`);
-    if (response.ok) {
-      posts = await response.json();
+    const { DB } = Astro2.locals.runtime.env;
+    const postsResult = await DB.prepare(`
+    SELECT 
+      id, title, slug, excerpt, category, cover_image, 
+      published_at, created_at,
+      'post' as type
+    FROM posts 
+    WHERE is_draft = 0 
+    AND is_published = 1
+    ORDER BY created_at DESC
+  `).all();
+    posts = postsResult.results || [];
+    const productsResult = await DB.prepare(`
+    SELECT 
+      p.id, p.name as title, p.slug, p.description as excerpt, 
+      p.category, p.cover_image, p.created_at, 
+      p.brand,
+      'product' as type
+    FROM products p
+    WHERE p.in_stock = 1
+    ORDER BY p.created_at DESC
+  `).all();
+    const resourcesResult = await DB.prepare(`
+    SELECT 
+      product_id,
+      platform,
+      id,
+      url,
+      title,
+      description,
+      author
+    FROM product_resources
+    WHERE is_active = 1
+    ORDER BY product_id, platform, display_order
+  `).all();
+    const resourcesByProduct = {};
+    for (const r of resourcesResult.results || []) {
+      const productId = r.product_id;
+      if (!resourcesByProduct[productId]) {
+        resourcesByProduct[productId] = [];
+      }
+      resourcesByProduct[productId].push({
+        id: r.id,
+        platform: r.platform.toLowerCase(),
+        url: r.url,
+        title: r.title,
+        description: r.description || "",
+        author: r.author || ""
+      });
+    }
+    products = productsResult.results.map((p) => ({
+      ...p,
+      social_resources: resourcesByProduct[p.id] || []
+    }));
+    const p1 = products.find((p) => p.id === 1);
+    if (p1) {
+      console.log("\u2705 Product 1 loaded:", p1.title);
+      console.log("\u{1F4CA} Resources count:", p1.social_resources.length);
     }
   } catch (error) {
-    console.error("Error fetching posts:", error);
+    console.error("Database error:", error);
   }
-  return renderTemplate`<html lang="en" data-astro-cid-j7pv25f6> <head><!-- ============================================
-    SECTION: Head / Meta Tags
-    ============================================ --><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Trendlin - Los Angeles' Trusted Source</title><meta name="description" content="Your trusted source for the latest trends, product reviews, and local insights in Los Angeles, California."><!-- ============================================
-    SECTION: Google Fonts
-    ============================================ --><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet"><!-- ============================================
-    SECTION: All CSS Styles
-    ============================================ -->${renderHead()}</head> <body data-astro-cid-j7pv25f6> <!-- ============================================
-    SECTION: Navbar
-    ============================================ --> ${renderComponent($$result, "Navbar", $$Navbar, { "data-astro-cid-j7pv25f6": true })} <!-- ============================================
-    SECTION: Location Banner
-    ============================================ --> <div class="location-banner" data-astro-cid-j7pv25f6> <span data-astro-cid-j7pv25f6>📍</span> Serving Los Angeles, California — Your Trusted Local Source for Trends, Reviews &amp; Insights
-</div> <!-- ============================================
-SECTION: Compact Hero - FIXED
-============================================ --> <section class="hero-compact" style="
-  position: relative;
-  min-height: calc(100vh - 64px - 40px);
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  background: #0a0a0a;
-  padding: 2rem 0;
-" data-astro-cid-j7pv25f6> <!-- Background Image --> <div class="hero-bg" style="position: absolute; inset: 0; width: 100%; height: 100%;" data-astro-cid-j7pv25f6> <img src="https://pub-bf1013d046c946448ed23cbf79e38b92.r2.dev/Webstructmedia/webo.jpg" alt="Trendlin - Los Angeles" style="width: 100%; height: 100%; object-fit: cover; object-position: center;" loading="eager" fetchpriority="high" decoding="async" data-astro-cid-j7pv25f6> <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.7), rgba(0,0,0,0.4), rgba(0,0,0,0.7));" data-astro-cid-j7pv25f6></div> <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.3), transparent, rgba(0,0,0,0.3));" data-astro-cid-j7pv25f6></div> </div> <!-- Hero Content --> <div style="position: relative; width: 100%; z-index: 10; padding: 1.5rem 1rem;" data-astro-cid-j7pv25f6> <div style="max-width: 800px; margin: 0 auto; text-align: center;" data-astro-cid-j7pv25f6> <!-- Badge --> <div style="
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: rgba(255,255,255,0.1);
-        backdrop-filter: blur(4px);
-        color: rgba(255,255,255,0.9);
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        margin-bottom: 0.5rem;
-        border: 1px solid rgba(255,255,255,0.1);
-      " data-astro-cid-j7pv25f6> <span style="position: relative; display: flex; height: 0.5rem; width: 0.5rem;" data-astro-cid-j7pv25f6> <span style="position: absolute; display: inline-flex; height: 100%; width: 100%; border-radius: 50%; background: rgba(96, 165, 250, 0.75); animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;" data-astro-cid-j7pv25f6></span> <span style="position: relative; display: inline-flex; border-radius: 50%; height: 0.5rem; width: 0.5rem; background: #3b82f6;" data-astro-cid-j7pv25f6></span> </span> <span data-astro-cid-j7pv25f6>🚀 Trendlin — Los Angeles</span> </div> <!-- Heading --> <h1 style="
-        font-size: clamp(1.5rem, 5vw, 3rem);
-        font-weight: 800;
-        color: #ffffff;
-        line-height: 1.15;
-        margin-bottom: 0.5rem;
-        letter-spacing: -0.02em;
-      " data-astro-cid-j7pv25f6> <span style="display: block;" data-astro-cid-j7pv25f6>Discover What's</span> <span style="
-          display: block;
-          background: linear-gradient(to right, #60a5fa, #a78bfa, #f472b6);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        " data-astro-cid-j7pv25f6>Trending in LA</span> </h1> <!-- Subtitle --> <p style="
-        font-size: clamp(0.8rem, 1.5vw, 1.1rem);
-        color: rgba(255,255,255,0.9);
-        max-width: 600px;
-        margin: 0 auto 0.75rem;
-        padding: 0 1rem;
-        line-height: 1.5;
-        font-weight: 400;
-      " data-astro-cid-j7pv25f6>
-Your trusted source for honest product reviews, buying guides, and local insights — made for Los Angeles.
-</p> <!-- CTA Buttons --> <div style="
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-        justify-content: center;
-        align-items: center;
-        padding: 0 1rem;
-      " data-astro-cid-j7pv25f6> <a href="/blog" style="
-          width: 100%;
-          max-width: 200px;
-          background: #2563eb;
-          color: #ffffff;
-          padding: 0.5rem 1.25rem;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          font-size: 0.8rem;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          border: none;
-          cursor: pointer;
-          letter-spacing: 0.02em;
-        " data-astro-cid-j7pv25f6> <span data-astro-cid-j7pv25f6>Read the Blog</span> <svg style="width: 0.9rem; height: 0.9rem; transition: transform 0.3s ease;" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" data-astro-cid-j7pv25f6></path> </svg> </a> <a href="/categories" style="
-          width: 100%;
-          max-width: 200px;
-          background: rgba(255,255,255,0.1);
-          backdrop-filter: blur(4px);
-          color: #ffffff;
-          padding: 0.5rem 1.25rem;
-          border-radius: 0.5rem;
-          font-weight: 600;
-          font-size: 0.8rem;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          border: 1px solid rgba(255,255,255,0.2);
-          cursor: pointer;
-          letter-spacing: 0.02em;
-        " data-astro-cid-j7pv25f6> <svg style="width: 0.9rem; height: 0.9rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" data-astro-cid-j7pv25f6></path> </svg> <span data-astro-cid-j7pv25f6>Explore Categories</span> </a> </div> <!-- Stats --> <div style="
-        margin-top: 1rem;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-        max-width: 300px;
-        margin-left: auto;
-        margin-right: auto;
-      " data-astro-cid-j7pv25f6> <div style="
-          text-align: center;
-          padding: 0.35rem 0.5rem;
-          background: rgba(255,255,255,0.05);
-          backdrop-filter: blur(4px);
-          border-radius: 0.5rem;
-          border: 1px solid rgba(255,255,255,0.1);
-        " data-astro-cid-j7pv25f6> <div style="font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; color: #ffffff;" data-astro-cid-j7pv25f6>${posts.length}</div> <div style="font-size: 0.6rem; color: #d1d5db;" data-astro-cid-j7pv25f6>Articles Published</div> </div> <div style="
-          text-align: center;
-          padding: 0.35rem 0.5rem;
-          background: rgba(255,255,255,0.05);
-          backdrop-filter: blur(4px);
-          border-radius: 0.5rem;
-          border: 1px solid rgba(255,255,255,0.1);
-        " data-astro-cid-j7pv25f6> <div style="font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; color: #ffffff;" data-astro-cid-j7pv25f6>50+</div> <div style="font-size: 0.6rem; color: #d1d5db;" data-astro-cid-j7pv25f6>Topics Covered</div> </div> <div style="
-          text-align: center;
-          padding: 0.35rem 0.5rem;
-          background: rgba(255,255,255,0.05);
-          backdrop-filter: blur(4px);
-          border-radius: 0.5rem;
-          border: 1px solid rgba(255,255,255,0.1);
-        " data-astro-cid-j7pv25f6> <div style="font-size: clamp(1rem, 2vw, 1.25rem); font-weight: 700; color: #ffffff;" data-astro-cid-j7pv25f6>100%</div> <div style="font-size: 0.6rem; color: #d1d5db;" data-astro-cid-j7pv25f6>Honest Reviews</div> </div> </div> </div> </div> </section> <!-- ============================================
-    SECTION: About Trendlin
-    ============================================ --> <section class="about-section" data-astro-cid-j7pv25f6> <div class="container" data-astro-cid-j7pv25f6> <div class="about-grid" data-astro-cid-j7pv25f6> <!-- SUBSECTION: About Left - Content --> <div class="about-content" data-astro-cid-j7pv25f6> <h2 data-astro-cid-j7pv25f6>Your Trusted Guide for <span style="color: #2563eb;" data-astro-cid-j7pv25f6>Everyday Life</span> in LA</h2> <p data-astro-cid-j7pv25f6>
-Trendlin is your go-to resource for discovering what matters most in your daily life. 
-              Whether you're looking for honest product reviews, local recommendations, or ways to 
-              save money while shopping — we've got you covered.
-</p> <p data-astro-cid-j7pv25f6>
-We test, research, and curate the best products and services available in Los Angeles, 
-              so you don't have to. Our mission is to help you make smarter, more informed decisions 
-              for your home, lifestyle, and family.
-</p> <!-- ---- About Highlights (Bullet Points) ---- --> <ul class="about-highlights" data-astro-cid-j7pv25f6> <li data-astro-cid-j7pv25f6> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" data-astro-cid-j7pv25f6></path> </svg> <span data-astro-cid-j7pv25f6>Get information that actually matters for your everyday life</span> </li> <li data-astro-cid-j7pv25f6> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" data-astro-cid-j7pv25f6></path> </svg> <span data-astro-cid-j7pv25f6>Save money while shopping with our curated deals and recommendations</span> </li> <li data-astro-cid-j7pv25f6> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" data-astro-cid-j7pv25f6></path> </svg> <span data-astro-cid-j7pv25f6>Honest reviews from real experiences — no fluff, just facts</span> </li> </ul> </div> <!-- SUBSECTION: About Right - Image --> <div class="about-image" data-astro-cid-j7pv25f6> <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&q=80" alt="Los Angeles lifestyle - Trendlin" loading="lazy" data-astro-cid-j7pv25f6> </div> </div> </div> </section> <!-- ============================================
-    SECTION: Features Cards
-    ============================================ --> <section class="container features" data-astro-cid-j7pv25f6> <div class="text-center" data-astro-cid-j7pv25f6> <h2 class="section-title" data-astro-cid-j7pv25f6>What Matters to Los Angeles</h2> <p class="section-subtitle" data-astro-cid-j7pv25f6>Honest content, local insights, and actionable recommendations for LA residents</p> </div> <div class="features-grid" data-astro-cid-j7pv25f6> <!-- ---- Feature Card 1 ---- --> <div class="feature-card" data-astro-cid-j7pv25f6> <div class="feature-icon feature-icon-blue" data-astro-cid-j7pv25f6> <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" data-astro-cid-j7pv25f6></path> </svg> </div> <h3 class="feature-title" data-astro-cid-j7pv25f6>Local Product Reviews</h3> <p class="feature-desc" data-astro-cid-j7pv25f6>Honest, in-depth reviews of products available in Los Angeles stores and online.</p> </div> <!-- ---- Feature Card 2 ---- --> <div class="feature-card" data-astro-cid-j7pv25f6> <div class="feature-icon feature-icon-purple" data-astro-cid-j7pv25f6> <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" data-astro-cid-j7pv25f6></path> </svg> </div> <h3 class="feature-title" data-astro-cid-j7pv25f6>LA Lifestyle &amp; Culture</h3> <p class="feature-desc" data-astro-cid-j7pv25f6>Insightful articles on Los Angeles lifestyle, events, and what's trending in the city.</p> </div> <!-- ---- Feature Card 3 ---- --> <div class="feature-card" data-astro-cid-j7pv25f6> <div class="feature-icon feature-icon-green" data-astro-cid-j7pv25f6> <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" data-astro-cid-j7pv25f6></path> </svg> </div> <h3 class="feature-title" data-astro-cid-j7pv25f6>Local Affiliate Deals</h3> <p class="feature-desc" data-astro-cid-j7pv25f6>Find the best deals on products and services available in the Los Angeles area.</p> </div> </div> </section> <!-- ============================================
-    SECTION: Latest Posts
-    ============================================ --> <section class="container posts-section" data-astro-cid-j7pv25f6> <!-- SUBSECTION: Posts Header --> <div class="posts-header" data-astro-cid-j7pv25f6> <h2 class="section-title" data-astro-cid-j7pv25f6>Latest in LA</h2> <a href="/search" data-astro-cid-j7pv25f6>
-View All
-<svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" data-astro-cid-j7pv25f6></path> </svg> </a> </div> <!-- SUBSECTION: Posts Grid --> ${posts.length > 0 ? renderTemplate`<div class="posts-grid" data-astro-cid-j7pv25f6> ${posts.slice(0, 6).map((post) => renderTemplate`<div class="post-card" data-astro-cid-j7pv25f6> <article class="post-card-inner" data-astro-cid-j7pv25f6> <!-- ---- Post Image ---- --> ${post.cover_image && renderTemplate`<div class="post-image" data-astro-cid-j7pv25f6> <img${addAttribute(post.cover_image, "src")}${addAttribute(post.title, "alt")} loading="lazy" data-astro-cid-j7pv25f6> ${post.category_name && renderTemplate`<span class="post-category" data-astro-cid-j7pv25f6>${post.category_name}</span>`} </div>`} <!-- ---- Post Body ---- --> <div class="post-body" data-astro-cid-j7pv25f6> <h3 data-astro-cid-j7pv25f6> <a${addAttribute(`/article/${post.slug}`, "href")} data-astro-cid-j7pv25f6>${post.title}</a> </h3> ${post.excerpt && renderTemplate`<p data-astro-cid-j7pv25f6>${post.excerpt}</p>`} <div class="post-meta" data-astro-cid-j7pv25f6> <span data-astro-cid-j7pv25f6>${new Date(post.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span> <span data-astro-cid-j7pv25f6>5 min read</span> </div> </div> </article> </div>`)} </div>` : renderTemplate`<!-- ---- Empty State ---- -->
-        <div class="post-empty" data-astro-cid-j7pv25f6> <p data-astro-cid-j7pv25f6>No posts yet. Check back soon for the latest from Los Angeles!</p> <a href="/admin/posts/new" data-astro-cid-j7pv25f6>Create your first post →</a> </div>`} </section> <!-- ============================================
-    SECTION: Footer
-    ============================================ --> ${renderComponent($$result, "Footer", $$Footer, { "data-astro-cid-j7pv25f6": true })} </body></html>`;
+  const now = /* @__PURE__ */ new Date();
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1e3);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1e3);
+  function isWithinWindow(dateStr, windowStart) {
+    if (!dateStr) return false;
+    const date = new Date(dateStr);
+    return date >= windowStart && date <= now;
+  }
+  const todaysPosts = posts.filter((post) => {
+    const date = post.published_at || post.created_at;
+    return isWithinWindow(date, twentyFourHoursAgo);
+  });
+  const todaysProducts = products.filter((product) => {
+    return product.id === 1 || isWithinWindow(product.created_at, twentyFourHoursAgo);
+  });
+  const recentPosts = posts.filter((post) => {
+    const date = post.published_at || post.created_at;
+    return isWithinWindow(date, sevenDaysAgo);
+  });
+  const recentProducts = products.filter((product) => {
+    return product.id === 1 || isWithinWindow(product.created_at, sevenDaysAgo);
+  });
+  const sectionData = [
+    {
+      id: 0,
+      title: "\u{1F4CC} Today's Picks",
+      subtitle: "Fresh posts from the last 24 hours",
+      align: "left",
+      mainPosts: todaysPosts.slice(0, 10)
+    },
+    {
+      id: 1,
+      title: "\u2B50 Top Picks",
+      subtitle: "Hot products from the last 24 hours",
+      align: "right",
+      mainPosts: todaysProducts.slice(0, 10)
+    },
+    {
+      id: 2,
+      title: "\u{1F195} Recently Added",
+      subtitle: "Fresh posts from the last 7 days",
+      align: "left",
+      mainPosts: recentPosts.slice(0, 10)
+    },
+    {
+      id: 3,
+      title: "\u{1F680} Newly Released",
+      subtitle: "Latest products from the last 7 days",
+      align: "right",
+      mainPosts: recentProducts.slice(0, 10)
+    }
+  ];
+  return renderTemplate(_a || (_a = __template(['<html lang="en" data-astro-cid-j7pv25f6> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Trendlin - Trusted Reviews & Local Insights for Americans</title><meta name="description" content="Honest product reviews, buying guides, and local insights for Americans."><meta name="robots" content="index, follow"><link rel="canonical"', '><meta property="og:title" content="Trendlin - Trusted Reviews & Local Insights"><meta property="og:description" content="Honest product reviews and local insights for Americans."><meta property="og:type" content="website"><meta property="og:url"', '><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">', "</head> <body data-astro-cid-j7pv25f6> ", ` <section class="hero" data-astro-cid-j7pv25f6> <div class="hero-bg" data-astro-cid-j7pv25f6> <img src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=1600&q=80" alt="America" loading="eager" data-astro-cid-j7pv25f6> <div class="hero-overlay" data-astro-cid-j7pv25f6></div> </div> <div class="hero-content container" data-astro-cid-j7pv25f6> <h1 data-astro-cid-j7pv25f6>Discover What's <span data-astro-cid-j7pv25f6>Trending</span> in America</h1> <p data-astro-cid-j7pv25f6>Honest product reviews, buying guides, and local insights \u2014 made for Americans.</p> <a href="/categories" class="btn-primary" data-astro-cid-j7pv25f6>
+Explore Categories
+<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" data-astro-cid-j7pv25f6></path> </svg> </a> </div> </section> `, " ", " <!-- ============================================\n   RESOURCE POPUP - Single Instance\n   ============================================ --> ", " <!-- ============================================\n   SCROLL BUTTON CONTROLLER\n   ============================================ --> <script>\n  (function() {\n    'use strict';\n    \n    function initScrollButtons() {\n      document.querySelectorAll('.scroll-wrapper').forEach(wrapper => {\n        const grid = wrapper.querySelector('.card-grid');\n        const leftBtn = wrapper.querySelector('.scroll-btn.left');\n        const rightBtn = wrapper.querySelector('.scroll-btn.right');\n        \n        if (!grid || !leftBtn || !rightBtn) return;\n        \n        function checkScroll() {\n          const hasScroll = grid.scrollWidth > grid.clientWidth;\n          wrapper.classList.toggle('has-scroll', hasScroll);\n        }\n        \n        leftBtn.addEventListener('click', () => {\n          grid.scrollBy({ left: -grid.clientWidth * 0.8, behavior: 'smooth' });\n        });\n        \n        rightBtn.addEventListener('click', () => {\n          grid.scrollBy({ left: grid.clientWidth * 0.8, behavior: 'smooth' });\n        });\n        \n        checkScroll();\n        window.addEventListener('resize', checkScroll);\n        \n        grid.addEventListener('scroll', () => {\n          const atLeft = grid.scrollLeft <= 10;\n          const atRight = grid.scrollLeft >= grid.scrollWidth - grid.clientWidth - 10;\n          leftBtn.style.opacity = atLeft ? '0.3' : '1';\n          rightBtn.style.opacity = atRight ? '0.3' : '1';\n        });\n      });\n    }\n    \n    if (document.readyState === 'loading') {\n      document.addEventListener('DOMContentLoaded', initScrollButtons);\n    } else {\n      initScrollButtons();\n    }\n    \n  })();\n<\/script> </body> </html>"])), addAttribute(Astro2.url.href, "href"), addAttribute(Astro2.url.href, "href"), renderHead(), renderComponent($$result, "Navbar", $$Navbar, { "data-astro-cid-j7pv25f6": true }), sectionData.map((section) => renderTemplate`<section class="section"${addAttribute(section.id, "key")} data-astro-cid-j7pv25f6> <div class="container" data-astro-cid-j7pv25f6> ${section.align === "left" ? renderTemplate`<div class="row row-left" data-astro-cid-j7pv25f6> <div class="section-title-wrapper" data-astro-cid-j7pv25f6> <h2 data-astro-cid-j7pv25f6>${section.title}</h2> <p data-astro-cid-j7pv25f6>${section.subtitle}</p> </div> <div class="col-80" data-astro-cid-j7pv25f6> <div class="scroll-wrapper"${addAttribute(section.id, "data-section")} data-astro-cid-j7pv25f6> <div class="card-grid" id="scroll-{section.id}" data-astro-cid-j7pv25f6> ${section.mainPosts.length === 0 ? renderTemplate`<div class="empty-state" data-astro-cid-j7pv25f6> <span class="emoji" data-astro-cid-j7pv25f6>👀</span> <p data-astro-cid-j7pv25f6>Nothing new yet. Check back soon!</p> </div>` : section.mainPosts.map((item) => renderTemplate`<div class="post-card-wrapper" data-astro-cid-j7pv25f6> ${item.type === "product" ? renderTemplate`${renderComponent($$result, "ProductCard", $$ProductCard, { "product": item, "data-astro-cid-j7pv25f6": true })}` : renderTemplate`${renderComponent($$result, "PostCard", $$PostCard, { "post": item, "data-astro-cid-j7pv25f6": true })}`} </div>`)} </div> <button class="scroll-btn left" data-scroll="left-{section.id}" aria-label="Scroll left" data-astro-cid-j7pv25f6> <svg viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" data-astro-cid-j7pv25f6></path> </svg> </button> <button class="scroll-btn right" data-scroll="right-{section.id}" aria-label="Scroll right" data-astro-cid-j7pv25f6> <svg viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-j7pv25f6></path> </svg> </button> </div> </div> <div class="col-20" data-astro-cid-j7pv25f6></div> </div>` : renderTemplate`<div class="row row-right" data-astro-cid-j7pv25f6> <div class="col-20" data-astro-cid-j7pv25f6></div> <div class="section-title-wrapper" data-astro-cid-j7pv25f6> <h2 data-astro-cid-j7pv25f6>${section.title}</h2> <p data-astro-cid-j7pv25f6>${section.subtitle}</p> </div> <div class="col-80" data-astro-cid-j7pv25f6> <div class="scroll-wrapper"${addAttribute(section.id, "data-section")} data-astro-cid-j7pv25f6> <div class="card-grid" id="scroll-{section.id}" data-astro-cid-j7pv25f6> ${section.mainPosts.length === 0 ? renderTemplate`<div class="empty-state" data-astro-cid-j7pv25f6> <span class="emoji" data-astro-cid-j7pv25f6>👀</span> <p data-astro-cid-j7pv25f6>Nothing new yet. Check back soon!</p> </div>` : section.mainPosts.map((item) => renderTemplate`<div class="post-card-wrapper" data-astro-cid-j7pv25f6> ${item.type === "product" ? renderTemplate`${renderComponent($$result, "ProductCard", $$ProductCard, { "product": item, "data-astro-cid-j7pv25f6": true })}` : renderTemplate`${renderComponent($$result, "PostCard", $$PostCard, { "post": item, "data-astro-cid-j7pv25f6": true })}`} </div>`)} </div> <button class="scroll-btn left" data-scroll="left-{section.id}" aria-label="Scroll left" data-astro-cid-j7pv25f6> <svg viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" data-astro-cid-j7pv25f6></path> </svg> </button> <button class="scroll-btn right" data-scroll="right-{section.id}" aria-label="Scroll right" data-astro-cid-j7pv25f6> <svg viewBox="0 0 24 24" data-astro-cid-j7pv25f6> <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" data-astro-cid-j7pv25f6></path> </svg> </button> </div> </div> </div>`} </div> </section>`), renderComponent($$result, "Footer", $$Footer, { "data-astro-cid-j7pv25f6": true }), renderComponent($$result, "ResourcePopup", $$ResourcePopup, { "data-astro-cid-j7pv25f6": true }));
 }, "P:/Projects/trendlin/src/pages/index.astro", void 0);
 
 const $$file = "P:/Projects/trendlin/src/pages/index.astro";

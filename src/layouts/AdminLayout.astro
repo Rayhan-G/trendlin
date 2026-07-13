@@ -1,6 +1,6 @@
 ---
 // ============================================
-// ADMIN LAYOUT - Trendlin (Full Version)
+// ADMIN LAYOUT - Trendlin (Full Version with Products & Templates)
 // ============================================
 
 export interface Props {
@@ -446,44 +446,46 @@ if (!user) {
     </header>
 
     <!-- ==========================================
-SIDEBAR
-========================================== -->
-<aside class="sidebar" id="sidebar">
-  <nav class="sidebar-nav">
-    <div class="nav-label">Main</div>
-    <a href="/admin/dashboard" class={Astro.url.pathname === '/admin/dashboard' ? 'active' : ''}>
-      <span class="icon">📊</span> Dashboard
-    </a>
-    <a href="/admin/new" class={Astro.url.pathname === '/admin/new' ? 'active' : ''}>
-      <span class="icon">✏️</span> New Post
-    </a>
-    
-    <div class="nav-label" style="margin-top: 0.5rem;">Content</div>
-    <a href="/admin/media" class={Astro.url.pathname.startsWith('/admin/media') ? 'active' : ''}>
-      <span class="icon">🖼️</span> Media Library
-    </a>
-    <!-- ADD SOURCES LINK HERE -->
-    <a href="/admin/sources" class={Astro.url.pathname === '/admin/sources' ? 'active' : ''}>
-      <span class="icon">📚</span> Sources
-    </a>
-    
-    <div class="nav-label" style="margin-top: 0.5rem;">System</div>
-    <a href="/" target="_blank">
-      <span class="icon">🌐</span> View Site
-    </a>
-    <a href="/admin/settings" class={Astro.url.pathname === '/admin/settings' ? 'active' : ''}>
-      <span class="icon">⚙️</span> Settings
-    </a>
-    
-    <div style="border-top: 1px solid var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
-      <form method="POST" action="/api/auth/logout">
-        <button type="submit" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.625rem 0.75rem;border:none;background:transparent;border-radius:0.5rem;font-size:0.875rem;font-weight:500;color:#dc2626;cursor:pointer;transition:background 0.2s;font-family:inherit;">
-          <span class="icon">🚪</span> Logout
-        </button>
-      </form>
-    </div>
-  </nav>
-</aside>
+    SIDEBAR - UPDATED WITH ALL LINKS
+    ========================================== -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav">
+        <div class="nav-label">Main</div>
+        <a href="/admin/dashboard" class={Astro.url.pathname === '/admin/dashboard' ? 'active' : ''}>
+          <span class="icon">📊</span> Dashboard
+        </a>
+        <a href="/admin/new" class={Astro.url.pathname === '/admin/new' ? 'active' : ''}>
+          <span class="icon">✏️</span> New Post
+        </a>
+        
+        <div class="nav-label" style="margin-top: 0.5rem;">Content</div>
+        <a href="/admin/media" class={Astro.url.pathname.startsWith('/admin/media') ? 'active' : ''}>
+          <span class="icon">🖼️</span> Media Library
+        </a>
+        <a href="/admin/products" class={Astro.url.pathname.startsWith('/admin/products') ? 'active' : ''}>
+          <span class="icon">📦</span> Products
+        </a>
+        <a href="/admin/templates" class={Astro.url.pathname === '/admin/templates' ? 'active' : ''}>
+          <span class="icon">📋</span> Templates
+        </a>
+        <a href="/admin/sources" class={Astro.url.pathname === '/admin/sources' ? 'active' : ''}>
+          <span class="icon">📚</span> Sources
+        </a>
+        
+        <div class="nav-label" style="margin-top: 0.5rem;">System</div>
+        <a href="/" target="_blank">
+          <span class="icon">🌐</span> View Site
+        </a>
+        
+        <div style="border-top: 1px solid var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
+          <form method="POST" action="/api/auth/logout">
+            <button type="submit" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.625rem 0.75rem;border:none;background:transparent;border-radius:0.5rem;font-size:0.875rem;font-weight:500;color:#dc2626;cursor:pointer;transition:background 0.2s;font-family:inherit;">
+              <span class="icon">🚪</span> Logout
+            </button>
+          </form>
+        </div>
+      </nav>
+    </aside>
 
     <!-- ==========================================
     MAIN CONTENT
