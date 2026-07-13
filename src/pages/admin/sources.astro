@@ -17,19 +17,15 @@ try {
   
   if (sourcesResponse.ok) {
     const data = await sourcesResponse.json();
-    console.log('📥 Sources API Response:', data);
     
     if (data && data.success) {
-      masterSources = data.master || [];
-      stateSources = data.state || [];
-      console.log(`✅ Loaded ${masterSources.length} master sources and ${stateSources.length} state sources`);
+      masterSources = Array.isArray(data.master) ? data.master : [];
+      stateSources = Array.isArray(data.state) ? data.state : [];
     } else {
       error = data?.error || 'Failed to load sources';
-      console.error('❌ API Error:', error);
     }
   } else {
     error = `Server error: ${sourcesResponse.status}`;
-    console.error('❌ HTTP Error:', sourcesResponse.status);
   }
   
   // Fetch categories
@@ -37,8 +33,7 @@ try {
   if (categoriesResponse.ok) {
     const data = await categoriesResponse.json();
     if (data && data.success) {
-      categories = data.categories || [];
-      console.log(`✅ Loaded ${categories.length} categories`);
+      categories = Array.isArray(data.categories) ? data.categories : [];
     }
   }
   
@@ -47,13 +42,12 @@ try {
   if (statesResponse.ok) {
     const data = await statesResponse.json();
     if (data && data.success) {
-      states = data.states || [];
-      console.log(`✅ Loaded ${states.length} states`);
+      states = Array.isArray(data.states) ? data.states : [];
     }
   }
   
 } catch (err) {
-  console.error('❌ Error fetching sources:', err);
+  console.error('Error fetching sources:', err);
   error = err.message;
 }
 
@@ -62,28 +56,15 @@ const totalMasterSources = masterSources.length;
 const totalStateSources = stateSources.length;
 const totalCategories = categories.length;
 
-// Debug: Log the actual data
-console.log('📊 Final Data:', {
-  totalSources,
-  masterSources: masterSources.length,
-  stateSources: stateSources.length,
-  categories: categories.length,
-  states: states.length
-});
+// Convert to JSON for JavaScript
+const masterSourcesJSON = JSON.stringify(masterSources);
+const stateSourcesJSON = JSON.stringify(stateSources);
+const categoriesJSON = JSON.stringify(categories);
+const statesJSON = JSON.stringify(states);
 ---
 
 <AdminLayout title="Sources Management - Trendlin">
   
-  <!-- Debug Info -->
-  <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
-    <strong>Debug Info:</strong> 
-    Total: {totalSources}, 
-    Master: {masterSources.length}, 
-    State: {stateSources.length}, 
-    Categories: {categories.length}, 
-    States: {states.length}
-  </div>
-
   <!-- Error Alert -->
   {error && (
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -468,21 +449,39 @@ console.log('📊 Final Data:', {
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT - COMPLETE WITH FORCED RENDER -->
+<!-- JAVASCRIPT - COMPLETE WITH WORKING BUTTONS -->
 <!-- ============================================ -->
 <script>
   // ============================================
-  // DATA - Parse from server
+  // SAFE DATA PARSING
   // ============================================
-  const masterData = JSON.parse(`[${masterSources.map(s => JSON.stringify(s)).join(',')}]`);
-  const stateData = JSON.parse(`[${stateSources.map(s => JSON.stringify(s)).join(',')}]`);
-  const categoriesData = JSON.parse(`[${categories.map(c => JSON.stringify(c)).join(',')}]`);
-  const statesData = JSON.parse(`[${states.map(s => JSON.stringify(s)).join(',')}]`);
+  let masterData = [];
+  let stateData = [];
+  let categoriesData = [];
+  let statesData = [];
 
-  console.log('📊 Master Data:', masterData);
-  console.log('📊 State Data:', stateData);
-  console.log('📊 Categories:', categoriesData);
-  console.log('📊 States:', statesData);
+  try {
+    masterData = JSON.parse(`[${masterSourcesJSON}]`) || [];
+    stateData = JSON.parse(`[${stateSourcesJSON}]`) || [];
+    categoriesData = JSON.parse(`[${categoriesJSON}]`) || [];
+    statesData = JSON.parse(`[${statesJSON}]`) || [];
+    
+    if (!Array.isArray(masterData)) masterData = [];
+    if (!Array.isArray(stateData)) stateData = [];
+    if (!Array.isArray(categoriesData)) categoriesData = [];
+    if (!Array.isArray(statesData)) statesData = [];
+  } catch (e) {
+    console.error('Error parsing data:', e);
+    masterData = [];
+    stateData = [];
+    categoriesData = [];
+    statesData = [];
+  }
+
+  console.log('📊 Master Data:', masterData.length);
+  console.log('📊 State Data:', stateData.length);
+  console.log('📊 Categories:', categoriesData.length);
+  console.log('📊 States:', statesData.length);
 
   let allSources = { master: masterData, state: stateData };
   let filteredSources = { master: [], state: [] };
@@ -490,42 +489,83 @@ console.log('📊 Final Data:', {
   let isSubmitting = false;
 
   // ============================================
-  // DOM READY
+  // DOM READY - FIXED EVENT LISTENERS
   // ============================================
   document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM Ready - Setting up event listeners');
-    console.log('📊 Total sources:', allSources.master.length + allSources.state.length);
     
-    // Add click handlers
-    document.getElementById('addMasterBtn').addEventListener('click', function() {
-      console.log('🔵 Add Master Source clicked');
+    // --- FIX: Use direct onclick attributes or addEventListener properly ---
+    
+    // Method 1: Using addEventListener (preferred)
+    const addMasterBtn = document.getElementById('addMasterBtn');
+    const addStateBtn = document.getElementById('addStateBtn');
+    const saveSourceBtn = document.getElementById('saveSourceBtn');
+    const modal = document.getElementById('sourceModal');
+    
+    if (addMasterBtn) {
+      addMasterBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('🔵 Add Master Source clicked');
+        openModal('master');
+      });
+    } else {
+      console.error('❌ addMasterBtn not found');
+    }
+    
+    if (addStateBtn) {
+      addStateBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('🟢 Add State Source clicked');
+        openModal('state');
+      });
+    } else {
+      console.error('❌ addStateBtn not found');
+    }
+    
+    if (saveSourceBtn) {
+      saveSourceBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('💾 Save button clicked');
+        handleFormSubmit();
+      });
+    } else {
+      console.error('❌ saveSourceBtn not found');
+    }
+    
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+      });
+    }
+    
+    // Method 2: Also add onclick attributes directly as fallback
+    // These will work alongside addEventListener
+    window.addMasterClick = function() {
+      console.log('🔵 Add Master Source clicked (fallback)');
       openModal('master');
-    });
+    };
     
-    document.getElementById('addStateBtn').addEventListener('click', function() {
-      console.log('🟢 Add State Source clicked');
+    window.addStateClick = function() {
+      console.log('🟢 Add State Source clicked (fallback)');
       openModal('state');
-    });
+    };
     
-    // Save button handler
-    document.getElementById('saveSourceBtn').addEventListener('click', function() {
-      console.log('💾 Save button clicked');
-      handleFormSubmit();
-    });
+    // Override the buttons with onclick if needed
+    if (addMasterBtn) {
+      addMasterBtn.setAttribute('onclick', 'addMasterClick()');
+    }
+    if (addStateBtn) {
+      addStateBtn.setAttribute('onclick', 'addStateClick()');
+    }
     
-    // Close modal on background click
-    document.getElementById('sourceModal').addEventListener('click', function(e) {
-      if (e.target === this) closeModal();
-    });
-    
-    // Initial render - FORCE RENDER
+    // Initial render
     switchTab('master');
     
-    // Force render after a short delay
+    // Force render after delay
     setTimeout(function() {
       console.log('🔄 Force rendering...');
       filterSources();
-    }, 100);
+    }, 200);
   });
 
   // ============================================
@@ -535,22 +575,38 @@ console.log('📊 Final Data:', {
     console.log('📑 Switching to tab:', tab);
     currentTab = tab;
     
-    document.getElementById('masterTab').className = tab === 'master' 
-      ? 'py-3 px-1 border-b-2 border-cyan-600 text-cyan-600 font-medium text-sm transition-colors flex items-center gap-2'
-      : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
-    
-    document.getElementById('stateTab').className = tab === 'state'
-      ? 'py-3 px-1 border-b-2 border-teal-600 text-teal-600 font-medium text-sm transition-colors flex items-center gap-2'
-      : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
-    
-    document.getElementById('masterSources').className = tab === 'master' ? '' : 'hidden';
-    document.getElementById('stateSources').className = tab === 'state' ? '' : 'hidden';
-    
+    const masterTab = document.getElementById('masterTab');
+    const stateTab = document.getElementById('stateTab');
+    const masterSources = document.getElementById('masterSources');
+    const stateSources = document.getElementById('stateSources');
     const stateFilter = document.getElementById('stateFilter');
-    if (tab === 'state') {
-      stateFilter.classList.remove('hidden');
-    } else {
-      stateFilter.classList.add('hidden');
+    
+    if (masterTab) {
+      masterTab.className = tab === 'master' 
+        ? 'py-3 px-1 border-b-2 border-cyan-600 text-cyan-600 font-medium text-sm transition-colors flex items-center gap-2'
+        : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
+    }
+    
+    if (stateTab) {
+      stateTab.className = tab === 'state'
+        ? 'py-3 px-1 border-b-2 border-teal-600 text-teal-600 font-medium text-sm transition-colors flex items-center gap-2'
+        : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
+    }
+    
+    if (masterSources) {
+      masterSources.className = tab === 'master' ? '' : 'hidden';
+    }
+    
+    if (stateSources) {
+      stateSources.className = tab === 'state' ? '' : 'hidden';
+    }
+    
+    if (stateFilter) {
+      if (tab === 'state') {
+        stateFilter.classList.remove('hidden');
+      } else {
+        stateFilter.classList.add('hidden');
+      }
     }
     
     filterSources();
@@ -560,16 +616,20 @@ console.log('📊 Final Data:', {
   // FILTER SOURCES
   // ============================================
   window.filterSources = function() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const category = document.getElementById('categoryFilter').value;
-    const state = document.getElementById('stateFilter').value;
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const stateFilter = document.getElementById('stateFilter');
+    
+    const search = searchInput ? searchInput.value.toLowerCase() : '';
+    const category = categoryFilter ? categoryFilter.value : '';
+    const state = stateFilter ? stateFilter.value : '';
     
     console.log('🔍 Filtering - Search:', search, 'Category:', category, 'State:', state);
     
     if (currentTab === 'master') {
       filteredSources.master = allSources.master.filter(source => {
-        const matchSearch = source.name.toLowerCase().includes(search) || 
-                           (source.description && source.description.toLowerCase().includes(search));
+        const matchSearch = (source.name || '').toLowerCase().includes(search) || 
+                           (source.description || '').toLowerCase().includes(search);
         const matchCategory = !category || source.category_id == category;
         return matchSearch && matchCategory;
       });
@@ -577,8 +637,8 @@ console.log('📊 Final Data:', {
       renderSources('master');
     } else {
       filteredSources.state = allSources.state.filter(source => {
-        const matchSearch = source.name.toLowerCase().includes(search) || 
-                           (source.description && source.description.toLowerCase().includes(search));
+        const matchSearch = (source.name || '').toLowerCase().includes(search) || 
+                           (source.description || '').toLowerCase().includes(search);
         const matchCategory = !category || source.category_id == category;
         const matchState = !state || source.state_id == state;
         return matchSearch && matchCategory && matchState;
@@ -605,14 +665,16 @@ console.log('📊 Final Data:', {
     
     if (sources.length === 0) {
       container.innerHTML = '';
-      empty.classList.remove('hidden');
-      document.getElementById('visibleCount').textContent = '0';
+      if (empty) empty.classList.remove('hidden');
+      const visibleCount = document.getElementById('visibleCount');
+      if (visibleCount) visibleCount.textContent = '0';
       console.log('📭 No sources to display');
       return;
     }
     
-    empty.classList.add('hidden');
-    document.getElementById('visibleCount').textContent = sources.length;
+    if (empty) empty.classList.add('hidden');
+    const visibleCount = document.getElementById('visibleCount');
+    if (visibleCount) visibleCount.textContent = sources.length;
     
     container.innerHTML = sources.map(source => {
       const categoryIcon = categoriesData.find(c => c.id === source.category_id)?.icon || '📁';
@@ -630,7 +692,7 @@ console.log('📊 Final Data:', {
                 </div>
               `}
               <div class="min-w-0">
-                <h3 class="font-semibold text-gray-900 truncate">${source.name}</h3>
+                <h3 class="font-semibold text-gray-900 truncate">${source.name || 'Unnamed'}</h3>
                 <div class="flex items-center gap-2 mt-1 flex-wrap">
                   <span class="text-xs px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">${source.category_name || 'Uncategorized'}</span>
                   ${source.source_type ? `<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">${source.source_type}</span>` : ''}
@@ -642,7 +704,7 @@ console.log('📊 Final Data:', {
             </div>
             ${source.description ? `<p class="text-sm text-gray-500 mt-2 line-clamp-2">${source.description}</p>` : ''}
             <div class="mt-2 flex items-center gap-3">
-              <a href="${source.url}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 truncate">${source.url}</a>
+              <a href="${source.url}" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 truncate">${source.url || 'No URL'}</a>
               ${source.address ? `<span class="text-xs text-gray-400">📍 ${source.address}</span>` : ''}
             </div>
           </div>
@@ -677,41 +739,80 @@ console.log('📊 Final Data:', {
     const stateExtra = document.getElementById('stateExtraFields');
     const form = document.getElementById('sourceForm');
     
-    form.reset();
-    document.getElementById('editId').value = '';
-    document.getElementById('editType').value = type;
-    document.getElementById('sourceActive').checked = true;
-    document.getElementById('sourceFeatured').checked = false;
-    document.getElementById('modalMessage').className = 'hidden p-3 rounded-lg text-sm';
+    if (!modal) {
+      console.error('❌ Modal not found');
+      return;
+    }
     
-    if (type === 'master') {
-      title.textContent = data ? 'Edit Universal Source' : 'Add Universal Source';
-      stateWrapper.classList.add('hidden');
-      stateExtra.classList.add('hidden');
-      document.getElementById('sourceState').removeAttribute('required');
-    } else {
-      title.textContent = data ? 'Edit State Source' : 'Add State Source';
-      stateWrapper.classList.remove('hidden');
-      stateExtra.classList.remove('hidden');
-      document.getElementById('sourceState').setAttribute('required', 'required');
+    // Reset form
+    if (form) {
+      form.reset();
+    }
+    
+    const editId = document.getElementById('editId');
+    const editType = document.getElementById('editType');
+    const sourceActive = document.getElementById('sourceActive');
+    const sourceFeatured = document.getElementById('sourceFeatured');
+    const modalMessage = document.getElementById('modalMessage');
+    
+    if (editId) editId.value = '';
+    if (editType) editType.value = type;
+    if (sourceActive) sourceActive.checked = true;
+    if (sourceFeatured) sourceFeatured.checked = false;
+    if (modalMessage) {
+      modalMessage.className = 'hidden p-3 rounded-lg text-sm';
+    }
+    
+    if (title) {
+      if (type === 'master') {
+        title.textContent = data ? 'Edit Universal Source' : 'Add Universal Source';
+      } else {
+        title.textContent = data ? 'Edit State Source' : 'Add State Source';
+      }
+    }
+    
+    if (stateWrapper && stateExtra) {
+      if (type === 'master') {
+        stateWrapper.classList.add('hidden');
+        stateExtra.classList.add('hidden');
+        const sourceState = document.getElementById('sourceState');
+        if (sourceState) sourceState.removeAttribute('required');
+      } else {
+        stateWrapper.classList.remove('hidden');
+        stateExtra.classList.remove('hidden');
+        const sourceState = document.getElementById('sourceState');
+        if (sourceState) sourceState.setAttribute('required', 'required');
+      }
     }
     
     if (data) {
-      document.getElementById('editId').value = data.id;
-      document.getElementById('sourceName').value = data.name || '';
-      document.getElementById('sourceUrl').value = data.url || '';
-      document.getElementById('sourceCategory').value = data.category_id || '';
-      document.getElementById('sourceType').value = data.source_type || 'official';
-      document.getElementById('sourceDescription').value = data.description || '';
-      document.getElementById('sourceLogo').value = data.logo_url || '';
-      document.getElementById('sourceActive').checked = data.is_active === 1;
-      document.getElementById('sourceFeatured').checked = data.is_featured === 1;
+      const sourceName = document.getElementById('sourceName');
+      const sourceUrl = document.getElementById('sourceUrl');
+      const sourceCategory = document.getElementById('sourceCategory');
+      const sourceType = document.getElementById('sourceType');
+      const sourceDescription = document.getElementById('sourceDescription');
+      const sourceLogo = document.getElementById('sourceLogo');
+      
+      if (editId) editId.value = data.id;
+      if (sourceName) sourceName.value = data.name || '';
+      if (sourceUrl) sourceUrl.value = data.url || '';
+      if (sourceCategory) sourceCategory.value = data.category_id || '';
+      if (sourceType) sourceType.value = data.source_type || 'official';
+      if (sourceDescription) sourceDescription.value = data.description || '';
+      if (sourceLogo) sourceLogo.value = data.logo_url || '';
+      if (sourceActive) sourceActive.checked = data.is_active === 1;
+      if (sourceFeatured) sourceFeatured.checked = data.is_featured === 1;
       
       if (type === 'state') {
-        document.getElementById('sourceState').value = data.state_id || '';
-        document.getElementById('sourceAddress').value = data.address || '';
-        document.getElementById('sourcePhone').value = data.phone || '';
-        document.getElementById('sourceEmail').value = data.email || '';
+        const sourceState = document.getElementById('sourceState');
+        const sourceAddress = document.getElementById('sourceAddress');
+        const sourcePhone = document.getElementById('sourcePhone');
+        const sourceEmail = document.getElementById('sourceEmail');
+        
+        if (sourceState) sourceState.value = data.state_id || '';
+        if (sourceAddress) sourceAddress.value = data.address || '';
+        if (sourcePhone) sourcePhone.value = data.phone || '';
+        if (sourceEmail) sourceEmail.value = data.email || '';
       }
     }
     
@@ -725,8 +826,10 @@ console.log('📊 Final Data:', {
   window.closeModal = function() {
     console.log('🔒 Closing modal');
     const modal = document.getElementById('sourceModal');
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.display = 'none';
+    }
   };
 
   // ============================================
@@ -784,7 +887,7 @@ console.log('📊 Final Data:', {
   // ============================================
   // HANDLE FORM SUBMIT
   // ============================================
-  async function handleFormSubmit() {
+  window.handleFormSubmit = async function() {
     console.log('📤 Handling form submit...');
     
     if (isSubmitting) {
@@ -792,16 +895,31 @@ console.log('📊 Final Data:', {
       return;
     }
     
-    const id = document.getElementById('editId').value;
-    const type = document.getElementById('editType').value;
-    const name = document.getElementById('sourceName').value.trim();
-    const url = document.getElementById('sourceUrl').value.trim();
-    const category_id = document.getElementById('sourceCategory').value;
-    const description = document.getElementById('sourceDescription').value.trim();
-    const source_type = document.getElementById('sourceType').value;
-    const logo_url = document.getElementById('sourceLogo').value.trim();
-    const is_active = document.getElementById('sourceActive').checked ? 1 : 0;
-    const is_featured = document.getElementById('sourceFeatured').checked ? 1 : 0;
+    const editId = document.getElementById('editId');
+    const editType = document.getElementById('editType');
+    const sourceName = document.getElementById('sourceName');
+    const sourceUrl = document.getElementById('sourceUrl');
+    const sourceCategory = document.getElementById('sourceCategory');
+    const sourceDescription = document.getElementById('sourceDescription');
+    const sourceType = document.getElementById('sourceType');
+    const sourceLogo = document.getElementById('sourceLogo');
+    const sourceActive = document.getElementById('sourceActive');
+    const sourceFeatured = document.getElementById('sourceFeatured');
+    const sourceState = document.getElementById('sourceState');
+    const sourceAddress = document.getElementById('sourceAddress');
+    const sourcePhone = document.getElementById('sourcePhone');
+    const sourceEmail = document.getElementById('sourceEmail');
+    
+    const id = editId ? editId.value : '';
+    const type = editType ? editType.value : '';
+    const name = sourceName ? sourceName.value.trim() : '';
+    const url = sourceUrl ? sourceUrl.value.trim() : '';
+    const category_id = sourceCategory ? sourceCategory.value : '';
+    const description = sourceDescription ? sourceDescription.value.trim() : '';
+    const source_type = sourceType ? sourceType.value : 'official';
+    const logo_url = sourceLogo ? sourceLogo.value.trim() : '';
+    const is_active = sourceActive ? (sourceActive.checked ? 1 : 0) : 1;
+    const is_featured = sourceFeatured ? (sourceFeatured.checked ? 1 : 0) : 0;
     
     console.log('📝 Form data:', { id, type, name, url, category_id, description, source_type, logo_url, is_active, is_featured });
     
@@ -813,10 +931,10 @@ console.log('📊 Final Data:', {
     let data = { type, name, url, category_id, description, source_type, logo_url, is_active, is_featured };
     
     if (type === 'state') {
-      const state_id = document.getElementById('sourceState').value;
-      const address = document.getElementById('sourceAddress').value.trim();
-      const phone = document.getElementById('sourcePhone').value.trim();
-      const email = document.getElementById('sourceEmail').value.trim();
+      const state_id = sourceState ? sourceState.value : '';
+      const address = sourceAddress ? sourceAddress.value.trim() : '';
+      const phone = sourcePhone ? sourcePhone.value.trim() : '';
+      const email = sourceEmail ? sourceEmail.value.trim() : '';
       
       if (!state_id) {
         showModalMessage('State is required for state sources', 'error');
@@ -864,13 +982,14 @@ console.log('📊 Final Data:', {
       isSubmitting = false;
       showLoading(false);
     }
-  }
+  };
 
   // ============================================
   // SHOW MODAL MESSAGE
   // ============================================
   function showModalMessage(message, type) {
     const msg = document.getElementById('modalMessage');
+    if (!msg) return;
     msg.textContent = message;
     msg.className = `p-3 rounded-lg text-sm ${type === 'error' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`;
     msg.classList.remove('hidden');
@@ -881,6 +1000,7 @@ console.log('📊 Final Data:', {
   // ============================================
   function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
+    if (!toast) return;
     toast.textContent = message;
     toast.className = `fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 ${
       type === 'success' ? 'bg-green-500 text-white' : 
@@ -900,7 +1020,9 @@ console.log('📊 Final Data:', {
   // LOADING OVERLAY
   // ============================================
   function showLoading(show) {
-    document.getElementById('loadingOverlay').className = show 
+    const overlay = document.getElementById('loadingOverlay');
+    if (!overlay) return;
+    overlay.className = show 
       ? 'fixed inset-0 bg-black/30 flex items-center justify-center z-40'
       : 'fixed inset-0 bg-black/30 flex items-center justify-center z-40 hidden';
   }

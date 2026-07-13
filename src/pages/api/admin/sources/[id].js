@@ -10,8 +10,6 @@ export async function GET({ params, locals }) {
     const { DB } = locals.runtime.env;
     const { id } = params;
     
-    console.log(`📡 Fetching source with ID: ${id}`);
-    
     // Try to find in master sources
     let source = await DB.prepare(`
       SELECT 

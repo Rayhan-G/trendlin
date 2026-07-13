@@ -18,20 +18,25 @@ const $$Sources = createComponent(async ($$result, $$props, $$slots) => {
     const sourcesResponse = await fetch(`${Astro2.url.origin}/api/admin/sources`);
     if (sourcesResponse.ok) {
       const data = await sourcesResponse.json();
+      console.log("\u{1F4E5} Sources API Response:", data);
       if (data && data.success) {
         masterSources = data.master || [];
         stateSources = data.state || [];
+        console.log(`\u2705 Loaded ${masterSources.length} master sources and ${stateSources.length} state sources`);
       } else {
         error = data?.error || "Failed to load sources";
+        console.error("\u274C API Error:", error);
       }
     } else {
       error = `Server error: ${sourcesResponse.status}`;
+      console.error("\u274C HTTP Error:", sourcesResponse.status);
     }
     const categoriesResponse = await fetch(`${Astro2.url.origin}/api/admin/sources/categories`);
     if (categoriesResponse.ok) {
       const data = await categoriesResponse.json();
       if (data && data.success) {
         categories = data.categories || [];
+        console.log(`\u2705 Loaded ${categories.length} categories`);
       }
     }
     const statesResponse = await fetch(`${Astro2.url.origin}/api/admin/sources/states`);
@@ -39,20 +44,33 @@ const $$Sources = createComponent(async ($$result, $$props, $$slots) => {
       const data = await statesResponse.json();
       if (data && data.success) {
         states = data.states || [];
+        console.log(`\u2705 Loaded ${states.length} states`);
       }
     }
   } catch (err) {
-    console.error("Error fetching sources:", err);
+    console.error("\u274C Error fetching sources:", err);
     error = err.message;
   }
   const totalSources = masterSources.length + stateSources.length;
   const totalMasterSources = masterSources.length;
   const totalStateSources = stateSources.length;
   const totalCategories = categories.length;
-  return renderTemplate`${renderComponent($$result, "AdminLayout", $$AdminLayout, { "title": "Sources Management - Trendlin" }, { "default": async ($$result2) => renderTemplate`  ${error && renderTemplate`${maybeRenderHead()}<div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm"> <strong>Error:</strong> ${error} </div>`} <div class="mb-8"> <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"> <div> <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+  console.log("\u{1F4CA} Final Data:", {
+    totalSources,
+    masterSources: masterSources.length,
+    stateSources: stateSources.length,
+    categories: categories.length,
+    states: states.length
+  });
+  return renderTemplate`${renderComponent($$result, "AdminLayout", $$AdminLayout, { "title": "Sources Management - Trendlin" }, { "default": async ($$result2) => renderTemplate`  ${maybeRenderHead()}<div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm"> <strong>Debug Info:</strong>
+Total: ${totalSources}, 
+    Master: ${masterSources.length}, 
+    State: ${stateSources.length}, 
+    Categories: ${categories.length}, 
+    States: ${states.length} </div>  ${error && renderTemplate`<div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm"> <strong>Error:</strong> ${error} </div>`} <div class="mb-8"> <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"> <div> <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
 📚 Sources Management
 </h1> <p class="text-sm text-gray-500 mt-1">
-Manage trusted sources across all categories
+Manage trusted sources across all categories (${totalSources} total)
 </p> </div> <div class="flex flex-wrap items-center gap-3"> <button id="addMasterBtn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path> </svg>
 Universal Source
 </button> <button id="addStateBtn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 hover:scale-105"> <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path> </svg>
@@ -66,7 +84,7 @@ Refresh
 </button> <div class="text-sm text-gray-400 ml-auto"> <span id="visibleCount">0</span> sources
 </div> </div>  <div id="masterSources"> <div id="masterSourcesList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"> <!-- Populated by JavaScript --> </div> </div>  <div id="stateSources" class="hidden"> <div id="stateSourcesList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4"> <!-- Populated by JavaScript --> </div> </div>  <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-gray-100"> <div class="text-6xl mb-4">📭</div> <h3 class="text-xl font-semibold text-gray-700 mb-2">No sources found</h3> <p class="text-gray-500">Try adjusting your filters or add a new source</p> <div class="mt-4 flex items-center justify-center gap-3"> <button onclick="document.getElementById('addMasterBtn').click()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors">Add Universal Source</button> <button onclick="document.getElementById('addStateBtn').click()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors">Add State Source</button> </div> </div>    <div id="sourceModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4"> <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"> <div class="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b border-gray-200"> <h2 id="modalTitle" class="text-xl font-bold text-gray-900">Add Source</h2> <button type="button" onclick="closeModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button> </div> <div class="p-6"> <form id="sourceForm" class="space-y-4" onsubmit="return false;"> <input type="hidden" id="editId"> <input type="hidden" id="editType"> <!-- Source Name --> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Source Name *</label> <input type="text" id="sourceName" required placeholder="e.g., Los Angeles Times" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> </div> <!-- URL --> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">URL *</label> <input type="url" id="sourceUrl" required placeholder="https://..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> </div> <!-- Category --> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Category *</label> <select id="sourceCategory" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> <option value="">Select Category</option> ${categories.map((cat) => renderTemplate`<option${addAttribute(cat.id, "key")}${addAttribute(cat.id, "value")}>${cat.icon} ${cat.name}</option>`)} </select> </div> <!-- State (only for state sources) --> <div id="stateSelectWrapper" class="hidden"> <label class="block text-sm font-medium text-gray-700 mb-1.5">State *</label> <select id="sourceState" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> <option value="">Select State</option> ${states.map((state) => renderTemplate`<option${addAttribute(state.id, "key")}${addAttribute(state.id, "value")}>${state.name}</option>`)} </select> </div> <!-- Source Type --> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Source Type</label> <select id="sourceType" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> <option value="official">Official</option> <option value="review">Review</option> <option value="news">News</option> <option value="community">Community</option> </select> </div> <!-- Description --> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label> <textarea id="sourceDescription" rows="2" placeholder="Brief description of this source..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"></textarea> </div> <!-- Logo URL --> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Logo URL</label> <input type="url" id="sourceLogo" placeholder="https://..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> </div> <!-- State Extra Fields --> <div id="stateExtraFields" class="hidden space-y-4"> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Address</label> <input type="text" id="sourceAddress" placeholder="123 Main St, City, State" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> </div> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Phone</label> <input type="tel" id="sourcePhone" placeholder="(555) 123-4567" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> </div> <div> <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label> <input type="email" id="sourceEmail" placeholder="contact@example.com" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"> </div> </div> <!-- Active & Featured --> <div class="flex items-center gap-6"> <label class="flex items-center gap-2 cursor-pointer"> <input type="checkbox" id="sourceActive" checked class="w-4 h-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"> <span class="text-sm font-medium text-gray-700">Active</span> </label> <label class="flex items-center gap-2 cursor-pointer"> <input type="checkbox" id="sourceFeatured" class="w-4 h-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"> <span class="text-sm font-medium text-gray-700">⭐ Featured</span> </label> </div> <!-- Message --> <div id="modalMessage" class="hidden p-3 rounded-lg text-sm"></div> <!-- Submit --> <button type="button" id="saveSourceBtn" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25">
 Save Source
-</button> </form> </div> </div> </div>  <div id="toast" class="fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 translate-y-20 opacity-0 hidden"></div>  <div id="loadingOverlay" class="fixed inset-0 bg-black/30 flex items-center justify-center z-40 hidden"> <div class="bg-white rounded-2xl p-8 flex flex-col items-center gap-3 shadow-2xl"> <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-600"></div> <p class="text-sm text-gray-600 font-medium">Loading...</p> </div> </div> ` })} <!-- ============================================ --> <!-- JAVASCRIPT - COMPLETE --> <!-- ============================================ --> ${renderScript($$result, "P:/Projects/trendlin/src/pages/admin/sources.astro?astro&type=script&index=0&lang.ts")} `;
+</button> </form> </div> </div> </div>  <div id="toast" class="fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 translate-y-20 opacity-0 hidden"></div>  <div id="loadingOverlay" class="fixed inset-0 bg-black/30 flex items-center justify-center z-40 hidden"> <div class="bg-white rounded-2xl p-8 flex flex-col items-center gap-3 shadow-2xl"> <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-600"></div> <p class="text-sm text-gray-600 font-medium">Loading...</p> </div> </div> ` })} <!-- ============================================ --> <!-- JAVASCRIPT - COMPLETE WITH FORCED RENDER --> <!-- ============================================ --> ${renderScript($$result, "P:/Projects/trendlin/src/pages/admin/sources.astro?astro&type=script&index=0&lang.ts")} `;
 }, "P:/Projects/trendlin/src/pages/admin/sources.astro", void 0);
 
 const $$file = "P:/Projects/trendlin/src/pages/admin/sources.astro";
