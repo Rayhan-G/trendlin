@@ -17,14 +17,19 @@ try {
   
   if (sourcesResponse.ok) {
     const data = await sourcesResponse.json();
+    console.log('📥 Sources API Response:', data);
+    
     if (data && data.success) {
       masterSources = data.master || [];
       stateSources = data.state || [];
+      console.log(`✅ Loaded ${masterSources.length} master sources and ${stateSources.length} state sources`);
     } else {
       error = data?.error || 'Failed to load sources';
+      console.error('❌ API Error:', error);
     }
   } else {
     error = `Server error: ${sourcesResponse.status}`;
+    console.error('❌ HTTP Error:', sourcesResponse.status);
   }
   
   // Fetch categories
@@ -33,6 +38,7 @@ try {
     const data = await categoriesResponse.json();
     if (data && data.success) {
       categories = data.categories || [];
+      console.log(`✅ Loaded ${categories.length} categories`);
     }
   }
   
@@ -42,11 +48,12 @@ try {
     const data = await statesResponse.json();
     if (data && data.success) {
       states = data.states || [];
+      console.log(`✅ Loaded ${states.length} states`);
     }
   }
   
 } catch (err) {
-  console.error('Error fetching sources:', err);
+  console.error('❌ Error fetching sources:', err);
   error = err.message;
 }
 
@@ -54,10 +61,29 @@ const totalSources = masterSources.length + stateSources.length;
 const totalMasterSources = masterSources.length;
 const totalStateSources = stateSources.length;
 const totalCategories = categories.length;
+
+// Debug: Log the actual data
+console.log('📊 Final Data:', {
+  totalSources,
+  masterSources: masterSources.length,
+  stateSources: stateSources.length,
+  categories: categories.length,
+  states: states.length
+});
 ---
 
 <AdminLayout title="Sources Management - Trendlin">
   
+  <!-- Debug Info -->
+  <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
+    <strong>Debug Info:</strong> 
+    Total: {totalSources}, 
+    Master: {masterSources.length}, 
+    State: {stateSources.length}, 
+    Categories: {categories.length}, 
+    States: {states.length}
+  </div>
+
   <!-- Error Alert -->
   {error && (
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -73,7 +99,7 @@ const totalCategories = categories.length;
           📚 Sources Management
         </h1>
         <p class="text-sm text-gray-500 mt-1">
-          Manage trusted sources across all categories
+          Manage trusted sources across all categories ({totalSources} total)
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
@@ -442,32 +468,33 @@ const totalCategories = categories.length;
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT - COMPLETE -->
+<!-- JAVASCRIPT - COMPLETE WITH FORCED RENDER -->
 <!-- ============================================ -->
 <script>
   // ============================================
-  // DATA
+  // DATA - Parse from server
   // ============================================
   const masterData = JSON.parse(`[${masterSources.map(s => JSON.stringify(s)).join(',')}]`);
   const stateData = JSON.parse(`[${stateSources.map(s => JSON.stringify(s)).join(',')}]`);
   const categoriesData = JSON.parse(`[${categories.map(c => JSON.stringify(c)).join(',')}]`);
   const statesData = JSON.parse(`[${states.map(s => JSON.stringify(s)).join(',')}]`);
 
+  console.log('📊 Master Data:', masterData);
+  console.log('📊 State Data:', stateData);
+  console.log('📊 Categories:', categoriesData);
+  console.log('📊 States:', statesData);
+
   let allSources = { master: masterData, state: stateData };
   let filteredSources = { master: [], state: [] };
   let currentTab = 'master';
   let isSubmitting = false;
-
-  console.log('📊 Master Sources:', masterData.length);
-  console.log('📊 State Sources:', stateData.length);
-  console.log('📊 Categories:', categoriesData.length);
-  console.log('📊 States:', statesData.length);
 
   // ============================================
   // DOM READY
   // ============================================
   document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM Ready - Setting up event listeners');
+    console.log('📊 Total sources:', allSources.master.length + allSources.state.length);
     
     // Add click handlers
     document.getElementById('addMasterBtn').addEventListener('click', function() {
@@ -491,9 +518,14 @@ const totalCategories = categories.length;
       if (e.target === this) closeModal();
     });
     
-    // Initial render
+    // Initial render - FORCE RENDER
     switchTab('master');
-    filterSources();
+    
+    // Force render after a short delay
+    setTimeout(function() {
+      console.log('🔄 Force rendering...');
+      filterSources();
+    }, 100);
   });
 
   // ============================================
@@ -532,6 +564,8 @@ const totalCategories = categories.length;
     const category = document.getElementById('categoryFilter').value;
     const state = document.getElementById('stateFilter').value;
     
+    console.log('🔍 Filtering - Search:', search, 'Category:', category, 'State:', state);
+    
     if (currentTab === 'master') {
       filteredSources.master = allSources.master.filter(source => {
         const matchSearch = source.name.toLowerCase().includes(search) || 
@@ -539,6 +573,7 @@ const totalCategories = categories.length;
         const matchCategory = !category || source.category_id == category;
         return matchSearch && matchCategory;
       });
+      console.log('✅ Filtered Master:', filteredSources.master.length);
       renderSources('master');
     } else {
       filteredSources.state = allSources.state.filter(source => {
@@ -548,6 +583,7 @@ const totalCategories = categories.length;
         const matchState = !state || source.state_id == state;
         return matchSearch && matchCategory && matchState;
       });
+      console.log('✅ Filtered State:', filteredSources.state.length);
       renderSources('state');
     }
   };
@@ -560,10 +596,18 @@ const totalCategories = categories.length;
     const sources = type === 'master' ? filteredSources.master : filteredSources.state;
     const empty = document.getElementById('emptyState');
     
+    console.log(`🎨 Rendering ${type} sources:`, sources.length);
+    
+    if (!container) {
+      console.error('❌ Container not found for type:', type);
+      return;
+    }
+    
     if (sources.length === 0) {
       container.innerHTML = '';
       empty.classList.remove('hidden');
       document.getElementById('visibleCount').textContent = '0';
+      console.log('📭 No sources to display');
       return;
     }
     
@@ -617,6 +661,8 @@ const totalCategories = categories.length;
         </div>
       </div>
     `}).join('');
+    
+    console.log(`✅ Rendered ${sources.length} sources in ${type} view`);
   }
 
   // ============================================
@@ -631,7 +677,6 @@ const totalCategories = categories.length;
     const stateExtra = document.getElementById('stateExtraFields');
     const form = document.getElementById('sourceForm');
     
-    // Reset form
     form.reset();
     document.getElementById('editId').value = '';
     document.getElementById('editType').value = type;
@@ -859,6 +904,18 @@ const totalCategories = categories.length;
       ? 'fixed inset-0 bg-black/30 flex items-center justify-center z-40'
       : 'fixed inset-0 bg-black/30 flex items-center justify-center z-40 hidden';
   }
+  
+  // ============================================
+  // FORCE RENDER AFTER DELAY
+  // ============================================
+  setTimeout(function() {
+    console.log('🔄 Final force render...');
+    if (allSources.master.length > 0 || allSources.state.length > 0) {
+      filterSources();
+    } else {
+      console.warn('⚠️ No data available to render');
+    }
+  }, 500);
 </script>
 
 <style is:global>
