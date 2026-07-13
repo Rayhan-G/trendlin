@@ -1,5 +1,5 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
-import { i as getDefaultExportFromCjs } from './astro/server_DVHrQl8d.mjs';
+import { i as getDefaultExportFromCjs } from './astro/server_DJuXqbzQ.mjs';
 
 function _mergeNamespaces(n, m) {
 	for (var i = 0; i < m.length; i++) {

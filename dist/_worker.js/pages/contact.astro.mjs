@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                 */
-import { c as createAstro, a as createComponent, g as renderComponent, d as renderTemplate, m as maybeRenderHead, b as addAttribute, f as renderScript } from '../chunks/astro/server_DVHrQl8d.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_CGfDT0zE.mjs';
+import { c as createAstro, a as createComponent, g as renderComponent, f as renderTemplate, m as maybeRenderHead, b as addAttribute, e as renderScript } from '../chunks/astro/server_DJuXqbzQ.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_gEKe8TRP.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro("https://b484b1fd.my-content-site.pages.dev");

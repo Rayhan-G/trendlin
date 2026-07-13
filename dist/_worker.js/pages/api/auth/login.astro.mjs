@@ -76,7 +76,7 @@ async function POST({ request, locals }) {
     
     // Try bcrypt compare if available
     try {
-      const bcrypt = await import('../../../chunks/bcrypt_i7s0uHkh.mjs').then(n => n.b);
+      const bcrypt = await import('../../../chunks/bcrypt_BAetPHU3.mjs').then(n => n.b);
       isValid = await bcrypt.compare(password, admin.password_hash);
       console.log('🔐 bcrypt check result:', isValid);
     } catch (bcryptError) {

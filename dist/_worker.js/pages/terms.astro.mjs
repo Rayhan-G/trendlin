@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                 */
-import { a as createComponent, g as renderComponent, d as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DVHrQl8d.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_CGfDT0zE.mjs';
+import { a as createComponent, g as renderComponent, f as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DJuXqbzQ.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_gEKe8TRP.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Terms = createComponent(($$result, $$props, $$slots) => {
