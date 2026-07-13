@@ -1,305 +1,339 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 export { renderers } from '../../../../renderers.mjs';
 
-const GET = async ({ params, locals }) => {
+// ============================================
+// API: /api/admin/sources/:id
+// GET - Get single source
+// PUT - Update source
+// DELETE - Delete source
+// ============================================
+
+async function GET({ params, locals }) {
   try {
+    const { DB } = locals.runtime.env;
     const { id } = params;
-    const env = locals.runtime?.env || globalThis.env;
-    if (!id) {
+    
+    // Try to find in master sources
+    let source = await DB.prepare(`
+      SELECT 
+        sm.id, sm.name, sm.url, sm.category_id,
+        sm.description, sm.source_type, sm.logo_url,
+        sm.is_active, sm.is_featured, sm.trust_score,
+        sm.usage_count, sm.created_at,
+        sc.name as category_name,
+        sc.icon as category_icon,
+        'master' as source_type
+      FROM sources_master sm
+      LEFT JOIN sources_categories sc ON sc.id = sm.category_id
+      WHERE sm.id = ?
+    `).bind(id).first();
+    
+    let sourceType = 'master';
+    
+    if (!source) {
+      // Try state sources
+      source = await DB.prepare(`
+        SELECT 
+          ss.id, ss.name, ss.url, ss.category_id,
+          ss.description, ss.source_type, ss.logo_url,
+          ss.is_active, ss.is_featured, ss.trust_score,
+          ss.usage_count, ss.address, ss.phone, ss.email,
+          ss.created_at,
+          sc.name as category_name,
+          sc.icon as category_icon,
+          st.name as state_name,
+          st.code as state_code,
+          ss.state_id,
+          'state' as source_type
+        FROM sources_state ss
+        LEFT JOIN sources_categories sc ON sc.id = ss.category_id
+        LEFT JOIN sources_states st ON st.id = ss.state_id
+        WHERE ss.id = ?
+      `).bind(id).first();
+      sourceType = 'state';
+    }
+    
+    if (!source) {
       return new Response(JSON.stringify({
         success: false,
-        error: "Source ID is required"
+        error: 'Source not found'
       }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
-    console.log(`📡 GET /api/admin/sources/${id}`);
-    const master = await env.DB.prepare(`
-        SELECT 
-          m.*, 
-          c.name as category_name, 
-          c.icon as category_icon,
-          'master' as source_type,
-          NULL as state_name,
-          NULL as state_code,
-          NULL as address,
-          NULL as phone,
-          NULL as email
-        FROM sources_master m
-        JOIN sources_categories c ON m.category_id = c.id
-        WHERE m.id = ?
-      `).bind(parseInt(id)).first();
-    if (master) {
-      return new Response(JSON.stringify({
-        success: true,
-        source: master,
-        type: "master"
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    const state = await env.DB.prepare(`
-        SELECT 
-          ss.*, 
-          s.name as state_name, 
-          s.code as state_code,
-          c.name as category_name, 
-          c.icon as category_icon,
-          'state' as source_type,
-          ss.address,
-          ss.phone,
-          ss.email
-        FROM sources_state ss
-        JOIN sources_states s ON ss.state_id = s.id
-        JOIN sources_categories c ON ss.category_id = c.id
-        WHERE ss.id = ?
-      `).bind(parseInt(id)).first();
-    if (state) {
-      return new Response(JSON.stringify({
-        success: true,
-        source: state,
-        type: "state"
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
+    
     return new Response(JSON.stringify({
-      success: false,
-      error: "Source not found"
+      success: true,
+      source: source,
+      type: sourceType
     }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" }
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error("❌ Error fetching source:", error);
+    console.error('Error fetching source:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: "Failed to fetch source: " + error.message
+      error: error.message
     }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
-};
-const PUT = async ({ params, request, locals }) => {
+}
+
+async function PUT({ params, request, locals }) {
   try {
+    const { DB } = locals.runtime.env;
     const { id } = params;
-    const body = await request.json();
-    const env = locals.runtime?.env || globalThis.env;
-    if (!id) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Source ID is required"
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    console.log(`📝 PUT /api/admin/sources/${id}`, body);
-    const { type, name, url, category_id, description, source_type, logo_url, state_id, address, phone, email, is_active } = body;
+    const data = await request.json();
+    
+    const {
+      type,
+      name,
+      url,
+      category_id,
+      description,
+      source_type,
+      logo_url,
+      is_active,
+      is_featured,
+      state_id,
+      address,
+      phone,
+      email
+    } = data;
+    
+    // Validate required fields
     if (!name || !url || !category_id) {
       return new Response(JSON.stringify({
         success: false,
-        error: "Name, URL, and category are required"
+        error: 'Name, URL, and category are required'
       }), {
         status: 400,
-        headers: { "Content-Type": "application/json" }
+        headers: { 'Content-Type': 'application/json' }
       });
     }
-    if (type !== "master" && type !== "state") {
+    
+    if (type === 'master') {
+      // Check if source exists
+      const existing = await DB.prepare(`
+        SELECT id FROM sources_master WHERE id = ?
+      `).bind(id).first();
+      
+      if (!existing) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Source not found'
+        }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Check for duplicate name
+      const duplicate = await DB.prepare(`
+        SELECT id FROM sources_master WHERE name = ? AND id != ?
+      `).bind(name, id).first();
+      
+      if (duplicate) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'A source with this name already exists'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Update master source
+      await DB.prepare(`
+        UPDATE sources_master SET
+          name = ?,
+          url = ?,
+          category_id = ?,
+          description = ?,
+          source_type = ?,
+          logo_url = ?,
+          is_active = ?,
+          is_featured = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        name, url, category_id,
+        description || '', source_type || 'official',
+        logo_url || '',
+        is_active !== undefined ? (is_active ? 1 : 0) : 1,
+        is_featured ? 1 : 0,
+        id
+      ).run();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Universal source updated successfully'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+    } else if (type === 'state') {
+      // Check if source exists
+      const existing = await DB.prepare(`
+        SELECT id FROM sources_state WHERE id = ?
+      `).bind(id).first();
+      
+      if (!existing) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Source not found'
+        }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      if (!state_id) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'State ID is required for state sources'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Check for duplicate name in same state
+      const duplicate = await DB.prepare(`
+        SELECT id FROM sources_state 
+        WHERE name = ? AND state_id = ? AND id != ?
+      `).bind(name, state_id, id).first();
+      
+      if (duplicate) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'A source with this name already exists for this state'
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      
+      // Update state source
+      await DB.prepare(`
+        UPDATE sources_state SET
+          state_id = ?,
+          name = ?,
+          url = ?,
+          category_id = ?,
+          description = ?,
+          source_type = ?,
+          logo_url = ?,
+          address = ?,
+          phone = ?,
+          email = ?,
+          is_active = ?,
+          is_featured = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).bind(
+        state_id, name, url, category_id,
+        description || '', source_type || 'official',
+        logo_url || '', address || '', phone || '', email || '',
+        is_active !== undefined ? (is_active ? 1 : 0) : 1,
+        is_featured ? 1 : 0,
+        id
+      ).run();
+      
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'State source updated successfully'
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+    } else {
       return new Response(JSON.stringify({
         success: false,
         error: 'Invalid source type. Must be "master" or "state"'
       }), {
         status: 400,
-        headers: { "Content-Type": "application/json" }
+        headers: { 'Content-Type': 'application/json' }
       });
     }
-    let result;
-    if (type === "master") {
-      const existing = await env.DB.prepare("SELECT id FROM sources_master WHERE id = ?").bind(parseInt(id)).first();
-      if (!existing) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Source not found"
-        }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      const duplicate = await env.DB.prepare("SELECT id FROM sources_master WHERE name = ? AND id != ?").bind(name, parseInt(id)).first();
-      if (duplicate) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "A source with this name already exists"
-        }), {
-          status: 409,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      result = await env.DB.prepare(`
-        UPDATE sources_master 
-        SET name = ?, url = ?, category_id = ?, description = ?, 
-            source_type = ?, logo_url = ?, is_active = ?, updated_at = datetime('now')
-        WHERE id = ?
-      `).bind(
-        name,
-        url,
-        parseInt(category_id),
-        description || "",
-        source_type || "official",
-        logo_url || "",
-        is_active !== void 0 ? is_active : 1,
-        parseInt(id)
-      ).run();
-    } else {
-      const existing = await env.DB.prepare("SELECT id FROM sources_state WHERE id = ?").bind(parseInt(id)).first();
-      if (!existing) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Source not found"
-        }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      const duplicate = await env.DB.prepare("SELECT id FROM sources_state WHERE name = ? AND state_id = ? AND id != ?").bind(name, state_id ? parseInt(state_id) : 0, parseInt(id)).first();
-      if (duplicate) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "A source with this name already exists for this state"
-        }), {
-          status: 409,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      result = await env.DB.prepare(`
-        UPDATE sources_state 
-        SET name = ?, url = ?, category_id = ?, description = ?, 
-            source_type = ?, logo_url = ?, address = ?, phone = ?, email = ?,
-            is_active = ?, updated_at = datetime('now')
-        WHERE id = ?
-      `).bind(
-        name,
-        url,
-        parseInt(category_id),
-        description || "",
-        source_type || "official",
-        logo_url || "",
-        address || "",
-        phone || "",
-        email || "",
-        is_active !== void 0 ? is_active : 1,
-        parseInt(id)
-      ).run();
-    }
-    if (result.changes === 0) {
+    
+  } catch (error) {
+    console.error('Error updating source:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+async function DELETE({ params, request, locals }) {
+  try {
+    const { DB } = locals.runtime.env;
+    const { id } = params;
+    const data = await request.json();
+    const { type } = data;
+    
+    if (!type || !['master', 'state'].includes(type)) {
       return new Response(JSON.stringify({
         success: false,
-        error: "Source not found"
+        error: 'Source type is required (master or state)'
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const table = type === 'master' ? 'sources_master' : 'sources_state';
+    
+    // Check if source exists
+    const existing = await DB.prepare(`
+      SELECT id FROM ${table} WHERE id = ?
+    `).bind(id).first();
+    
+    if (!existing) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Source not found'
       }), {
         status: 404,
-        headers: { "Content-Type": "application/json" }
+        headers: { 'Content-Type': 'application/json' }
       });
     }
-    console.log("✅ Source updated successfully");
+    
+    // Delete source
+    await DB.prepare(`
+      DELETE FROM ${table} WHERE id = ?
+    `).bind(id).run();
+    
     return new Response(JSON.stringify({
       success: true,
-      message: "Source updated successfully"
+      message: 'Source deleted successfully'
     }), {
       status: 200,
-      headers: { "Content-Type": "application/json" }
+      headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error("❌ Error updating source:", error);
+    console.error('Error deleting source:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: "Failed to update source: " + error.message
+      error: error.message
     }), {
       status: 500,
-      headers: { "Content-Type": "application/json" }
+      headers: { 'Content-Type': 'application/json' }
     });
   }
-};
-const DELETE = async ({ params, request, locals }) => {
-  try {
-    const { id } = params;
-    const env = locals.runtime?.env || globalThis.env;
-    if (!id) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Source ID is required"
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    console.log(`🗑️ DELETE /api/admin/sources/${id}`);
-    let body;
-    try {
-      body = await request.json();
-    } catch (e) {
-      body = { type: "master" };
-    }
-    const { type } = body;
-    if (type !== "master" && type !== "state") {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Invalid source type. Must be "master" or "state"'
-      }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
-    }
-    console.log(`🔍 Deleting ${type} source with ID: ${id}`);
-    let result;
-    if (type === "master") {
-      const existing = await env.DB.prepare("SELECT id FROM sources_master WHERE id = ?").bind(parseInt(id)).first();
-      if (!existing) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Source not found"
-        }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      result = await env.DB.prepare("DELETE FROM sources_master WHERE id = ?").bind(parseInt(id)).run();
-    } else {
-      const existing = await env.DB.prepare("SELECT id FROM sources_state WHERE id = ?").bind(parseInt(id)).first();
-      if (!existing) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: "Source not found"
-        }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" }
-        });
-      }
-      result = await env.DB.prepare("DELETE FROM sources_state WHERE id = ?").bind(parseInt(id)).run();
-    }
-    console.log(`✅ Source deleted successfully, changes: ${result.changes}`);
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Source deleted successfully"
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
-  } catch (error) {
-    console.error("❌ Error deleting source:", error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: "Failed to delete source: " + error.message
-    }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" }
-    });
-  }
-};
+}
 
 const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
