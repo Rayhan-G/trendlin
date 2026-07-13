@@ -3,7 +3,7 @@ export { renderers } from '../../../renderers.mjs';
 
 // ============================================
 // API: /api/admin/sources
-// GET - List all sources
+// GET - List all sources (master + state)
 // POST - Create new source
 // ============================================
 

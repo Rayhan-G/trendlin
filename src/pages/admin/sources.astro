@@ -65,6 +65,15 @@ const statesJSON = JSON.stringify(states);
 
 <AdminLayout title="Sources Management - Trendlin">
   
+  <!-- Debug Info -->
+  <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
+    <strong>Debug:</strong> 
+    Total: {totalSources} | 
+    Master: {totalMasterSources} | 
+    State: {totalStateSources} | 
+    Categories: {totalCategories}
+  </div>
+
   <!-- Error Alert -->
   {error && (
     <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -212,7 +221,6 @@ const statesJSON = JSON.stringify(states);
       </svg>
     </div>
     
-    <!-- Category Filter -->
     <select 
       id="categoryFilter" 
       class="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
@@ -224,7 +232,6 @@ const statesJSON = JSON.stringify(states);
       ))}
     </select>
 
-    <!-- State Filter (only for state tab) -->
     <select 
       id="stateFilter" 
       class="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-500 hidden"
@@ -248,14 +255,13 @@ const statesJSON = JSON.stringify(states);
     </div>
   </div>
 
-  <!-- Master Sources Grid -->
+  <!-- Sources Grid -->
   <div id="masterSources">
     <div id="masterSourcesList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
       <!-- Populated by JavaScript -->
     </div>
   </div>
 
-  <!-- State Sources Grid -->
   <div id="stateSources" class="hidden">
     <div id="stateSourcesList" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
       <!-- Populated by JavaScript -->
@@ -267,14 +273,10 @@ const statesJSON = JSON.stringify(states);
     <div class="text-6xl mb-4">📭</div>
     <h3 class="text-xl font-semibold text-gray-700 mb-2">No sources found</h3>
     <p class="text-gray-500">Try adjusting your filters or add a new source</p>
-    <div class="mt-4 flex items-center justify-center gap-3">
-      <button onclick="document.getElementById('addMasterBtn').click()" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-medium transition-colors">Add Universal Source</button>
-      <button onclick="document.getElementById('addStateBtn').click()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-medium transition-colors">Add State Source</button>
-    </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- SOURCE MODAL (Add/Edit) -->
+  <!-- SOURCE MODAL -->
   <!-- ============================================ -->
   <div id="sourceModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
     <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -287,38 +289,19 @@ const statesJSON = JSON.stringify(states);
           <input type="hidden" id="editId" />
           <input type="hidden" id="editType" />
           
-          <!-- Source Name -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Source Name *</label>
-            <input 
-              type="text" 
-              id="sourceName" 
-              required 
-              placeholder="e.g., Los Angeles Times"
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
+            <input type="text" id="sourceName" required placeholder="e.g., Los Angeles Times" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500" />
           </div>
           
-          <!-- URL -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">URL *</label>
-            <input 
-              type="url" 
-              id="sourceUrl" 
-              required 
-              placeholder="https://..."
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
+            <input type="url" id="sourceUrl" required placeholder="https://..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500" />
           </div>
           
-          <!-- Category -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
-            <select 
-              id="sourceCategory" 
-              required 
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
+            <select id="sourceCategory" required class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500">
               <option value="">Select Category</option>
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
@@ -326,13 +309,9 @@ const statesJSON = JSON.stringify(states);
             </select>
           </div>
           
-          <!-- State (only for state sources) -->
           <div id="stateSelectWrapper" class="hidden">
             <label class="block text-sm font-medium text-gray-700 mb-1.5">State *</label>
-            <select 
-              id="sourceState" 
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
+            <select id="sourceState" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500">
               <option value="">Select State</option>
               {states.map(state => (
                 <option key={state.id} value={state.id}>{state.name}</option>
@@ -340,13 +319,9 @@ const statesJSON = JSON.stringify(states);
             </select>
           </div>
           
-          <!-- Source Type -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Source Type</label>
-            <select 
-              id="sourceType" 
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            >
+            <select id="sourceType" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500">
               <option value="official">Official</option>
               <option value="review">Review</option>
               <option value="news">News</option>
@@ -354,60 +329,26 @@ const statesJSON = JSON.stringify(states);
             </select>
           </div>
           
-          <!-- Description -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-            <textarea 
-              id="sourceDescription" 
-              rows="2" 
-              placeholder="Brief description of this source..."
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            ></textarea>
+            <textarea id="sourceDescription" rows="2" placeholder="Brief description..." class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"></textarea>
           </div>
           
-          <!-- Logo URL -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Logo URL</label>
-            <input 
-              type="url" 
-              id="sourceLogo" 
-              placeholder="https://..."
-              class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
-          </div>
-          
-          <!-- State Extra Fields -->
           <div id="stateExtraFields" class="hidden space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1.5">Address</label>
-              <input 
-                type="text" 
-                id="sourceAddress" 
-                placeholder="123 Main St, City, State"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="text" id="sourceAddress" placeholder="123 Main St" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1.5">Phone</label>
-              <input 
-                type="tel" 
-                id="sourcePhone" 
-                placeholder="(555) 123-4567"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="tel" id="sourcePhone" placeholder="(555) 123-4567" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-              <input 
-                type="email" 
-                id="sourceEmail" 
-                placeholder="contact@example.com"
-                class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500"
-              />
+              <input type="email" id="sourceEmail" placeholder="contact@example.com" class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-500" />
             </div>
           </div>
           
-          <!-- Active & Featured -->
           <div class="flex items-center gap-6">
             <label class="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" id="sourceActive" checked class="w-4 h-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500" />
@@ -419,15 +360,9 @@ const statesJSON = JSON.stringify(states);
             </label>
           </div>
           
-          <!-- Message -->
           <div id="modalMessage" class="hidden p-3 rounded-lg text-sm"></div>
           
-          <!-- Submit -->
-          <button 
-            type="button"
-            id="saveSourceBtn"
-            class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25"
-          >
+          <button type="button" id="saveSourceBtn" class="w-full py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/25">
             Save Source
           </button>
         </form>
@@ -449,11 +384,11 @@ const statesJSON = JSON.stringify(states);
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT - COMPLETE WITH WORKING BUTTONS -->
+<!-- JAVASCRIPT -->
 <!-- ============================================ -->
 <script>
   // ============================================
-  // SAFE DATA PARSING
+  // DATA
   // ============================================
   let masterData = [];
   let stateData = [];
@@ -480,8 +415,6 @@ const statesJSON = JSON.stringify(states);
 
   console.log('📊 Master Data:', masterData.length);
   console.log('📊 State Data:', stateData.length);
-  console.log('📊 Categories:', categoriesData.length);
-  console.log('📊 States:', statesData.length);
 
   let allSources = { master: masterData, state: stateData };
   let filteredSources = { master: [], state: [] };
@@ -489,124 +422,56 @@ const statesJSON = JSON.stringify(states);
   let isSubmitting = false;
 
   // ============================================
-  // DOM READY - FIXED EVENT LISTENERS
+  // DOM READY
   // ============================================
   document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 DOM Ready - Setting up event listeners');
+    console.log('🚀 DOM Ready');
     
-    // --- FIX: Use direct onclick attributes or addEventListener properly ---
-    
-    // Method 1: Using addEventListener (preferred)
-    const addMasterBtn = document.getElementById('addMasterBtn');
-    const addStateBtn = document.getElementById('addStateBtn');
-    const saveSourceBtn = document.getElementById('saveSourceBtn');
-    const modal = document.getElementById('sourceModal');
-    
-    if (addMasterBtn) {
-      addMasterBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        console.log('🔵 Add Master Source clicked');
-        openModal('master');
-      });
-    } else {
-      console.error('❌ addMasterBtn not found');
-    }
-    
-    if (addStateBtn) {
-      addStateBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        console.log('🟢 Add State Source clicked');
-        openModal('state');
-      });
-    } else {
-      console.error('❌ addStateBtn not found');
-    }
-    
-    if (saveSourceBtn) {
-      saveSourceBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        console.log('💾 Save button clicked');
-        handleFormSubmit();
-      });
-    } else {
-      console.error('❌ saveSourceBtn not found');
-    }
-    
-    if (modal) {
-      modal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-      });
-    }
-    
-    // Method 2: Also add onclick attributes directly as fallback
-    // These will work alongside addEventListener
-    window.addMasterClick = function() {
-      console.log('🔵 Add Master Source clicked (fallback)');
+    document.getElementById('addMasterBtn').addEventListener('click', function(e) {
+      e.preventDefault();
       openModal('master');
-    };
+    });
     
-    window.addStateClick = function() {
-      console.log('🟢 Add State Source clicked (fallback)');
+    document.getElementById('addStateBtn').addEventListener('click', function(e) {
+      e.preventDefault();
       openModal('state');
-    };
+    });
     
-    // Override the buttons with onclick if needed
-    if (addMasterBtn) {
-      addMasterBtn.setAttribute('onclick', 'addMasterClick()');
-    }
-    if (addStateBtn) {
-      addStateBtn.setAttribute('onclick', 'addStateClick()');
-    }
+    document.getElementById('saveSourceBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      handleFormSubmit();
+    });
     
-    // Initial render
+    document.getElementById('sourceModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+    
     switchTab('master');
-    
-    // Force render after delay
-    setTimeout(function() {
-      console.log('🔄 Force rendering...');
-      filterSources();
-    }, 200);
+    setTimeout(filterSources, 300);
   });
 
   // ============================================
   // SWITCH TAB
   // ============================================
   window.switchTab = function(tab) {
-    console.log('📑 Switching to tab:', tab);
     currentTab = tab;
     
-    const masterTab = document.getElementById('masterTab');
-    const stateTab = document.getElementById('stateTab');
-    const masterSources = document.getElementById('masterSources');
-    const stateSources = document.getElementById('stateSources');
+    document.getElementById('masterTab').className = tab === 'master' 
+      ? 'py-3 px-1 border-b-2 border-cyan-600 text-cyan-600 font-medium text-sm transition-colors flex items-center gap-2'
+      : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
+    
+    document.getElementById('stateTab').className = tab === 'state'
+      ? 'py-3 px-1 border-b-2 border-teal-600 text-teal-600 font-medium text-sm transition-colors flex items-center gap-2'
+      : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
+    
+    document.getElementById('masterSources').className = tab === 'master' ? '' : 'hidden';
+    document.getElementById('stateSources').className = tab === 'state' ? '' : 'hidden';
+    
     const stateFilter = document.getElementById('stateFilter');
-    
-    if (masterTab) {
-      masterTab.className = tab === 'master' 
-        ? 'py-3 px-1 border-b-2 border-cyan-600 text-cyan-600 font-medium text-sm transition-colors flex items-center gap-2'
-        : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
-    }
-    
-    if (stateTab) {
-      stateTab.className = tab === 'state'
-        ? 'py-3 px-1 border-b-2 border-teal-600 text-teal-600 font-medium text-sm transition-colors flex items-center gap-2'
-        : 'py-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm transition-colors flex items-center gap-2';
-    }
-    
-    if (masterSources) {
-      masterSources.className = tab === 'master' ? '' : 'hidden';
-    }
-    
-    if (stateSources) {
-      stateSources.className = tab === 'state' ? '' : 'hidden';
-    }
-    
-    if (stateFilter) {
-      if (tab === 'state') {
-        stateFilter.classList.remove('hidden');
-      } else {
-        stateFilter.classList.add('hidden');
-      }
+    if (tab === 'state') {
+      stateFilter.classList.remove('hidden');
+    } else {
+      stateFilter.classList.add('hidden');
     }
     
     filterSources();
@@ -616,15 +481,9 @@ const statesJSON = JSON.stringify(states);
   // FILTER SOURCES
   // ============================================
   window.filterSources = function() {
-    const searchInput = document.getElementById('searchInput');
-    const categoryFilter = document.getElementById('categoryFilter');
-    const stateFilter = document.getElementById('stateFilter');
-    
-    const search = searchInput ? searchInput.value.toLowerCase() : '';
-    const category = categoryFilter ? categoryFilter.value : '';
-    const state = stateFilter ? stateFilter.value : '';
-    
-    console.log('🔍 Filtering - Search:', search, 'Category:', category, 'State:', state);
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const category = document.getElementById('categoryFilter').value;
+    const state = document.getElementById('stateFilter').value;
     
     if (currentTab === 'master') {
       filteredSources.master = allSources.master.filter(source => {
@@ -633,7 +492,6 @@ const statesJSON = JSON.stringify(states);
         const matchCategory = !category || source.category_id == category;
         return matchSearch && matchCategory;
       });
-      console.log('✅ Filtered Master:', filteredSources.master.length);
       renderSources('master');
     } else {
       filteredSources.state = allSources.state.filter(source => {
@@ -643,7 +501,6 @@ const statesJSON = JSON.stringify(states);
         const matchState = !state || source.state_id == state;
         return matchSearch && matchCategory && matchState;
       });
-      console.log('✅ Filtered State:', filteredSources.state.length);
       renderSources('state');
     }
   };
@@ -656,25 +513,17 @@ const statesJSON = JSON.stringify(states);
     const sources = type === 'master' ? filteredSources.master : filteredSources.state;
     const empty = document.getElementById('emptyState');
     
-    console.log(`🎨 Rendering ${type} sources:`, sources.length);
-    
-    if (!container) {
-      console.error('❌ Container not found for type:', type);
-      return;
-    }
+    if (!container) return;
     
     if (sources.length === 0) {
       container.innerHTML = '';
       if (empty) empty.classList.remove('hidden');
-      const visibleCount = document.getElementById('visibleCount');
-      if (visibleCount) visibleCount.textContent = '0';
-      console.log('📭 No sources to display');
+      document.getElementById('visibleCount').textContent = '0';
       return;
     }
     
     if (empty) empty.classList.add('hidden');
-    const visibleCount = document.getElementById('visibleCount');
-    if (visibleCount) visibleCount.textContent = sources.length;
+    document.getElementById('visibleCount').textContent = sources.length;
     
     container.innerHTML = sources.map(source => {
       const categoryIcon = categoriesData.find(c => c.id === source.category_id)?.icon || '📁';
@@ -723,96 +572,52 @@ const statesJSON = JSON.stringify(states);
         </div>
       </div>
     `}).join('');
-    
-    console.log(`✅ Rendered ${sources.length} sources in ${type} view`);
   }
 
   // ============================================
   // OPEN MODAL
   // ============================================
   window.openModal = function(type, data = null) {
-    console.log('📝 Opening modal for:', type, data);
-    
     const modal = document.getElementById('sourceModal');
     const title = document.getElementById('modalTitle');
     const stateWrapper = document.getElementById('stateSelectWrapper');
     const stateExtra = document.getElementById('stateExtraFields');
-    const form = document.getElementById('sourceForm');
     
-    if (!modal) {
-      console.error('❌ Modal not found');
-      return;
-    }
+    document.getElementById('sourceForm').reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('editType').value = type;
+    document.getElementById('sourceActive').checked = true;
+    document.getElementById('sourceFeatured').checked = false;
+    document.getElementById('modalMessage').className = 'hidden p-3 rounded-lg text-sm';
     
-    // Reset form
-    if (form) {
-      form.reset();
-    }
-    
-    const editId = document.getElementById('editId');
-    const editType = document.getElementById('editType');
-    const sourceActive = document.getElementById('sourceActive');
-    const sourceFeatured = document.getElementById('sourceFeatured');
-    const modalMessage = document.getElementById('modalMessage');
-    
-    if (editId) editId.value = '';
-    if (editType) editType.value = type;
-    if (sourceActive) sourceActive.checked = true;
-    if (sourceFeatured) sourceFeatured.checked = false;
-    if (modalMessage) {
-      modalMessage.className = 'hidden p-3 rounded-lg text-sm';
-    }
-    
-    if (title) {
-      if (type === 'master') {
-        title.textContent = data ? 'Edit Universal Source' : 'Add Universal Source';
-      } else {
-        title.textContent = data ? 'Edit State Source' : 'Add State Source';
-      }
-    }
-    
-    if (stateWrapper && stateExtra) {
-      if (type === 'master') {
-        stateWrapper.classList.add('hidden');
-        stateExtra.classList.add('hidden');
-        const sourceState = document.getElementById('sourceState');
-        if (sourceState) sourceState.removeAttribute('required');
-      } else {
-        stateWrapper.classList.remove('hidden');
-        stateExtra.classList.remove('hidden');
-        const sourceState = document.getElementById('sourceState');
-        if (sourceState) sourceState.setAttribute('required', 'required');
-      }
+    if (type === 'master') {
+      title.textContent = data ? 'Edit Universal Source' : 'Add Universal Source';
+      stateWrapper.classList.add('hidden');
+      stateExtra.classList.add('hidden');
+      document.getElementById('sourceState').removeAttribute('required');
+    } else {
+      title.textContent = data ? 'Edit State Source' : 'Add State Source';
+      stateWrapper.classList.remove('hidden');
+      stateExtra.classList.remove('hidden');
+      document.getElementById('sourceState').setAttribute('required', 'required');
     }
     
     if (data) {
-      const sourceName = document.getElementById('sourceName');
-      const sourceUrl = document.getElementById('sourceUrl');
-      const sourceCategory = document.getElementById('sourceCategory');
-      const sourceType = document.getElementById('sourceType');
-      const sourceDescription = document.getElementById('sourceDescription');
-      const sourceLogo = document.getElementById('sourceLogo');
-      
-      if (editId) editId.value = data.id;
-      if (sourceName) sourceName.value = data.name || '';
-      if (sourceUrl) sourceUrl.value = data.url || '';
-      if (sourceCategory) sourceCategory.value = data.category_id || '';
-      if (sourceType) sourceType.value = data.source_type || 'official';
-      if (sourceDescription) sourceDescription.value = data.description || '';
-      if (sourceLogo) sourceLogo.value = data.logo_url || '';
-      if (sourceActive) sourceActive.checked = data.is_active === 1;
-      if (sourceFeatured) sourceFeatured.checked = data.is_featured === 1;
+      document.getElementById('editId').value = data.id;
+      document.getElementById('sourceName').value = data.name || '';
+      document.getElementById('sourceUrl').value = data.url || '';
+      document.getElementById('sourceCategory').value = data.category_id || '';
+      document.getElementById('sourceType').value = data.source_type || 'official';
+      document.getElementById('sourceDescription').value = data.description || '';
+      document.getElementById('sourceLogo').value = data.logo_url || '';
+      document.getElementById('sourceActive').checked = data.is_active === 1;
+      document.getElementById('sourceFeatured').checked = data.is_featured === 1;
       
       if (type === 'state') {
-        const sourceState = document.getElementById('sourceState');
-        const sourceAddress = document.getElementById('sourceAddress');
-        const sourcePhone = document.getElementById('sourcePhone');
-        const sourceEmail = document.getElementById('sourceEmail');
-        
-        if (sourceState) sourceState.value = data.state_id || '';
-        if (sourceAddress) sourceAddress.value = data.address || '';
-        if (sourcePhone) sourcePhone.value = data.phone || '';
-        if (sourceEmail) sourceEmail.value = data.email || '';
+        document.getElementById('sourceState').value = data.state_id || '';
+        document.getElementById('sourceAddress').value = data.address || '';
+        document.getElementById('sourcePhone').value = data.phone || '';
+        document.getElementById('sourceEmail').value = data.email || '';
       }
     }
     
@@ -824,19 +629,15 @@ const statesJSON = JSON.stringify(states);
   // CLOSE MODAL
   // ============================================
   window.closeModal = function() {
-    console.log('🔒 Closing modal');
     const modal = document.getElementById('sourceModal');
-    if (modal) {
-      modal.classList.add('hidden');
-      modal.style.display = 'none';
-    }
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
   };
 
   // ============================================
   // EDIT SOURCE
   // ============================================
   window.editSource = function(id, type) {
-    console.log('✏️ Editing source:', id, type);
     const source = allSources[type === 'master' ? 'master' : 'state'].find(s => s.id === id);
     if (source) {
       openModal(type === 'master' ? 'master' : 'state', source);
@@ -849,11 +650,7 @@ const statesJSON = JSON.stringify(states);
   // DELETE SOURCE
   // ============================================
   window.deleteSource = async function(id, type) {
-    console.log('🗑️ Deleting source:', id, type);
-    
-    if (!confirm('Are you sure you want to delete this source? This action cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Are you sure you want to delete this source?')) return;
     
     showLoading(true);
     
@@ -866,19 +663,14 @@ const statesJSON = JSON.stringify(states);
       
       const result = await response.json();
       
-      if (!response.ok) {
-        throw new Error(result.error || `Server error: ${response.status}`);
-      }
-      
       if (result.success) {
         showToast('✅ Source deleted successfully', 'success');
         window.location.reload();
       } else {
-        showToast('❌ Failed to delete source: ' + (result.error || 'Unknown error'), 'error');
+        showToast('❌ Failed to delete: ' + (result.error || 'Unknown error'), 'error');
       }
     } catch (error) {
-      console.error('❌ Error deleting source:', error);
-      showToast('❌ Failed to delete source: ' + error.message, 'error');
+      showToast('❌ Error: ' + error.message, 'error');
     } finally {
       showLoading(false);
     }
@@ -888,40 +680,18 @@ const statesJSON = JSON.stringify(states);
   // HANDLE FORM SUBMIT
   // ============================================
   window.handleFormSubmit = async function() {
-    console.log('📤 Handling form submit...');
+    if (isSubmitting) return;
     
-    if (isSubmitting) {
-      console.log('⏳ Already submitting, please wait...');
-      return;
-    }
-    
-    const editId = document.getElementById('editId');
-    const editType = document.getElementById('editType');
-    const sourceName = document.getElementById('sourceName');
-    const sourceUrl = document.getElementById('sourceUrl');
-    const sourceCategory = document.getElementById('sourceCategory');
-    const sourceDescription = document.getElementById('sourceDescription');
-    const sourceType = document.getElementById('sourceType');
-    const sourceLogo = document.getElementById('sourceLogo');
-    const sourceActive = document.getElementById('sourceActive');
-    const sourceFeatured = document.getElementById('sourceFeatured');
-    const sourceState = document.getElementById('sourceState');
-    const sourceAddress = document.getElementById('sourceAddress');
-    const sourcePhone = document.getElementById('sourcePhone');
-    const sourceEmail = document.getElementById('sourceEmail');
-    
-    const id = editId ? editId.value : '';
-    const type = editType ? editType.value : '';
-    const name = sourceName ? sourceName.value.trim() : '';
-    const url = sourceUrl ? sourceUrl.value.trim() : '';
-    const category_id = sourceCategory ? sourceCategory.value : '';
-    const description = sourceDescription ? sourceDescription.value.trim() : '';
-    const source_type = sourceType ? sourceType.value : 'official';
-    const logo_url = sourceLogo ? sourceLogo.value.trim() : '';
-    const is_active = sourceActive ? (sourceActive.checked ? 1 : 0) : 1;
-    const is_featured = sourceFeatured ? (sourceFeatured.checked ? 1 : 0) : 0;
-    
-    console.log('📝 Form data:', { id, type, name, url, category_id, description, source_type, logo_url, is_active, is_featured });
+    const id = document.getElementById('editId').value;
+    const type = document.getElementById('editType').value;
+    const name = document.getElementById('sourceName').value.trim();
+    const url = document.getElementById('sourceUrl').value.trim();
+    const category_id = document.getElementById('sourceCategory').value;
+    const description = document.getElementById('sourceDescription').value.trim();
+    const source_type = document.getElementById('sourceType').value;
+    const logo_url = document.getElementById('sourceLogo').value.trim();
+    const is_active = document.getElementById('sourceActive').checked ? 1 : 0;
+    const is_featured = document.getElementById('sourceFeatured').checked ? 1 : 0;
     
     if (!name || !url || !category_id) {
       showModalMessage('Name, URL, and category are required', 'error');
@@ -931,10 +701,10 @@ const statesJSON = JSON.stringify(states);
     let data = { type, name, url, category_id, description, source_type, logo_url, is_active, is_featured };
     
     if (type === 'state') {
-      const state_id = sourceState ? sourceState.value : '';
-      const address = sourceAddress ? sourceAddress.value.trim() : '';
-      const phone = sourcePhone ? sourcePhone.value.trim() : '';
-      const email = sourceEmail ? sourceEmail.value.trim() : '';
+      const state_id = document.getElementById('sourceState').value;
+      const address = document.getElementById('sourceAddress').value.trim();
+      const phone = document.getElementById('sourcePhone').value.trim();
+      const email = document.getElementById('sourceEmail').value.trim();
       
       if (!state_id) {
         showModalMessage('State is required for state sources', 'error');
@@ -949,8 +719,6 @@ const statesJSON = JSON.stringify(states);
     const method = id ? 'PUT' : 'POST';
     const urlPath = id ? `/api/admin/sources/${id}` : '/api/admin/sources';
     
-    console.log(`📤 ${method} request to ${urlPath}`, data);
-    
     isSubmitting = true;
     showLoading(true);
     
@@ -962,22 +730,16 @@ const statesJSON = JSON.stringify(states);
       });
       
       const result = await response.json();
-      console.log('📥 Response:', result);
-      
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to save source');
-      }
       
       if (result.success) {
-        showToast(id ? '✅ Source updated successfully' : '✅ Source created successfully', 'success');
+        showToast(id ? '✅ Source updated' : '✅ Source created', 'success');
         closeModal();
         setTimeout(() => window.location.reload(), 500);
       } else {
-        showModalMessage(result.error || 'Failed to save source', 'error');
+        showModalMessage(result.error || 'Failed to save', 'error');
       }
     } catch (error) {
-      console.error('❌ Error saving source:', error);
-      showModalMessage('Failed to save source: ' + error.message, 'error');
+      showModalMessage('Error: ' + error.message, 'error');
     } finally {
       isSubmitting = false;
       showLoading(false);
@@ -985,22 +747,17 @@ const statesJSON = JSON.stringify(states);
   };
 
   // ============================================
-  // SHOW MODAL MESSAGE
+  // UI HELPERS
   // ============================================
   function showModalMessage(message, type) {
     const msg = document.getElementById('modalMessage');
-    if (!msg) return;
     msg.textContent = message;
     msg.className = `p-3 rounded-lg text-sm ${type === 'error' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`;
     msg.classList.remove('hidden');
   }
 
-  // ============================================
-  // TOAST NOTIFICATION
-  // ============================================
   function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
-    if (!toast) return;
     toast.textContent = message;
     toast.className = `fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 ${
       type === 'success' ? 'bg-green-500 text-white' : 
@@ -1016,28 +773,12 @@ const statesJSON = JSON.stringify(states);
     }, 3000);
   }
 
-  // ============================================
-  // LOADING OVERLAY
-  // ============================================
   function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
-    if (!overlay) return;
     overlay.className = show 
       ? 'fixed inset-0 bg-black/30 flex items-center justify-center z-40'
       : 'fixed inset-0 bg-black/30 flex items-center justify-center z-40 hidden';
   }
-  
-  // ============================================
-  // FORCE RENDER AFTER DELAY
-  // ============================================
-  setTimeout(function() {
-    console.log('🔄 Final force render...');
-    if (allSources.master.length > 0 || allSources.state.length > 0) {
-      filterSources();
-    } else {
-      console.warn('⚠️ No data available to render');
-    }
-  }, 500);
 </script>
 
 <style is:global>

@@ -66,12 +66,15 @@ export async function GET({ locals }) {
       ORDER BY st.name ASC, ss.name ASC
     `).all();
     
-    console.log(`✅ Found ${masterResult.results?.length || 0} master sources, ${stateResult.results?.length || 0} state sources`);
+    const masterSources = masterResult.results || [];
+    const stateSources = stateResult.results || [];
+    
+    console.log(`✅ Found ${masterSources.length} master sources, ${stateSources.length} state sources`);
     
     return new Response(JSON.stringify({
       success: true,
-      master: masterResult.results || [],
-      state: stateResult.results || []
+      master: masterSources,
+      state: stateSources
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
@@ -201,7 +204,6 @@ export async function POST({ request, locals }) {
       
     } else {
       // STATE SOURCE
-      // Validate state_id
       if (!state_id) {
         return new Response(JSON.stringify({
           success: false,
