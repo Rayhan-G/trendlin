@@ -1,96 +1,370 @@
 ---
 // ============================================
-// MEDIA LIBRARY - Trendlin Admin (with Working Folders)
+// MEDIA LIBRARY - Trendlin Admin (Full Featured)
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
+
+let mediaItems = [];
+let folders = [];
+let totalMedia = 0;
+let totalFolders = 0;
+
+try {
+  const response = await fetch(`${Astro.url.origin}/api/admin/media`);
+  if (response.ok) {
+    const data = await response.json();
+    if (data.success) {
+      mediaItems = data.media || [];
+      folders = data.folders || [];
+      totalMedia = mediaItems.length;
+      totalFolders = folders.length;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching media:', error);
+}
 ---
 
 <AdminLayout title="Media Library - Trendlin">
-  <div class="max-w-7xl mx-auto p-6">
-    <!-- Header -->
-    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+  
+  <!-- Header -->
+  <div class="mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900">Media Library</h1>
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+          🖼️ Media Library
+        </h1>
         <p class="text-sm text-gray-500 mt-1">
           <span id="currentLocationDisplay">📁 Root</span>
+          <span class="mx-2">•</span>
+          <span id="mediaCount">{totalMedia} files</span>
+          <span class="mx-2">•</span>
+          <span id="folderCount">{totalFolders} folders</span>
         </p>
       </div>
-      <div class="flex gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <button 
           id="createFolderBtn" 
-          class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-medium rounded-xl shadow-lg shadow-green-500/25 transition-all"
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105"
         >
-          📁 Create Folder
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          New Folder
         </button>
         <button 
           id="uploadBtn" 
-          class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg shadow-blue-500/25 transition-all"
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105"
         >
-          📤 Upload to this Folder
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          Upload Files
         </button>
       </div>
     </div>
+  </div>
 
-    <!-- Breadcrumb Navigation -->
-    <div class="flex items-center gap-2 mb-4 text-sm bg-gray-50 rounded-xl p-3 border border-gray-200">
-      <button id="rootBtn" class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
-        <span>📁</span> Root
-      </button>
-      <span id="folderPath" class="text-gray-400"></span>
-    </div>
+  <!-- Breadcrumb Navigation -->
+  <div class="flex items-center gap-2 mb-6 text-sm bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+    <button id="rootBtn" class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-blue-50 transition-all">
+      <span>📁</span> Root
+    </button>
+    <span id="folderPath" class="text-gray-400"></span>
+    <div class="flex-1"></div>
+    <button id="refreshBtn" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100" title="Refresh">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+    </button>
+  </div>
 
-    <!-- Upload Progress -->
-    <div id="uploadProgress" class="hidden mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-      <div class="flex items-center gap-3">
-        <div class="flex-1">
-          <div class="flex justify-between text-sm text-gray-600 mb-1">
-            <span id="uploadFileName">Uploading...</span>
-            <span id="uploadPercent">0%</span>
-          </div>
-          <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div id="progressBar" class="h-full bg-blue-600 transition-all duration-300" style="width: 0%"></div>
-          </div>
+  <!-- Upload Progress -->
+  <div id="uploadProgress" class="hidden mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+    <div class="flex items-center gap-4">
+      <div class="flex-1">
+        <div class="flex justify-between text-sm text-gray-600 mb-1.5">
+          <span id="uploadFileName">Uploading...</span>
+          <span id="uploadPercent">0%</span>
+        </div>
+        <div class="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+          <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 rounded-full" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 mt-1">
+          <span id="uploadSpeed">0 KB/s</span>
+          <span id="uploadRemaining">--</span>
         </div>
       </div>
+      <button id="cancelUploadBtn" class="text-red-500 hover:text-red-700 text-sm font-medium">Cancel</button>
     </div>
-
-    <!-- Media Grid -->
-    <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-    </div>
-
-    <!-- Empty State -->
-    <div id="emptyState" class="hidden text-center py-12">
-      <div class="text-6xl mb-4">📂</div>
-      <h3 class="text-xl font-semibold text-gray-700 mb-2">This folder is empty</h3>
-      <p class="text-gray-500">Upload images or create subfolders to organize your files</p>
-    </div>
-
-    <!-- Loading State -->
-    <div id="loadingState" class="text-center py-12">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      <p class="text-gray-500 mt-2">Loading media...</p>
-    </div>
-
-    <!-- Toast -->
-    <div id="toast" class="hidden fixed bottom-4 right-4 max-w-sm p-4 rounded-xl shadow-lg z-50"></div>
   </div>
+
+  <!-- View Toggle -->
+  <div class="flex items-center justify-between mb-4">
+    <div class="flex items-center gap-2">
+      <button id="gridViewBtn" class="px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 rounded-lg transition-all">Grid</button>
+      <button id="listViewBtn" class="px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg transition-all">List</button>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-gray-400">
+      <span id="selectedCount">0 selected</span>
+      <button id="selectAllBtn" class="text-blue-600 hover:text-blue-800 font-medium">Select All</button>
+      <button id="deleteSelectedBtn" class="text-red-500 hover:text-red-700 font-medium hidden">Delete Selected</button>
+    </div>
+  </div>
+
+  <!-- Media Grid -->
+  <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+    <!-- Will be populated by JavaScript -->
+  </div>
+
+  <!-- Media List (Table View) -->
+  <div id="mediaList" class="hidden bg-white rounded-2xl overflow-hidden border border-gray-100">
+    <div class="overflow-x-auto">
+      <table class="w-full" id="mediaTable">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-10">
+              <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300 text-blue-600" />
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">File</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Name</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Size</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell">Uploaded</th>
+            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="mediaListBody" class="divide-y divide-gray-100">
+          <!-- Populated by JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-gray-100">
+    <div class="text-6xl mb-4">📂</div>
+    <h3 class="text-xl font-semibold text-gray-700 mb-2">This folder is empty</h3>
+    <p class="text-gray-500">Upload images or create subfolders to organize your files</p>
+    <div class="mt-4 flex items-center justify-center gap-3">
+      <button onclick="document.getElementById('uploadBtn').click()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Upload Files</button>
+      <button onclick="document.getElementById('createFolderBtn').click()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">Create Folder</button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="text-center py-16">
+    <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+    <p class="text-gray-500 mt-3">Loading media...</p>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- PREVIEW MODAL -->
+  <!-- ============================================ -->
+  <div id="previewModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b border-gray-200">
+        <div class="flex items-center gap-3">
+          <span id="previewFileType" class="text-sm font-medium text-gray-500">Image</span>
+          <span id="previewFileName" class="text-sm font-semibold text-gray-900"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="previewCopyLink" class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">Copy Link</button>
+          <button id="previewCopyMarkdown" class="px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">Copy MD</button>
+          <button id="previewCopyHTML" class="px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors">Copy HTML</button>
+          <button onclick="closePreviewModal()" class="text-gray-500 hover:text-gray-700 text-2xl ml-2">&times;</button>
+        </div>
+      </div>
+      <div class="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-50">
+        <div id="previewContent" class="max-w-full max-h-full">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+      <div class="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          <span id="previewFileSize"></span>
+          <span class="mx-2">•</span>
+          <span id="previewFileDate"></span>
+        </div>
+        <button id="previewDeleteBtn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors">Delete File</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 translate-y-20 opacity-0 hidden"></div>
+
 </AdminLayout>
 
+<!-- ============================================ -->
+<!-- JAVASCRIPT - Full Media Library -->
+<!-- ============================================ -->
 <script>
   // ============================================
-  // MEDIA LIBRARY - Working Folders
+  // STATE MANAGEMENT
   // ============================================
-
   let allMedia = [];
   let allFolders = [];
   let currentFolder = '';
+  let selectedItems = new Set();
+  let viewMode = 'grid';
+  let uploadController = null;
+  let isUploading = false;
 
-  // Load media
+  // ============================================
+  // DOM READY
+  // ============================================
+  document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const folderParam = urlParams.get('folder') || '';
+    if (folderParam) {
+      currentFolder = folderParam;
+    }
+    
+    loadMedia();
+    setupEventListeners();
+    setupDragAndDrop();
+  });
+
+  // ============================================
+  // SETUP EVENT LISTENERS
+  // ============================================
+  function setupEventListeners() {
+    // Upload button
+    document.getElementById('uploadBtn').addEventListener('click', triggerUpload);
+    
+    // Create folder button
+    document.getElementById('createFolderBtn').addEventListener('click', createFolder);
+    
+    // Root button
+    document.getElementById('rootBtn').addEventListener('click', function() {
+      navigateToFolder('');
+    });
+    
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', loadMedia);
+    
+    // View toggle
+    document.getElementById('gridViewBtn').addEventListener('click', function() {
+      viewMode = 'grid';
+      document.getElementById('gridViewBtn').className = 'px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 rounded-lg transition-all';
+      document.getElementById('listViewBtn').className = 'px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg transition-all';
+      document.getElementById('mediaGrid').classList.remove('hidden');
+      document.getElementById('mediaList').classList.add('hidden');
+      renderCurrentFolder();
+    });
+    
+    document.getElementById('listViewBtn').addEventListener('click', function() {
+      viewMode = 'list';
+      document.getElementById('listViewBtn').className = 'px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 rounded-lg transition-all';
+      document.getElementById('gridViewBtn').className = 'px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg transition-all';
+      document.getElementById('mediaGrid').classList.add('hidden');
+      document.getElementById('mediaList').classList.remove('hidden');
+      renderCurrentFolder();
+    });
+    
+    // Select all
+    document.getElementById('selectAllBtn').addEventListener('click', function() {
+      const items = getCurrentItems();
+      if (selectedItems.size === items.length) {
+        selectedItems.clear();
+      } else {
+        items.forEach(item => {
+          if (!item.isFolder) {
+            selectedItems.add(item.id);
+          }
+        });
+      }
+      renderCurrentFolder();
+      updateSelectionUI();
+    });
+    
+    document.getElementById('selectAllCheckbox').addEventListener('change', function() {
+      const items = getCurrentItems();
+      if (this.checked) {
+        items.forEach(item => {
+          if (!item.isFolder) {
+            selectedItems.add(item.id);
+          }
+        });
+      } else {
+        selectedItems.clear();
+      }
+      renderCurrentFolder();
+      updateSelectionUI();
+    });
+    
+    // Delete selected
+    document.getElementById('deleteSelectedBtn').addEventListener('click', function() {
+      if (selectedItems.size === 0) return;
+      if (confirm(`Delete ${selectedItems.size} selected files?`)) {
+        deleteSelectedFiles();
+      }
+    });
+    
+    // Preview modal close
+    document.getElementById('previewModal').addEventListener('click', function(e) {
+      if (e.target === this) closePreviewModal();
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closePreviewModal();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        if (!e.target.closest('input')) {
+          e.preventDefault();
+          document.getElementById('selectAllBtn').click();
+        }
+      }
+    });
+  }
+
+  // ============================================
+  // DRAG AND DROP
+  // ============================================
+  function setupDragAndDrop() {
+    let dragCounter = 0;
+    
+    document.addEventListener('dragenter', function(e) {
+      e.preventDefault();
+      dragCounter++;
+    });
+    
+    document.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      dragCounter--;
+      if (dragCounter === 0) {
+        document.body.classList.remove('drag-over');
+      }
+    });
+    
+    document.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      document.body.classList.add('drag-over');
+    });
+    
+    document.addEventListener('drop', function(e) {
+      e.preventDefault();
+      document.body.classList.remove('drag-over');
+      dragCounter = 0;
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFiles(files);
+      }
+    });
+  }
+
+  // ============================================
+  // LOAD MEDIA
+  // ============================================
   async function loadMedia() {
     try {
       document.getElementById('loadingState').classList.remove('hidden');
       document.getElementById('mediaGrid').classList.add('hidden');
+      document.getElementById('mediaList').classList.add('hidden');
       document.getElementById('emptyState').classList.add('hidden');
       
       const response = await fetch('/api/admin/media');
@@ -99,6 +373,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       if (result.success) {
         allMedia = result.media || [];
         allFolders = result.folders || [];
+        
+        document.getElementById('mediaCount').textContent = `${allMedia.length} files`;
+        document.getElementById('folderCount').textContent = `${allFolders.length} folders`;
+        
         renderCurrentFolder();
       } else {
         showToast('Failed to load media: ' + result.error, 'error');
@@ -111,7 +389,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
   }
 
-  // Get folders in current path
+  // ============================================
+  // GET CURRENT ITEMS
+  // ============================================
+  function getCurrentItems() {
+    const subFolders = getSubFolders();
+    const files = getFilesInFolder();
+    return [
+      ...subFolders.map(f => ({ isFolder: true, name: f })),
+      ...files
+    ];
+  }
+
   function getSubFolders() {
     if (!currentFolder) {
       return allFolders.filter(f => !f.includes('/')).sort();
@@ -122,7 +411,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }).sort();
   }
 
-  // Get files in current folder
   function getFilesInFolder() {
     if (!currentFolder) {
       return allMedia.filter(item => !item.folder || item.folder === '').sort((a, b) => 
@@ -134,54 +422,71 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     );
   }
 
-  // Navigate to folder - defined as global function
+  // ============================================
+  // NAVIGATE TO FOLDER
+  // ============================================
   window.navigateToFolder = function(folder) {
-    console.log('📍 Navigating to folder:', folder || 'Root');
     currentFolder = folder || '';
+    selectedItems.clear();
     renderCurrentFolder();
-    // Update URL without reload
+    updateSelectionUI();
+    
     const url = new URL(window.location);
     url.searchParams.set('folder', folder || '');
     window.history.pushState({ folder: folder }, '', url);
   };
 
-  // Render current folder
+  // ============================================
+  // RENDER CURRENT FOLDER
+  // ============================================
   function renderCurrentFolder() {
     const grid = document.getElementById('mediaGrid');
+    const list = document.getElementById('mediaListBody');
     const empty = document.getElementById('emptyState');
     
-    const subFolders = getSubFolders();
-    const files = getFilesInFolder();
-    
-    const allItems = [
-      ...subFolders.map(f => ({ isFolder: true, name: f })),
-      ...files
-    ];
-    
-    if (allItems.length === 0) {
-      grid.classList.add('hidden');
-      empty.classList.remove('hidden');
-      document.getElementById('currentLocationDisplay').textContent = 
-        currentFolder ? `📁 ${currentFolder}` : '📁 Root';
-      updateBreadcrumb();
-      return;
-    }
-    
-    grid.classList.remove('hidden');
-    empty.classList.add('hidden');
+    const items = getCurrentItems();
     
     document.getElementById('currentLocationDisplay').textContent = 
       currentFolder ? `📁 ${currentFolder}` : '📁 Root';
+    updateBreadcrumb();
     
-    grid.innerHTML = allItems.map((item) => {
+    if (items.length === 0) {
+      grid.classList.add('hidden');
+      list.parentElement?.classList.add('hidden');
+      empty.classList.remove('hidden');
+      return;
+    }
+    
+    empty.classList.add('hidden');
+    
+    if (viewMode === 'grid') {
+      grid.classList.remove('hidden');
+      list.parentElement?.classList.add('hidden');
+      renderGridView(items);
+    } else {
+      grid.classList.add('hidden');
+      list.parentElement?.classList.remove('hidden');
+      renderListView(items);
+    }
+    
+    updateSelectionUI();
+  }
+
+  // ============================================
+  // RENDER GRID VIEW
+  // ============================================
+  function renderGridView(items) {
+    const grid = document.getElementById('mediaGrid');
+    
+    grid.innerHTML = items.map((item, index) => {
       if (item.isFolder) {
         const folderName = item.name.split('/').pop();
         const fileCount = allMedia.filter(m => m.folder === item.name).length;
         
         return `
-          <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-dashed border-blue-200 overflow-hidden shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer" onclick="window.navigateToFolder('${item.name}')">
+          <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-dashed border-blue-200 overflow-hidden shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer" onclick="navigateToFolder('${item.name}')">
             <div class="aspect-square flex flex-col items-center justify-center p-4">
-              <div class="text-6xl mb-2">📁</div>
+              <div class="text-5xl mb-2">📁</div>
               <p class="text-sm font-semibold text-gray-700 text-center truncate w-full">${folderName}</p>
               <p class="text-xs text-gray-500">${fileCount} files</p>
             </div>
@@ -189,39 +494,47 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         `;
       }
       
-      // Render file
+      // File item
+      const isImage = item.mime_type && item.mime_type.startsWith('image/');
       const isVideo = item.mime_type && item.mime_type.startsWith('video/');
-      const imageUrl = item.url || '';
-      const altText = item.alt_text || item.original_name || 'Media';
-      const escapedUrl = imageUrl.replace(/'/g, "\\'");
-      const escapedAlt = altText.replace(/'/g, "\\'");
+      const isSelected = selectedItems.has(item.id);
       const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
       
       return `
-        <div class="group relative bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-all">
+        <div class="group relative bg-white rounded-xl border-2 ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer" onclick="toggleSelect(${item.id})" ondblclick="openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})">
           <div class="aspect-square bg-gray-100 relative overflow-hidden">
-            ${isVideo ? `
+            ${isImage ? `
+              <img 
+                src="${item.url}" 
+                alt="${item.alt_text || displayName}" 
+                class="w-full h-full object-cover" 
+                loading="lazy"
+                onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f3f4f6%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239ca3af%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'"
+              />
+            ` : isVideo ? `
               <video class="w-full h-full object-cover" muted>
-                <source src="${imageUrl}" type="${item.mime_type}">
+                <source src="${item.url}" type="${item.mime_type}">
               </video>
               <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <span class="text-4xl">🎬</span>
               </div>
             ` : `
-              <img 
-                src="${imageUrl}" 
-                alt="${altText}" 
-                class="w-full h-full object-cover" 
-                loading="lazy"
-                onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f3f4f6%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239ca3af%22 font-size=%2216%22%3EImage%20Not%20Found%3C/text%3E%3C/svg%3E'"
-              />
+              <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                <span class="text-6xl">📄</span>
+              </div>
             `}
             
+            <!-- Selection checkbox -->
+            <div class="absolute top-2 left-2">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" onclick="event.stopPropagation(); toggleSelect(${item.id})" />
+            </div>
+            
+            <!-- Quick actions overlay -->
             <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
-              <button onclick="window.copyLink('${escapedUrl}')" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">📋 Copy Link</button>
-              <button onclick="window.copyMarkdown('${escapedUrl}', '${escapedAlt}')" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">📝 Copy MD</button>
-              <button onclick="window.copyHTML('${escapedUrl}', '${escapedAlt}')" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">🔗 Copy HTML</button>
-              <button onclick="window.deleteMedia('${item.id}', '${item.filename}')" class="w-full px-2 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-1">🗑️ Delete</button>
+              <button onclick="event.stopPropagation(); window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">👁️ Preview</button>
+              <button onclick="event.stopPropagation(); window.copyLink('${item.url}')" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">📋 Copy Link</button>
+              <button onclick="event.stopPropagation(); window.copyMarkdown('${item.url}', '${item.alt_text || displayName}')" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">📝 Copy MD</button>
+              <button onclick="event.stopPropagation(); window.deleteMedia(${item.id}, '${item.filename}')" class="w-full px-2 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-1">🗑️ Delete</button>
             </div>
           </div>
           <div class="p-2">
@@ -232,10 +545,80 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       `;
     }).join('');
     
-    updateBreadcrumb();
+    // Update selected count
+    document.getElementById('selectedCount').textContent = `${selectedItems.size} selected`;
   }
 
-  // Update breadcrumb
+  // ============================================
+  // RENDER LIST VIEW
+  // ============================================
+  function renderListView(items) {
+    const tbody = document.getElementById('mediaListBody');
+    
+    tbody.innerHTML = items.map((item) => {
+      if (item.isFolder) {
+        const folderName = item.name.split('/').pop();
+        const fileCount = allMedia.filter(m => m.folder === item.name).length;
+        
+        return `
+          <tr class="hover:bg-gray-50 cursor-pointer" onclick="navigateToFolder('${item.name}')">
+            <td class="px-4 py-3"></td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">📁</span>
+                <span class="font-medium text-gray-900">${folderName}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">Folder</td>
+            <td class="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">${fileCount} files</td>
+            <td class="px-4 py-3 text-sm text-gray-500 hidden xl:table-cell">—</td>
+            <td class="px-4 py-3 text-right"></td>
+          </tr>
+        `;
+      }
+      
+      const isImage = item.mime_type && item.mime_type.startsWith('image/');
+      const isVideo = item.mime_type && item.mime_type.startsWith('video/');
+      const isSelected = selectedItems.has(item.id);
+      const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
+      
+      return `
+        <tr class="hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}" onclick="toggleSelect(${item.id})" ondblclick="window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+          <td class="px-4 py-3">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" onclick="event.stopPropagation(); toggleSelect(${item.id})" />
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+                ${isImage ? `
+                  <img src="${item.url}" alt="${displayName}" class="w-full h-full object-cover" />
+                ` : isVideo ? `
+                  <span class="text-2xl">🎬</span>
+                ` : `
+                  <span class="text-2xl">📄</span>
+                `}
+              </div>
+              <span class="font-medium text-gray-900 text-sm">${displayName}</span>
+            </div>
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell truncate max-w-xs">${item.alt_text || '—'}</td>
+          <td class="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">${formatFileSize(item.file_size)}</td>
+          <td class="px-4 py-3 text-sm text-gray-500 hidden xl:table-cell">${formatDate(item.created_at)}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-1.5">
+              <button onclick="event.stopPropagation(); window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Preview">👁️</button>
+              <button onclick="event.stopPropagation(); window.copyLink('${item.url}')" class="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Copy Link">📋</button>
+              <button onclick="event.stopPropagation(); window.deleteMedia(${item.id}, '${item.filename}')" class="p-1 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // ============================================
+  // UPDATE BREADCRUMB
+  // ============================================
   function updateBreadcrumb() {
     const pathElement = document.getElementById('folderPath');
     if (currentFolder) {
@@ -244,7 +627,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       let path = '';
       parts.forEach((part, index) => {
         path += (index > 0 ? '/' : '') + part;
-        html += `<button onclick="window.navigateToFolder('${path}')" class="text-blue-600 hover:text-blue-800 font-medium">${part}</button>`;
+        html += `<button onclick="navigateToFolder('${path}')" class="text-blue-600 hover:text-blue-800 font-medium hover:underline">${part}</button>`;
         if (index < parts.length - 1) {
           html += ' <span class="text-gray-400 mx-1">/</span> ';
         }
@@ -255,122 +638,133 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
   }
 
-  // Root button
-  document.getElementById('rootBtn').addEventListener('click', function(e) {
-    e.preventDefault();
-    window.navigateToFolder('');
-  });
+  // ============================================
+  // SELECTION
+  // ============================================
+  window.toggleSelect = function(id) {
+    if (selectedItems.has(id)) {
+      selectedItems.delete(id);
+    } else {
+      selectedItems.add(id);
+    }
+    renderCurrentFolder();
+    updateSelectionUI();
+  };
 
-  // Create folder
-  document.getElementById('createFolderBtn').addEventListener('click', async () => {
-    const folderName = prompt('Enter folder name:');
-    if (!folderName) return;
-    
-    const sanitized = folderName.trim().replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
-    if (!sanitized) {
-      showToast('Invalid folder name. Use letters, numbers, hyphens, and underscores.', 'error');
-      return;
+  function updateSelectionUI() {
+    const count = selectedItems.size;
+    document.getElementById('selectedCount').textContent = `${count} selected`;
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+    if (count > 0) {
+      deleteBtn.classList.remove('hidden');
+      deleteBtn.textContent = `🗑️ Delete ${count}`;
+    } else {
+      deleteBtn.classList.add('hidden');
     }
     
-    const folderPath = currentFolder ? `${currentFolder}/${sanitized}` : sanitized;
-    
-    if (allFolders.includes(folderPath)) {
-      showToast('Folder already exists!', 'error');
-      return;
-    }
-    
-    try {
-      const response = await fetch('/api/admin/media/folders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          folder: folderPath,
-          name: sanitized 
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        showToast(`✅ Folder "${sanitized}" created!`, 'success');
-        loadMedia();
-        // Navigate to the new folder
-        setTimeout(() => {
-          window.navigateToFolder(folderPath);
-        }, 500);
-      } else {
-        showToast('Failed to create folder: ' + result.error, 'error');
-      }
-    } catch (error) {
-      console.error('Error creating folder:', error);
-      showToast('Failed to create folder', 'error');
-    }
-  });
+    // Update select all checkbox
+    const items = getCurrentItems();
+    const selectable = items.filter(i => !i.isFolder);
+    const allChecked = selectable.length > 0 && selectable.every(i => selectedItems.has(i.id));
+    document.getElementById('selectAllCheckbox').checked = allChecked && selectable.length > 0;
+  }
 
-  // Upload files
-  document.getElementById('uploadBtn').addEventListener('click', () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml,video/mp4,video/webm';
-    fileInput.multiple = true;
+  // ============================================
+  // DELETE SELECTED FILES
+  // ============================================
+  async function deleteSelectedFiles() {
+    const ids = Array.from(selectedItems);
+    let deleted = 0;
     
-    fileInput.onchange = async (e) => {
-      const files = Array.from(e.target.files);
-      if (files.length === 0) return;
-      
-      const progressDiv = document.getElementById('uploadProgress');
-      const fileNameSpan = document.getElementById('uploadFileName');
-      const percentSpan = document.getElementById('uploadPercent');
-      const progressBar = document.getElementById('progressBar');
-      
-      progressDiv.classList.remove('hidden');
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const folderInfo = currentFolder ? ` → ${currentFolder}` : ' → Root';
-        fileNameSpan.textContent = `Uploading ${file.name}${folderInfo} (${i + 1}/${files.length})`;
+    for (const id of ids) {
+      try {
+        const item = allMedia.find(m => m.id === id);
+        if (!item) continue;
         
-        const formData = new FormData();
-        formData.append('image', file);
-        if (currentFolder) {
-          formData.append('folder', currentFolder);
-        }
+        const response = await fetch('/api/admin/media', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, filename: item.filename })
+        });
         
-        try {
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-          });
-          
-          const result = await response.json();
-          
-          if (result.success) {
-            const progress = ((i + 1) / files.length) * 100;
-            progressBar.style.width = `${progress}%`;
-            percentSpan.textContent = `${Math.round(progress)}%`;
-            showToast(`✅ Uploaded ${file.name}`, 'success');
-          } else {
-            showToast(`❌ Failed to upload ${file.name}: ${result.error}`, 'error');
-          }
-        } catch (error) {
-          console.error('Upload error:', error);
-          showToast(`❌ Failed to upload ${file.name}`, 'error');
+        if (response.ok) {
+          deleted++;
         }
+      } catch (error) {
+        console.error('Error deleting file:', error);
       }
-      
-      setTimeout(() => {
-        progressDiv.classList.add('hidden');
-        progressBar.style.width = '0%';
-        percentSpan.textContent = '0%';
-      }, 2000);
-      
-      loadMedia();
+    }
+    
+    selectedItems.clear();
+    showToast(`✅ Deleted ${deleted} files successfully`, 'success');
+    loadMedia();
+  }
+
+  // ============================================
+  // PREVIEW MODAL
+  // ============================================
+  window.openPreview = function(item) {
+    const modal = document.getElementById('previewModal');
+    const content = document.getElementById('previewContent');
+    const fileType = document.getElementById('previewFileType');
+    const fileName = document.getElementById('previewFileName');
+    const fileSize = document.getElementById('previewFileSize');
+    const fileDate = document.getElementById('previewFileDate');
+    
+    const isImage = item.mime_type && item.mime_type.startsWith('image/');
+    const isVideo = item.mime_type && item.mime_type.startsWith('video/');
+    
+    fileType.textContent = item.mime_type || 'File';
+    fileName.textContent = item.original_name || item.filename.split('/').pop() || 'Unknown';
+    fileSize.textContent = formatFileSize(item.file_size);
+    fileDate.textContent = item.created_at ? formatDate(item.created_at) : '—';
+    
+    if (isImage) {
+      content.innerHTML = `<img src="${item.url}" alt="${item.alt_text || ''}" class="max-w-full max-h-[70vh] object-contain rounded-lg" />`;
+    } else if (isVideo) {
+      content.innerHTML = `
+        <video controls class="max-w-full max-h-[70vh] rounded-lg">
+          <source src="${item.url}" type="${item.mime_type}">
+          Your browser does not support the video tag.
+        </video>
+      `;
+    } else {
+      content.innerHTML = `
+        <div class="text-center py-12">
+          <span class="text-8xl mb-4 block">📄</span>
+          <p class="text-gray-500">Preview not available for this file type</p>
+          <a href="${item.url}" target="_blank" class="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg">Download</a>
+        </div>
+      `;
+    }
+    
+    // Set up preview actions
+    document.getElementById('previewCopyLink').onclick = function() {
+      copyToClipboard(item.url, 'Link copied to clipboard!');
+    };
+    document.getElementById('previewCopyMarkdown').onclick = function() {
+      copyToClipboard(`![${item.alt_text || 'Image'}](${item.url})`, 'Markdown copied!');
+    };
+    document.getElementById('previewCopyHTML').onclick = function() {
+      copyToClipboard(`<img src="${item.url}" alt="${item.alt_text || 'Image'}" />`, 'HTML copied!');
+    };
+    document.getElementById('previewDeleteBtn').onclick = function() {
+      if (confirm('Delete this file?')) {
+        closePreviewModal();
+        deleteMedia(item.id, item.filename);
+      }
     };
     
-    fileInput.click();
-  });
+    modal.classList.remove('hidden');
+  };
 
-  // Copy functions - defined as global
+  window.closePreviewModal = function() {
+    document.getElementById('previewModal').classList.add('hidden');
+  };
+
+  // ============================================
+  // COPY FUNCTIONS
+  // ============================================
   window.copyLink = function(url) {
     copyToClipboard(url, '✅ Link copied to clipboard!');
   };
@@ -381,29 +775,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   window.copyHTML = function(url, alt) {
     copyToClipboard(`<img src="${url}" alt="${alt || 'Image'}" />`, '✅ HTML copied!');
-  };
-
-  window.deleteMedia = async function(id, filename) {
-    if (!confirm('Delete this file?')) return;
-    
-    try {
-      const response = await fetch('/api/admin/media', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, filename })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        showToast('🗑️ Deleted successfully');
-        loadMedia();
-      } else {
-        showToast('Failed to delete: ' + result.error, 'error');
-      }
-    } catch (error) {
-      showToast('Failed to delete', 'error');
-    }
   };
 
   async function copyToClipboard(text, successMessage) {
@@ -426,6 +797,188 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
   }
 
+  // ============================================
+  // DELETE MEDIA
+  // ============================================
+  window.deleteMedia = async function(id, filename) {
+    if (!confirm(`Delete this file?`)) return;
+    
+    try {
+      const response = await fetch('/api/admin/media', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, filename })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showToast('🗑️ Deleted successfully', 'success');
+        loadMedia();
+      } else {
+        showToast('Failed to delete: ' + result.error, 'error');
+      }
+    } catch (error) {
+      showToast('Failed to delete', 'error');
+    }
+  };
+
+  // ============================================
+  // CREATE FOLDER
+  // ============================================
+  async function createFolder() {
+    const folderName = prompt('Enter folder name:');
+    if (!folderName) return;
+    
+    const sanitized = folderName.trim().replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+    if (!sanitized) {
+      showToast('Invalid folder name. Use letters, numbers, hyphens, and underscores.', 'error');
+      return;
+    }
+    
+    const folderPath = currentFolder ? `${currentFolder}/${sanitized}` : sanitized;
+    
+    if (allFolders.includes(folderPath)) {
+      showToast('Folder already exists!', 'error');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/admin/media/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: folderPath, name: sanitized })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showToast(`✅ Folder "${sanitized}" created!`, 'success');
+        loadMedia();
+        setTimeout(() => {
+          navigateToFolder(folderPath);
+        }, 500);
+      } else {
+        showToast('Failed to create folder: ' + result.error, 'error');
+      }
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      showToast('Failed to create folder', 'error');
+    }
+  }
+
+  // ============================================
+  // UPLOAD FILES
+  // ============================================
+  function triggerUpload() {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.txt';
+    fileInput.multiple = true;
+    fileInput.onchange = function(e) {
+      if (this.files.length > 0) {
+        handleFiles(this.files);
+      }
+    };
+    fileInput.click();
+  }
+
+  async function handleFiles(files) {
+    if (isUploading) {
+      showToast('Upload already in progress', 'error');
+      return;
+    }
+    
+    isUploading = true;
+    const progressDiv = document.getElementById('uploadProgress');
+    const fileNameSpan = document.getElementById('uploadFileName');
+    const percentSpan = document.getElementById('uploadPercent');
+    const progressBar = document.getElementById('progressBar');
+    const speedSpan = document.getElementById('uploadSpeed');
+    const remainingSpan = document.getElementById('uploadRemaining');
+    const cancelBtn = document.getElementById('cancelUploadBtn');
+    
+    progressDiv.classList.remove('hidden');
+    let cancelled = false;
+    
+    cancelBtn.onclick = function() {
+      cancelled = true;
+      if (uploadController) {
+        uploadController.abort();
+      }
+      showToast('Upload cancelled', 'error');
+      isUploading = false;
+      progressDiv.classList.add('hidden');
+    };
+    
+    const totalFiles = files.length;
+    let completed = 0;
+    let startTime = Date.now();
+    
+    for (let i = 0; i < totalFiles; i++) {
+      if (cancelled) break;
+      
+      const file = files[i];
+      const folderInfo = currentFolder ? ` → ${currentFolder}` : ' → Root';
+      fileNameSpan.textContent = `Uploading ${file.name}${folderInfo} (${i + 1}/${totalFiles})`;
+      
+      const formData = new FormData();
+      formData.append('image', file);
+      if (currentFolder) {
+        formData.append('folder', currentFolder);
+      }
+      
+      uploadController = new AbortController();
+      
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          signal: uploadController.signal
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          completed++;
+          const progress = (completed / totalFiles) * 100;
+          progressBar.style.width = `${progress}%`;
+          percentSpan.textContent = `${Math.round(progress)}%`;
+          
+          // Update speed
+          const elapsed = (Date.now() - startTime) / 1000;
+          const speed = file.size / elapsed / 1024;
+          speedSpan.textContent = `${speed.toFixed(1)} KB/s`;
+          
+          const remaining = (totalFiles - completed) * (elapsed / completed);
+          if (remaining > 60) {
+            remainingSpan.textContent = `${Math.round(remaining / 60)} min remaining`;
+          } else {
+            remainingSpan.textContent = `${Math.round(remaining)}s remaining`;
+          }
+        } else {
+          showToast(`❌ Failed to upload ${file.name}: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') {
+          console.error('Upload error:', error);
+          showToast(`❌ Failed to upload ${file.name}`, 'error');
+        }
+      }
+    }
+    
+    isUploading = false;
+    progressDiv.classList.add('hidden');
+    
+    if (!cancelled) {
+      showToast(`✅ Uploaded ${completed} of ${totalFiles} files`, 'success');
+      loadMedia();
+    }
+  }
+
+  // ============================================
+  // UTILITY FUNCTIONS
+  // ============================================
   function formatFileSize(bytes) {
     if (!bytes) return '0 B';
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -433,49 +986,79 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
   }
 
+  function formatDate(dateString) {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // ============================================
+  // TOAST NOTIFICATION
+  // ============================================
   function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
-    toast.className = `fixed bottom-4 right-4 max-w-sm p-4 rounded-xl shadow-lg z-50 ${
+    toast.className = `fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 ${
       type === 'success' ? 'bg-green-500 text-white' : 
       type === 'error' ? 'bg-red-500 text-white' : 
       'bg-blue-500 text-white'
     }`;
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 3000);
+    toast.classList.remove('hidden', 'translate-y-20', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+    
+    setTimeout(() => {
+      toast.classList.add('translate-y-20', 'opacity-0');
+      setTimeout(() => toast.classList.add('hidden'), 500);
+    }, 3000);
   }
 
-  // Handle browser back/forward
+  // ============================================
+  // BROWSER HISTORY
+  // ============================================
   window.addEventListener('popstate', function(event) {
     const folder = event.state?.folder || '';
     currentFolder = folder;
     renderCurrentFolder();
   });
 
-  // Load on page load and check URL for folder param
-  document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const folderParam = urlParams.get('folder') || '';
-    if (folderParam) {
-      currentFolder = folderParam;
+  // ============================================
+  // DRAG OVER STYLING
+  // ============================================
+  const style = document.createElement('style');
+  style.textContent = `
+    body.drag-over::before {
+      content: '📤 Drop files here';
+      position: fixed;
+      inset: 0;
+      background: rgba(37, 99, 235, 0.1);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      font-weight: 600;
+      color: #2563eb;
+      z-index: 9999;
+      border: 4px dashed #2563eb;
+      margin: 20px;
+      border-radius: 20px;
     }
-    loadMedia();
-  });
-
-  // If DOM is already loaded, run immediately
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadMedia);
-  } else {
-    // If the page is already loaded, check for folder param
-    const urlParams = new URLSearchParams(window.location.search);
-    const folderParam = urlParams.get('folder') || '';
-    if (folderParam) {
-      currentFolder = folderParam;
+    
+    .aspect-square {
+      aspect-ratio: 1 / 1;
     }
-    loadMedia();
-  }
+  `;
+  document.head.appendChild(style);
 </script>
 
 <style>
-  .aspect-square { aspect-ratio: 1 / 1; }
+  .aspect-square {
+    aspect-ratio: 1 / 1;
+  }
 </style>
