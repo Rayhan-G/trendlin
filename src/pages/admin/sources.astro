@@ -17,10 +17,12 @@ try {
   
   if (sourcesResponse.ok) {
     const data = await sourcesResponse.json();
+    console.log('📥 Server Response:', data);
     
     if (data && data.success) {
       masterSources = Array.isArray(data.master) ? data.master : [];
       stateSources = Array.isArray(data.state) ? data.state : [];
+      console.log(`✅ Loaded ${masterSources.length} master, ${stateSources.length} state`);
     } else {
       error = data?.error || 'Failed to load sources';
     }
@@ -47,7 +49,7 @@ try {
   }
   
 } catch (err) {
-  console.error('Error fetching sources:', err);
+  console.error('❌ Error fetching sources:', err);
   error = err.message;
 }
 
@@ -55,12 +57,6 @@ const totalSources = masterSources.length + stateSources.length;
 const totalMasterSources = masterSources.length;
 const totalStateSources = stateSources.length;
 const totalCategories = categories.length;
-
-// Convert to JSON for JavaScript
-const masterSourcesJSON = JSON.stringify(masterSources);
-const stateSourcesJSON = JSON.stringify(stateSources);
-const categoriesJSON = JSON.stringify(categories);
-const statesJSON = JSON.stringify(states);
 ---
 
 <AdminLayout title="Sources Management - Trendlin">
@@ -384,37 +380,30 @@ const statesJSON = JSON.stringify(states);
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT -->
+<!-- JAVASCRIPT - FIXED -->
 <!-- ============================================ -->
 <script>
   // ============================================
-  // DATA
+  // DATA - Direct assignment from server
   // ============================================
-  let masterData = [];
-  let stateData = [];
-  let categoriesData = [];
-  let statesData = [];
-
-  try {
-    masterData = JSON.parse(`[${masterSourcesJSON}]`) || [];
-    stateData = JSON.parse(`[${stateSourcesJSON}]`) || [];
-    categoriesData = JSON.parse(`[${categoriesJSON}]`) || [];
-    statesData = JSON.parse(`[${statesJSON}]`) || [];
-    
-    if (!Array.isArray(masterData)) masterData = [];
-    if (!Array.isArray(stateData)) stateData = [];
-    if (!Array.isArray(categoriesData)) categoriesData = [];
-    if (!Array.isArray(statesData)) statesData = [];
-  } catch (e) {
-    console.error('Error parsing data:', e);
-    masterData = [];
-    stateData = [];
-    categoriesData = [];
-    statesData = [];
-  }
+  // These come from the server-side variables
+  const masterData = JSON.parse(`[${masterSources.map(s => JSON.stringify(s)).join(',')}]`);
+  const stateData = JSON.parse(`[${stateSources.map(s => JSON.stringify(s)).join(',')}]`);
+  const categoriesData = JSON.parse(`[${categories.map(c => JSON.stringify(c)).join(',')}]`);
+  const statesData = JSON.parse(`[${states.map(s => JSON.stringify(s)).join(',')}]`);
 
   console.log('📊 Master Data:', masterData.length);
   console.log('📊 State Data:', stateData.length);
+  console.log('📊 Categories:', categoriesData.length);
+  console.log('📊 States:', statesData.length);
+
+  // Show the actual data in console
+  if (masterData.length > 0) {
+    console.log('📋 First master source:', masterData[0]);
+  }
+  if (stateData.length > 0) {
+    console.log('📋 First state source:', stateData[0]);
+  }
 
   let allSources = { master: masterData, state: stateData };
   let filteredSources = { master: [], state: [] };
@@ -426,19 +415,24 @@ const statesJSON = JSON.stringify(states);
   // ============================================
   document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM Ready');
+    console.log('📊 Total sources to render:', allSources.master.length + allSources.state.length);
     
+    // Setup buttons
     document.getElementById('addMasterBtn').addEventListener('click', function(e) {
       e.preventDefault();
+      console.log('🔵 Add Master Source clicked');
       openModal('master');
     });
     
     document.getElementById('addStateBtn').addEventListener('click', function(e) {
       e.preventDefault();
+      console.log('🟢 Add State Source clicked');
       openModal('state');
     });
     
     document.getElementById('saveSourceBtn').addEventListener('click', function(e) {
       e.preventDefault();
+      console.log('💾 Save button clicked');
       handleFormSubmit();
     });
     
@@ -446,14 +440,21 @@ const statesJSON = JSON.stringify(states);
       if (e.target === this) closeModal();
     });
     
+    // Initial render
     switchTab('master');
-    setTimeout(filterSources, 300);
+    
+    // Force render after delay
+    setTimeout(function() {
+      console.log('🔄 Force rendering...');
+      filterSources();
+    }, 200);
   });
 
   // ============================================
   // SWITCH TAB
   // ============================================
   window.switchTab = function(tab) {
+    console.log('📑 Switching to tab:', tab);
     currentTab = tab;
     
     document.getElementById('masterTab').className = tab === 'master' 
@@ -485,6 +486,8 @@ const statesJSON = JSON.stringify(states);
     const category = document.getElementById('categoryFilter').value;
     const state = document.getElementById('stateFilter').value;
     
+    console.log('🔍 Filtering - Search:', search, 'Category:', category, 'State:', state);
+    
     if (currentTab === 'master') {
       filteredSources.master = allSources.master.filter(source => {
         const matchSearch = (source.name || '').toLowerCase().includes(search) || 
@@ -492,6 +495,7 @@ const statesJSON = JSON.stringify(states);
         const matchCategory = !category || source.category_id == category;
         return matchSearch && matchCategory;
       });
+      console.log('✅ Filtered Master:', filteredSources.master.length);
       renderSources('master');
     } else {
       filteredSources.state = allSources.state.filter(source => {
@@ -501,6 +505,7 @@ const statesJSON = JSON.stringify(states);
         const matchState = !state || source.state_id == state;
         return matchSearch && matchCategory && matchState;
       });
+      console.log('✅ Filtered State:', filteredSources.state.length);
       renderSources('state');
     }
   };
@@ -513,12 +518,18 @@ const statesJSON = JSON.stringify(states);
     const sources = type === 'master' ? filteredSources.master : filteredSources.state;
     const empty = document.getElementById('emptyState');
     
-    if (!container) return;
+    console.log(`🎨 Rendering ${type} sources:`, sources.length);
+    
+    if (!container) {
+      console.error('❌ Container not found for type:', type);
+      return;
+    }
     
     if (sources.length === 0) {
       container.innerHTML = '';
       if (empty) empty.classList.remove('hidden');
       document.getElementById('visibleCount').textContent = '0';
+      console.log('📭 No sources to display');
       return;
     }
     
@@ -572,12 +583,16 @@ const statesJSON = JSON.stringify(states);
         </div>
       </div>
     `}).join('');
+    
+    console.log(`✅ Rendered ${sources.length} sources in ${type} view`);
   }
 
   // ============================================
   // OPEN MODAL
   // ============================================
   window.openModal = function(type, data = null) {
+    console.log('📝 Opening modal for:', type, data);
+    
     const modal = document.getElementById('sourceModal');
     const title = document.getElementById('modalTitle');
     const stateWrapper = document.getElementById('stateSelectWrapper');
@@ -638,6 +653,7 @@ const statesJSON = JSON.stringify(states);
   // EDIT SOURCE
   // ============================================
   window.editSource = function(id, type) {
+    console.log('✏️ Editing source:', id, type);
     const source = allSources[type === 'master' ? 'master' : 'state'].find(s => s.id === id);
     if (source) {
       openModal(type === 'master' ? 'master' : 'state', source);
@@ -650,6 +666,8 @@ const statesJSON = JSON.stringify(states);
   // DELETE SOURCE
   // ============================================
   window.deleteSource = async function(id, type) {
+    console.log('🗑️ Deleting source:', id, type);
+    
     if (!confirm('Are you sure you want to delete this source?')) return;
     
     showLoading(true);
@@ -680,6 +698,8 @@ const statesJSON = JSON.stringify(states);
   // HANDLE FORM SUBMIT
   // ============================================
   window.handleFormSubmit = async function() {
+    console.log('📤 Handling form submit...');
+    
     if (isSubmitting) return;
     
     const id = document.getElementById('editId').value;
@@ -692,6 +712,8 @@ const statesJSON = JSON.stringify(states);
     const logo_url = document.getElementById('sourceLogo').value.trim();
     const is_active = document.getElementById('sourceActive').checked ? 1 : 0;
     const is_featured = document.getElementById('sourceFeatured').checked ? 1 : 0;
+    
+    console.log('📝 Form data:', { id, type, name, url, category_id, is_active });
     
     if (!name || !url || !category_id) {
       showModalMessage('Name, URL, and category are required', 'error');
@@ -730,6 +752,7 @@ const statesJSON = JSON.stringify(states);
       });
       
       const result = await response.json();
+      console.log('📥 Response:', result);
       
       if (result.success) {
         showToast(id ? '✅ Source updated' : '✅ Source created', 'success');
@@ -739,6 +762,7 @@ const statesJSON = JSON.stringify(states);
         showModalMessage(result.error || 'Failed to save', 'error');
       }
     } catch (error) {
+      console.error('❌ Error:', error);
       showModalMessage('Error: ' + error.message, 'error');
     } finally {
       isSubmitting = false;

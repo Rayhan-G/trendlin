@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { renderers } from './renderers.mjs';
 import { createExports } from './_@astrojs-ssr-adapter.mjs';
-import { manifest } from './manifest_B3agwLHD.mjs';
+import { manifest } from './manifest_CpcKACco.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -33,26 +33,25 @@ const _page24 = () => import('./pages/api/admin/sources/categories.astro.mjs');
 const _page25 = () => import('./pages/api/admin/sources/states.astro.mjs');
 const _page26 = () => import('./pages/api/admin/sources/_id_.astro.mjs');
 const _page27 = () => import('./pages/api/admin/sources.astro.mjs');
-const _page28 = () => import('./pages/api/admin/sources2.astro.mjs');
-const _page29 = () => import('./pages/api/admin/templates/categories.astro.mjs');
-const _page30 = () => import('./pages/api/admin/templates/_id_/usage.astro.mjs');
-const _page31 = () => import('./pages/api/admin/templates/_id_.astro.mjs');
-const _page32 = () => import('./pages/api/admin/templates.astro.mjs');
-const _page33 = () => import('./pages/api/auth/login.astro.mjs');
-const _page34 = () => import('./pages/api/auth/logout.astro.mjs');
-const _page35 = () => import('./pages/api/contact.astro.mjs');
-const _page36 = () => import('./pages/api/images/_---path_.astro.mjs');
-const _page37 = () => import('./pages/api/posts.astro.mjs');
-const _page38 = () => import('./pages/api/products/_id_/resources.json.astro.mjs');
-const _page39 = () => import('./pages/api/upload.astro.mjs');
-const _page40 = () => import('./pages/categories.astro.mjs');
-const _page41 = () => import('./pages/contact.astro.mjs');
-const _page42 = () => import('./pages/cookies.astro.mjs');
-const _page43 = () => import('./pages/disclosure.astro.mjs');
-const _page44 = () => import('./pages/posts/_slug_.astro.mjs');
-const _page45 = () => import('./pages/privacy.astro.mjs');
-const _page46 = () => import('./pages/terms.astro.mjs');
-const _page47 = () => import('./pages/index.astro.mjs');
+const _page28 = () => import('./pages/api/admin/templates/categories.astro.mjs');
+const _page29 = () => import('./pages/api/admin/templates/_id_/usage.astro.mjs');
+const _page30 = () => import('./pages/api/admin/templates/_id_.astro.mjs');
+const _page31 = () => import('./pages/api/admin/templates.astro.mjs');
+const _page32 = () => import('./pages/api/auth/login.astro.mjs');
+const _page33 = () => import('./pages/api/auth/logout.astro.mjs');
+const _page34 = () => import('./pages/api/contact.astro.mjs');
+const _page35 = () => import('./pages/api/images/_---path_.astro.mjs');
+const _page36 = () => import('./pages/api/posts.astro.mjs');
+const _page37 = () => import('./pages/api/products/_id_/resources.json.astro.mjs');
+const _page38 = () => import('./pages/api/upload.astro.mjs');
+const _page39 = () => import('./pages/categories.astro.mjs');
+const _page40 = () => import('./pages/contact.astro.mjs');
+const _page41 = () => import('./pages/cookies.astro.mjs');
+const _page42 = () => import('./pages/disclosure.astro.mjs');
+const _page43 = () => import('./pages/posts/_slug_.astro.mjs');
+const _page44 = () => import('./pages/privacy.astro.mjs');
+const _page45 = () => import('./pages/terms.astro.mjs');
+const _page46 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/@astrojs/cloudflare/dist/entrypoints/image-endpoint.js", _page0],
     ["src/pages/about.astro", _page1],
@@ -82,26 +81,25 @@ const pageMap = new Map([
     ["src/pages/api/admin/sources/states.js", _page25],
     ["src/pages/api/admin/sources/[id].js", _page26],
     ["src/pages/api/admin/sources/index.js", _page27],
-    ["src/pages/api/admin/sources.ts", _page28],
-    ["src/pages/api/admin/templates/categories.js", _page29],
-    ["src/pages/api/admin/templates/[id]/usage.js", _page30],
-    ["src/pages/api/admin/templates/[id].js", _page31],
-    ["src/pages/api/admin/templates/index.js", _page32],
-    ["src/pages/api/auth/login.js", _page33],
-    ["src/pages/api/auth/logout.js", _page34],
-    ["src/pages/api/contact/index.js", _page35],
-    ["src/pages/api/images/[...path].js", _page36],
-    ["src/pages/api/posts.ts", _page37],
-    ["src/pages/api/products/[id]/resources.json.ts", _page38],
-    ["src/pages/api/upload/index.js", _page39],
-    ["src/pages/categories/index.astro", _page40],
-    ["src/pages/contact.astro", _page41],
-    ["src/pages/cookies.astro", _page42],
-    ["src/pages/disclosure.astro", _page43],
-    ["src/pages/posts/[slug].astro", _page44],
-    ["src/pages/privacy.astro", _page45],
-    ["src/pages/terms.astro", _page46],
-    ["src/pages/index.astro", _page47]
+    ["src/pages/api/admin/templates/categories.js", _page28],
+    ["src/pages/api/admin/templates/[id]/usage.js", _page29],
+    ["src/pages/api/admin/templates/[id].js", _page30],
+    ["src/pages/api/admin/templates/index.js", _page31],
+    ["src/pages/api/auth/login.js", _page32],
+    ["src/pages/api/auth/logout.js", _page33],
+    ["src/pages/api/contact/index.js", _page34],
+    ["src/pages/api/images/[...path].js", _page35],
+    ["src/pages/api/posts.ts", _page36],
+    ["src/pages/api/products/[id]/resources.json.ts", _page37],
+    ["src/pages/api/upload/index.js", _page38],
+    ["src/pages/categories/index.astro", _page39],
+    ["src/pages/contact.astro", _page40],
+    ["src/pages/cookies.astro", _page41],
+    ["src/pages/disclosure.astro", _page42],
+    ["src/pages/posts/[slug].astro", _page43],
+    ["src/pages/privacy.astro", _page44],
+    ["src/pages/terms.astro", _page45],
+    ["src/pages/index.astro", _page46]
 ]);
 
 const _manifest = Object.assign(manifest, {
