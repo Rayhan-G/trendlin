@@ -9,16 +9,28 @@ let masterSources = [];
 let stateSources = [];
 let categories = [];
 let states = [];
+let error = null;
 
 try {
   // Fetch sources
   const sourcesResponse = await fetch(`${Astro.url.origin}/api/admin/sources`);
+  console.log('Sources Response Status:', sourcesResponse.status);
+  
   if (sourcesResponse.ok) {
     const data = await sourcesResponse.json();
+    console.log('Sources Data:', data);
+    
     if (data && data.success) {
       masterSources = data.master || [];
       stateSources = data.state || [];
+      console.log(`✅ Loaded ${masterSources.length} master sources and ${stateSources.length} state sources`);
+    } else {
+      console.error('API returned error:', data?.error);
+      error = data?.error || 'Failed to load sources';
     }
+  } else {
+    console.error('API response not OK:', sourcesResponse.status);
+    error = `Server error: ${sourcesResponse.status}`;
   }
   
   // Fetch categories
@@ -27,6 +39,7 @@ try {
     const data = await categoriesResponse.json();
     if (data && data.success) {
       categories = data.categories || [];
+      console.log(`✅ Loaded ${categories.length} categories`);
     }
   }
   
@@ -36,11 +49,13 @@ try {
     const data = await statesResponse.json();
     if (data && data.success) {
       states = data.states || [];
+      console.log(`✅ Loaded ${states.length} states`);
     }
   }
   
 } catch (error) {
-  console.error('Error fetching sources:', error);
+  console.error('❌ Error fetching sources:', error);
+  error = error.message;
 }
 
 const totalSources = masterSources.length + stateSources.length;
@@ -51,6 +66,19 @@ const totalCategories = categories.length;
 
 <AdminLayout title="Sources Management - Trendlin">
   
+  <!-- Debug Info - Remove after fixing -->
+  {error && (
+    <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+      <strong>Error:</strong> {error}
+    </div>
+  )}
+  
+  <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
+    <strong>Debug Info:</strong> 
+    Master: {masterSources.length}, State: {stateSources.length}, 
+    Categories: {categories.length}, States: {states.length}
+  </div>
+
   <!-- Header -->
   <div class="mb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -214,6 +242,13 @@ const totalCategories = categories.length;
         <option key={state.id} value={state.id}>{state.name}</option>
       ))}
     </select>
+
+    <button onclick="refreshSources()" class="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors flex items-center gap-1">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Refresh
+    </button>
 
     <div class="text-sm text-gray-400 ml-auto">
       <span id="visibleCount">0</span> sources
@@ -429,25 +464,28 @@ const totalCategories = categories.length;
 <!-- ============================================ -->
 <script>
   // ============================================
-  // DATA
+  // DATA - Parse from server
   // ============================================
-  let allSources = { master: [], state: [] };
-  let filteredSources = { master: [], state: [] };
-  let currentTab = 'master';
-  let isSubmitting = false;
-
-  // Parse data from server
   const masterData = JSON.parse(`[${masterSources.map(s => JSON.stringify(s)).join(',')}]`);
   const stateData = JSON.parse(`[${stateSources.map(s => JSON.stringify(s)).join(',')}]`);
   const categoriesData = JSON.parse(`[${categories.map(c => JSON.stringify(c)).join(',')}]`);
   const statesData = JSON.parse(`[${states.map(s => JSON.stringify(s)).join(',')}]`);
 
+  console.log('📊 Master Data:', masterData);
+  console.log('📊 State Data:', stateData);
+  console.log('📊 Categories:', categoriesData);
+  console.log('📊 States:', statesData);
+
+  let allSources = { master: masterData, state: stateData };
+  let filteredSources = { master: [], state: [] };
+  let currentTab = 'master';
+  let isSubmitting = false;
+
   // ============================================
   // DOM READY
   // ============================================
   document.addEventListener('DOMContentLoaded', function() {
-    allSources.master = masterData;
-    allSources.state = stateData;
+    console.log('🚀 DOM Ready - Rendering sources...');
     
     document.getElementById('addMasterBtn').addEventListener('click', () => openModal('master'));
     document.getElementById('addStateBtn').addEventListener('click', () => openModal('state'));
@@ -463,10 +501,19 @@ const totalCategories = categories.length;
   });
 
   // ============================================
+  // REFRESH SOURCES
+  // ============================================
+  window.refreshSources = function() {
+    showLoading(true);
+    window.location.reload();
+  };
+
+  // ============================================
   // SWITCH TAB
   // ============================================
   window.switchTab = function(tab) {
     currentTab = tab;
+    console.log('📑 Switching to tab:', tab);
     
     // Update tab styles
     document.getElementById('masterTab').className = tab === 'master' 
@@ -500,6 +547,8 @@ const totalCategories = categories.length;
     const category = document.getElementById('categoryFilter').value;
     const state = document.getElementById('stateFilter').value;
     
+    console.log('🔍 Filtering - Search:', search, 'Category:', category, 'State:', state);
+    
     if (currentTab === 'master') {
       filteredSources.master = allSources.master.filter(source => {
         const matchSearch = source.name.toLowerCase().includes(search) || 
@@ -507,6 +556,7 @@ const totalCategories = categories.length;
         const matchCategory = !category || source.category_id == category;
         return matchSearch && matchCategory;
       });
+      console.log('✅ Filtered Master:', filteredSources.master.length);
       renderSources('master');
     } else {
       filteredSources.state = allSources.state.filter(source => {
@@ -516,6 +566,7 @@ const totalCategories = categories.length;
         const matchState = !state || source.state_id == state;
         return matchSearch && matchCategory && matchState;
       });
+      console.log('✅ Filtered State:', filteredSources.state.length);
       renderSources('state');
     }
   };
@@ -527,6 +578,8 @@ const totalCategories = categories.length;
     const container = document.getElementById(type === 'master' ? 'masterSourcesList' : 'stateSourcesList');
     const sources = type === 'master' ? filteredSources.master : filteredSources.state;
     const empty = document.getElementById('emptyState');
+    
+    console.log(`🎨 Rendering ${type} sources:`, sources.length);
     
     if (sources.length === 0) {
       container.innerHTML = '';
@@ -816,15 +869,15 @@ const totalCategories = categories.length;
   }
 
   // ============================================
-  // INITIAL RENDER
+  // INITIAL RENDER - Fallback
   // ============================================
-  // This runs after DOM is ready
-  document.addEventListener('DOMContentLoaded', function() {
-    // Initial render
-    setTimeout(() => {
+  // If data is loaded but not rendered, try again
+  setTimeout(() => {
+    if (allSources.master.length > 0 || allSources.state.length > 0) {
+      console.log('🔄 Fallback render attempt...');
       filterSources();
-    }, 100);
-  });
+    }
+  }, 500);
 </script>
 
 <style is:global>

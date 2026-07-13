@@ -10,6 +10,8 @@ export async function GET({ params, locals }) {
     const { DB } = locals.runtime.env;
     const { id } = params;
     
+    console.log(`📡 Fetching source with ID: ${id}`);
+    
     // Try to find in master sources
     let source = await DB.prepare(`
       SELECT 
@@ -70,7 +72,7 @@ export async function GET({ params, locals }) {
     });
     
   } catch (error) {
-    console.error('Error fetching source:', error);
+    console.error('❌ Error fetching source:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message
@@ -86,6 +88,8 @@ export async function PUT({ params, request, locals }) {
     const { DB } = locals.runtime.env;
     const { id } = params;
     const data = await request.json();
+    
+    console.log(`📝 Updating source ID ${id} with data:`, data);
     
     const {
       type,
@@ -159,13 +163,18 @@ export async function PUT({ params, request, locals }) {
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
-        name, url, category_id,
-        description || '', source_type || 'official',
+        name, 
+        url, 
+        category_id,
+        description || '', 
+        source_type || 'official',
         logo_url || '',
         is_active !== undefined ? (is_active ? 1 : 0) : 1,
         is_featured ? 1 : 0,
         id
       ).run();
+      
+      console.log(`✅ Updated master source ID: ${id}`);
       
       return new Response(JSON.stringify({
         success: true,
@@ -235,13 +244,22 @@ export async function PUT({ params, request, locals }) {
           updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).bind(
-        state_id, name, url, category_id,
-        description || '', source_type || 'official',
-        logo_url || '', address || '', phone || '', email || '',
+        state_id, 
+        name, 
+        url, 
+        category_id,
+        description || '', 
+        source_type || 'official',
+        logo_url || '', 
+        address || '', 
+        phone || '', 
+        email || '',
         is_active !== undefined ? (is_active ? 1 : 0) : 1,
         is_featured ? 1 : 0,
         id
       ).run();
+      
+      console.log(`✅ Updated state source ID: ${id}`);
       
       return new Response(JSON.stringify({
         success: true,
@@ -262,7 +280,7 @@ export async function PUT({ params, request, locals }) {
     }
     
   } catch (error) {
-    console.error('Error updating source:', error);
+    console.error('❌ Error updating source:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message
@@ -279,6 +297,8 @@ export async function DELETE({ params, request, locals }) {
     const { id } = params;
     const data = await request.json();
     const { type } = data;
+    
+    console.log(`🗑️ Deleting ${type} source with ID: ${id}`);
     
     if (!type || !['master', 'state'].includes(type)) {
       return new Response(JSON.stringify({
@@ -312,6 +332,8 @@ export async function DELETE({ params, request, locals }) {
       DELETE FROM ${table} WHERE id = ?
     `).bind(id).run();
     
+    console.log(`✅ Deleted ${type} source ID: ${id}`);
+    
     return new Response(JSON.stringify({
       success: true,
       message: 'Source deleted successfully'
@@ -321,7 +343,7 @@ export async function DELETE({ params, request, locals }) {
     });
     
   } catch (error) {
-    console.error('Error deleting source:', error);
+    console.error('❌ Error deleting source:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message

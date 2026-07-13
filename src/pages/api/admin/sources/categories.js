@@ -7,6 +7,8 @@ export async function GET({ locals }) {
   try {
     const { DB } = locals.runtime.env;
     
+    console.log('📡 Fetching categories...');
+    
     const result = await DB.prepare(`
       SELECT 
         id, name, slug, icon, description,
@@ -15,6 +17,8 @@ export async function GET({ locals }) {
       WHERE is_active = 1
       ORDER BY display_order ASC, name ASC
     `).all();
+    
+    console.log(`✅ Found ${result.results?.length || 0} categories`);
     
     return new Response(JSON.stringify({
       success: true,
@@ -25,7 +29,7 @@ export async function GET({ locals }) {
     });
     
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    console.error('❌ Error fetching categories:', error);
     return new Response(JSON.stringify({
       success: false,
       error: error.message
