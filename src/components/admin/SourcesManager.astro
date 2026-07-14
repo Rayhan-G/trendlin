@@ -1,4 +1,7 @@
-<!-- SourcesManager.astro -->
+---
+// SourcesManager.astro - Admin component for managing sources
+---
+
 <div id="sources-manager">
   <div class="manager-header">
     <div class="filters">
@@ -389,7 +392,6 @@
     color: #6c757d;
   }
   
-  /* Modal Styles */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -842,45 +844,45 @@
     scoreDisplay.textContent = '0%';
   }
   
-  // Event listeners
-  document.addEventListener('DOMContentLoaded', () => {
+  // Event listeners - using DOMContentLoaded
+  document.addEventListener('DOMContentLoaded', function() {
     loadData();
     
     // Filters
-    filterType.addEventListener('change', () => {
+    filterType.addEventListener('change', function() {
       loadSources().then(() => renderTable());
     });
-    filterCategory.addEventListener('change', () => {
+    filterCategory.addEventListener('change', function() {
       loadSources().then(() => renderTable());
     });
-    filterState.addEventListener('change', () => {
+    filterState.addEventListener('change', function() {
       loadSources().then(() => renderTable());
     });
     
     let searchTimeout;
-    searchInput.addEventListener('input', () => {
+    searchInput.addEventListener('input', function() {
       clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
+      searchTimeout = setTimeout(function() {
         loadSources().then(() => renderTable());
       }, 300);
     });
     
     // Add button
-    document.getElementById('add-source-btn').addEventListener('click', () => {
+    document.getElementById('add-source-btn').addEventListener('click', function() {
       resetForm();
       modal.style.display = 'flex';
     });
     
     // Modal close
-    document.getElementById('modal-close-btn').addEventListener('click', () => {
+    document.getElementById('modal-close-btn').addEventListener('click', function() {
       modal.style.display = 'none';
       resetForm();
     });
-    document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+    document.getElementById('modal-cancel-btn').addEventListener('click', function() {
       modal.style.display = 'none';
       resetForm();
     });
-    modal.addEventListener('click', (e) => {
+    modal.addEventListener('click', function(e) {
       if (e.target === modal) {
         modal.style.display = 'none';
         resetForm();
@@ -888,8 +890,8 @@
     });
     
     // Trust score display
-    formTrustScore.addEventListener('input', () => {
-      scoreDisplay.textContent = `${formTrustScore.value}%`;
+    formTrustScore.addEventListener('input', function() {
+      scoreDisplay.textContent = formTrustScore.value + '%';
     });
     
     // Toggle state field
