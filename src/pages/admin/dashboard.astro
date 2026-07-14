@@ -1,6 +1,6 @@
 ---
 // ============================================
-// ADMIN DASHBOARD - Trendlin (Complete)
+// ADMIN DASHBOARD - Trendlin (Premium Design)
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
@@ -120,273 +120,276 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
 <AdminLayout title="Dashboard - Trendlin">
   
-  <!-- Welcome Section -->
-  <div class="mb-8">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <!-- ============================================ -->
+  <!-- WELCOME SECTION -->
+  <!-- ============================================ -->
+  <div class="dashboard-hero">
+    <div class="dashboard-hero-content">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
-          👋 Welcome back!
+        <div class="dashboard-greeting">
+          <span class="greeting-emoji">👋</span>
+          <span>Welcome back!</span>
+        </div>
+        <h1 class="dashboard-title">
+          Your Content Dashboard
         </h1>
-        <p class="text-sm text-gray-500 mt-1">
-          You have <strong class="text-gray-700">{totalContent}</strong> items across your content ecosystem
+        <p class="dashboard-subtitle">
+          You have <strong>{totalContent}</strong> items across your content ecosystem
         </p>
       </div>
-      <div class="text-sm text-gray-400">
-        Last updated: {new Date().toLocaleString()}
+      <div class="dashboard-time">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>{new Date().toLocaleString()}</span>
       </div>
     </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- 5 FEATURE CARDS - Consistent Design -->
+  <!-- 5 STATS CARDS - Premium Design -->
   <!-- ============================================ -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+  <div class="stats-grid">
     
-    <!-- 1. POSTS CARD -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-      <div class="p-5 flex-1">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
-              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
-              </svg>
-            </div>
-            <span class="text-sm font-semibold text-gray-700">Posts</span>
+    <!-- 1. POSTS -->
+    <div class="stat-card stat-card-blue">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+            </svg>
           </div>
-          <span class="text-2xl font-bold text-blue-600">{totalPosts}</span>
+          <div>
+            <div class="stat-label">Total Posts</div>
+            <div class="stat-value">{totalPosts}</div>
+          </div>
         </div>
-        <div class="flex items-center gap-3 text-xs text-gray-500">
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-            {publishedPosts} published
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {publishedPosts} Published
           </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
-            {draftPosts} drafts
+          <span class="stat-badge stat-badge-yellow">
+            <span class="stat-dot stat-dot-yellow"></span>
+            {draftPosts} Drafts
           </span>
         </div>
       </div>
-      <div class="border-t border-gray-100 flex divide-x divide-gray-100">
-        <a href="/admin/posts" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-          View All
-        </a>
-        <a href="/admin/new" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors">
-          + New Post
-        </a>
+      <div class="stat-actions">
+        <a href="/admin/posts" class="stat-action-link">View All →</a>
+        <a href="/admin/new" class="stat-action-btn stat-action-btn-blue">+ New Post</a>
       </div>
     </div>
 
-    <!-- 2. PRODUCTS CARD -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-      <div class="p-5 flex-1">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600 flex-shrink-0">
-              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-              </svg>
-            </div>
-            <span class="text-sm font-semibold text-gray-700">Products</span>
+    <!-- 2. PRODUCTS -->
+    <div class="stat-card stat-card-orange">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
           </div>
-          <span class="text-2xl font-bold text-orange-600">{totalProducts}</span>
+          <div>
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value">{totalProducts}</div>
+          </div>
         </div>
-        <div class="flex items-center gap-3 text-xs text-gray-500">
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-            {productsInStock} in stock
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {productsInStock} In Stock
           </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-            {totalResources} resources
+          <span class="stat-badge stat-badge-purple">
+            <span class="stat-dot stat-dot-purple"></span>
+            {totalResources} Resources
           </span>
         </div>
       </div>
-      <div class="border-t border-gray-100 flex divide-x divide-gray-100">
-        <a href="/admin/products" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-orange-600 hover:bg-orange-50 transition-colors">
-          View All
-        </a>
-        <a href="/admin/products/new" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 transition-colors">
-          + New Product
-        </a>
+      <div class="stat-actions">
+        <a href="/admin/products" class="stat-action-link">View All →</a>
+        <a href="/admin/products/new" class="stat-action-btn stat-action-btn-orange">+ New Product</a>
       </div>
     </div>
 
-    <!-- 3. MEDIA CARD -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-      <div class="p-5 flex-1">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center text-green-600 flex-shrink-0">
-              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            <span class="text-sm font-semibold text-gray-700">Media</span>
+    <!-- 3. MEDIA -->
+    <div class="stat-card stat-card-green">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
           </div>
-          <span class="text-2xl font-bold text-green-600">{totalMedia}</span>
+          <div>
+            <div class="stat-label">Media Files</div>
+            <div class="stat-value">{totalMedia}</div>
+          </div>
         </div>
-        <div class="flex items-center gap-3 text-xs text-gray-500">
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            {totalFolders} folders
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-blue">
+            <span class="stat-dot stat-dot-blue"></span>
+            {totalFolders} Folders
           </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-            {totalMedia} files
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {totalMedia} Files
           </span>
         </div>
       </div>
-      <div class="border-t border-gray-100 flex divide-x divide-gray-100">
-        <a href="/admin/media" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-green-600 hover:bg-green-50 transition-colors">
-          View All
-        </a>
-        <a href="/admin/media" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors">
-          + Upload
-        </a>
+      <div class="stat-actions">
+        <a href="/admin/media" class="stat-action-link">View All →</a>
+        <a href="/admin/media" class="stat-action-btn stat-action-btn-green">+ Upload</a>
       </div>
     </div>
 
-    <!-- 4. TEMPLATES CARD -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-      <div class="p-5 flex-1">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0">
-              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-            </div>
-            <span class="text-sm font-semibold text-gray-700">Templates</span>
+    <!-- 4. TEMPLATES -->
+    <div class="stat-card stat-card-indigo">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
           </div>
-          <span class="text-2xl font-bold text-indigo-600">{totalTemplates}</span>
+          <div>
+            <div class="stat-label">Templates</div>
+            <div class="stat-value">{totalTemplates}</div>
+          </div>
         </div>
-        <div class="flex items-center gap-3 text-xs text-gray-500">
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-            {activeTemplates} active
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {activeTemplates} Active
           </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-            {templateUsage} uses
+          <span class="stat-badge stat-badge-orange">
+            <span class="stat-dot stat-dot-orange"></span>
+            {templateUsage} Uses
           </span>
         </div>
       </div>
-      <div class="border-t border-gray-100 flex divide-x divide-gray-100">
-        <a href="/admin/templates" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-indigo-600 hover:bg-indigo-50 transition-colors">
-          View All
-        </a>
-        <a href="/admin/templates" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors">
-          + New Template
-        </a>
+      <div class="stat-actions">
+        <a href="/admin/templates" class="stat-action-link">View All →</a>
+        <a href="/admin/templates/new" class="stat-action-btn stat-action-btn-indigo">+ New Template</a>
       </div>
     </div>
 
-    <!-- 5. SOURCES CARD -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-      <div class="p-5 flex-1">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-lg bg-cyan-100 flex items-center justify-center text-cyan-600 flex-shrink-0">
-              <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-            </div>
-            <span class="text-sm font-semibold text-gray-700">Sources</span>
+    <!-- 5. SOURCES -->
+    <div class="stat-card stat-card-cyan">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
           </div>
-          <span class="text-2xl font-bold text-cyan-600">{totalSources}</span>
+          <div>
+            <div class="stat-label">Sources</div>
+            <div class="stat-value">{totalSources}</div>
+          </div>
         </div>
-        <div class="flex items-center gap-3 text-xs text-gray-500">
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-            {totalMasterSources} universal
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-blue">
+            <span class="stat-dot stat-dot-blue"></span>
+            {totalMasterSources} Universal
           </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-            {totalStateSources} state
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {totalStateSources} State
           </span>
         </div>
       </div>
-      <div class="border-t border-gray-100 flex divide-x divide-gray-100">
-        <a href="/admin/sources" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-cyan-600 hover:bg-cyan-50 transition-colors">
-          View All
-        </a>
-        <a href="/admin/sources" class="flex-1 px-3 py-2.5 text-center text-xs font-medium text-white bg-cyan-600 hover:bg-cyan-700 transition-colors">
-          + New Source
-        </a>
+      <div class="stat-actions">
+        <a href="/admin/sources" class="stat-action-link">View All →</a>
+        <a href="/admin/sources/new" class="stat-action-btn stat-action-btn-cyan">+ New Source</a>
       </div>
     </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- RECENT POSTS TABLE -->
+  <!-- RECENT POSTS SECTION -->
   <!-- ============================================ -->
-  <div>
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+  <div class="recent-posts-section">
+    <div class="section-header">
       <div>
-        <h2 class="text-base font-semibold text-gray-900">📄 Recent Posts</h2>
-        <p class="text-sm text-gray-500">Latest articles</p>
+        <h2 class="section-title">📄 Recent Posts</h2>
+        <p class="section-subtitle">Your latest published and draft articles</p>
       </div>
-      <div class="flex items-center gap-3">
-        <div class="relative">
+      <div class="section-actions">
+        <div class="search-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
           <input 
             type="text" 
             id="searchInput"
-            placeholder="Search..." 
-            class="pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-36 sm:w-44"
+            placeholder="Search posts..." 
+            class="search-input"
           />
-          <svg class="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
         </div>
-        <a href="/admin/new" class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-1">
-          + New
+        <a href="/admin/new" class="btn-new-post">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Post
         </a>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="table-container">
       {posts.length > 0 ? (
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
+        <div class="table-scroll">
+          <table class="posts-table">
             <thead>
-              <tr class="bg-gray-50">
-                <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
-                <th class="px-4 py-2.5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Published</th>
-                <th class="px-4 py-2.5 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <tr>
+                <th>Title</th>
+                <th class="status-col">Status</th>
+                <th class="date-col">Published</th>
+                <th class="actions-col">Actions</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody>
               {posts.slice(0, 5).map((post) => (
-                <tr key={post.id} class="hover:bg-gray-50 transition-colors">
-                  <td class="px-4 py-3">
-                    <div class="font-medium text-gray-900 text-sm line-clamp-1">{post.title}</div>
+                <tr key={post.id}>
+                  <td>
+                    <div class="post-title-cell">
+                      <span class="post-title">{post.title}</span>
+                    </div>
                   </td>
-                  <td class="px-4 py-3 hidden sm:table-cell">
-                    <span class={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                      post.is_draft 
-                        ? 'bg-yellow-100 text-yellow-700' 
-                        : 'bg-green-100 text-green-700'
-                    }`}>
-                      <span class={`w-1 h-1 rounded-full ${post.is_draft ? 'bg-yellow-500' : 'bg-green-500'}`}></span>
+                  <td class="status-col">
+                    <span class={`status-badge ${post.is_draft ? 'status-draft' : 'status-published'}`}>
+                      <span class="status-dot"></span>
                       {post.is_draft ? 'Draft' : 'Published'}
                     </span>
                   </td>
-                  <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">
+                  <td class="date-col">
                     {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { 
                       month: 'short', 
                       day: 'numeric', 
                       year: 'numeric' 
                     }) : '—'}
                   </td>
-                  <td class="px-4 py-3 text-right">
-                    <div class="flex items-center justify-end gap-1">
-                      <a href={`/admin/edit/${post.id}`} class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">Edit</a>
+                  <td class="actions-col">
+                    <div class="action-buttons">
+                      <a href={`/admin/edit/${post.id}`} class="action-btn action-btn-edit">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Edit
+                      </a>
                       <button 
-                        class="delete-btn px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                        class="action-btn action-btn-delete delete-btn"
                         data-id={post.id}
                       >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
                         Delete
                       </button>
                     </div>
@@ -397,16 +400,17 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
           </table>
         </div>
       ) : (
-        <div class="py-8 text-center">
-          <p class="text-gray-500 text-sm">No posts yet</p>
-          <a href="/admin/new" class="text-blue-600 hover:text-blue-700 text-sm font-medium mt-1 inline-block">Create your first post →</a>
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <p>No posts yet</p>
+          <a href="/admin/new" class="empty-action">Create your first post →</a>
         </div>
       )}
     </div>
 
     {posts.length > 5 && (
-      <div class="mt-3 text-center">
-        <a href="/admin/posts" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+      <div class="view-all-container">
+        <a href="/admin/posts" class="view-all-link">
           View all {posts.length} posts →
         </a>
       </div>
@@ -415,9 +419,9 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
 </AdminLayout>
 
-<!-- ============================================
-DELETE FUNCTIONALITY
-============================================ -->
+<!-- ============================================ -->
+<!-- DELETE FUNCTIONALITY -->
+<!-- ============================================ -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const deleteButtons = document.querySelectorAll('.delete-btn');
@@ -432,9 +436,10 @@ DELETE FUNCTIONALITY
           return;
         }
         
-        const originalText = this.textContent;
-        this.textContent = 'Deleting...';
+        const originalText = this.innerHTML;
+        this.innerHTML = 'Deleting...';
         this.disabled = true;
+        this.classList.add('opacity-50');
         
         try {
           const response = await fetch(`/api/admin/posts/${postId}`, {
@@ -454,8 +459,9 @@ DELETE FUNCTIONALITY
         } catch (error) {
           console.error('Error:', error);
           alert('❌ Failed to delete post');
-          this.textContent = originalText;
+          this.innerHTML = originalText;
           this.disabled = false;
+          this.classList.remove('opacity-50');
         }
       });
     });
@@ -463,10 +469,618 @@ DELETE FUNCTIONALITY
 </script>
 
 <style is:global>
-  .line-clamp-1 {
+  /* ============================================
+     DASHBOARD HERO
+     ============================================ */
+  .dashboard-hero {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 16px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .dashboard-hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .dashboard-greeting {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  .greeting-emoji {
+    font-size: 1.25rem;
+  }
+
+  .dashboard-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0.25rem 0 0.125rem;
+  }
+
+  .dashboard-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .dashboard-subtitle strong {
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  .dashboard-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    background: white;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+
+  /* ============================================
+     STATS GRID
+     ============================================ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+  }
+
+  .stat-card-inner {
+    padding: 1.25rem 1.25rem 0.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .stat-card-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-card-blue .stat-icon-wrapper { background: #dbeafe; }
+  .stat-card-orange .stat-icon-wrapper { background: #ffedd5; }
+  .stat-card-green .stat-icon-wrapper { background: #d1fae5; }
+  .stat-card-indigo .stat-icon-wrapper { background: #e0e7ff; }
+  .stat-card-cyan .stat-icon-wrapper { background: #cffafe; }
+
+  .stat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .stat-card-blue .stat-icon { color: #2563eb; }
+  .stat-card-orange .stat-icon { color: #ea580c; }
+  .stat-card-green .stat-icon { color: #16a34a; }
+  .stat-card-indigo .stat-icon { color: #4f46e5; }
+  .stat-card-cyan .stat-icon { color: #0891b2; }
+
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+  }
+
+  .stat-card-blue .stat-value { color: #2563eb; }
+  .stat-card-orange .stat-value { color: #ea580c; }
+  .stat-card-green .stat-value { color: #16a34a; }
+  .stat-card-indigo .stat-value { color: #4f46e5; }
+  .stat-card-cyan .stat-value { color: #0891b2; }
+
+  .stat-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .stat-badge-green { background: #dcfce7; color: #166534; }
+  .stat-badge-yellow { background: #fef3c7; color: #92400e; }
+  .stat-badge-blue { background: #dbeafe; color: #1e40af; }
+  .stat-badge-purple { background: #ede9fe; color: #5b21b6; }
+  .stat-badge-orange { background: #ffedd5; color: #9a3412; }
+
+  .stat-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .stat-dot-green { background: #22c55e; }
+  .stat-dot-yellow { background: #eab308; }
+  .stat-dot-blue { background: #3b82f6; }
+  .stat-dot-purple { background: #8b5cf6; }
+  .stat-dot-orange { background: #f97316; }
+
+  .stat-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+    gap: 0.5rem;
+  }
+
+  .stat-action-link {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .stat-action-link:hover {
+    color: #0f172a;
+  }
+
+  .stat-action-btn {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    color: white;
+  }
+
+  .stat-action-btn-blue { background: #2563eb; }
+  .stat-action-btn-blue:hover { background: #1d4ed8; }
+
+  .stat-action-btn-orange { background: #ea580c; }
+  .stat-action-btn-orange:hover { background: #c2410c; }
+
+  .stat-action-btn-green { background: #16a34a; }
+  .stat-action-btn-green:hover { background: #15803d; }
+
+  .stat-action-btn-indigo { background: #4f46e5; }
+  .stat-action-btn-indigo:hover { background: #4338ca; }
+
+  .stat-action-btn-cyan { background: #0891b2; }
+  .stat-action-btn-cyan:hover { background: #0e7490; }
+
+  .stat-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  /* ============================================
+     RECENT POSTS
+     ============================================ */
+  .recent-posts-section {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .section-subtitle {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0.125rem 0 0;
+  }
+
+  .section-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .search-wrapper {
+    position: relative;
+  }
+
+  .search-wrapper .search-icon {
+    position: absolute;
+    left: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .search-input {
+    padding: 0.375rem 0.75rem 0.375rem 2rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    outline: none;
+    transition: all 0.2s;
+    width: 160px;
+    background: #fafbfc;
+  }
+
+  .search-input:focus {
+    border-color: #3b82f6;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    width: 200px;
+  }
+
+  .btn-new-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 1rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-new-post:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .posts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .posts-table thead {
+    background: #f8fafc;
+  }
+
+  .posts-table th {
+    padding: 0.625rem 1.25rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .posts-table td {
+    padding: 0.625rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .posts-table tbody tr {
+    transition: background 0.15s;
+  }
+
+  .posts-table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  .status-col {
+    width: 110px;
+  }
+
+  .date-col {
+    width: 120px;
+  }
+
+  .actions-col {
+    width: 150px;
+    text-align: right;
+  }
+
+  .post-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .post-title {
+    font-weight: 500;
+    color: #0f172a;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .status-published {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-draft {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-published .status-dot { background: #22c55e; }
+  .status-draft .status-dot { background: #eab308; }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .action-btn-edit {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .action-btn-edit:hover {
+    background: #c7d2fe;
+  }
+
+  .action-btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .action-btn-delete:hover {
+    background: #fecaca;
+  }
+
+  /* ============================================
+     EMPTY STATE
+     ============================================ */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .empty-state p {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .empty-action {
+    color: #3b82f6;
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+
+  .empty-action:hover {
+    text-decoration: underline;
+  }
+
+  /* ============================================
+     VIEW ALL
+     ============================================ */
+  .view-all-container {
+    text-align: center;
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+  }
+
+  .view-all-link {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #3b82f6;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .view-all-link:hover {
+    color: #1d4ed8;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-hero {
+      padding: 1.25rem;
+    }
+
+    .dashboard-hero-content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .dashboard-title {
+      font-size: 1.25rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .section-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .section-actions {
+      flex-wrap: wrap;
+    }
+
+    .search-input {
+      width: 100%;
+    }
+
+    .search-input:focus {
+      width: 100%;
+    }
+
+    .posts-table {
+      font-size: 0.75rem;
+    }
+
+    .posts-table th,
+    .posts-table td {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .status-col {
+      width: 80px;
+    }
+
+    .date-col {
+      width: 90px;
+    }
+
+    .actions-col {
+      width: 120px;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-card-inner {
+      padding: 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+    }
+
+    .dashboard-time {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.625rem;
+    }
   }
 </style>
