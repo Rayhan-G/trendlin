@@ -8,15 +8,24 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <div class="page-header">
       <div>
         <h1>📚 Reliable Sources Management</h1>
-        <p class="text-muted">Manage trusted websites across 8 categories with 10-20 subcategories each</p>
+        <p class="text-muted">Manage trusted websites across categories with 10-20 subcategories each</p>
       </div>
-      <button class="btn-add" id="add-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        Add Website
-      </button>
+      <div class="header-actions">
+        <button class="btn-add btn-add-category" id="add-category-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Category
+        </button>
+        <button class="btn-add" id="add-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Website
+        </button>
+      </div>
     </div>
 
     <!-- Stats -->
@@ -43,6 +52,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </div>
       </div>
       <div class="stat-card">
+        <div class="stat-icon">📁</div>
+        <div>
+          <div class="stat-value" id="subsubcategory-count">0</div>
+          <div class="stat-label">Sub-Subcategories</div>
+        </div>
+      </div>
+      <div class="stat-card">
         <div class="stat-icon">⭐</div>
         <div>
           <div class="stat-value" id="featured-count">0</div>
@@ -51,72 +67,156 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="filters-bar">
-      <div class="filters">
-        <select id="filter-category">
-          <option value="">All Categories</option>
-        </select>
-        <select id="filter-subcategory">
-          <option value="">All Subcategories</option>
-        </select>
-        <select id="filter-score">
-          <option value="">All Scores</option>
-          <option value="10">⭐ 10 - Perfect</option>
-          <option value="9">9 - Excellent</option>
-          <option value="8">8 - Great</option>
-          <option value="7">7 - Good</option>
-          <option value="6">6 - Decent</option>
-          <option value="5">5 - Average</option>
-        </select>
-        <div class="search-box">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-          <input type="text" id="search-input" placeholder="Search websites..." />
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="websites">Websites</button>
+      <button class="tab" data-tab="categories">Categories</button>
+      <button class="tab" data-tab="subcategories">Subcategories</button>
+      <button class="tab" data-tab="subsubcategories">Sub-Subcategories</button>
+    </div>
+
+    <!-- Tab Content: Websites -->
+    <div id="tab-websites" class="tab-content active">
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="filters">
+          <select id="filter-category">
+            <option value="">All Categories</option>
+          </select>
+          <select id="filter-subcategory">
+            <option value="">All Subcategories</option>
+          </select>
+          <select id="filter-subsubcategory">
+            <option value="">All Sub-Subcategories</option>
+          </select>
+          <select id="filter-score">
+            <option value="">All Scores</option>
+            <option value="10">⭐ 10 - Perfect</option>
+            <option value="9">9 - Excellent</option>
+            <option value="8">8 - Great</option>
+            <option value="7">7 - Good</option>
+            <option value="6">6 - Decent</option>
+            <option value="5">5 - Average</option>
+          </select>
+          <div class="search-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-input" placeholder="Search websites..." />
+          </div>
         </div>
+        <button class="btn-refresh" onclick="loadData()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
       </div>
-      <button class="btn-refresh" onclick="loadData()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-        </svg>
-      </button>
+
+      <!-- Loading -->
+      <div id="loading-state" class="loading">
+        <div class="spinner"></div>
+        <p>Loading websites...</p>
+      </div>
+
+      <!-- Table -->
+      <div id="table-wrap" style="display:none;">
+        <table class="sources-table">
+          <thead>
+            <tr>
+              <th>Website</th>
+              <th>Category</th>
+              <th>Subcategory</th>
+              <th>Sub-Subcategory</th>
+              <th>Score</th>
+              <th>Country</th>
+              <th>Status</th>
+              <th class="actions-header">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+      <!-- Empty -->
+      <div id="empty-state" style="display:none;" class="empty">
+        <div class="empty-icon">📭</div>
+        <h3>No websites found</h3>
+        <p>Try adjusting your filters or add a new website</p>
+      </div>
     </div>
 
-    <!-- Loading -->
-    <div id="loading-state" class="loading">
-      <div class="spinner"></div>
-      <p>Loading websites...</p>
-    </div>
-
-    <!-- Table -->
-    <div id="table-wrap" style="display:none;">
+    <!-- Tab Content: Categories -->
+    <div id="tab-categories" class="tab-content">
+      <div class="table-toolbar">
+        <button class="btn-sm btn-sm-add" onclick="openCategoryModal()">+ Add Category</button>
+      </div>
       <table class="sources-table">
         <thead>
           <tr>
-            <th>Website</th>
-            <th>Category</th>
-            <th>Subcategory</th>
-            <th>Score</th>
-            <th>Country</th>
+            <th>Icon</th>
+            <th>Name</th>
+            <th>Slug</th>
+            <th>Description</th>
+            <th>Subcategories</th>
             <th>Status</th>
             <th class="actions-header">Actions</th>
           </tr>
         </thead>
-        <tbody id="table-body"></tbody>
+        <tbody id="categories-table-body"></tbody>
       </table>
     </div>
 
-    <!-- Empty -->
-    <div id="empty-state" style="display:none;" class="empty">
-      <div class="empty-icon">📭</div>
-      <h3>No websites found</h3>
-      <p>Try adjusting your filters or add a new website</p>
+    <!-- Tab Content: Subcategories -->
+    <div id="tab-subcategories" class="tab-content">
+      <div class="table-toolbar">
+        <select id="subcat-filter-category" class="filter-select">
+          <option value="">Filter by Category</option>
+        </select>
+        <button class="btn-sm btn-sm-add" onclick="openSubcategoryModal()">+ Add Subcategory</button>
+      </div>
+      <table class="sources-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Slug</th>
+            <th>Category</th>
+            <th>Sub-Subcategories</th>
+            <th>Websites</th>
+            <th>Status</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="subcategories-table-body"></tbody>
+      </table>
     </div>
 
-    <!-- Modal -->
+    <!-- Tab Content: Sub-Subcategories -->
+    <div id="tab-subsubcategories" class="tab-content">
+      <div class="table-toolbar">
+        <select id="subsubcat-filter-subcategory" class="filter-select">
+          <option value="">Filter by Subcategory</option>
+        </select>
+        <button class="btn-sm btn-sm-add" onclick="openSubSubcategoryModal()">+ Add Sub-Subcategory</button>
+      </div>
+      <table class="sources-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Slug</th>
+            <th>Subcategory</th>
+            <th>Category</th>
+            <th>Websites</th>
+            <th>Status</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="subsubcategories-table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Website Modal -->
     <div id="source-modal" class="modal-overlay" style="display:none;">
       <div class="modal">
         <div class="modal-header">
@@ -137,6 +237,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <label>Subcategory *</label>
             <select id="form-subcategory" required>
               <option value="">Select a subcategory</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Sub-Subcategory</label>
+            <select id="form-subsubcategory">
+              <option value="">None (optional)</option>
             </select>
           </div>
 
@@ -204,6 +311,166 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       </div>
     </div>
 
+    <!-- Category Modal -->
+    <div id="category-modal" class="modal-overlay" style="display:none;">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="category-modal-title">Add Category</h2>
+          <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
+        </div>
+        <form id="category-form">
+          <input type="hidden" id="form-category-edit-id" />
+          
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="form-category-name" placeholder="Enter category name..." required />
+          </div>
+
+          <div class="form-group">
+            <label>Slug *</label>
+            <input type="text" id="form-category-slug" placeholder="category-slug" required />
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="form-category-desc" rows="2" placeholder="Brief description..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Icon</label>
+            <input type="text" id="form-category-icon" placeholder="📚" value="📚" />
+          </div>
+
+          <div class="form-group">
+            <label>Display Order</label>
+            <input type="number" id="form-category-order" placeholder="0" value="0" />
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="form-category-active" checked />
+              Active
+            </label>
+          </div>
+
+          <div id="category-form-message" class="form-message" style="display:none;"></div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+            <button type="submit" class="btn-primary">Save Category</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Subcategory Modal -->
+    <div id="subcategory-modal" class="modal-overlay" style="display:none;">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="subcategory-modal-title">Add Subcategory</h2>
+          <button class="modal-close" onclick="closeSubcategoryModal()">&times;</button>
+        </div>
+        <form id="subcategory-form">
+          <input type="hidden" id="form-subcategory-edit-id" />
+          
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="form-subcategory-category" required>
+              <option value="">Select a category</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="form-subcategory-name" placeholder="Enter subcategory name..." required />
+          </div>
+
+          <div class="form-group">
+            <label>Slug *</label>
+            <input type="text" id="form-subcategory-slug" placeholder="subcategory-slug" required />
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="form-subcategory-desc" rows="2" placeholder="Brief description..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Display Order</label>
+            <input type="number" id="form-subcategory-order" placeholder="0" value="0" />
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="form-subcategory-active" checked />
+              Active
+            </label>
+          </div>
+
+          <div id="subcategory-form-message" class="form-message" style="display:none;"></div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeSubcategoryModal()">Cancel</button>
+            <button type="submit" class="btn-primary">Save Subcategory</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Sub-Subcategory Modal -->
+    <div id="subsubcategory-modal" class="modal-overlay" style="display:none;">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="subsubcategory-modal-title">Add Sub-Subcategory</h2>
+          <button class="modal-close" onclick="closeSubSubcategoryModal()">&times;</button>
+        </div>
+        <form id="subsubcategory-form">
+          <input type="hidden" id="form-subsubcategory-edit-id" />
+          
+          <div class="form-group">
+            <label>Subcategory *</label>
+            <select id="form-subsubcategory-subcategory" required>
+              <option value="">Select a subcategory</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="form-subsubcategory-name" placeholder="Enter sub-subcategory name..." required />
+          </div>
+
+          <div class="form-group">
+            <label>Slug *</label>
+            <input type="text" id="form-subsubcategory-slug" placeholder="sub-subcategory-slug" required />
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="form-subsubcategory-desc" rows="2" placeholder="Brief description..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Display Order</label>
+            <input type="number" id="form-subsubcategory-order" placeholder="0" value="0" />
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="form-subsubcategory-active" checked />
+              Active
+            </label>
+          </div>
+
+          <div id="subsubcategory-form-message" class="form-message" style="display:none;"></div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" onclick="closeSubSubcategoryModal()">Cancel</button>
+            <button type="submit" class="btn-primary">Save Sub-Subcategory</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Toast -->
     <div id="toast" class="toast"></div>
   </div>
@@ -234,6 +501,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.875rem;
   }
 
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
   .btn-add {
     display: flex;
     align-items: center;
@@ -255,9 +527,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
   }
 
+  .btn-add-category {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  }
+
+  .btn-add-category:hover {
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  }
+
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
@@ -293,6 +574,44 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     letter-spacing: 0.05em;
   }
 
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+  }
+
+  .tab {
+    padding: 0.5rem 1.25rem;
+    border: none;
+    background: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #64748b;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .tab:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  .tab.active {
+    color: #3b82f6;
+    background: #eff6ff;
+  }
+
+  .tab-content {
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
   .filters-bar {
     display: flex;
     gap: 0.75rem;
@@ -307,7 +626,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     flex: 1;
   }
 
-  .filters select {
+  .filters select,
+  .filter-select {
     padding: 0.5rem 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
@@ -320,7 +640,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     min-width: 140px;
   }
 
-  .filters select:focus {
+  .filters select:focus,
+  .filter-select:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
@@ -369,6 +690,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .btn-refresh:hover {
     background: #f1f5f9;
     transform: rotate(45deg);
+  }
+
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
   .loading {
@@ -468,6 +798,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     padding: 0.25rem 0.625rem;
     background: #dbeafe;
     color: #1e40af;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-subsubcategory {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: #fce7f3;
+    color: #9d174d;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
@@ -582,6 +922,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   .btn-sm-verify:hover {
     background: #a7f3d0;
+  }
+
+  .btn-sm-add {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .btn-sm-add:hover {
+    background: #bfdbfe;
   }
 
   .empty {
@@ -829,6 +1178,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       gap: 1rem;
     }
 
+    .header-actions {
+      flex-direction: column;
+    }
+
     .filters {
       flex-direction: column;
     }
@@ -860,6 +1213,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     .sources-table td {
       padding: 0.5rem;
     }
+
+    .tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+    }
+
+    .table-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 </style>
 
@@ -870,7 +1233,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   let websites = [];
   let categories = [];
   let subcategories = [];
+  let subsubcategories = [];
   let editingId = null;
+  let currentTab = 'websites';
 
   // ============================================
   // DOM REFS
@@ -880,30 +1245,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   const tableWrap = $('table-wrap');
   const emptyEl = $('empty-state');
   const tableBody = $('table-body');
-  const modal = $('source-modal');
   const toast = $('toast');
-
-  const filterCategory = $('filter-category');
-  const filterSubcategory = $('filter-subcategory');
-  const filterScore = $('filter-score');
-  const searchInput = $('search-input');
-
-  const form = $('source-form');
-  const fCategory = $('form-category');
-  const fSubcategory = $('form-subcategory');
-  const fName = $('form-name');
-  const fUrl = $('form-url');
-  const fDesc = $('form-desc');
-  const fNotes = $('form-notes');
-  const fLogo = $('form-logo');
-  const fCountry = $('form-country');
-  const fActive = $('form-active');
-  const fFeatured = $('form-featured');
-  const fScore = $('form-score');
-  const fScoreLabel = $('score-label');
-  const fEditId = $('form-edit-id');
-  const modalTitle = $('modal-title');
-  const modalSubmit = $('modal-submit');
 
   // ============================================
   // TOAST
@@ -917,6 +1259,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ============================================
+  // TABS
+  // ============================================
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const tabName = this.dataset.tab;
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      currentTab = tabName;
+      if (tabName === 'categories') renderCategories();
+      else if (tabName === 'subcategories') renderSubcategories();
+      else if (tabName === 'subsubcategories') renderSubSubcategories();
+    });
+  });
+
+  // ============================================
   // LOAD DATA
   // ============================================
   function loadData() {
@@ -924,12 +1283,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     tableWrap.style.display = 'none';
     emptyEl.style.display = 'none';
     
-    Promise.all([loadWebsites(), loadCategories(), loadSubcategories()])
+    Promise.all([loadWebsites(), loadCategories(), loadSubcategories(), loadSubSubcategories()])
       .then(() => {
         loadingEl.style.display = 'none';
         renderTable();
         updateStats();
-        populateSubcategoryFilter();
+        populateAllSelects();
+        renderCategories();
+        renderSubcategories();
+        renderSubSubcategories();
       })
       .catch((err) => {
         console.error('Failed to load data:', err);
@@ -940,12 +1302,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   function loadWebsites() {
     const params = new URLSearchParams();
-    if (filterCategory.value) params.append('category', filterCategory.value);
-    if (filterSubcategory.value) params.append('subcategory', filterSubcategory.value);
-    if (filterScore.value) params.append('min_score', filterScore.value);
-    if (searchInput.value) params.append('search', searchInput.value);
+    if ($('filter-category').value) params.append('category', $('filter-category').value);
+    if ($('filter-subcategory').value) params.append('subcategory', $('filter-subcategory').value);
+    if ($('filter-subsubcategory').value) params.append('subsubcategory', $('filter-subsubcategory').value);
+    if ($('filter-score').value) params.append('min_score', $('filter-score').value);
+    if ($('search-input').value) params.append('search', $('search-input').value);
     
-    return fetch('/api/reliable/websites?' + params.toString())
+    return fetch('/api/admin/reliable/websites?' + params.toString())
       .then(r => r.json())
       .then(data => {
         if (data.success) {
@@ -962,19 +1325,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function loadCategories() {
-    return fetch('/api/reliable/categories')
+    return fetch('/api/admin/reliable/categories')
       .then(r => r.json())
       .then(data => {
         if (data.success) {
           categories = data.data || [];
-          populateCategorySelects();
         }
       })
       .catch(err => console.error('Error loading categories:', err));
   }
 
   function loadSubcategories() {
-    return fetch('/api/reliable/subcategories')
+    return fetch('/api/admin/reliable/subcategories')
       .then(r => r.json())
       .then(data => {
         if (data.success) {
@@ -984,13 +1346,34 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .catch(err => console.error('Error loading subcategories:', err));
   }
 
+  function loadSubSubcategories() {
+    return fetch('/api/admin/reliable/subsubcategories')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          subsubcategories = data.data || [];
+        }
+      })
+      .catch(err => console.error('Error loading sub-subcategories:', err));
+  }
+
   // ============================================
   // POPULATE SELECTS
   // ============================================
+  function populateAllSelects() {
+    populateCategorySelects();
+    populateSubcategoryFilter();
+    populateSubSubcategoryFilter();
+    populateModalSelects();
+  }
+
   function populateCategorySelects() {
-    [filterCategory, fCategory].forEach(sel => {
+    const selects = ['filter-category', 'form-category', 'subcat-filter-category', 'form-subcategory-category'];
+    selects.forEach(id => {
+      const sel = $(id);
+      if (!sel) return;
       const val = sel.value;
-      sel.innerHTML = '<option value="">All Categories</option>';
+      sel.innerHTML = '<option value="">Select Category</option>';
       categories.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
@@ -1002,35 +1385,120 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function populateSubcategoryFilter() {
-    const val = filterSubcategory.value;
-    filterSubcategory.innerHTML = '<option value="">All Subcategories</option>';
+    const sel = $('filter-subcategory');
+    const val = sel.value;
+    sel.innerHTML = '<option value="">All Subcategories</option>';
     
     let filtered = subcategories;
-    if (filterCategory.value) {
-      filtered = subcategories.filter(sc => sc.category_id === parseInt(filterCategory.value));
+    if ($('filter-category').value) {
+      filtered = subcategories.filter(sc => sc.category_id === parseInt($('filter-category').value));
     }
     
     filtered.forEach(sc => {
       const opt = document.createElement('option');
       opt.value = sc.id;
       opt.textContent = sc.name;
-      filterSubcategory.appendChild(opt);
+      sel.appendChild(opt);
     });
-    filterSubcategory.value = val;
+    sel.value = val;
+  }
+
+  function populateSubSubcategoryFilter() {
+    const sel = $('filter-subsubcategory');
+    const val = sel.value;
+    sel.innerHTML = '<option value="">All Sub-Subcategories</option>';
+    
+    let filtered = subsubcategories;
+    if ($('filter-subcategory').value) {
+      filtered = subsubcategories.filter(ssc => ssc.subcategory_id === parseInt($('filter-subcategory').value));
+    } else if ($('filter-category').value) {
+      const subcatIds = subcategories.filter(sc => sc.category_id === parseInt($('filter-category').value)).map(sc => sc.id);
+      filtered = subsubcategories.filter(ssc => subcatIds.includes(ssc.subcategory_id));
+    }
+    
+    filtered.forEach(ssc => {
+      const opt = document.createElement('option');
+      opt.value = ssc.id;
+      opt.textContent = ssc.name;
+      sel.appendChild(opt);
+    });
+    sel.value = val;
+  }
+
+  function populateModalSelects() {
+    // Website modal - category
+    const fCat = $('form-category');
+    if (fCat) {
+      const val = fCat.value;
+      fCat.innerHTML = '<option value="">Select a category</option>';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = (c.icon || '📚') + ' ' + c.name;
+        fCat.appendChild(opt);
+      });
+      fCat.value = val;
+    }
+
+    // Subcategory modal - category
+    const fSubCat = $('form-subcategory-category');
+    if (fSubCat) {
+      const val = fSubCat.value;
+      fSubCat.innerHTML = '<option value="">Select a category</option>';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = (c.icon || '📚') + ' ' + c.name;
+        fSubCat.appendChild(opt);
+      });
+      fSubCat.value = val;
+    }
+
+    // Sub-subcategory modal - subcategory
+    const fSubSubCat = $('form-subsubcategory-subcategory');
+    if (fSubSubCat) {
+      const val = fSubSubCat.value;
+      fSubSubCat.innerHTML = '<option value="">Select a subcategory</option>';
+      subcategories.forEach(sc => {
+        const opt = document.createElement('option');
+        opt.value = sc.id;
+        const cat = categories.find(c => c.id === sc.category_id);
+        opt.textContent = (cat ? cat.name + ' → ' : '') + sc.name;
+        fSubSubCat.appendChild(opt);
+      });
+      fSubSubCat.value = val;
+    }
   }
 
   function populateSubcategoryForm(categoryId) {
-    const val = fSubcategory.value;
-    fSubcategory.innerHTML = '<option value="">Select a subcategory</option>';
+    const sel = $('form-subcategory');
+    const val = sel.value;
+    sel.innerHTML = '<option value="">Select a subcategory</option>';
     
     const filtered = subcategories.filter(sc => sc.category_id === parseInt(categoryId));
     filtered.forEach(sc => {
       const opt = document.createElement('option');
       opt.value = sc.id;
       opt.textContent = sc.name;
-      fSubcategory.appendChild(opt);
+      sel.appendChild(opt);
     });
-    fSubcategory.value = val;
+    sel.value = val;
+    populateSubSubcategoryForm(sel.value);
+  }
+
+  function populateSubSubcategoryForm(subcategoryId) {
+    const sel = $('form-subsubcategory');
+    const val = sel.value;
+    sel.innerHTML = '<option value="">None (optional)</option>';
+    
+    const filtered = subsubcategories.filter(ssc => ssc.subcategory_id === parseInt(subcategoryId));
+    filtered.forEach(ssc => {
+      const opt = document.createElement('option');
+      opt.value = ssc.id;
+      opt.textContent = ssc.name;
+      sel.appendChild(opt);
+    });
+    sel.value = val;
   }
 
   // ============================================
@@ -1043,11 +1511,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     $('total-count').textContent = total;
     $('category-count').textContent = categories.length;
     $('subcategory-count').textContent = subcategories.length;
+    $('subsubcategory-count').textContent = subsubcategories.length;
     $('featured-count').textContent = featured;
   }
 
   // ============================================
-  // RENDER TABLE
+  // RENDER TABLE - WEBSITES
   // ============================================
   function renderTable() {
     if (!websites || websites.length === 0) {
@@ -1080,6 +1549,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           </td>
           <td><span class="badge-category">${escapeHtml(w.category_name || 'Uncategorized')}</span></td>
           <td><span class="badge-subcategory">${escapeHtml(w.subcategory_name || '')}</span></td>
+          <td>${w.subsubcategory_name ? `<span class="badge-subsubcategory">${escapeHtml(w.subsubcategory_name)}</span>` : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>'}</td>
           <td><span class="badge-score ${scoreClass}">${score}/10</span></td>
           <td><span class="badge-country">${escapeHtml(w.country || 'USA')}</span></td>
           <td>
@@ -1099,6 +1569,119 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     tableBody.innerHTML = html;
   }
 
+  // ============================================
+  // RENDER CATEGORIES
+  // ============================================
+  function renderCategories() {
+    const tbody = $('categories-table-body');
+    if (!categories || categories.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No categories found</td></tr>';
+      return;
+    }
+    
+    let html = '';
+    categories.forEach(c => {
+      html += `
+        <tr>
+          <td style="font-size:1.5rem;">${c.icon || '📚'}</td>
+          <td><strong>${escapeHtml(c.name)}</strong></td>
+          <td><code>${escapeHtml(c.slug)}</code></td>
+          <td>${escapeHtml(c.description || '')}</td>
+          <td><span class="badge-category">${c.subcategory_count || 0}</span></td>
+          <td><span class="badge-status ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-sm btn-sm-edit" onclick="editCategory(${c.id})">✏️</button>
+              <button class="btn-sm btn-sm-delete" onclick="deleteCategory(${c.id})">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  // ============================================
+  // RENDER SUBCATEGORIES
+  // ============================================
+  function renderSubcategories() {
+    const tbody = $('subcategories-table-body');
+    const filterCat = $('subcat-filter-category').value;
+    
+    let filtered = subcategories;
+    if (filterCat) {
+      filtered = subcategories.filter(sc => sc.category_id === parseInt(filterCat));
+    }
+    
+    if (!filtered || filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No subcategories found</td></tr>';
+      return;
+    }
+    
+    let html = '';
+    filtered.forEach(sc => {
+      const cat = categories.find(c => c.id === sc.category_id);
+      html += `
+        <tr>
+          <td><strong>${escapeHtml(sc.name)}</strong></td>
+          <td><code>${escapeHtml(sc.slug)}</code></td>
+          <td><span class="badge-category">${escapeHtml(cat ? cat.name : 'Unknown')}</span></td>
+          <td><span class="badge-subcategory">${sc.subsubcategory_count || 0}</span></td>
+          <td><span class="badge-subcategory">${sc.website_count || 0}</span></td>
+          <td><span class="badge-status ${sc.is_active ? 'active' : 'inactive'}">${sc.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-sm btn-sm-edit" onclick="editSubcategory(${sc.id})">✏️</button>
+              <button class="btn-sm btn-sm-delete" onclick="deleteSubcategory(${sc.id})">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  // ============================================
+  // RENDER SUB-SUBCATEGORIES
+  // ============================================
+  function renderSubSubcategories() {
+    const tbody = $('subsubcategories-table-body');
+    const filterSub = $('subsubcat-filter-subcategory').value;
+    
+    let filtered = subsubcategories;
+    if (filterSub) {
+      filtered = subsubcategories.filter(ssc => ssc.subcategory_id === parseInt(filterSub));
+    }
+    
+    if (!filtered || filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty">No sub-subcategories found</td></tr>';
+      return;
+    }
+    
+    let html = '';
+    filtered.forEach(ssc => {
+      const subcat = subcategories.find(sc => sc.id === ssc.subcategory_id);
+      const cat = categories.find(c => c.id === (subcat ? subcat.category_id : null));
+      html += `
+        <tr>
+          <td><strong>${escapeHtml(ssc.name)}</strong></td>
+          <td><code>${escapeHtml(ssc.slug)}</code></td>
+          <td><span class="badge-subcategory">${escapeHtml(subcat ? subcat.name : 'Unknown')}</span></td>
+          <td><span class="badge-category">${escapeHtml(cat ? cat.name : 'Unknown')}</span></td>
+          <td><span class="badge-subcategory">${ssc.website_count || 0}</span></td>
+          <td><span class="badge-status ${ssc.is_active ? 'active' : 'inactive'}">${ssc.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-sm btn-sm-edit" onclick="editSubSubcategory(${ssc.id})">✏️</button>
+              <button class="btn-sm btn-sm-delete" onclick="deleteSubSubcategory(${ssc.id})">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
   function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -1107,61 +1690,85 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ============================================
-  // ADD / EDIT
+  // WEBSITE CRUD
   // ============================================
-  function openModal(data = null) {
+  function openWebsiteModal(data = null) {
+    const form = $('source-form');
     form.reset();
     editingId = null;
-    fEditId.value = '';
+    $('form-edit-id').value = '';
     $('form-message').style.display = 'none';
     
     if (data) {
       editingId = data.id;
-      modalTitle.textContent = 'Edit Website';
-      modalSubmit.textContent = 'Update Website';
-      fCategory.value = data.category_id || '';
+      $('modal-title').textContent = 'Edit Website';
+      $('modal-submit').textContent = 'Update Website';
+      $('form-category').value = data.category_id || '';
       populateSubcategoryForm(data.category_id);
-      fSubcategory.value = data.subcategory_id || '';
-      fName.value = data.name || '';
-      fUrl.value = data.url || '';
-      fDesc.value = data.description || '';
-      fNotes.value = data.notes || '';
-      fLogo.value = data.logo_url || '';
-      fCountry.value = data.country || 'USA';
-      fActive.checked = data.is_active === 1;
-      fFeatured.checked = data.is_featured === 1;
-      fScore.value = data.reliability_score || 5;
-      fScoreLabel.textContent = (data.reliability_score || 5) + '/10';
-      fEditId.value = data.id;
+      $('form-subcategory').value = data.subcategory_id || '';
+      populateSubSubcategoryForm(data.subcategory_id);
+      $('form-subsubcategory').value = data.subsubcategory_id || '';
+      $('form-name').value = data.name || '';
+      $('form-url').value = data.url || '';
+      $('form-desc').value = data.description || '';
+      $('form-notes').value = data.notes || '';
+      $('form-logo').value = data.logo_url || '';
+      $('form-country').value = data.country || 'USA';
+      $('form-active').checked = data.is_active === 1;
+      $('form-featured').checked = data.is_featured === 1;
+      $('form-score').value = data.reliability_score || 5;
+      $('score-label').textContent = (data.reliability_score || 5) + '/10';
+      $('form-edit-id').value = data.id;
     } else {
-      modalTitle.textContent = 'Add Website';
-      modalSubmit.textContent = 'Save Website';
-      fActive.checked = true;
-      fFeatured.checked = false;
-      fCountry.value = 'USA';
-      fScore.value = 5;
-      fScoreLabel.textContent = '5/10';
+      $('modal-title').textContent = 'Add Website';
+      $('modal-submit').textContent = 'Save Website';
+      $('form-active').checked = true;
+      $('form-featured').checked = false;
+      $('form-country').value = 'USA';
+      $('form-score').value = 5;
+      $('score-label').textContent = '5/10';
     }
     
-    modal.style.display = 'flex';
+    $('source-modal').style.display = 'flex';
   }
 
   window.editWebsite = function(id) {
     const website = websites.find(w => w.id === id);
-    if (website) openModal(website);
+    if (website) openWebsiteModal(website);
   };
 
-  function closeModal() {
-    modal.style.display = 'none';
+  function closeWebsiteModal() {
+    $('source-modal').style.display = 'none';
   }
 
-  // ============================================
-  // VERIFY
-  // ============================================
+  window.deleteWebsite = function(id) {
+    const website = websites.find(w => w.id === id);
+    if (!confirm(`Delete "${website?.name}"? This cannot be undone.`)) return;
+    
+    fetch('/api/admin/reliable/websites', { 
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast('✅ Website deleted successfully', 'success');
+          loadData();
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
+        }
+      })
+      .catch(err => {
+        showToast('❌ Error deleting website', 'error');
+        console.error(err);
+      });
+  };
+
   window.verifyWebsite = function(id) {
     if (!confirm('Mark this website as verified today?')) return;
     
-    fetch('/api/reliable/websites/' + id + '/verify', {
+    fetch('/api/admin/reliable/websites/' + id + '/verify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ verified_by: 'admin' })
@@ -1181,58 +1788,32 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       });
   };
 
-  // ============================================
-  // DELETE
-  // ============================================
-  window.deleteWebsite = function(id) {
-    const website = websites.find(w => w.id === id);
-    if (!confirm(`Delete "${website?.name}"? This cannot be undone.`)) return;
-    
-    fetch('/api/reliable/websites/' + id, { 
-      method: 'DELETE'
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          showToast('✅ Website deleted successfully', 'success');
-          loadData();
-        } else {
-          showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
-        }
-      })
-      .catch(err => {
-        showToast('❌ Error deleting website', 'error');
-        console.error(err);
-      });
-  };
-
-  // ============================================
-  // SUBMIT FORM
-  // ============================================
-  form.addEventListener('submit', function(e) {
+  // Website form submit
+  $('source-form').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const data = {
-      category_id: parseInt(fCategory.value) || null,
-      subcategory_id: parseInt(fSubcategory.value) || null,
-      name: fName.value.trim(),
-      url: fUrl.value.trim(),
-      description: fDesc.value.trim(),
-      notes: fNotes.value.trim(),
-      logo_url: fLogo.value.trim(),
-      country: fCountry.value.trim() || 'USA',
+      category_id: parseInt($('form-category').value) || null,
+      subcategory_id: parseInt($('form-subcategory').value) || null,
+      subsubcategory_id: parseInt($('form-subsubcategory').value) || null,
+      name: $('form-name').value.trim(),
+      url: $('form-url').value.trim(),
+      description: $('form-desc').value.trim(),
+      notes: $('form-notes').value.trim(),
+      logo_url: $('form-logo').value.trim(),
+      country: $('form-country').value.trim() || 'USA',
       language: 'English',
-      is_active: fActive.checked ? 1 : 0,
-      is_featured: fFeatured.checked ? 1 : 0,
-      reliability_score: parseInt(fScore.value) || 5
+      is_active: $('form-active').checked ? 1 : 0,
+      is_featured: $('form-featured').checked ? 1 : 0,
+      reliability_score: parseInt($('form-score').value) || 5
     };
     
-    if (!data.name || !data.url || !data.category_id || !data.subcategory_id) {
-      showFormMessage('Name, URL, category, and subcategory are required', 'error');
+    if (!data.name || !data.url || !data.subcategory_id) {
+      showFormMessage('Name, URL, and subcategory are required', 'error');
       return;
     }
     
-    const url = editingId ? '/api/reliable/websites/' + editingId : '/api/reliable/websites';
+    const url = editingId ? '/api/admin/reliable/websites/' + editingId : '/api/admin/reliable/websites';
     const method = editingId ? 'PUT' : 'POST';
     
     fetch(url, {
@@ -1244,7 +1825,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(result => {
         if (result.success) {
           showToast(editingId ? '✅ Website updated!' : '✅ Website created!', 'success');
-          closeModal();
+          closeWebsiteModal();
           loadData();
         } else {
           showFormMessage(result.error || 'Failed to save', 'error');
@@ -1264,31 +1845,390 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ============================================
+  // CATEGORY CRUD
+  // ============================================
+  function openCategoryModal(data = null) {
+    const form = $('category-form');
+    form.reset();
+    $('form-category-edit-id').value = '';
+    $('category-form-message').style.display = 'none';
+    
+    if (data) {
+      $('category-modal-title').textContent = 'Edit Category';
+      $('form-category-edit-id').value = data.id;
+      $('form-category-name').value = data.name || '';
+      $('form-category-slug').value = data.slug || '';
+      $('form-category-desc').value = data.description || '';
+      $('form-category-icon').value = data.icon || '📚';
+      $('form-category-order').value = data.display_order || 0;
+      $('form-category-active').checked = data.is_active === 1;
+    } else {
+      $('category-modal-title').textContent = 'Add Category';
+      $('form-category-icon').value = '📚';
+      $('form-category-order').value = 0;
+      $('form-category-active').checked = true;
+    }
+    
+    $('category-modal').style.display = 'flex';
+  }
+
+  window.editCategory = function(id) {
+    const category = categories.find(c => c.id === id);
+    if (category) openCategoryModal(category);
+  };
+
+  function closeCategoryModal() {
+    $('category-modal').style.display = 'none';
+  }
+
+  window.deleteCategory = function(id) {
+    const category = categories.find(c => c.id === id);
+    if (!confirm(`Delete "${category?.name}"? This will also delete all subcategories and websites under it.`)) return;
+    
+    fetch('/api/admin/reliable/categories', { 
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast('✅ Category deleted successfully', 'success');
+          loadData();
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
+        }
+      })
+      .catch(err => {
+        showToast('❌ Error deleting category', 'error');
+        console.error(err);
+      });
+  };
+
+  // Category form submit
+  $('category-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const id = $('form-category-edit-id').value;
+    const data = {
+      name: $('form-category-name').value.trim(),
+      slug: $('form-category-slug').value.trim(),
+      description: $('form-category-desc').value.trim(),
+      icon: $('form-category-icon').value.trim() || '📚',
+      display_order: parseInt($('form-category-order').value) || 0,
+      is_active: $('form-category-active').checked ? 1 : 0
+    };
+    
+    if (!data.name || !data.slug) {
+      showCategoryFormMessage('Name and slug are required', 'error');
+      return;
+    }
+    
+    const url = id ? '/api/admin/reliable/categories/' + id : '/api/admin/reliable/categories';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.success) {
+          showToast(id ? '✅ Category updated!' : '✅ Category created!', 'success');
+          closeCategoryModal();
+          loadData();
+        } else {
+          showCategoryFormMessage(result.error || 'Failed to save', 'error');
+        }
+      })
+      .catch(err => {
+        showCategoryFormMessage('Error saving category', 'error');
+        console.error(err);
+      });
+  });
+
+  function showCategoryFormMessage(msg, type) {
+    const el = $('category-form-message');
+    el.textContent = msg;
+    el.className = 'form-message ' + type;
+    el.style.display = 'block';
+  }
+
+  // ============================================
+  // SUBCATEGORY CRUD
+  // ============================================
+  function openSubcategoryModal(data = null) {
+    const form = $('subcategory-form');
+    form.reset();
+    $('form-subcategory-edit-id').value = '';
+    $('subcategory-form-message').style.display = 'none';
+    
+    populateModalSelects();
+    
+    if (data) {
+      $('subcategory-modal-title').textContent = 'Edit Subcategory';
+      $('form-subcategory-edit-id').value = data.id;
+      $('form-subcategory-category').value = data.category_id || '';
+      $('form-subcategory-name').value = data.name || '';
+      $('form-subcategory-slug').value = data.slug || '';
+      $('form-subcategory-desc').value = data.description || '';
+      $('form-subcategory-order').value = data.display_order || 0;
+      $('form-subcategory-active').checked = data.is_active === 1;
+    } else {
+      $('subcategory-modal-title').textContent = 'Add Subcategory';
+      $('form-subcategory-order').value = 0;
+      $('form-subcategory-active').checked = true;
+    }
+    
+    $('subcategory-modal').style.display = 'flex';
+  }
+
+  window.editSubcategory = function(id) {
+    const subcategory = subcategories.find(sc => sc.id === id);
+    if (subcategory) openSubcategoryModal(subcategory);
+  };
+
+  function closeSubcategoryModal() {
+    $('subcategory-modal').style.display = 'none';
+  }
+
+  window.deleteSubcategory = function(id) {
+    const subcategory = subcategories.find(sc => sc.id === id);
+    if (!confirm(`Delete "${subcategory?.name}"? This will also delete all sub-subcategories and websites under it.`)) return;
+    
+    fetch('/api/admin/reliable/subcategories', { 
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast('✅ Subcategory deleted successfully', 'success');
+          loadData();
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
+        }
+      })
+      .catch(err => {
+        showToast('❌ Error deleting subcategory', 'error');
+        console.error(err);
+      });
+  };
+
+  // Subcategory form submit
+  $('subcategory-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const id = $('form-subcategory-edit-id').value;
+    const data = {
+      category_id: parseInt($('form-subcategory-category').value) || null,
+      name: $('form-subcategory-name').value.trim(),
+      slug: $('form-subcategory-slug').value.trim(),
+      description: $('form-subcategory-desc').value.trim(),
+      display_order: parseInt($('form-subcategory-order').value) || 0,
+      is_active: $('form-subcategory-active').checked ? 1 : 0
+    };
+    
+    if (!data.category_id || !data.name || !data.slug) {
+      showSubcategoryFormMessage('Category, name, and slug are required', 'error');
+      return;
+    }
+    
+    const url = id ? '/api/admin/reliable/subcategories/' + id : '/api/admin/reliable/subcategories';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.success) {
+          showToast(id ? '✅ Subcategory updated!' : '✅ Subcategory created!', 'success');
+          closeSubcategoryModal();
+          loadData();
+        } else {
+          showSubcategoryFormMessage(result.error || 'Failed to save', 'error');
+        }
+      })
+      .catch(err => {
+        showSubcategoryFormMessage('Error saving subcategory', 'error');
+        console.error(err);
+      });
+  });
+
+  function showSubcategoryFormMessage(msg, type) {
+    const el = $('subcategory-form-message');
+    el.textContent = msg;
+    el.className = 'form-message ' + type;
+    el.style.display = 'block';
+  }
+
+  // ============================================
+  // SUB-SUBCATEGORY CRUD
+  // ============================================
+  function openSubSubcategoryModal(data = null) {
+    const form = $('subsubcategory-form');
+    form.reset();
+    $('form-subsubcategory-edit-id').value = '';
+    $('subsubcategory-form-message').style.display = 'none';
+    
+    populateModalSelects();
+    
+    if (data) {
+      $('subsubcategory-modal-title').textContent = 'Edit Sub-Subcategory';
+      $('form-subsubcategory-edit-id').value = data.id;
+      $('form-subsubcategory-subcategory').value = data.subcategory_id || '';
+      $('form-subsubcategory-name').value = data.name || '';
+      $('form-subsubcategory-slug').value = data.slug || '';
+      $('form-subsubcategory-desc').value = data.description || '';
+      $('form-subsubcategory-order').value = data.display_order || 0;
+      $('form-subsubcategory-active').checked = data.is_active === 1;
+    } else {
+      $('subsubcategory-modal-title').textContent = 'Add Sub-Subcategory';
+      $('form-subsubcategory-order').value = 0;
+      $('form-subsubcategory-active').checked = true;
+    }
+    
+    $('subsubcategory-modal').style.display = 'flex';
+  }
+
+  window.editSubSubcategory = function(id) {
+    const subsubcategory = subsubcategories.find(ssc => ssc.id === id);
+    if (subsubcategory) openSubSubcategoryModal(subsubcategory);
+  };
+
+  function closeSubSubcategoryModal() {
+    $('subsubcategory-modal').style.display = 'none';
+  }
+
+  window.deleteSubSubcategory = function(id) {
+    const subsubcategory = subsubcategories.find(ssc => ssc.id === id);
+    if (!confirm(`Delete "${subsubcategory?.name}"? This will also delete all websites under it.`)) return;
+    
+    fetch('/api/admin/reliable/subsubcategories', { 
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast('✅ Sub-subcategory deleted successfully', 'success');
+          loadData();
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
+        }
+      })
+      .catch(err => {
+        showToast('❌ Error deleting sub-subcategory', 'error');
+        console.error(err);
+      });
+  };
+
+  // Sub-subcategory form submit
+  $('subsubcategory-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const id = $('form-subsubcategory-edit-id').value;
+    const data = {
+      subcategory_id: parseInt($('form-subsubcategory-subcategory').value) || null,
+      name: $('form-subsubcategory-name').value.trim(),
+      slug: $('form-subsubcategory-slug').value.trim(),
+      description: $('form-subsubcategory-desc').value.trim(),
+      display_order: parseInt($('form-subsubcategory-order').value) || 0,
+      is_active: $('form-subsubcategory-active').checked ? 1 : 0
+    };
+    
+    if (!data.subcategory_id || !data.name || !data.slug) {
+      showSubSubcategoryFormMessage('Subcategory, name, and slug are required', 'error');
+      return;
+    }
+    
+    const url = id ? '/api/admin/reliable/subsubcategories/' + id : '/api/admin/reliable/subsubcategories';
+    const method = id ? 'PUT' : 'POST';
+    
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.success) {
+          showToast(id ? '✅ Sub-subcategory updated!' : '✅ Sub-subcategory created!', 'success');
+          closeSubSubcategoryModal();
+          loadData();
+        } else {
+          showSubSubcategoryFormMessage(result.error || 'Failed to save', 'error');
+        }
+      })
+      .catch(err => {
+        showSubSubcategoryFormMessage('Error saving sub-subcategory', 'error');
+        console.error(err);
+      });
+  });
+
+  function showSubSubcategoryFormMessage(msg, type) {
+    const el = $('subsubcategory-form-message');
+    el.textContent = msg;
+    el.className = 'form-message ' + type;
+    el.style.display = 'block';
+  }
+
+  // ============================================
   // EVENT LISTENERS
   // ============================================
-  $('add-btn').addEventListener('click', () => openModal());
-  $('modal-close').addEventListener('click', closeModal);
-  $('modal-cancel').addEventListener('click', closeModal);
-  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+  $('add-btn').addEventListener('click', () => openWebsiteModal());
+  $('add-category-btn').addEventListener('click', () => openCategoryModal());
+  
+  // Close buttons
+  $('modal-close').addEventListener('click', closeWebsiteModal);
+  $('modal-cancel').addEventListener('click', closeWebsiteModal);
+  $('source-modal').addEventListener('click', e => { if (e.target === $('source-modal')) closeWebsiteModal(); });
+  $('category-modal').addEventListener('click', e => { if (e.target === $('category-modal')) closeCategoryModal(); });
+  $('subcategory-modal').addEventListener('click', e => { if (e.target === $('subcategory-modal')) closeSubcategoryModal(); });
+  $('subsubcategory-modal').addEventListener('click', e => { if (e.target === $('subsubcategory-modal')) closeSubSubcategoryModal(); });
 
-  fCategory.addEventListener('change', function() {
+  // Form cascading
+  $('form-category').addEventListener('change', function() {
     populateSubcategoryForm(this.value);
   });
 
-  fScore.addEventListener('input', () => {
-    fScoreLabel.textContent = fScore.value + '/10';
+  $('form-subcategory').addEventListener('change', function() {
+    populateSubSubcategoryForm(this.value);
   });
 
-  filterCategory.addEventListener('change', function() {
+  // Score slider
+  $('form-score').addEventListener('input', () => {
+    $('score-label').textContent = $('form-score').value + '/10';
+  });
+
+  // Filters
+  $('filter-category').addEventListener('change', function() {
     populateSubcategoryFilter();
+    populateSubSubcategoryFilter();
     loadData();
   });
   
-  filterSubcategory.addEventListener('change', loadData);
-  filterScore.addEventListener('change', loadData);
+  $('filter-subcategory').addEventListener('change', function() {
+    populateSubSubcategoryFilter();
+    loadData();
+  });
   
+  $('filter-subsubcategory').addEventListener('change', loadData);
+  $('filter-score').addEventListener('change', loadData);
+  
+  // Subcategory filter on subcategories tab
+  $('subcat-filter-category').addEventListener('change', renderSubcategories);
+  $('subsubcat-filter-subcategory').addEventListener('change', renderSubSubcategories);
+
+  // Search
   let searchTimer;
-  searchInput.addEventListener('input', () => {
+  $('search-input').addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(loadData, 300);
   });
