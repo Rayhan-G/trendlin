@@ -1,6 +1,6 @@
 ---
 // Admin Sources Management Page
-import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminLayout from "../../layouts/AdminLayout.astro";
 ---
 
 <AdminLayout title="Sources Management">
@@ -8,10 +8,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <div class="page-header">
       <div>
         <h1>📚 Sources Management</h1>
-        <p class="text-muted">Manage trusted content sources across all categories</p>
+        <p class="text-muted">
+          Manage trusted content sources across all categories
+        </p>
       </div>
       <button class="btn-add" id="add-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
@@ -66,15 +75,34 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <option value="">All States</option>
         </select>
         <div class="search-box">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg
+            class="search-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="search-input" placeholder="Search sources..." />
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search sources..."
+          />
         </div>
       </div>
       <button class="btn-refresh" onclick="loadData()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
           <polyline points="23 4 23 10 17 10"></polyline>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
         </svg>
@@ -121,7 +149,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </div>
         <form id="source-form">
           <input type="hidden" id="form-edit-id" />
-          
+
           <div class="form-row">
             <div class="form-group">
               <label>Type</label>
@@ -132,33 +160,52 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             </div>
             <div class="form-group" id="state-group">
               <label>State</label>
-              <select id="form-state"><option value="">Select a state</option></select>
+              <select id="form-state"
+                ><option value="">Select a state</option></select
+              >
             </div>
           </div>
 
           <div class="form-group">
             <label>Name *</label>
-            <input type="text" id="form-name" placeholder="Enter source name..." required />
+            <input
+              type="text"
+              id="form-name"
+              placeholder="Enter source name..."
+              required
+            />
           </div>
 
           <div class="form-group">
             <label>URL *</label>
-            <input type="url" id="form-url" placeholder="https://example.com" required />
+            <input
+              type="url"
+              id="form-url"
+              placeholder="https://example.com"
+              required
+            />
           </div>
 
           <div class="form-group">
             <label>Category *</label>
-            <select id="form-category" required><option value="">Select a category</option></select>
+            <select id="form-category" required
+              ><option value="">Select a category</option></select
+            >
           </div>
 
           <div class="form-group">
             <label>Description</label>
-            <textarea id="form-desc" rows="2" placeholder="Brief description..."></textarea>
+            <textarea id="form-desc" rows="2" placeholder="Brief description..."
+            ></textarea>
           </div>
 
           <div class="form-group">
             <label>Logo URL</label>
-            <input type="url" id="form-logo" placeholder="https://example.com/logo.png" />
+            <input
+              type="url"
+              id="form-logo"
+              placeholder="https://example.com/logo.png"
+            />
           </div>
 
           <div class="form-row">
@@ -174,7 +221,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <div class="form-group">
               <label>Trust Score</label>
               <div class="trust-slider">
-                <input type="range" id="form-trust" min="0" max="100" value="50" />
+                <input
+                  type="range"
+                  id="form-trust"
+                  min="0"
+                  max="100"
+                  value="50"
+                />
                 <span id="trust-label">50%</span>
               </div>
             </div>
@@ -195,11 +248,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             </div>
           </div>
 
-          <div id="form-message" class="form-message" style="display:none;"></div>
+          <div id="form-message" class="form-message" style="display:none;">
+          </div>
 
           <div class="form-actions">
-            <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary" id="modal-submit">Save Source</button>
+            <button type="button" class="btn-secondary" id="modal-cancel"
+              >Cancel</button
+            >
+            <button type="submit" class="btn-primary" id="modal-submit"
+              >Save Source</button
+            >
           </div>
         </form>
       </div>
@@ -271,7 +329,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     background: white;
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .stat-icon {
@@ -389,7 +447,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .sources-table {
@@ -398,7 +458,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     background: white;
     border-radius: 0.75rem;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .sources-table thead {
@@ -616,13 +676,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     max-height: 90vh;
     overflow-y: auto;
     padding: 2rem;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     animation: modalIn 0.2s ease-out;
   }
 
   @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
   }
 
   .modal-header {
@@ -798,7 +864,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     transition: all 0.3s;
     pointer-events: none;
     z-index: 2000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   .toast.show {
@@ -854,7 +920,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
   }
 </style>
-
 <script>
   // ============================================
   // STATE
@@ -863,6 +928,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   let categories = [];
   let states = [];
   let editingId = null;
+  let isLoading = false;
+  let isInitialized = false;
 
   // ============================================
   // DOM REFS
@@ -909,102 +976,147 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ============================================
-  // LOAD DATA
+  // LOAD CATEGORIES & STATES (ONCE)
   // ============================================
-  function loadData() {
+  function loadCategoriesAndStates() {
+    return Promise.all([
+      fetch('/api/admin/sources/categories')
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            categories = data.data || [];
+            populateCategorySelects();
+            console.log('✅ Loaded', categories.length, 'categories');
+          }
+        })
+        .catch(err => console.error('Error loading categories:', err)),
+      
+      fetch('/api/admin/sources/states')
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            states = data.data || [];
+            populateStateSelects();
+            console.log('✅ Loaded', states.length, 'states');
+          }
+        })
+        .catch(err => console.error('Error loading states:', err))
+    ]);
+  }
+
+  function populateCategorySelects() {
+    // Populate filter category
+    if (filterCategory) {
+      const val = filterCategory.value;
+      filterCategory.innerHTML = '<option value="">All Categories</option>';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = (c.icon || '📁') + ' ' + c.name;
+        filterCategory.appendChild(opt);
+      });
+      filterCategory.value = val;
+    }
+    
+    // Populate form category
+    if (fCategory) {
+      const val = fCategory.value;
+      fCategory.innerHTML = '<option value="">Select a category</option>';
+      categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = (c.icon || '📁') + ' ' + c.name;
+        fCategory.appendChild(opt);
+      });
+      fCategory.value = val;
+    }
+  }
+
+  function populateStateSelects() {
+    // Populate filter state
+    if (filterState) {
+      const val = filterState.value;
+      filterState.innerHTML = '<option value="">All States</option>';
+      states.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = (s.code || s.abbreviation) + ' - ' + s.name;
+        filterState.appendChild(opt);
+      });
+      filterState.value = val;
+    }
+    
+    // Populate form state
+    if (fState) {
+      const val = fState.value;
+      fState.innerHTML = '<option value="">Select a state</option>';
+      states.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = (s.code || s.abbreviation) + ' - ' + s.name;
+        fState.appendChild(opt);
+      });
+      fState.value = val;
+    }
+  }
+
+  // ============================================
+  // LOAD SOURCES (WITH FILTERS)
+  // ============================================
+  function loadSources() {
+    if (isLoading) return;
+    isLoading = true;
+    
     loadingEl.style.display = 'block';
     tableWrap.style.display = 'none';
     emptyEl.style.display = 'none';
     
-    Promise.all([loadSources(), loadCategories(), loadStates()])
-      .then(() => {
-        loadingEl.style.display = 'none';
-        renderTable();
-        updateStats();
-      })
-      .catch((err) => {
-        console.error('Failed to load data:', err);
-        showToast('Failed to load data: ' + err.message, 'error');
-        loadingEl.style.display = 'none';
-      });
-  }
-
-  function loadSources() {
+    // Build query parameters from filters
     const params = new URLSearchParams();
-    if (filterType.value && filterType.value !== 'all') params.append('type', filterType.value);
-    if (filterCategory.value) params.append('category', filterCategory.value);
-    if (filterState.value) params.append('state', filterState.value);
-    if (searchInput.value) params.append('search', searchInput.value);
     
-    return fetch('/api/admin/sources?' + params.toString())
-      .then(r => r.json())
+    if (filterType && filterType.value && filterType.value !== 'all') {
+      params.append('type', filterType.value);
+    }
+    if (filterCategory && filterCategory.value && filterCategory.value !== '') {
+      params.append('category', filterCategory.value);
+    }
+    if (filterState && filterState.value && filterState.value !== '') {
+      params.append('state', filterState.value);
+    }
+    if (searchInput && searchInput.value && searchInput.value.trim() !== '') {
+      params.append('search', searchInput.value.trim());
+    }
+    
+    const url = '/api/admin/sources?' + params.toString();
+    console.log('🔍 Fetching:', url);
+    
+    return fetch(url)
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => {
         if (data.success) {
           sources = data.data || [];
+          console.log('✅ Loaded', sources.length, 'sources');
         } else {
           console.error('API error:', data.error);
           sources = [];
         }
+        renderTable();
+        updateStats();
       })
       .catch(err => {
         console.error('Error loading sources:', err);
         sources = [];
-      });
-  }
-
-  function loadCategories() {
-    return fetch('/api/admin/sources/categories')
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          categories = data.data || [];
-          populateSelects('category');
-        }
+        renderTable();
+        updateStats();
+        showToast('❌ Error loading sources: ' + err.message, 'error');
       })
-      .catch(err => console.error('Error loading categories:', err));
-  }
-
-  function loadStates() {
-    return fetch('/api/admin/sources/states')
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          states = data.data || [];
-          populateSelects('state');
-        }
-      })
-      .catch(err => console.error('Error loading states:', err));
-  }
-
-  // ============================================
-  // POPULATE SELECTS
-  // ============================================
-  function populateSelects(type) {
-    if (type === 'category') {
-      [filterCategory, fCategory].forEach(sel => {
-        const val = sel.value;
-        sel.innerHTML = '<option value="">All Categories</option>';
-        categories.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = (c.icon || '📁') + ' ' + c.name;
-          sel.appendChild(opt);
-        });
-        sel.value = val;
+      .finally(() => {
+        isLoading = false;
+        loadingEl.style.display = 'none';
       });
-    } else if (type === 'state') {
-      [filterState, fState].forEach(sel => {
-        const val = sel.value;
-        sel.innerHTML = '<option value="">All States</option>';
-        states.forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.id;
-          opt.textContent = (s.code || s.abbreviation) + ' - ' + s.name;
-          sel.appendChild(opt);
-        });
-        sel.value = val;
-      });
-    }
   }
 
   // ============================================
@@ -1016,10 +1128,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     const state = sources.filter(s => s.source_type_actual === 'state').length;
     const featured = sources.filter(s => s.is_featured).length;
     
-    $('total-count').textContent = total;
-    $('master-count').textContent = master;
-    $('state-count').textContent = state;
-    $('featured-count').textContent = featured;
+    if ($('total-count')) $('total-count').textContent = total;
+    if ($('master-count')) $('master-count').textContent = master;
+    if ($('state-count')) $('state-count').textContent = state;
+    if ($('featured-count')) $('featured-count').textContent = featured;
   }
 
   // ============================================
@@ -1036,13 +1148,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     emptyEl.style.display = 'none';
     
     let html = '';
-    sources.forEach(s => {
+    sources.forEach((s, index) => {
       const trust = Math.min(s.trust_score || 0, 100);
       html += `
-        <tr>
+        <tr style="animation: fadeIn 0.2s ease ${index * 0.05}s both;">
           <td>
             <div class="source-cell">
-              ${s.logo_url ? `<img src="${s.logo_url}" class="source-logo" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📄</div>`}
+              ${s.logo_url ? `<img src="${s.logo_url}" class="source-logo" onerror="this.style.display='none'" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:#f1f5f9;">📄</div>`}
               <div>
                 <div class="source-name">${escapeHtml(s.name)}</div>
                 <span class="source-url">${escapeHtml(s.url)}</span>
@@ -1064,8 +1176,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="editSource(${s.id})">✏️ Edit</button>
-              <button class="btn-sm btn-sm-delete" onclick="deleteSource(${s.id})">🗑️</button>
+              <button class="btn-sm btn-sm-edit" onclick="window.editSource(${s.id})">✏️ Edit</button>
+              <button class="btn-sm btn-sm-delete" onclick="window.deleteSource(${s.id})">🗑️</button>
             </div>
           </td>
         </tr>
@@ -1084,11 +1196,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // ============================================
   // ADD / EDIT
   // ============================================
-  function openModal(type = 'master', data = null) {
+  window.openModal = function(type = 'master', data = null) {
     form.reset();
     editingId = null;
     fEditId.value = '';
-    $('form-message').style.display = 'none';
+    const formMessage = $('form-message');
+    if (formMessage) {
+      formMessage.style.display = 'none';
+      formMessage.className = 'form-message';
+    }
     
     if (data) {
       editingId = data.id;
@@ -1119,45 +1235,63 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     
     toggleStateField();
     modal.style.display = 'flex';
-  }
+    document.body.style.overflow = 'hidden';
+  };
 
   window.editSource = function(id) {
     const source = sources.find(s => s.id === id);
-    if (source) openModal(source.source_type_actual || 'master', source);
+    if (source) window.openModal(source.source_type_actual || 'master', source);
   };
 
   function toggleStateField() {
     const group = $('state-group');
-    group.style.display = fType.value === 'master' ? 'none' : 'block';
+    if (group) {
+      group.style.display = fType.value === 'master' ? 'none' : 'block';
+    }
   }
 
-  function closeModal() {
+  window.closeModal = function() {
     modal.style.display = 'none';
-  }
+    document.body.style.overflow = '';
+  };
 
   // ============================================
   // DELETE
   // ============================================
   window.deleteSource = function(id) {
     const source = sources.find(s => s.id === id);
-    if (!confirm(`Delete "${source?.name}"? This cannot be undone.`)) return;
+    if (!source) {
+      showToast('❌ Source not found', 'error');
+      return;
+    }
+    
+    if (!confirm(`Delete "${source.name}"? This cannot be undone.`)) return;
+    
+    const type = source.source_type_actual || 'master';
     
     fetch('/api/admin/sources/' + id, { 
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: source?.source_type_actual || 'master' })
+      body: JSON.stringify({ type: type })
     })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) {
+          return r.json().then(data => {
+            throw new Error(data.error || `HTTP ${r.status}`);
+          });
+        }
+        return r.json();
+      })
       .then(data => {
         if (data.success) {
           showToast('✅ Source deleted successfully', 'success');
-          loadData();
+          loadSources();
         } else {
           showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
         }
       })
       .catch(err => {
-        showToast('❌ Error deleting source', 'error');
+        showToast('❌ Error: ' + err.message, 'error');
         console.error(err);
       });
   };
@@ -1195,6 +1329,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     const url = editingId ? '/api/admin/sources/' + editingId : '/api/admin/sources';
     const method = editingId ? 'PUT' : 'POST';
     
+    const submitBtn = modalSubmit;
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Saving...';
+    submitBtn.disabled = true;
+    
     fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -1204,15 +1343,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(result => {
         if (result.success) {
           showToast(editingId ? '✅ Source updated!' : '✅ Source created!', 'success');
-          closeModal();
-          loadData();
+          window.closeModal();
+          loadSources();
         } else {
           showFormMessage(result.error || 'Failed to save', 'error');
         }
       })
       .catch(err => {
-        showFormMessage('Error saving source', 'error');
+        showFormMessage('Error saving source: ' + err.message, 'error');
         console.error(err);
+      })
+      .finally(() => {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
       });
   });
 
@@ -1224,30 +1367,109 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ============================================
-  // EVENT LISTENERS
+  // INITIALIZE
   // ============================================
-  $('add-btn').addEventListener('click', () => openModal('master'));
-  $('modal-close').addEventListener('click', closeModal);
-  $('modal-cancel').addEventListener('click', closeModal);
-  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-
-  fType.addEventListener('change', toggleStateField);
-  fTrust.addEventListener('input', () => {
-    fTrustLabel.textContent = fTrust.value + '%';
-  });
-
-  filterType.addEventListener('change', loadData);
-  filterCategory.addEventListener('change', loadData);
-  filterState.addEventListener('change', loadData);
-  
-  let searchTimer;
-  searchInput.addEventListener('input', () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(loadData, 300);
-  });
+  function init() {
+    // Load categories and states first
+    loadCategoriesAndStates()
+      .then(() => {
+        // Then load sources with filters
+        return loadSources();
+      })
+      .catch(err => {
+        console.error('Init error:', err);
+        loadSources();
+      });
+    
+    // Setup event listeners for filters
+    if (filterType) {
+      filterType.addEventListener('change', function() {
+        console.log('🔄 Filter: type =', this.value);
+        loadSources();
+      });
+    }
+    
+    if (filterCategory) {
+      filterCategory.addEventListener('change', function() {
+        console.log('🔄 Filter: category =', this.value);
+        loadSources();
+      });
+    }
+    
+    if (filterState) {
+      filterState.addEventListener('change', function() {
+        console.log('🔄 Filter: state =', this.value);
+        loadSources();
+      });
+    }
+    
+    if (searchInput) {
+      let searchTimer;
+      searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          console.log('🔍 Search:', this.value);
+          loadSources();
+        }, 300);
+      });
+    }
+    
+    // Add button
+    const addBtn = $('add-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => window.openModal('master'));
+    }
+    
+    // Modal close buttons
+    const modalClose = $('modal-close');
+    const modalCancel = $('modal-cancel');
+    if (modalClose) modalClose.addEventListener('click', window.closeModal);
+    if (modalCancel) modalCancel.addEventListener('click', window.closeModal);
+    if (modal) {
+      modal.addEventListener('click', e => { 
+        if (e.target === modal) window.closeModal(); 
+      });
+    }
+    
+    // Trust slider
+    if (fTrust && fTrustLabel) {
+      fTrust.addEventListener('input', () => {
+        fTrustLabel.textContent = fTrust.value + '%';
+      });
+    }
+    
+    // Type toggle
+    if (fType) {
+      fType.addEventListener('change', toggleStateField);
+    }
+    
+    // Refresh button
+    const refreshBtn = document.querySelector('.btn-refresh');
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        loadSources();
+      });
+    }
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        window.openModal('master');
+      }
+      if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+        window.closeModal();
+      }
+    });
+  }
 
   // ============================================
-  // INIT
+  // START
   // ============================================
-  document.addEventListener('DOMContentLoaded', loadData);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 </script>
