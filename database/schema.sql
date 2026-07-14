@@ -1,6 +1,7 @@
 -- ============================================
 -- TRENDLIN DATABASE SCHEMA
 -- 4 Platforms: reddit, youtube, tiktok, shop
+-- + Reliable Websites System with 3 Levels
 -- ============================================
 
 -- ============================================
@@ -73,7 +74,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_is_todays_pick ON posts(is_todays_pick);
 CREATE INDEX IF NOT EXISTS idx_posts_is_recently_added ON posts(is_recently_added);
 
 -- ============================================
--- CATEGORIES TABLE
+-- CATEGORIES TABLE (Blog Categories)
 -- ============================================
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -164,27 +165,6 @@ CREATE INDEX IF NOT EXISTS idx_resources_featured ON product_resources(is_featur
 CREATE INDEX IF NOT EXISTS idx_resources_active ON product_resources(is_active);
 
 -- ============================================
--- SOURCES TABLE - Trusted Content Sources
--- ============================================
-CREATE TABLE IF NOT EXISTS sources (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  url TEXT NOT NULL,
-  category TEXT NOT NULL,
-  description TEXT,
-  source_type TEXT DEFAULT 'official',
-  logo_url TEXT,
-  is_active INTEGER DEFAULT 1,
-  usage_count INTEGER DEFAULT 0,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_sources_category ON sources(category);
-CREATE INDEX IF NOT EXISTS idx_sources_name ON sources(name);
-CREATE INDEX IF NOT EXISTS idx_sources_is_active ON sources(is_active);
-
--- ============================================
 -- TEMPLATES TABLE - Category-based Templates
 -- ============================================
 CREATE TABLE IF NOT EXISTS templates (
@@ -207,120 +187,116 @@ CREATE INDEX IF NOT EXISTS idx_templates_category_name ON templates(category, na
 CREATE INDEX IF NOT EXISTS idx_templates_is_active ON templates(is_active);
 
 -- ============================================
--- SOURCES MANAGEMENT - USA State-Based System
+-- RELIABLE WEBSITES - 3 Level System
+-- Level 1: Categories (8 main categories + Shopping)
+-- Level 2: Subcategories (10-20 per category)
+-- Level 3: Sub-Subcategories (optional, for deeper organization)
 -- ============================================
 
 -- ============================================
--- SOURCES_CATEGORIES - Master category list
+-- RELIABLE_CATEGORIES - Level 1 (9 Categories)
 -- ============================================
-CREATE TABLE IF NOT EXISTS sources_categories (
+CREATE TABLE IF NOT EXISTS reliable_categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
   slug TEXT UNIQUE NOT NULL,
-  icon TEXT DEFAULT '📁',
   description TEXT,
+  icon TEXT DEFAULT '📚',
   display_order INTEGER DEFAULT 0,
   is_active INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_sources_categories_slug ON sources_categories(slug);
-CREATE INDEX IF NOT EXISTS idx_sources_categories_name ON sources_categories(name);
-CREATE INDEX IF NOT EXISTS idx_sources_categories_display_order ON sources_categories(display_order);
+CREATE INDEX IF NOT EXISTS idx_reliable_categories_slug ON reliable_categories(slug);
 
 -- ============================================
--- SOURCES_STATES - US States master list
+-- RELIABLE_SUBCATEGORIES - Level 2
 -- ============================================
-CREATE TABLE IF NOT EXISTS sources_states (
+CREATE TABLE IF NOT EXISTS reliable_subcategories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category_id INTEGER NOT NULL,
   name TEXT NOT NULL,
-  code TEXT NOT NULL UNIQUE,
-  abbreviation TEXT NOT NULL UNIQUE,
-  region TEXT,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  display_order INTEGER DEFAULT 0,
   is_active INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (category_id) REFERENCES reliable_categories(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_sources_states_code ON sources_states(code);
-CREATE INDEX IF NOT EXISTS idx_sources_states_abbreviation ON sources_states(abbreviation);
-CREATE INDEX IF NOT EXISTS idx_sources_states_region ON sources_states(region);
+CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_category ON reliable_subcategories(category_id);
+CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_slug ON reliable_subcategories(slug);
 
 -- ============================================
--- SOURCES_MASTER - Universal/General Sources (applies to all states)
+-- RELIABLE_SUB_SUBCATEGORIES - Level 3
 -- ============================================
-CREATE TABLE IF NOT EXISTS sources_master (
+CREATE TABLE IF NOT EXISTS reliable_sub_subcategories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subcategory_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  display_order INTEGER DEFAULT 0,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subcategory_id) REFERENCES reliable_subcategories(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sub_subcategories_subcategory ON reliable_sub_subcategories(subcategory_id);
+CREATE INDEX IF NOT EXISTS idx_sub_subcategories_slug ON reliable_sub_subcategories(slug);
+
+-- ============================================
+-- RELIABLE_WEBSITES - Websites linked to Level 2 or Level 3
+-- ============================================
+CREATE TABLE IF NOT EXISTS reliable_websites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subcategory_id INTEGER NOT NULL,
+  sub_subcategory_id INTEGER, -- Optional, can be NULL
   name TEXT NOT NULL,
   url TEXT NOT NULL,
-  category_id INTEGER NOT NULL,
   description TEXT,
-  source_type TEXT DEFAULT 'official',
+  reliability_score INTEGER DEFAULT 5,
+  notes TEXT,
+  country TEXT DEFAULT 'USA',
+  language TEXT DEFAULT 'English',
   logo_url TEXT,
-  is_active INTEGER DEFAULT 1,
   is_featured INTEGER DEFAULT 0,
-  trust_score INTEGER DEFAULT 0,
+  is_active INTEGER DEFAULT 1,
+  last_verified DATE,
+  verified_by TEXT,
   usage_count INTEGER DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES sources_categories(id) ON DELETE CASCADE
+  FOREIGN KEY (subcategory_id) REFERENCES reliable_subcategories(id) ON DELETE CASCADE,
+  FOREIGN KEY (sub_subcategory_id) REFERENCES reliable_sub_subcategories(id) ON DELETE SET NULL,
+  UNIQUE(url, subcategory_id, sub_subcategory_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_sources_master_category ON sources_master(category_id);
-CREATE INDEX IF NOT EXISTS idx_sources_master_name ON sources_master(name);
-CREATE INDEX IF NOT EXISTS idx_sources_master_is_active ON sources_master(is_active);
-CREATE INDEX IF NOT EXISTS idx_sources_master_is_featured ON sources_master(is_featured);
+CREATE INDEX IF NOT EXISTS idx_reliable_websites_subcategory ON reliable_websites(subcategory_id);
+CREATE INDEX IF NOT EXISTS idx_reliable_websites_sub_subcategory ON reliable_websites(sub_subcategory_id);
+CREATE INDEX IF NOT EXISTS idx_reliable_websites_score ON reliable_websites(reliability_score DESC);
+CREATE INDEX IF NOT EXISTS idx_reliable_websites_name ON reliable_websites(name);
+CREATE INDEX IF NOT EXISTS idx_reliable_websites_active ON reliable_websites(is_active);
+CREATE INDEX IF NOT EXISTS idx_reliable_websites_featured ON reliable_websites(is_featured);
 
 -- ============================================
--- SOURCES_STATE - State-specific Sources
+-- RELIABLE_VERIFICATION_LOG - Track verification history
 -- ============================================
-CREATE TABLE IF NOT EXISTS sources_state (
+CREATE TABLE IF NOT EXISTS reliable_verification_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  state_id INTEGER NOT NULL,
-  name TEXT NOT NULL,
-  url TEXT NOT NULL,
-  category_id INTEGER NOT NULL,
-  description TEXT,
-  source_type TEXT DEFAULT 'official',
-  logo_url TEXT,
-  address TEXT,
-  phone TEXT,
-  email TEXT,
-  is_active INTEGER DEFAULT 1,
-  is_featured INTEGER DEFAULT 0,
-  trust_score INTEGER DEFAULT 0,
-  usage_count INTEGER DEFAULT 0,
+  website_id INTEGER NOT NULL,
+  verified_by TEXT,
+  verification_date DATE,
+  old_score INTEGER,
+  new_score INTEGER,
+  status TEXT DEFAULT 'verified',
+  notes TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (state_id) REFERENCES sources_states(id) ON DELETE CASCADE,
-  FOREIGN KEY (category_id) REFERENCES sources_categories(id) ON DELETE CASCADE,
-  UNIQUE(state_id, name) -- Prevent duplicate sources per state
+  FOREIGN KEY (website_id) REFERENCES reliable_websites(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_sources_state_state_id ON sources_state(state_id);
-CREATE INDEX IF NOT EXISTS idx_sources_state_category ON sources_state(category_id);
-CREATE INDEX IF NOT EXISTS idx_sources_state_name ON sources_state(name);
-CREATE INDEX IF NOT EXISTS idx_sources_state_is_active ON sources_state(is_active);
-CREATE INDEX IF NOT EXISTS idx_sources_state_is_featured ON sources_state(is_featured);
-CREATE INDEX IF NOT EXISTS idx_sources_state_state_category ON sources_state(state_id, category_id);
-
--- ============================================
--- SOURCES_REVIEWS - User reviews for sources
--- ============================================
-CREATE TABLE IF NOT EXISTS sources_reviews (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  source_type TEXT NOT NULL CHECK (source_type IN ('master', 'state')),
-  source_id INTEGER NOT NULL,
-  reviewer_name TEXT,
-  reviewer_email TEXT,
-  rating INTEGER DEFAULT 0,
-  review_text TEXT,
-  is_approved INTEGER DEFAULT 0,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_sources_reviews_source ON sources_reviews(source_type, source_id);
-CREATE INDEX IF NOT EXISTS idx_sources_reviews_rating ON sources_reviews(rating);
-CREATE INDEX IF NOT EXISTS idx_sources_reviews_is_approved ON sources_reviews(is_approved);
+CREATE INDEX IF NOT EXISTS idx_verification_website ON reliable_verification_log(website_id);
+CREATE INDEX IF NOT EXISTS idx_verification_date ON reliable_verification_log(verification_date);
