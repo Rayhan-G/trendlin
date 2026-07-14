@@ -69,15 +69,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" data-tab="websites">Websites</button>
-      <button class="tab" data-tab="categories">Categories</button>
-      <button class="tab" data-tab="subcategories">Subcategories</button>
-      <button class="tab" data-tab="subsubcategories">Sub-Subcategories</button>
+      <button class="tab active" data-tab="websites" onclick="switchTab('websites')">Websites</button>
+      <button class="tab" data-tab="categories" onclick="switchTab('categories')">Categories</button>
+      <button class="tab" data-tab="subcategories" onclick="switchTab('subcategories')">Subcategories</button>
+      <button class="tab" data-tab="subsubcategories" onclick="switchTab('subsubcategories')">Sub-Subcategories</button>
     </div>
 
     <!-- Tab Content: Websites -->
     <div id="tab-websites" class="tab-content active">
-      <!-- Filters -->
       <div class="filters-bar">
         <div class="filters">
           <select id="filter-category">
@@ -114,13 +113,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </button>
       </div>
 
-      <!-- Loading -->
       <div id="loading-state" class="loading">
         <div class="spinner"></div>
         <p>Loading websites...</p>
       </div>
 
-      <!-- Table -->
       <div id="table-wrap" style="display:none;">
         <table class="sources-table">
           <thead>
@@ -139,7 +136,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </table>
       </div>
 
-      <!-- Empty -->
       <div id="empty-state" style="display:none;" class="empty">
         <div class="empty-icon">📭</div>
         <h3>No websites found</h3>
@@ -171,7 +167,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <!-- Tab Content: Subcategories -->
     <div id="tab-subcategories" class="tab-content">
       <div class="table-toolbar">
-        <select id="subcat-filter-category" class="filter-select">
+        <select id="subcat-filter-category" class="filter-select" onchange="renderSubcategories()">
           <option value="">Filter by Category</option>
         </select>
         <button class="btn-sm btn-sm-add" onclick="openSubcategoryModal()">+ Add Subcategory</button>
@@ -195,7 +191,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <!-- Tab Content: Sub-Subcategories -->
     <div id="tab-subsubcategories" class="tab-content">
       <div class="table-toolbar">
-        <select id="subsubcat-filter-subcategory" class="filter-select">
+        <select id="subsubcat-filter-subcategory" class="filter-select" onchange="renderSubSubcategories()">
           <option value="">Filter by Subcategory</option>
         </select>
         <button class="btn-sm btn-sm-add" onclick="openSubSubcategoryModal()">+ Add Sub-Subcategory</button>
@@ -221,21 +217,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="modal-title">Add Website</h2>
-          <button class="modal-close" id="modal-close">&times;</button>
+          <button class="modal-close" onclick="closeModal('source-modal')">&times;</button>
         </div>
-        <form id="source-form">
+        <form id="source-form" onsubmit="submitWebsiteForm(event)">
           <input type="hidden" id="form-edit-id" />
           
           <div class="form-group">
             <label>Category *</label>
-            <select id="form-category" required>
+            <select id="form-category" required onchange="populateSubcategoryForm(this.value)">
               <option value="">Select a category</option>
             </select>
           </div>
 
           <div class="form-group">
             <label>Subcategory *</label>
-            <select id="form-subcategory" required>
+            <select id="form-subcategory" required onchange="populateSubSubcategoryForm(this.value)">
               <option value="">Select a subcategory</option>
             </select>
           </div>
@@ -271,7 +267,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <div class="form-group">
               <label>Reliability Score *</label>
               <div class="score-slider">
-                <input type="range" id="form-score" min="1" max="10" value="5" step="1" />
+                <input type="range" id="form-score" min="1" max="10" value="5" step="1" oninput="document.getElementById('score-label').textContent = this.value + '/10'" />
                 <span id="score-label">5/10</span>
               </div>
             </div>
@@ -304,8 +300,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <div id="form-message" class="form-message" style="display:none;"></div>
 
           <div class="form-actions">
-            <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary" id="modal-submit">Save Website</button>
+            <button type="button" class="btn-secondary" onclick="closeModal('source-modal')">Cancel</button>
+            <button type="submit" class="btn-primary">Save Website</button>
           </div>
         </form>
       </div>
@@ -316,9 +312,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="category-modal-title">Add Category</h2>
-          <button class="modal-close" onclick="closeCategoryModal()">&times;</button>
+          <button class="modal-close" onclick="closeModal('category-modal')">&times;</button>
         </div>
-        <form id="category-form">
+        <form id="category-form" onsubmit="submitCategoryForm(event)">
           <input type="hidden" id="form-category-edit-id" />
           
           <div class="form-group">
@@ -356,7 +352,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <div id="category-form-message" class="form-message" style="display:none;"></div>
 
           <div class="form-actions">
-            <button type="button" class="btn-secondary" onclick="closeCategoryModal()">Cancel</button>
+            <button type="button" class="btn-secondary" onclick="closeModal('category-modal')">Cancel</button>
             <button type="submit" class="btn-primary">Save Category</button>
           </div>
         </form>
@@ -368,9 +364,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="subcategory-modal-title">Add Subcategory</h2>
-          <button class="modal-close" onclick="closeSubcategoryModal()">&times;</button>
+          <button class="modal-close" onclick="closeModal('subcategory-modal')">&times;</button>
         </div>
-        <form id="subcategory-form">
+        <form id="subcategory-form" onsubmit="submitSubcategoryForm(event)">
           <input type="hidden" id="form-subcategory-edit-id" />
           
           <div class="form-group">
@@ -410,7 +406,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <div id="subcategory-form-message" class="form-message" style="display:none;"></div>
 
           <div class="form-actions">
-            <button type="button" class="btn-secondary" onclick="closeSubcategoryModal()">Cancel</button>
+            <button type="button" class="btn-secondary" onclick="closeModal('subcategory-modal')">Cancel</button>
             <button type="submit" class="btn-primary">Save Subcategory</button>
           </div>
         </form>
@@ -422,9 +418,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="subsubcategory-modal-title">Add Sub-Subcategory</h2>
-          <button class="modal-close" onclick="closeSubSubcategoryModal()">&times;</button>
+          <button class="modal-close" onclick="closeModal('subsubcategory-modal')">&times;</button>
         </div>
-        <form id="subsubcategory-form">
+        <form id="subsubcategory-form" onsubmit="submitSubSubcategoryForm(event)">
           <input type="hidden" id="form-subsubcategory-edit-id" />
           
           <div class="form-group">
@@ -464,7 +460,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <div id="subsubcategory-form-message" class="form-message" style="display:none;"></div>
 
           <div class="form-actions">
-            <button type="button" class="btn-secondary" onclick="closeSubSubcategoryModal()">Cancel</button>
+            <button type="button" class="btn-secondary" onclick="closeModal('subsubcategory-modal')">Cancel</button>
             <button type="submit" class="btn-primary">Save Sub-Subcategory</button>
           </div>
         </form>
@@ -477,35 +473,31 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 </AdminLayout>
 
 <style>
+  /* ... (keep all your existing styles) ... */
   .sources-page {
     padding: 2rem;
   }
-
   .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
   }
-
   .page-header h1 {
     font-size: 1.875rem;
     font-weight: 700;
     color: #0f172a;
     margin: 0;
   }
-
   .page-header .text-muted {
     color: #64748b;
     margin: 0.25rem 0 0;
     font-size: 0.875rem;
   }
-
   .header-actions {
     display: flex;
     gap: 0.75rem;
   }
-
   .btn-add {
     display: flex;
     align-items: center;
@@ -521,28 +513,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     transition: all 0.2s;
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
-
   .btn-add:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
   }
-
   .btn-add-category {
     background: linear-gradient(135deg, #10b981, #059669);
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
   }
-
   .btn-add-category:hover {
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
   }
-
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
-
   .stat-card {
     display: flex;
     align-items: center;
@@ -553,19 +540,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     border: 1px solid #e2e8f0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
-
   .stat-icon {
     font-size: 1.75rem;
     line-height: 1;
   }
-
   .stat-value {
     font-size: 1.5rem;
     font-weight: 700;
     color: #0f172a;
     line-height: 1.2;
   }
-
   .stat-label {
     font-size: 0.75rem;
     color: #94a3b8;
@@ -573,7 +557,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-
   .tabs {
     display: flex;
     gap: 0.5rem;
@@ -581,7 +564,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     border-bottom: 2px solid #e2e8f0;
     padding-bottom: 0.5rem;
   }
-
   .tab {
     padding: 0.5rem 1.25rem;
     border: none;
@@ -593,41 +575,33 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     border-radius: 0.5rem;
     transition: all 0.2s;
   }
-
   .tab:hover {
     background: #f1f5f9;
     color: #0f172a;
   }
-
   .tab.active {
     color: #3b82f6;
     background: #eff6ff;
   }
-
   .tab-content {
     display: none;
   }
-
   .tab-content.active {
     display: block;
   }
-
   .filters-bar {
     display: flex;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
   }
-
   .filters {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
     flex: 1;
   }
-
-  .filters select,
-  .filter-select {
+  .filters select, .filter-select {
     padding: 0.5rem 0.75rem;
     border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
@@ -639,19 +613,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     transition: border-color 0.2s;
     min-width: 140px;
   }
-
-  .filters select:focus,
-  .filter-select:focus {
+  .filters select:focus, .filter-select:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-
   .search-box {
     position: relative;
     flex: 1;
     min-width: 200px;
   }
-
   .search-box input {
     width: 100%;
     padding: 0.5rem 0.75rem 0.5rem 2.25rem;
@@ -661,12 +631,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     outline: none;
     transition: border-color 0.2s;
   }
-
   .search-box input:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-
   .search-icon {
     position: absolute;
     left: 0.75rem;
@@ -674,7 +642,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     transform: translateY(-50%);
     color: #94a3b8;
   }
-
   .btn-refresh {
     padding: 0.5rem 0.75rem;
     background: white;
@@ -686,12 +653,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     align-items: center;
     justify-content: center;
   }
-
   .btn-refresh:hover {
     background: #f1f5f9;
     transform: rotate(45deg);
   }
-
   .table-toolbar {
     display: flex;
     justify-content: space-between;
@@ -700,13 +665,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     gap: 1rem;
     flex-wrap: wrap;
   }
-
   .loading {
     text-align: center;
     padding: 4rem 2rem;
     color: #94a3b8;
   }
-
   .spinner {
     width: 40px;
     height: 40px;
@@ -716,11 +679,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     animation: spin 0.8s linear infinite;
     margin: 0 auto 1rem;
   }
-
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
-
   .sources-table {
     width: 100%;
     border-collapse: collapse;
@@ -729,11 +690,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
-
   .sources-table thead {
     background: #f8fafc;
   }
-
   .sources-table th {
     padding: 0.75rem 1rem;
     text-align: left;
@@ -744,23 +703,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     letter-spacing: 0.05em;
     border-bottom: 1px solid #e2e8f0;
   }
-
   .sources-table td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
   }
-
   .sources-table tr:hover td {
     background: #fafbfc;
   }
-
   .source-cell {
     display: flex;
     align-items: center;
     gap: 0.75rem;
   }
-
   .source-logo {
     width: 36px;
     height: 36px;
@@ -770,19 +725,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     border: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
-
   .source-name {
     font-weight: 600;
     color: #0f172a;
   }
-
   .source-url {
     display: block;
     font-size: 0.75rem;
     color: #94a3b8;
     word-break: break-all;
   }
-
   .badge-category {
     display: inline-block;
     padding: 0.25rem 0.625rem;
@@ -792,7 +744,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.75rem;
     font-weight: 500;
   }
-
   .badge-subcategory {
     display: inline-block;
     padding: 0.25rem 0.625rem;
@@ -802,7 +753,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.75rem;
     font-weight: 500;
   }
-
   .badge-subsubcategory {
     display: inline-block;
     padding: 0.25rem 0.625rem;
@@ -812,7 +762,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.75rem;
     font-weight: 500;
   }
-
   .badge-score {
     display: inline-block;
     padding: 0.25rem 0.625rem;
@@ -822,27 +771,22 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     min-width: 2.5rem;
     text-align: center;
   }
-
   .badge-score.perfect {
     background: #dcfce7;
     color: #166534;
   }
-
   .badge-score.high {
     background: #dbeafe;
     color: #1e40af;
   }
-
   .badge-score.medium {
     background: #fef3c7;
     color: #92400e;
   }
-
   .badge-score.low {
     background: #fee2e2;
     color: #991b1b;
   }
-
   .badge-country {
     display: inline-block;
     padding: 0.25rem 0.625rem;
@@ -852,7 +796,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.75rem;
     font-weight: 500;
   }
-
   .badge-status {
     display: inline-block;
     padding: 0.25rem 0.625rem;
@@ -860,33 +803,27 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.75rem;
     font-weight: 500;
   }
-
   .badge-status.active {
     background: #dcfce7;
     color: #166534;
   }
-
   .badge-status.inactive {
     background: #fee2e2;
     color: #991b1b;
   }
-
   .badge-featured {
     display: inline-block;
     margin-left: 0.25rem;
     font-size: 0.75rem;
   }
-
   .actions-header {
     text-align: right;
   }
-
   .actions-cell {
     display: flex;
     gap: 0.5rem;
     justify-content: flex-end;
   }
-
   .btn-sm {
     padding: 0.25rem 0.625rem;
     border: none;
@@ -896,60 +833,47 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     cursor: pointer;
     transition: all 0.15s;
   }
-
   .btn-sm-edit {
     background: #e0e7ff;
     color: #3730a3;
   }
-
   .btn-sm-edit:hover {
     background: #c7d2fe;
   }
-
   .btn-sm-delete {
     background: #fee2e2;
     color: #991b1b;
   }
-
   .btn-sm-delete:hover {
     background: #fecaca;
   }
-
   .btn-sm-verify {
     background: #d1fae5;
     color: #065f46;
   }
-
   .btn-sm-verify:hover {
     background: #a7f3d0;
   }
-
   .btn-sm-add {
     background: #dbeafe;
     color: #1e40af;
   }
-
   .btn-sm-add:hover {
     background: #bfdbfe;
   }
-
   .empty {
     text-align: center;
     padding: 4rem 2rem;
     color: #94a3b8;
   }
-
   .empty-icon {
     font-size: 4rem;
     margin-bottom: 1rem;
   }
-
   .empty h3 {
     color: #475569;
     margin: 0 0 0.5rem;
   }
-
-  /* Modal */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -964,7 +888,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     z-index: 1000;
     padding: 1rem;
   }
-
   .modal {
     background: white;
     border-radius: 1rem;
@@ -976,25 +899,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     animation: modalIn 0.2s ease-out;
   }
-
   @keyframes modalIn {
     from { opacity: 0; transform: scale(0.95) translateY(10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
   }
-
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
   }
-
   .modal-header h2 {
     margin: 0;
     font-size: 1.25rem;
     color: #0f172a;
   }
-
   .modal-close {
     background: none;
     border: none;
@@ -1004,15 +923,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     padding: 0;
     line-height: 1;
   }
-
   .modal-close:hover {
     color: #475569;
   }
-
   .form-group {
     margin-bottom: 1rem;
   }
-
   .form-group label {
     display: block;
     font-weight: 500;
@@ -1020,10 +936,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     color: #0f172a;
     margin-bottom: 0.25rem;
   }
-
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
+  .form-group input, .form-group select, .form-group textarea {
     width: 100%;
     padding: 0.5rem 0.75rem;
     border: 1px solid #e2e8f0;
@@ -1032,25 +945,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     transition: border-color 0.2s;
     font-family: inherit;
   }
-
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus {
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-
   .form-group textarea {
     resize: vertical;
   }
-
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
   }
-
   .checkbox-label {
     display: flex;
     align-items: center;
@@ -1058,47 +965,39 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     cursor: pointer;
     padding-top: 0.25rem;
   }
-
   .checkbox-label input[type="checkbox"] {
     width: 1rem;
     height: 1rem;
     cursor: pointer;
   }
-
   .score-slider {
     display: flex;
     align-items: center;
     gap: 0.75rem;
   }
-
   .score-slider input[type="range"] {
     flex: 1;
     padding: 0;
   }
-
   .score-slider span {
     font-weight: 600;
     color: #0f172a;
     min-width: 2.5rem;
   }
-
   .form-message {
     padding: 0.75rem;
     border-radius: 0.5rem;
     font-size: 0.875rem;
     margin-bottom: 0.5rem;
   }
-
   .form-message.error {
     background: #fee2e2;
     color: #991b1b;
   }
-
   .form-message.success {
     background: #dcfce7;
     color: #166534;
   }
-
   .form-actions {
     display: flex;
     gap: 0.75rem;
@@ -1107,7 +1006,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     padding-top: 1.5rem;
     border-top: 1px solid #e2e8f0;
   }
-
   .btn-primary {
     padding: 0.5rem 1.25rem;
     background: linear-gradient(135deg, #3b82f6, #8b5cf6);
@@ -1119,12 +1017,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     cursor: pointer;
     transition: all 0.2s;
   }
-
   .btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
-
   .btn-secondary {
     padding: 0.5rem 1.25rem;
     background: #f1f5f9;
@@ -1136,11 +1032,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     cursor: pointer;
     transition: all 0.2s;
   }
-
   .btn-secondary:hover {
     background: #e2e8f0;
   }
-
   .toast {
     position: fixed;
     bottom: 2rem;
@@ -1157,68 +1051,52 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     z-index: 2000;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
-
   .toast.show {
     opacity: 1;
     transform: translateY(0);
   }
-
   .toast.success {
     background: #22c55e;
   }
-
   .toast.error {
     background: #ef4444;
   }
-
   @media (max-width: 768px) {
     .page-header {
       flex-direction: column;
       align-items: stretch;
       gap: 1rem;
     }
-
     .header-actions {
       flex-direction: column;
     }
-
     .filters {
       flex-direction: column;
     }
-
-    .filters select,
-    .search-box {
+    .filters select, .search-box {
       width: 100%;
       min-width: unset;
     }
-
     .form-row {
       grid-template-columns: 1fr;
     }
-
     .stats-grid {
       grid-template-columns: 1fr 1fr;
     }
-
     .actions-cell {
       flex-direction: column;
       gap: 0.25rem;
     }
-
     .sources-table {
       font-size: 0.75rem;
     }
-
-    .sources-table th,
-    .sources-table td {
+    .sources-table th, .sources-table td {
       padding: 0.5rem;
     }
-
     .tabs {
       overflow-x: auto;
       flex-wrap: nowrap;
     }
-
     .table-toolbar {
       flex-direction: column;
       align-items: stretch;
@@ -1234,23 +1112,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   let categories = [];
   let subcategories = [];
   let subsubcategories = [];
-  let editingId = null;
-  let currentTab = 'websites';
-
-  // ============================================
-  // DOM REFS
-  // ============================================
-  const $ = (id) => document.getElementById(id);
-  const loadingEl = $('loading-state');
-  const tableWrap = $('table-wrap');
-  const emptyEl = $('empty-state');
-  const tableBody = $('table-body');
-  const toast = $('toast');
+  let editingWebsiteId = null;
+  let editingCategoryId = null;
+  let editingSubcategoryId = null;
+  let editingSubSubcategoryId = null;
 
   // ============================================
   // TOAST
   // ============================================
   function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.className = `toast ${type}`;
     toast.classList.add('show');
@@ -1261,24 +1132,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // ============================================
   // TABS
   // ============================================
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', function() {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      this.classList.add('active');
-      const tabName = this.dataset.tab;
-      document.getElementById(`tab-${tabName}`).classList.add('active');
-      currentTab = tabName;
-      if (tabName === 'categories') renderCategories();
-      else if (tabName === 'subcategories') renderSubcategories();
-      else if (tabName === 'subsubcategories') renderSubSubcategories();
-    });
-  });
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    if (tabName === 'categories') renderCategories();
+    else if (tabName === 'subcategories') renderSubcategories();
+    else if (tabName === 'subsubcategories') renderSubSubcategories();
+  }
 
   // ============================================
   // LOAD DATA
   // ============================================
   function loadData() {
+    const loadingEl = document.getElementById('loading-state');
+    const tableWrap = document.getElementById('table-wrap');
+    const emptyEl = document.getElementById('empty-state');
     loadingEl.style.display = 'block';
     tableWrap.style.display = 'none';
     emptyEl.style.display = 'none';
@@ -1302,11 +1172,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   function loadWebsites() {
     const params = new URLSearchParams();
-    if ($('filter-category').value) params.append('category', $('filter-category').value);
-    if ($('filter-subcategory').value) params.append('subcategory', $('filter-subcategory').value);
-    if ($('filter-subsubcategory').value) params.append('subsubcategory', $('filter-subsubcategory').value);
-    if ($('filter-score').value) params.append('min_score', $('filter-score').value);
-    if ($('search-input').value) params.append('search', $('search-input').value);
+    const filterCategory = document.getElementById('filter-category');
+    const filterSubcategory = document.getElementById('filter-subcategory');
+    const filterSubsubcategory = document.getElementById('filter-subsubcategory');
+    const filterScore = document.getElementById('filter-score');
+    const searchInput = document.getElementById('search-input');
+    
+    if (filterCategory.value) params.append('category', filterCategory.value);
+    if (filterSubcategory.value) params.append('subcategory', filterSubcategory.value);
+    if (filterSubsubcategory.value) params.append('subsubcategory', filterSubsubcategory.value);
+    if (filterScore.value) params.append('min_score', filterScore.value);
+    if (searchInput.value) params.append('search', searchInput.value);
     
     return fetch('/api/admin/reliable/websites?' + params.toString())
       .then(r => r.json())
@@ -1317,10 +1193,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           console.error('API error:', data.error);
           websites = [];
         }
+        return websites;
       })
       .catch(err => {
         console.error('Error loading websites:', err);
         websites = [];
+        return websites;
       });
   }
 
@@ -1331,8 +1209,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         if (data.success) {
           categories = data.data || [];
         }
+        return categories;
       })
-      .catch(err => console.error('Error loading categories:', err));
+      .catch(err => {
+        console.error('Error loading categories:', err);
+        categories = [];
+        return categories;
+      });
   }
 
   function loadSubcategories() {
@@ -1342,8 +1225,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         if (data.success) {
           subcategories = data.data || [];
         }
+        return subcategories;
       })
-      .catch(err => console.error('Error loading subcategories:', err));
+      .catch(err => {
+        console.error('Error loading subcategories:', err);
+        subcategories = [];
+        return subcategories;
+      });
   }
 
   function loadSubSubcategories() {
@@ -1353,8 +1241,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         if (data.success) {
           subsubcategories = data.data || [];
         }
+        return subsubcategories;
       })
-      .catch(err => console.error('Error loading sub-subcategories:', err));
+      .catch(err => {
+        console.error('Error loading sub-subcategories:', err);
+        subsubcategories = [];
+        return subsubcategories;
+      });
   }
 
   // ============================================
@@ -1370,7 +1263,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   function populateCategorySelects() {
     const selects = ['filter-category', 'form-category', 'subcat-filter-category', 'form-subcategory-category'];
     selects.forEach(id => {
-      const sel = $(id);
+      const sel = document.getElementById(id);
       if (!sel) return;
       const val = sel.value;
       sel.innerHTML = '<option value="">Select Category</option>';
@@ -1385,13 +1278,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function populateSubcategoryFilter() {
-    const sel = $('filter-subcategory');
+    const sel = document.getElementById('filter-subcategory');
     const val = sel.value;
     sel.innerHTML = '<option value="">All Subcategories</option>';
     
     let filtered = subcategories;
-    if ($('filter-category').value) {
-      filtered = subcategories.filter(sc => sc.category_id === parseInt($('filter-category').value));
+    const filterCat = document.getElementById('filter-category');
+    if (filterCat.value) {
+      filtered = subcategories.filter(sc => sc.category_id === parseInt(filterCat.value));
     }
     
     filtered.forEach(sc => {
@@ -1404,15 +1298,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function populateSubSubcategoryFilter() {
-    const sel = $('filter-subsubcategory');
+    const sel = document.getElementById('filter-subsubcategory');
     const val = sel.value;
     sel.innerHTML = '<option value="">All Sub-Subcategories</option>';
     
     let filtered = subsubcategories;
-    if ($('filter-subcategory').value) {
-      filtered = subsubcategories.filter(ssc => ssc.subcategory_id === parseInt($('filter-subcategory').value));
-    } else if ($('filter-category').value) {
-      const subcatIds = subcategories.filter(sc => sc.category_id === parseInt($('filter-category').value)).map(sc => sc.id);
+    const filterSub = document.getElementById('filter-subcategory');
+    const filterCat = document.getElementById('filter-category');
+    
+    if (filterSub.value) {
+      filtered = subsubcategories.filter(ssc => ssc.subcategory_id === parseInt(filterSub.value));
+    } else if (filterCat.value) {
+      const subcatIds = subcategories.filter(sc => sc.category_id === parseInt(filterCat.value)).map(sc => sc.id);
       filtered = subsubcategories.filter(ssc => subcatIds.includes(ssc.subcategory_id));
     }
     
@@ -1427,7 +1324,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   function populateModalSelects() {
     // Website modal - category
-    const fCat = $('form-category');
+    const fCat = document.getElementById('form-category');
     if (fCat) {
       const val = fCat.value;
       fCat.innerHTML = '<option value="">Select a category</option>';
@@ -1441,7 +1338,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     // Subcategory modal - category
-    const fSubCat = $('form-subcategory-category');
+    const fSubCat = document.getElementById('form-subcategory-category');
     if (fSubCat) {
       const val = fSubCat.value;
       fSubCat.innerHTML = '<option value="">Select a category</option>';
@@ -1455,7 +1352,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     }
 
     // Sub-subcategory modal - subcategory
-    const fSubSubCat = $('form-subsubcategory-subcategory');
+    const fSubSubCat = document.getElementById('form-subsubcategory-subcategory');
     if (fSubSubCat) {
       const val = fSubSubCat.value;
       fSubSubCat.innerHTML = '<option value="">Select a subcategory</option>';
@@ -1471,7 +1368,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function populateSubcategoryForm(categoryId) {
-    const sel = $('form-subcategory');
+    const sel = document.getElementById('form-subcategory');
     const val = sel.value;
     sel.innerHTML = '<option value="">Select a subcategory</option>';
     
@@ -1487,7 +1384,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function populateSubSubcategoryForm(subcategoryId) {
-    const sel = $('form-subsubcategory');
+    const sel = document.getElementById('form-subsubcategory');
     const val = sel.value;
     sel.innerHTML = '<option value="">None (optional)</option>';
     
@@ -1502,23 +1399,37 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ============================================
+  // MODAL HELPERS
+  // ============================================
+  function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+  }
+
+  function openModal(modalId) {
+    document.getElementById(modalId).style.display = 'flex';
+  }
+
+  // ============================================
   // UPDATE STATS
   // ============================================
   function updateStats() {
     const total = websites.length;
     const featured = websites.filter(w => w.is_featured).length;
     
-    $('total-count').textContent = total;
-    $('category-count').textContent = categories.length;
-    $('subcategory-count').textContent = subcategories.length;
-    $('subsubcategory-count').textContent = subsubcategories.length;
-    $('featured-count').textContent = featured;
+    document.getElementById('total-count').textContent = total;
+    document.getElementById('category-count').textContent = categories.length;
+    document.getElementById('subcategory-count').textContent = subcategories.length;
+    document.getElementById('subsubcategory-count').textContent = subsubcategories.length;
+    document.getElementById('featured-count').textContent = featured;
   }
 
   // ============================================
   // RENDER TABLE - WEBSITES
   // ============================================
   function renderTable() {
+    const tableWrap = document.getElementById('table-wrap');
+    const emptyEl = document.getElementById('empty-state');
+    
     if (!websites || websites.length === 0) {
       tableWrap.style.display = 'none';
       emptyEl.style.display = 'block';
@@ -1566,14 +1477,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         </tr>
       `;
     });
-    tableBody.innerHTML = html;
+    document.getElementById('table-body').innerHTML = html;
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   // ============================================
   // RENDER CATEGORIES
   // ============================================
   function renderCategories() {
-    const tbody = $('categories-table-body');
+    const tbody = document.getElementById('categories-table-body');
     if (!categories || categories.length === 0) {
       tbody.innerHTML = '<tr><td colspan="7" class="empty">No categories found</td></tr>';
       return;
@@ -1605,8 +1523,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // RENDER SUBCATEGORIES
   // ============================================
   function renderSubcategories() {
-    const tbody = $('subcategories-table-body');
-    const filterCat = $('subcat-filter-category').value;
+    const tbody = document.getElementById('subcategories-table-body');
+    const filterCat = document.getElementById('subcat-filter-category').value;
     
     let filtered = subcategories;
     if (filterCat) {
@@ -1645,8 +1563,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // RENDER SUB-SUBCATEGORIES
   // ============================================
   function renderSubSubcategories() {
-    const tbody = $('subsubcategories-table-body');
-    const filterSub = $('subsubcat-filter-subcategory').value;
+    const tbody = document.getElementById('subsubcategories-table-body');
+    const filterSub = document.getElementById('subsubcat-filter-subcategory').value;
     
     let filtered = subsubcategories;
     if (filterSub) {
@@ -1682,54 +1600,47 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     tbody.innerHTML = html;
   }
 
-  function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
   // ============================================
   // WEBSITE CRUD
   // ============================================
   function openWebsiteModal(data = null) {
-    const form = $('source-form');
+    const form = document.getElementById('source-form');
     form.reset();
-    editingId = null;
-    $('form-edit-id').value = '';
-    $('form-message').style.display = 'none';
+    editingWebsiteId = null;
+    document.getElementById('form-edit-id').value = '';
+    document.getElementById('form-message').style.display = 'none';
     
     if (data) {
-      editingId = data.id;
-      $('modal-title').textContent = 'Edit Website';
-      $('modal-submit').textContent = 'Update Website';
-      $('form-category').value = data.category_id || '';
+      editingWebsiteId = data.id;
+      document.getElementById('modal-title').textContent = 'Edit Website';
+      document.getElementById('modal-submit').textContent = 'Update Website';
+      document.getElementById('form-category').value = data.category_id || '';
       populateSubcategoryForm(data.category_id);
-      $('form-subcategory').value = data.subcategory_id || '';
+      document.getElementById('form-subcategory').value = data.subcategory_id || '';
       populateSubSubcategoryForm(data.subcategory_id);
-      $('form-subsubcategory').value = data.subsubcategory_id || '';
-      $('form-name').value = data.name || '';
-      $('form-url').value = data.url || '';
-      $('form-desc').value = data.description || '';
-      $('form-notes').value = data.notes || '';
-      $('form-logo').value = data.logo_url || '';
-      $('form-country').value = data.country || 'USA';
-      $('form-active').checked = data.is_active === 1;
-      $('form-featured').checked = data.is_featured === 1;
-      $('form-score').value = data.reliability_score || 5;
-      $('score-label').textContent = (data.reliability_score || 5) + '/10';
-      $('form-edit-id').value = data.id;
+      document.getElementById('form-subsubcategory').value = data.subsubcategory_id || '';
+      document.getElementById('form-name').value = data.name || '';
+      document.getElementById('form-url').value = data.url || '';
+      document.getElementById('form-desc').value = data.description || '';
+      document.getElementById('form-notes').value = data.notes || '';
+      document.getElementById('form-logo').value = data.logo_url || '';
+      document.getElementById('form-country').value = data.country || 'USA';
+      document.getElementById('form-active').checked = data.is_active === 1;
+      document.getElementById('form-featured').checked = data.is_featured === 1;
+      document.getElementById('form-score').value = data.reliability_score || 5;
+      document.getElementById('score-label').textContent = (data.reliability_score || 5) + '/10';
+      document.getElementById('form-edit-id').value = data.id;
     } else {
-      $('modal-title').textContent = 'Add Website';
-      $('modal-submit').textContent = 'Save Website';
-      $('form-active').checked = true;
-      $('form-featured').checked = false;
-      $('form-country').value = 'USA';
-      $('form-score').value = 5;
-      $('score-label').textContent = '5/10';
+      document.getElementById('modal-title').textContent = 'Add Website';
+      document.getElementById('modal-submit').textContent = 'Save Website';
+      document.getElementById('form-active').checked = true;
+      document.getElementById('form-featured').checked = false;
+      document.getElementById('form-country').value = 'USA';
+      document.getElementById('form-score').value = 5;
+      document.getElementById('score-label').textContent = '5/10';
     }
     
-    $('source-modal').style.display = 'flex';
+    openModal('source-modal');
   }
 
   window.editWebsite = function(id) {
@@ -1737,18 +1648,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     if (website) openWebsiteModal(website);
   };
 
-  function closeWebsiteModal() {
-    $('source-modal').style.display = 'none';
-  }
-
   window.deleteWebsite = function(id) {
     const website = websites.find(w => w.id === id);
     if (!confirm(`Delete "${website?.name}"? This cannot be undone.`)) return;
     
-    fetch('/api/admin/reliable/websites', { 
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
+    fetch('/api/admin/reliable/websites/' + id, { 
+      method: 'DELETE'
     })
       .then(r => r.json())
       .then(data => {
@@ -1788,33 +1693,32 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       });
   };
 
-  // Website form submit
-  $('source-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+  function submitWebsiteForm(event) {
+    event.preventDefault();
     
     const data = {
-      category_id: parseInt($('form-category').value) || null,
-      subcategory_id: parseInt($('form-subcategory').value) || null,
-      subsubcategory_id: parseInt($('form-subsubcategory').value) || null,
-      name: $('form-name').value.trim(),
-      url: $('form-url').value.trim(),
-      description: $('form-desc').value.trim(),
-      notes: $('form-notes').value.trim(),
-      logo_url: $('form-logo').value.trim(),
-      country: $('form-country').value.trim() || 'USA',
+      category_id: parseInt(document.getElementById('form-category').value) || null,
+      subcategory_id: parseInt(document.getElementById('form-subcategory').value) || null,
+      subsubcategory_id: parseInt(document.getElementById('form-subsubcategory').value) || null,
+      name: document.getElementById('form-name').value.trim(),
+      url: document.getElementById('form-url').value.trim(),
+      description: document.getElementById('form-desc').value.trim(),
+      notes: document.getElementById('form-notes').value.trim(),
+      logo_url: document.getElementById('form-logo').value.trim(),
+      country: document.getElementById('form-country').value.trim() || 'USA',
       language: 'English',
-      is_active: $('form-active').checked ? 1 : 0,
-      is_featured: $('form-featured').checked ? 1 : 0,
-      reliability_score: parseInt($('form-score').value) || 5
+      is_active: document.getElementById('form-active').checked ? 1 : 0,
+      is_featured: document.getElementById('form-featured').checked ? 1 : 0,
+      reliability_score: parseInt(document.getElementById('form-score').value) || 5
     };
     
     if (!data.name || !data.url || !data.subcategory_id) {
-      showFormMessage('Name, URL, and subcategory are required', 'error');
+      showFormMessage('source-form-message', 'Name, URL, and subcategory are required', 'error');
       return;
     }
     
-    const url = editingId ? '/api/admin/reliable/websites/' + editingId : '/api/admin/reliable/websites';
-    const method = editingId ? 'PUT' : 'POST';
+    const url = editingWebsiteId ? '/api/admin/reliable/websites/' + editingWebsiteId : '/api/admin/reliable/websites';
+    const method = editingWebsiteId ? 'PUT' : 'POST';
     
     fetch(url, {
       method,
@@ -1824,21 +1728,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(r => r.json())
       .then(result => {
         if (result.success) {
-          showToast(editingId ? '✅ Website updated!' : '✅ Website created!', 'success');
-          closeWebsiteModal();
+          showToast(editingWebsiteId ? '✅ Website updated!' : '✅ Website created!', 'success');
+          closeModal('source-modal');
           loadData();
         } else {
-          showFormMessage(result.error || 'Failed to save', 'error');
+          showFormMessage('source-form-message', result.error || 'Failed to save', 'error');
         }
       })
       .catch(err => {
-        showFormMessage('Error saving website', 'error');
+        showFormMessage('source-form-message', 'Error saving website', 'error');
         console.error(err);
       });
-  });
+  }
 
-  function showFormMessage(msg, type) {
-    const el = $('form-message');
+  function showFormMessage(msgId, msg, type) {
+    const el = document.getElementById(msgId);
     el.textContent = msg;
     el.className = 'form-message ' + type;
     el.style.display = 'block';
@@ -1848,28 +1752,30 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // CATEGORY CRUD
   // ============================================
   function openCategoryModal(data = null) {
-    const form = $('category-form');
+    const form = document.getElementById('category-form');
     form.reset();
-    $('form-category-edit-id').value = '';
-    $('category-form-message').style.display = 'none';
+    editingCategoryId = null;
+    document.getElementById('form-category-edit-id').value = '';
+    document.getElementById('category-form-message').style.display = 'none';
     
     if (data) {
-      $('category-modal-title').textContent = 'Edit Category';
-      $('form-category-edit-id').value = data.id;
-      $('form-category-name').value = data.name || '';
-      $('form-category-slug').value = data.slug || '';
-      $('form-category-desc').value = data.description || '';
-      $('form-category-icon').value = data.icon || '📚';
-      $('form-category-order').value = data.display_order || 0;
-      $('form-category-active').checked = data.is_active === 1;
+      editingCategoryId = data.id;
+      document.getElementById('category-modal-title').textContent = 'Edit Category';
+      document.getElementById('form-category-edit-id').value = data.id;
+      document.getElementById('form-category-name').value = data.name || '';
+      document.getElementById('form-category-slug').value = data.slug || '';
+      document.getElementById('form-category-desc').value = data.description || '';
+      document.getElementById('form-category-icon').value = data.icon || '📚';
+      document.getElementById('form-category-order').value = data.display_order || 0;
+      document.getElementById('form-category-active').checked = data.is_active === 1;
     } else {
-      $('category-modal-title').textContent = 'Add Category';
-      $('form-category-icon').value = '📚';
-      $('form-category-order').value = 0;
-      $('form-category-active').checked = true;
+      document.getElementById('category-modal-title').textContent = 'Add Category';
+      document.getElementById('form-category-icon').value = '📚';
+      document.getElementById('form-category-order').value = 0;
+      document.getElementById('form-category-active').checked = true;
     }
     
-    $('category-modal').style.display = 'flex';
+    openModal('category-modal');
   }
 
   window.editCategory = function(id) {
@@ -1877,18 +1783,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     if (category) openCategoryModal(category);
   };
 
-  function closeCategoryModal() {
-    $('category-modal').style.display = 'none';
-  }
-
   window.deleteCategory = function(id) {
     const category = categories.find(c => c.id === id);
     if (!confirm(`Delete "${category?.name}"? This will also delete all subcategories and websites under it.`)) return;
     
-    fetch('/api/admin/reliable/categories', { 
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
+    fetch('/api/admin/reliable/categories/' + id, { 
+      method: 'DELETE'
     })
       .then(r => r.json())
       .then(data => {
@@ -1905,22 +1805,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       });
   };
 
-  // Category form submit
-  $('category-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+  function submitCategoryForm(event) {
+    event.preventDefault();
     
-    const id = $('form-category-edit-id').value;
+    const id = document.getElementById('form-category-edit-id').value;
     const data = {
-      name: $('form-category-name').value.trim(),
-      slug: $('form-category-slug').value.trim(),
-      description: $('form-category-desc').value.trim(),
-      icon: $('form-category-icon').value.trim() || '📚',
-      display_order: parseInt($('form-category-order').value) || 0,
-      is_active: $('form-category-active').checked ? 1 : 0
+      name: document.getElementById('form-category-name').value.trim(),
+      slug: document.getElementById('form-category-slug').value.trim(),
+      description: document.getElementById('form-category-desc').value.trim(),
+      icon: document.getElementById('form-category-icon').value.trim() || '📚',
+      display_order: parseInt(document.getElementById('form-category-order').value) || 0,
+      is_active: document.getElementById('form-category-active').checked ? 1 : 0
     };
     
     if (!data.name || !data.slug) {
-      showCategoryFormMessage('Name and slug are required', 'error');
+      showFormMessage('category-form-message', 'Name and slug are required', 'error');
       return;
     }
     
@@ -1936,52 +1835,47 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(result => {
         if (result.success) {
           showToast(id ? '✅ Category updated!' : '✅ Category created!', 'success');
-          closeCategoryModal();
+          closeModal('category-modal');
           loadData();
         } else {
-          showCategoryFormMessage(result.error || 'Failed to save', 'error');
+          showFormMessage('category-form-message', result.error || 'Failed to save', 'error');
         }
       })
       .catch(err => {
-        showCategoryFormMessage('Error saving category', 'error');
+        showFormMessage('category-form-message', 'Error saving category', 'error');
         console.error(err);
       });
-  });
-
-  function showCategoryFormMessage(msg, type) {
-    const el = $('category-form-message');
-    el.textContent = msg;
-    el.className = 'form-message ' + type;
-    el.style.display = 'block';
   }
 
   // ============================================
   // SUBCATEGORY CRUD
   // ============================================
   function openSubcategoryModal(data = null) {
-    const form = $('subcategory-form');
+    const form = document.getElementById('subcategory-form');
     form.reset();
-    $('form-subcategory-edit-id').value = '';
-    $('subcategory-form-message').style.display = 'none';
+    editingSubcategoryId = null;
+    document.getElementById('form-subcategory-edit-id').value = '';
+    document.getElementById('subcategory-form-message').style.display = 'none';
     
     populateModalSelects();
     
     if (data) {
-      $('subcategory-modal-title').textContent = 'Edit Subcategory';
-      $('form-subcategory-edit-id').value = data.id;
-      $('form-subcategory-category').value = data.category_id || '';
-      $('form-subcategory-name').value = data.name || '';
-      $('form-subcategory-slug').value = data.slug || '';
-      $('form-subcategory-desc').value = data.description || '';
-      $('form-subcategory-order').value = data.display_order || 0;
-      $('form-subcategory-active').checked = data.is_active === 1;
+      editingSubcategoryId = data.id;
+      document.getElementById('subcategory-modal-title').textContent = 'Edit Subcategory';
+      document.getElementById('form-subcategory-edit-id').value = data.id;
+      document.getElementById('form-subcategory-category').value = data.category_id || '';
+      document.getElementById('form-subcategory-name').value = data.name || '';
+      document.getElementById('form-subcategory-slug').value = data.slug || '';
+      document.getElementById('form-subcategory-desc').value = data.description || '';
+      document.getElementById('form-subcategory-order').value = data.display_order || 0;
+      document.getElementById('form-subcategory-active').checked = data.is_active === 1;
     } else {
-      $('subcategory-modal-title').textContent = 'Add Subcategory';
-      $('form-subcategory-order').value = 0;
-      $('form-subcategory-active').checked = true;
+      document.getElementById('subcategory-modal-title').textContent = 'Add Subcategory';
+      document.getElementById('form-subcategory-order').value = 0;
+      document.getElementById('form-subcategory-active').checked = true;
     }
     
-    $('subcategory-modal').style.display = 'flex';
+    openModal('subcategory-modal');
   }
 
   window.editSubcategory = function(id) {
@@ -1989,18 +1883,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     if (subcategory) openSubcategoryModal(subcategory);
   };
 
-  function closeSubcategoryModal() {
-    $('subcategory-modal').style.display = 'none';
-  }
-
   window.deleteSubcategory = function(id) {
     const subcategory = subcategories.find(sc => sc.id === id);
     if (!confirm(`Delete "${subcategory?.name}"? This will also delete all sub-subcategories and websites under it.`)) return;
     
-    fetch('/api/admin/reliable/subcategories', { 
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
+    fetch('/api/admin/reliable/subcategories/' + id, { 
+      method: 'DELETE'
     })
       .then(r => r.json())
       .then(data => {
@@ -2017,22 +1905,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       });
   };
 
-  // Subcategory form submit
-  $('subcategory-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+  function submitSubcategoryForm(event) {
+    event.preventDefault();
     
-    const id = $('form-subcategory-edit-id').value;
+    const id = document.getElementById('form-subcategory-edit-id').value;
     const data = {
-      category_id: parseInt($('form-subcategory-category').value) || null,
-      name: $('form-subcategory-name').value.trim(),
-      slug: $('form-subcategory-slug').value.trim(),
-      description: $('form-subcategory-desc').value.trim(),
-      display_order: parseInt($('form-subcategory-order').value) || 0,
-      is_active: $('form-subcategory-active').checked ? 1 : 0
+      category_id: parseInt(document.getElementById('form-subcategory-category').value) || null,
+      name: document.getElementById('form-subcategory-name').value.trim(),
+      slug: document.getElementById('form-subcategory-slug').value.trim(),
+      description: document.getElementById('form-subcategory-desc').value.trim(),
+      display_order: parseInt(document.getElementById('form-subcategory-order').value) || 0,
+      is_active: document.getElementById('form-subcategory-active').checked ? 1 : 0
     };
     
     if (!data.category_id || !data.name || !data.slug) {
-      showSubcategoryFormMessage('Category, name, and slug are required', 'error');
+      showFormMessage('subcategory-form-message', 'Category, name, and slug are required', 'error');
       return;
     }
     
@@ -2048,52 +1935,47 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(result => {
         if (result.success) {
           showToast(id ? '✅ Subcategory updated!' : '✅ Subcategory created!', 'success');
-          closeSubcategoryModal();
+          closeModal('subcategory-modal');
           loadData();
         } else {
-          showSubcategoryFormMessage(result.error || 'Failed to save', 'error');
+          showFormMessage('subcategory-form-message', result.error || 'Failed to save', 'error');
         }
       })
       .catch(err => {
-        showSubcategoryFormMessage('Error saving subcategory', 'error');
+        showFormMessage('subcategory-form-message', 'Error saving subcategory', 'error');
         console.error(err);
       });
-  });
-
-  function showSubcategoryFormMessage(msg, type) {
-    const el = $('subcategory-form-message');
-    el.textContent = msg;
-    el.className = 'form-message ' + type;
-    el.style.display = 'block';
   }
 
   // ============================================
   // SUB-SUBCATEGORY CRUD
   // ============================================
   function openSubSubcategoryModal(data = null) {
-    const form = $('subsubcategory-form');
+    const form = document.getElementById('subsubcategory-form');
     form.reset();
-    $('form-subsubcategory-edit-id').value = '';
-    $('subsubcategory-form-message').style.display = 'none';
+    editingSubSubcategoryId = null;
+    document.getElementById('form-subsubcategory-edit-id').value = '';
+    document.getElementById('subsubcategory-form-message').style.display = 'none';
     
     populateModalSelects();
     
     if (data) {
-      $('subsubcategory-modal-title').textContent = 'Edit Sub-Subcategory';
-      $('form-subsubcategory-edit-id').value = data.id;
-      $('form-subsubcategory-subcategory').value = data.subcategory_id || '';
-      $('form-subsubcategory-name').value = data.name || '';
-      $('form-subsubcategory-slug').value = data.slug || '';
-      $('form-subsubcategory-desc').value = data.description || '';
-      $('form-subsubcategory-order').value = data.display_order || 0;
-      $('form-subsubcategory-active').checked = data.is_active === 1;
+      editingSubSubcategoryId = data.id;
+      document.getElementById('subsubcategory-modal-title').textContent = 'Edit Sub-Subcategory';
+      document.getElementById('form-subsubcategory-edit-id').value = data.id;
+      document.getElementById('form-subsubcategory-subcategory').value = data.subcategory_id || '';
+      document.getElementById('form-subsubcategory-name').value = data.name || '';
+      document.getElementById('form-subsubcategory-slug').value = data.slug || '';
+      document.getElementById('form-subsubcategory-desc').value = data.description || '';
+      document.getElementById('form-subsubcategory-order').value = data.display_order || 0;
+      document.getElementById('form-subsubcategory-active').checked = data.is_active === 1;
     } else {
-      $('subsubcategory-modal-title').textContent = 'Add Sub-Subcategory';
-      $('form-subsubcategory-order').value = 0;
-      $('form-subsubcategory-active').checked = true;
+      document.getElementById('subsubcategory-modal-title').textContent = 'Add Sub-Subcategory';
+      document.getElementById('form-subsubcategory-order').value = 0;
+      document.getElementById('form-subsubcategory-active').checked = true;
     }
     
-    $('subsubcategory-modal').style.display = 'flex';
+    openModal('subsubcategory-modal');
   }
 
   window.editSubSubcategory = function(id) {
@@ -2101,18 +1983,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     if (subsubcategory) openSubSubcategoryModal(subsubcategory);
   };
 
-  function closeSubSubcategoryModal() {
-    $('subsubcategory-modal').style.display = 'none';
-  }
-
   window.deleteSubSubcategory = function(id) {
     const subsubcategory = subsubcategories.find(ssc => ssc.id === id);
     if (!confirm(`Delete "${subsubcategory?.name}"? This will also delete all websites under it.`)) return;
     
-    fetch('/api/admin/reliable/subsubcategories', { 
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id })
+    fetch('/api/admin/reliable/subsubcategories/' + id, { 
+      method: 'DELETE'
     })
       .then(r => r.json())
       .then(data => {
@@ -2129,22 +2005,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       });
   };
 
-  // Sub-subcategory form submit
-  $('subsubcategory-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+  function submitSubSubcategoryForm(event) {
+    event.preventDefault();
     
-    const id = $('form-subsubcategory-edit-id').value;
+    const id = document.getElementById('form-subsubcategory-edit-id').value;
     const data = {
-      subcategory_id: parseInt($('form-subsubcategory-subcategory').value) || null,
-      name: $('form-subsubcategory-name').value.trim(),
-      slug: $('form-subsubcategory-slug').value.trim(),
-      description: $('form-subsubcategory-desc').value.trim(),
-      display_order: parseInt($('form-subsubcategory-order').value) || 0,
-      is_active: $('form-subsubcategory-active').checked ? 1 : 0
+      subcategory_id: parseInt(document.getElementById('form-subsubcategory-subcategory').value) || null,
+      name: document.getElementById('form-subsubcategory-name').value.trim(),
+      slug: document.getElementById('form-subsubcategory-slug').value.trim(),
+      description: document.getElementById('form-subsubcategory-desc').value.trim(),
+      display_order: parseInt(document.getElementById('form-subsubcategory-order').value) || 0,
+      is_active: document.getElementById('form-subsubcategory-active').checked ? 1 : 0
     };
     
     if (!data.subcategory_id || !data.name || !data.slug) {
-      showSubSubcategoryFormMessage('Subcategory, name, and slug are required', 'error');
+      showFormMessage('subsubcategory-form-message', 'Subcategory, name, and slug are required', 'error');
       return;
     }
     
@@ -2160,75 +2035,42 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(result => {
         if (result.success) {
           showToast(id ? '✅ Sub-subcategory updated!' : '✅ Sub-subcategory created!', 'success');
-          closeSubSubcategoryModal();
+          closeModal('subsubcategory-modal');
           loadData();
         } else {
-          showSubSubcategoryFormMessage(result.error || 'Failed to save', 'error');
+          showFormMessage('subsubcategory-form-message', result.error || 'Failed to save', 'error');
         }
       })
       .catch(err => {
-        showSubSubcategoryFormMessage('Error saving sub-subcategory', 'error');
+        showFormMessage('subsubcategory-form-message', 'Error saving sub-subcategory', 'error');
         console.error(err);
       });
-  });
-
-  function showSubSubcategoryFormMessage(msg, type) {
-    const el = $('subsubcategory-form-message');
-    el.textContent = msg;
-    el.className = 'form-message ' + type;
-    el.style.display = 'block';
   }
 
   // ============================================
   // EVENT LISTENERS
   // ============================================
-  $('add-btn').addEventListener('click', () => openWebsiteModal());
-  $('add-category-btn').addEventListener('click', () => openCategoryModal());
-  
-  // Close buttons
-  $('modal-close').addEventListener('click', closeWebsiteModal);
-  $('modal-cancel').addEventListener('click', closeWebsiteModal);
-  $('source-modal').addEventListener('click', e => { if (e.target === $('source-modal')) closeWebsiteModal(); });
-  $('category-modal').addEventListener('click', e => { if (e.target === $('category-modal')) closeCategoryModal(); });
-  $('subcategory-modal').addEventListener('click', e => { if (e.target === $('subcategory-modal')) closeSubcategoryModal(); });
-  $('subsubcategory-modal').addEventListener('click', e => { if (e.target === $('subsubcategory-modal')) closeSubSubcategoryModal(); });
+  document.getElementById('add-btn').addEventListener('click', () => openWebsiteModal());
+  document.getElementById('add-category-btn').addEventListener('click', () => openCategoryModal());
 
-  // Form cascading
-  $('form-category').addEventListener('change', function() {
-    populateSubcategoryForm(this.value);
-  });
-
-  $('form-subcategory').addEventListener('change', function() {
-    populateSubSubcategoryForm(this.value);
-  });
-
-  // Score slider
-  $('form-score').addEventListener('input', () => {
-    $('score-label').textContent = $('form-score').value + '/10';
-  });
-
-  // Filters
-  $('filter-category').addEventListener('change', function() {
+  // Filter events
+  document.getElementById('filter-category').addEventListener('change', function() {
     populateSubcategoryFilter();
     populateSubSubcategoryFilter();
     loadData();
   });
   
-  $('filter-subcategory').addEventListener('change', function() {
+  document.getElementById('filter-subcategory').addEventListener('change', function() {
     populateSubSubcategoryFilter();
     loadData();
   });
   
-  $('filter-subsubcategory').addEventListener('change', loadData);
-  $('filter-score').addEventListener('change', loadData);
-  
-  // Subcategory filter on subcategories tab
-  $('subcat-filter-category').addEventListener('change', renderSubcategories);
-  $('subsubcat-filter-subcategory').addEventListener('change', renderSubSubcategories);
+  document.getElementById('filter-subsubcategory').addEventListener('change', loadData);
+  document.getElementById('filter-score').addEventListener('change', loadData);
 
   // Search
   let searchTimer;
-  $('search-input').addEventListener('input', () => {
+  document.getElementById('search-input').addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(loadData, 300);
   });
