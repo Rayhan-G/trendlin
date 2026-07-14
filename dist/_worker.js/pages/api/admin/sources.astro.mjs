@@ -2,8 +2,6 @@ globalThis.process ??= {}; globalThis.process.env ??= {};
 export { renderers } from '../../../renderers.mjs';
 
 // API endpoint for sources - GET (list) and POST (create)
-// Cloudflare Workers with D1
-
 async function onRequest(context) {
   const { request, env } = context;
   
@@ -30,13 +28,13 @@ async function handleGet(request, env) {
     const categoryId = url.searchParams.get('category');
     const stateId = url.searchParams.get('state');
     const search = url.searchParams.get('search');
-    const type = url.searchParams.get('type') || 'all'; // 'master', 'state', or 'all'
+    const type = url.searchParams.get('type') || 'all';
+    const featured = url.searchParams.get('featured') === 'true';
     
     let query = '';
     const params = [];
     
     if (type === 'master') {
-      // Get only master sources
       query = `
         SELECT 
           s.id,
@@ -63,7 +61,7 @@ async function handleGet(request, env) {
       
       if (categoryId) {
         query += ` AND s.category_id = ?`;
-        params.push(categoryId);
+        params.push(parseInt(categoryId));
       }
       
       if (search) {
@@ -71,10 +69,13 @@ async function handleGet(request, env) {
         params.push(`%${search}%`, `%${search}%`);
       }
       
-      query += ` ORDER BY s.is_featured DESC, s.name ASC`;
+      if (featured) {
+        query += ` AND s.is_featured = 1`;
+      }
+      
+      query += ` ORDER BY s.is_featured DESC, s.trust_score DESC, s.name ASC`;
       
     } else if (type === 'state') {
-      // Get only state sources
       query = `
         SELECT 
           s.id,
@@ -105,12 +106,12 @@ async function handleGet(request, env) {
       
       if (categoryId) {
         query += ` AND s.category_id = ?`;
-        params.push(categoryId);
+        params.push(parseInt(categoryId));
       }
       
       if (stateId) {
         query += ` AND s.state_id = ?`;
-        params.push(stateId);
+        params.push(parseInt(stateId));
       }
       
       if (search) {
@@ -118,10 +119,14 @@ async function handleGet(request, env) {
         params.push(`%${search}%`, `%${search}%`);
       }
       
-      query += ` ORDER BY s.is_featured DESC, s.name ASC`;
+      if (featured) {
+        query += ` AND s.is_featured = 1`;
+      }
+      
+      query += ` ORDER BY s.is_featured DESC, s.trust_score DESC, s.name ASC`;
       
     } else {
-      // 'all' - combine both master and state sources using UNION
+      // 'all' - combine both using UNION
       const masterQuery = `
         SELECT 
           s.id,
@@ -140,7 +145,10 @@ async function handleGet(request, env) {
           NULL as state_id,
           NULL as state_name,
           NULL as state_code,
-          'master' as source_type_actual
+          'master' as source_type_actual,
+          NULL as address,
+          NULL as phone,
+          NULL as email
         FROM sources_master s
         JOIN sources_categories c ON s.category_id = c.id
         WHERE 1=1
@@ -174,18 +182,17 @@ async function handleGet(request, env) {
         WHERE 1=1
       `;
       
-      // Combine with UNION
       let whereClause = '';
       const unionParams = [];
       
       if (categoryId) {
         whereClause = ` AND category_id = ?`;
-        unionParams.push(categoryId);
+        unionParams.push(parseInt(categoryId));
       }
       
       if (stateId) {
         whereClause += ` AND state_id = ?`;
-        unionParams.push(stateId);
+        unionParams.push(parseInt(stateId));
       }
       
       if (search) {
@@ -193,8 +200,12 @@ async function handleGet(request, env) {
         unionParams.push(`%${search}%`, `%${search}%`);
       }
       
-      query = `(${masterQuery}${whereClause}) UNION ALL (${stateQuery}${whereClause}) ORDER BY is_featured DESC, name ASC`;
-      params.push(...unionParams, ...unionParams); // Duplicate params for both parts
+      if (featured) {
+        whereClause += ` AND is_featured = 1`;
+      }
+      
+      query = `(${masterQuery}${whereClause}) UNION ALL (${stateQuery}${whereClause}) ORDER BY is_featured DESC, trust_score DESC, name ASC`;
+      params.push(...unionParams, ...unionParams);
     }
     
     const result = await env.DB.prepare(query).bind(...params).all();
@@ -264,8 +275,8 @@ async function handlePost(request, env) {
       
       result = await env.DB
         .prepare(query)
-        .bind(name, url, category_id, description, source_type,
-          logo_url, is_active, is_featured, trust_score)
+        .bind(name, url, parseInt(category_id), description || '', source_type,
+          logo_url || '', parseInt(is_active), parseInt(is_featured), parseInt(trust_score) || 0)
         .run();
         
     } else {
@@ -284,7 +295,7 @@ async function handlePost(request, env) {
       const checkQuery = `SELECT id FROM sources_state WHERE state_id = ? AND name = ?`;
       const existing = await env.DB
         .prepare(checkQuery)
-        .bind(state_id, name)
+        .bind(parseInt(state_id), name)
         .first();
       
       if (existing) {
@@ -307,9 +318,21 @@ async function handlePost(request, env) {
       
       result = await env.DB
         .prepare(query)
-        .bind(state_id, name, url, category_id, description, source_type,
-          logo_url, is_active, is_featured, trust_score,
-          address, phone, email)
+        .bind(
+          parseInt(state_id), 
+          name, 
+          url, 
+          parseInt(category_id), 
+          description || '', 
+          source_type,
+          logo_url || '', 
+          parseInt(is_active), 
+          parseInt(is_featured), 
+          parseInt(trust_score) || 0,
+          address || '', 
+          phone || '', 
+          email || ''
+        )
         .run();
     }
     

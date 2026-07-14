@@ -2,8 +2,6 @@ globalThis.process ??= {}; globalThis.process.env ??= {};
 export { renderers } from '../../../../renderers.mjs';
 
 // API endpoint for individual source operations - GET, PUT, DELETE
-// Cloudflare Workers with D1
-
 async function onRequest(context) {
   const { request, env, params } = context;
   
@@ -63,7 +61,7 @@ async function handleGet(params, env) {
     
     let result = await env.DB
       .prepare(query)
-      .bind(id)
+      .bind(parseInt(id))
       .first();
     
     if (!result) {
@@ -94,7 +92,7 @@ async function handleGet(params, env) {
       
       result = await env.DB
         .prepare(query)
-        .bind(id)
+        .bind(parseInt(id))
         .first();
     }
     
@@ -150,14 +148,14 @@ async function handlePut(request, params, env) {
     let checkQuery = `SELECT id, 'state' as type FROM sources_state WHERE id = ?`;
     let result = await env.DB
       .prepare(checkQuery)
-      .bind(id)
+      .bind(parseInt(id))
       .first();
     
     if (!result) {
       checkQuery = `SELECT id, 'master' as type FROM sources_master WHERE id = ?`;
       result = await env.DB
         .prepare(checkQuery)
-        .bind(id)
+        .bind(parseInt(id))
         .first();
     }
     
@@ -194,14 +192,14 @@ async function handlePut(request, params, env) {
         .bind(
           name || '',
           url || '',
-          category_id,
+          parseInt(category_id),
           description || '',
           source_type || 'official',
           logo_url || '',
-          is_active !== undefined ? is_active : 1,
-          is_featured !== undefined ? is_featured : 0,
-          trust_score || 0,
-          id
+          is_active !== undefined ? parseInt(is_active) : 1,
+          is_featured !== undefined ? parseInt(is_featured) : 0,
+          trust_score !== undefined ? parseInt(trust_score) : 0,
+          parseInt(id)
         )
         .run();
         
@@ -229,20 +227,20 @@ async function handlePut(request, params, env) {
       await env.DB
         .prepare(query)
         .bind(
-          state_id || null,
+          state_id ? parseInt(state_id) : null,
           name || '',
           url || '',
-          category_id,
+          parseInt(category_id),
           description || '',
           source_type || 'official',
           logo_url || '',
           address || '',
           phone || '',
           email || '',
-          is_active !== undefined ? is_active : 1,
-          is_featured !== undefined ? is_featured : 0,
-          trust_score || 0,
-          id
+          is_active !== undefined ? parseInt(is_active) : 1,
+          is_featured !== undefined ? parseInt(is_featured) : 0,
+          trust_score !== undefined ? parseInt(trust_score) : 0,
+          parseInt(id)
         )
         .run();
     }
@@ -275,14 +273,14 @@ async function handleDelete(params, env) {
     let checkQuery = `SELECT id, 'state' as type FROM sources_state WHERE id = ?`;
     let result = await env.DB
       .prepare(checkQuery)
-      .bind(id)
+      .bind(parseInt(id))
       .first();
     
     if (!result) {
       checkQuery = `SELECT id, 'master' as type FROM sources_master WHERE id = ?`;
       result = await env.DB
         .prepare(checkQuery)
-        .bind(id)
+        .bind(parseInt(id))
         .first();
     }
     
@@ -301,12 +299,12 @@ async function handleDelete(params, env) {
     if (sourceType === 'master') {
       await env.DB
         .prepare('DELETE FROM sources_master WHERE id = ?')
-        .bind(id)
+        .bind(parseInt(id))
         .run();
     } else {
       await env.DB
         .prepare('DELETE FROM sources_state WHERE id = ?')
-        .bind(id)
+        .bind(parseInt(id))
         .run();
     }
     

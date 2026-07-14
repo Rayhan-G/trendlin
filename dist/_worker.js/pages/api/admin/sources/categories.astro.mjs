@@ -1,9 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 export { renderers } from '../../../../renderers.mjs';
 
-// API endpoint for sources categories - GET, POST, PUT, DELETE
-// Cloudflare Workers with D1
-
+// API endpoint for sources categories
 async function onRequest(context) {
   const { request, env } = context;
   
@@ -111,7 +109,6 @@ async function handlePost(request, env) {
       is_active = 1
     } = body;
     
-    // Validate required fields
     if (!name || !slug) {
       return new Response(JSON.stringify({ 
         success: false, 
@@ -146,7 +143,7 @@ async function handlePost(request, env) {
     
     const result = await env.DB
       .prepare(query)
-      .bind(name, slug, icon, description, display_order, is_active)
+      .bind(name, slug, icon, description, parseInt(display_order), parseInt(is_active))
       .run();
     
     return new Response(JSON.stringify({ 
@@ -206,9 +203,9 @@ async function handlePut(request, env) {
         slug || '',
         icon || '📁',
         description || '',
-        display_order || 0,
-        is_active !== undefined ? is_active : 1,
-        id
+        display_order !== undefined ? parseInt(display_order) : 0,
+        is_active !== undefined ? parseInt(is_active) : 1,
+        parseInt(id)
       )
       .run();
     
@@ -255,7 +252,7 @@ async function handleDelete(request, env) {
     `;
     const usage = await env.DB
       .prepare(usageQuery)
-      .bind(id, id)
+      .bind(parseInt(id), parseInt(id))
       .first();
     
     if (usage && usage.usage_count > 0) {
@@ -270,7 +267,7 @@ async function handleDelete(request, env) {
     
     await env.DB
       .prepare('DELETE FROM sources_categories WHERE id = ?')
-      .bind(id)
+      .bind(parseInt(id))
       .run();
     
     return new Response(JSON.stringify({ 
