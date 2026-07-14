@@ -344,7 +344,7 @@ UNSUBSCRIBE CONFIRM MODAL
 </div>
 
 <!-- ==========================================
-JAVASCRIPT - Complete Settings Logic
+JAVASCRIPT - Complete Settings Logic (FIXED)
 ========================================== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -400,11 +400,14 @@ JAVASCRIPT - Complete Settings Logic
     // SHOW MESSAGE
     // ==========================================
     function showMessage(msg, type) {
+      if (!messageEl) return;
       messageEl.textContent = msg;
       messageEl.className = `text-xs mt-2 ${type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
       messageEl.classList.remove('hidden');
       if (msg && type === 'success') {
-        setTimeout(() => messageEl.classList.add('hidden'), 6000);
+        setTimeout(() => {
+          if (messageEl) messageEl.classList.add('hidden');
+        }, 6000);
       }
     }
 
@@ -412,7 +415,7 @@ JAVASCRIPT - Complete Settings Logic
     // OPEN SETTINGS MODAL
     // ==========================================
     openSettingsBtn?.addEventListener('click', async () => {
-      const email = settingsEmailInput.value.trim();
+      const email = settingsEmailInput?.value?.trim();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         showMessage('Please enter a valid email address.', 'error');
         return;
@@ -421,11 +424,13 @@ JAVASCRIPT - Complete Settings Logic
       currentEmail = email;
       
       // Show modal with loading
-      settingsModal.classList.remove('hidden');
-      settingsModal.classList.add('flex');
-      settingsLoading.classList.remove('hidden');
-      settingsContent.classList.add('hidden');
-      settingsError.classList.add('hidden');
+      if (settingsModal) {
+        settingsModal.classList.remove('hidden');
+        settingsModal.classList.add('flex');
+      }
+      if (settingsLoading) settingsLoading.classList.remove('hidden');
+      if (settingsContent) settingsContent.classList.add('hidden');
+      if (settingsError) settingsError.classList.add('hidden');
       document.body.style.overflow = 'hidden';
 
       // Fetch subscriber data
@@ -437,26 +442,32 @@ JAVASCRIPT - Complete Settings Logic
           currentToken = data.data.token || '';
           currentCategories = data.data.categories ? data.data.categories.split(',') : [];
           
-          settingsEmailDisplay.textContent = `Managing: ${email}`;
+          if (settingsEmailDisplay) {
+            settingsEmailDisplay.textContent = `Managing: ${email}`;
+          }
           renderCategories(currentCategories);
           updateStatus(data.data);
           
-          settingsLoading.classList.add('hidden');
-          settingsContent.classList.remove('hidden');
+          if (settingsLoading) settingsLoading.classList.add('hidden');
+          if (settingsContent) settingsContent.classList.remove('hidden');
         } else {
           // Not subscribed - show subscribe option
-          settingsEmailDisplay.textContent = `Email: ${email}`;
+          if (settingsEmailDisplay) {
+            settingsEmailDisplay.textContent = `Email: ${email}`;
+          }
           renderCategories([]);
           updateStatus({ subscribed: false, verified: false });
-          settingsLoading.classList.add('hidden');
-          settingsContent.classList.remove('hidden');
+          if (settingsLoading) settingsLoading.classList.add('hidden');
+          if (settingsContent) settingsContent.classList.remove('hidden');
         }
       } catch (error) {
         console.error('Error fetching subscriber:', error);
-        settingsError.textContent = 'Error loading preferences. Please try again.';
-        settingsError.classList.remove('hidden');
-        settingsLoading.classList.add('hidden');
-        settingsContent.classList.remove('hidden');
+        if (settingsError) {
+          settingsError.textContent = 'Error loading preferences. Please try again.';
+          settingsError.classList.remove('hidden');
+        }
+        if (settingsLoading) settingsLoading.classList.add('hidden');
+        if (settingsContent) settingsContent.classList.remove('hidden');
       }
     });
 
@@ -464,6 +475,7 @@ JAVASCRIPT - Complete Settings Logic
     // RENDER CATEGORIES
     // ==========================================
     function renderCategories(selected) {
+      if (!categoriesGrid) return;
       categoriesGrid.innerHTML = '';
       CATEGORIES.forEach(cat => {
         const isChecked = selected.includes(cat.id);
@@ -481,15 +493,17 @@ JAVASCRIPT - Complete Settings Logic
 
         // Update border on change
         const checkbox = label.querySelector('input');
-        checkbox.addEventListener('change', () => {
-          if (checkbox.checked) {
-            label.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
-            label.classList.remove('border-gray-200', 'dark:border-gray-700');
-          } else {
-            label.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
-            label.classList.add('border-gray-200', 'dark:border-gray-700');
-          }
-        });
+        if (checkbox) {
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+              label.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+              label.classList.remove('border-gray-200', 'dark:border-gray-700');
+            } else {
+              label.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
+              label.classList.add('border-gray-200', 'dark:border-gray-700');
+            }
+          });
+        }
       });
     }
 
@@ -497,6 +511,8 @@ JAVASCRIPT - Complete Settings Logic
     // UPDATE STATUS
     // ==========================================
     function updateStatus(data) {
+      if (!statusText || !statusBadge) return;
+      
       if (data.subscribed && data.verified) {
         statusText.textContent = 'You are currently subscribed to our newsletter.';
         statusBadge.textContent = 'Active';
@@ -516,7 +532,8 @@ JAVASCRIPT - Complete Settings Logic
     // SELECT ALL
     // ==========================================
     selectAllBtn?.addEventListener('click', () => {
-      const checkboxes = document.querySelectorAll('#settings-categories-grid input[type="checkbox"]');
+      if (!categoriesGrid) return;
+      const checkboxes = categoriesGrid.querySelectorAll('input[type="checkbox"]');
       const allChecked = Array.from(checkboxes).every(cb => cb.checked);
       checkboxes.forEach(cb => {
         cb.checked = !allChecked;
@@ -529,25 +546,32 @@ JAVASCRIPT - Complete Settings Logic
           label?.classList.add('border-gray-200', 'dark:border-gray-700');
         }
       });
-      selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+      if (selectAllBtn) {
+        selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
+      }
     });
 
     // ==========================================
     // SAVE PREFERENCES
     // ==========================================
     settingsSave?.addEventListener('click', async () => {
-      const checked = document.querySelectorAll('#settings-categories-grid input[type="checkbox"]:checked');
+      if (!categoriesGrid) return;
+      const checked = categoriesGrid.querySelectorAll('input[type="checkbox"]:checked');
       const categories = Array.from(checked).map(cb => cb.value);
 
       if (categories.length === 0) {
-        settingsError.textContent = 'Please select at least one category.';
-        settingsError.classList.remove('hidden');
+        if (settingsError) {
+          settingsError.textContent = 'Please select at least one category.';
+          settingsError.classList.remove('hidden');
+        }
         return;
       }
 
-      settingsError.classList.add('hidden');
-      settingsSave.disabled = true;
-      settingsSave.textContent = 'Saving...';
+      if (settingsError) settingsError.classList.add('hidden');
+      if (settingsSave) {
+        settingsSave.disabled = true;
+        settingsSave.textContent = 'Saving...';
+      }
 
       try {
         const response = await fetch('/api/newsletter/save-preferences', {
@@ -564,18 +588,24 @@ JAVASCRIPT - Complete Settings Logic
 
         if (data.success) {
           showMessage('✅ Preferences updated successfully!', 'success');
-          settingsEmailInput.value = '';
+          if (settingsEmailInput) settingsEmailInput.value = '';
           closeSettingsModal();
         } else {
-          settingsError.textContent = data.message || 'Failed to save preferences.';
-          settingsError.classList.remove('hidden');
+          if (settingsError) {
+            settingsError.textContent = data.message || 'Failed to save preferences.';
+            settingsError.classList.remove('hidden');
+          }
         }
       } catch (error) {
-        settingsError.textContent = 'Network error. Please try again.';
-        settingsError.classList.remove('hidden');
+        if (settingsError) {
+          settingsError.textContent = 'Network error. Please try again.';
+          settingsError.classList.remove('hidden');
+        }
       } finally {
-        settingsSave.disabled = false;
-        settingsSave.textContent = 'Save Preferences';
+        if (settingsSave) {
+          settingsSave.disabled = false;
+          settingsSave.textContent = 'Save Preferences';
+        }
       }
     });
 
@@ -584,23 +614,25 @@ JAVASCRIPT - Complete Settings Logic
     // ==========================================
     settingsUnsubscribe?.addEventListener('click', () => {
       // Show confirm modal
-      confirmModal.classList.remove('hidden');
-      confirmModal.classList.add('flex');
+      if (confirmModal) {
+        confirmModal.classList.remove('hidden');
+        confirmModal.classList.add('flex');
+      }
       document.body.style.overflow = 'hidden';
       // Reset
       document.querySelectorAll('input[name="unsubscribe-reason"]').forEach(r => r.checked = false);
-      otherReasonContainer.classList.add('hidden');
-      otherReasonInput.value = '';
-      confirmError.classList.add('hidden');
+      if (otherReasonContainer) otherReasonContainer.classList.add('hidden');
+      if (otherReasonInput) otherReasonInput.value = '';
+      if (confirmError) confirmError.classList.add('hidden');
     });
 
     // Show other reason input
     document.querySelectorAll('input[name="unsubscribe-reason"]').forEach(radio => {
       radio.addEventListener('change', () => {
         if (radio.value === 'Other') {
-          otherReasonContainer.classList.remove('hidden');
+          if (otherReasonContainer) otherReasonContainer.classList.remove('hidden');
         } else {
-          otherReasonContainer.classList.add('hidden');
+          if (otherReasonContainer) otherReasonContainer.classList.add('hidden');
         }
       });
     });
@@ -609,19 +641,23 @@ JAVASCRIPT - Complete Settings Logic
     confirmBtn?.addEventListener('click', async () => {
       const selected = document.querySelector('input[name="unsubscribe-reason"]:checked');
       if (!selected) {
-        confirmError.textContent = 'Please select a reason.';
-        confirmError.classList.remove('hidden');
+        if (confirmError) {
+          confirmError.textContent = 'Please select a reason.';
+          confirmError.classList.remove('hidden');
+        }
         return;
       }
 
       let reason = selected.value;
-      if (reason === 'Other' && otherReasonInput.value.trim()) {
+      if (reason === 'Other' && otherReasonInput?.value?.trim()) {
         reason = otherReasonInput.value.trim();
       }
 
-      confirmError.classList.add('hidden');
-      confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Processing...';
+      if (confirmError) confirmError.classList.add('hidden');
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Processing...';
+      }
 
       try {
         const response = await fetch('/api/newsletter/unsubscribe', {
@@ -641,17 +677,23 @@ JAVASCRIPT - Complete Settings Logic
           closeConfirmModal();
           closeSettingsModal();
           showMessage('✅ You have been unsubscribed successfully.', 'success');
-          settingsEmailInput.value = '';
+          if (settingsEmailInput) settingsEmailInput.value = '';
         } else {
-          confirmError.textContent = data.message || 'Failed to unsubscribe.';
-          confirmError.classList.remove('hidden');
+          if (confirmError) {
+            confirmError.textContent = data.message || 'Failed to unsubscribe.';
+            confirmError.classList.remove('hidden');
+          }
         }
       } catch (error) {
-        confirmError.textContent = 'Network error. Please try again.';
-        confirmError.classList.remove('hidden');
+        if (confirmError) {
+          confirmError.textContent = 'Network error. Please try again.';
+          confirmError.classList.remove('hidden');
+        }
       } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Yes, Unsubscribe';
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Yes, Unsubscribe';
+        }
       }
     });
 
@@ -659,14 +701,18 @@ JAVASCRIPT - Complete Settings Logic
     // CLOSE MODALS
     // ==========================================
     function closeSettingsModal() {
-      settingsModal.classList.add('hidden');
-      settingsModal.classList.remove('flex');
+      if (settingsModal) {
+        settingsModal.classList.add('hidden');
+        settingsModal.classList.remove('flex');
+      }
       document.body.style.overflow = '';
     }
 
     function closeConfirmModal() {
-      confirmModal.classList.add('hidden');
-      confirmModal.classList.remove('flex');
+      if (confirmModal) {
+        confirmModal.classList.add('hidden');
+        confirmModal.classList.remove('flex');
+      }
       document.body.style.overflow = '';
     }
 
