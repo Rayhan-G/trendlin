@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                 */
 import { c as createAstro, a as createComponent, g as renderComponent, e as renderScript, f as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DJuXqbzQ.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_CwoGLPu0.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_14JY6Cum.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro("https://trendlin.com");

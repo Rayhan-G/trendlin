@@ -1,9 +1,10 @@
-// src/pages/api/newsletter/subscribe.ts
 import type { APIRoute } from 'astro';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
+    console.log('Received body:', body); // Debug log
+    
     const { email, firstName, categories } = body;
 
     // Validate email
@@ -15,7 +16,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Validate categories
-    if (!categories || categories.length === 0) {
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
       return new Response(
         JSON.stringify({ success: false, message: 'Please select at least one category' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -26,9 +27,18 @@ export const POST: APIRoute = async ({ request }) => {
     const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
 
     // Check if subscriber exists
-    const existing = await global.DB.prepare(
-      'SELECT * FROM subscribers WHERE email = ?'
-    ).bind(email).first();
+    let existing = null;
+    try {
+      existing = await global.DB.prepare(
+        'SELECT * FROM subscribers WHERE email = ?'
+      ).bind(email).first();
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      return new Response(
+        JSON.stringify({ success: false, message: 'Database error. Please try again.' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (existing) {
       if (existing.verified === 1 && existing.subscribed === 1) {
@@ -38,9 +48,8 @@ export const POST: APIRoute = async ({ request }) => {
         );
       }
       
-      // If not verified, resend verification
+      // If not verified, update existing
       if (existing.verified === 0) {
-        // Update token
         await global.DB.prepare(`
           UPDATE subscribers 
           SET verification_token = ?,
@@ -91,6 +100,13 @@ export const POST: APIRoute = async ({ request }) => {
       token
     ).first();
 
+    if (!result) {
+      return new Response(
+        JSON.stringify({ success: false, message: 'Failed to create subscriber' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Create preferences
     if (result && categories.length > 0) {
       const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
@@ -102,9 +118,6 @@ export const POST: APIRoute = async ({ request }) => {
       `).bind(...values).run();
     }
 
-    // TODO: Send verification email
-    // For now, return success
-
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -115,7 +128,10 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error) {
     console.error('Subscribe error:', error);
     return new Response(
-      JSON.stringify({ success: false, message: 'Something went wrong. Please try again.' }),
+      JSON.stringify({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Something went wrong. Please try again.' 
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

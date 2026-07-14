@@ -1,6 +1,6 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { c as createAstro, a as createComponent, f as renderTemplate, g as renderComponent, d as renderSlot, r as renderHead, e as renderScript, b as addAttribute } from './astro/server_DJuXqbzQ.mjs';
-import { $ as $$Footer, a as $$Navbar } from './Footer_DEPYT9qT.mjs';
+import { $ as $$Footer, a as $$Navbar } from './Footer_OpE4jff7.mjs';
 /* empty css                         */
 
 var __freeze = Object.freeze;
