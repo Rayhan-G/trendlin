@@ -1,0 +1,911 @@
+---
+// SourcesManager.astro - Astro component with client-side interactivity
+---
+
+<div id="sources-manager">
+  <div class="manager-header">
+    <div class="filters">
+      <select id="filter-type">
+        <option value="all">All Sources</option>
+        <option value="master">Universal</option>
+        <option value="state">State-Specific</option>
+      </select>
+      
+      <select id="filter-category">
+        <option value="">All Categories</option>
+      </select>
+      
+      <select id="filter-state">
+        <option value="">All States</option>
+      </select>
+      
+      <input 
+        type="text" 
+        id="search-input"
+        placeholder="Search sources..." 
+      />
+    </div>
+    
+    <button class="btn-primary" id="add-source-btn">
+      + Add Source
+    </button>
+  </div>
+  
+  <!-- Loading State -->
+  <div id="loading-state" class="loading">Loading...</div>
+  
+  <!-- Table -->
+  <div id="table-container" style="display: none;">
+    <table class="sources-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Category</th>
+          <th>State</th>
+          <th>Type</th>
+          <th>Trust Score</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="sources-body">
+        <!-- Rendered by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Empty State -->
+  <div id="empty-state" class="empty-state" style="display: none;">
+    <p>No sources found</p>
+    <small>Try adjusting your filters or add a new source</small>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="source-modal" class="modal-overlay" style="display: none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Add New Source</h2>
+      <button class="close-btn" id="modal-close-btn">×</button>
+    </div>
+    
+    <form id="source-form">
+      <div class="form-group">
+        <label>Source Type</label>
+        <select id="form-source-type">
+          <option value="state">State-Specific</option>
+          <option value="master">Universal</option>
+        </select>
+      </div>
+      
+      <div class="form-group" id="state-select-group">
+        <label>State</label>
+        <select id="form-state-id">
+          <option value="">Select a state</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="form-name" required />
+      </div>
+      
+      <div class="form-group">
+        <label>URL</label>
+        <input type="url" id="form-url" required />
+      </div>
+      
+      <div class="form-group">
+        <label>Category</label>
+        <select id="form-category-id" required>
+          <option value="">Select a category</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="form-description" rows="3"></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label>Logo URL</label>
+        <input type="url" id="form-logo-url" />
+      </div>
+      
+      <div class="form-group">
+        <label>Source Type</label>
+        <select id="form-source-type-label">
+          <option value="official">Official</option>
+          <option value="community">Community</option>
+          <option value="news">News</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label>Active</label>
+          <select id="form-is-active">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Featured</label>
+          <select id="form-is-featured">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Trust Score (0-100)</label>
+        <input 
+          type="range" 
+          id="form-trust-score"
+          min="0" 
+          max="100"
+          value="0"
+        />
+        <span class="score-value" id="score-display">0%</span>
+      </div>
+      
+      <input type="hidden" id="form-edit-id" value="" />
+      
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" id="modal-cancel-btn">
+          Cancel
+        </button>
+        <button type="submit" class="btn-primary" id="modal-submit-btn">
+          Create Source
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // State
+  let sources = [];
+  let categories = [];
+  let states = [];
+  let loading = true;
+  let editingId = null;
+  
+  // DOM Elements
+  const loadingState = document.getElementById('loading-state');
+  const tableContainer = document.getElementById('table-container');
+  const emptyState = document.getElementById('empty-state');
+  const sourcesBody = document.getElementById('sources-body');
+  const modal = document.getElementById('source-modal');
+  
+  // Filters
+  const filterType = document.getElementById('filter-type');
+  const filterCategory = document.getElementById('filter-category');
+  const filterState = document.getElementById('filter-state');
+  const searchInput = document.getElementById('search-input');
+  
+  // Form Elements
+  const form = document.getElementById('source-form');
+  const formSourceType = document.getElementById('form-source-type');
+  const formStateId = document.getElementById('form-state-id');
+  const formName = document.getElementById('form-name');
+  const formUrl = document.getElementById('form-url');
+  const formCategoryId = document.getElementById('form-category-id');
+  const formDescription = document.getElementById('form-description');
+  const formLogoUrl = document.getElementById('form-logo-url');
+  const formSourceTypeLabel = document.getElementById('form-source-type-label');
+  const formIsActive = document.getElementById('form-is-active');
+  const formIsFeatured = document.getElementById('form-is-featured');
+  const formTrustScore = document.getElementById('form-trust-score');
+  const scoreDisplay = document.getElementById('score-display');
+  const formEditId = document.getElementById('form-edit-id');
+  const modalTitle = document.getElementById('modal-title');
+  const modalSubmitBtn = document.getElementById('modal-submit-btn');
+  
+  // Load data
+  async function loadData() {
+    loading = true;
+    loadingState.style.display = 'block';
+    tableContainer.style.display = 'none';
+    emptyState.style.display = 'none';
+    
+    try {
+      await Promise.all([
+        loadSources(),
+        loadCategories(),
+        loadStates()
+      ]);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      alert('Failed to load data');
+    }
+    
+    loading = false;
+    loadingState.style.display = 'none';
+    renderTable();
+  }
+  
+  // Load sources
+  async function loadSources() {
+    try {
+      const params = new URLSearchParams();
+      const type = filterType.value;
+      const category = filterCategory.value;
+      const state = filterState.value;
+      const search = searchInput.value;
+      
+      if (type && type !== 'all') params.append('type', type);
+      if (category) params.append('category', category);
+      if (state) params.append('state', state);
+      if (search) params.append('search', search);
+      
+      const response = await fetch(`/api/admin/sources?${params.toString()}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        sources = data.data || [];
+      } else {
+        console.error('Failed to load sources:', data.error);
+        sources = [];
+      }
+    } catch (error) {
+      console.error('Error loading sources:', error);
+      sources = [];
+    }
+  }
+  
+  // Load categories
+  async function loadCategories() {
+    try {
+      const response = await fetch('/api/admin/sources/categories');
+      const data = await response.json();
+      
+      if (data.success) {
+        categories = data.data || [];
+        populateCategorySelects();
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+    }
+  }
+  
+  // Load states
+  async function loadStates() {
+    try {
+      const response = await fetch('/api/admin/sources/states');
+      const data = await response.json();
+      
+      if (data.success) {
+        states = data.data || [];
+        populateStateSelects();
+      }
+    } catch (error) {
+      console.error('Error loading states:', error);
+    }
+  }
+  
+  // Populate category selects
+  function populateCategorySelects() {
+    const selects = [filterCategory, formCategoryId];
+    selects.forEach(select => {
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">All Categories</option>';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = `${cat.icon || '📁'} ${cat.name}`;
+        select.appendChild(option);
+      });
+      select.value = currentValue;
+    });
+  }
+  
+  // Populate state selects
+  function populateStateSelects() {
+    const selects = [filterState, formStateId];
+    selects.forEach(select => {
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">All States</option>';
+      states.forEach(state => {
+        const option = document.createElement('option');
+        option.value = state.id;
+        option.textContent = `${state.code || state.abbreviation} - ${state.name}`;
+        select.appendChild(option);
+      });
+      select.value = currentValue;
+    });
+  }
+  
+  // Render table
+  function renderTable() {
+    if (sources.length === 0) {
+      tableContainer.style.display = 'none';
+      emptyState.style.display = 'block';
+      return;
+    }
+    
+    tableContainer.style.display = 'block';
+    emptyState.style.display = 'none';
+    
+    sourcesBody.innerHTML = sources.map(source => `
+      <tr>
+        <td>
+          <div class="source-info">
+            ${source.logo_url ? `<img src="${source.logo_url}" alt="${source.name}" class="source-logo" />` : ''}
+            <div>
+              <strong>${escapeHtml(source.name)}</strong>
+              <small>${escapeHtml(source.url)}</small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="badge">${escapeHtml(source.category_name || 'Uncategorized')}</span>
+        </td>
+        <td>
+          ${source.state_code ? `<span class="state-badge">${escapeHtml(source.state_code)}</span>` : '<span class="text-muted">Universal</span>'}
+        </td>
+        <td>
+          <span class="type-badge ${source.source_type_actual}">
+            ${source.source_type_actual === 'master' ? '🌐 Universal' : '📍 State'}
+          </span>
+        </td>
+        <td>
+          <div class="trust-score">
+            <div class="score-bar" style="width: ${Math.min(source.trust_score || 0, 100)}%">
+              ${source.trust_score || 0}%
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="status-badge ${source.is_active ? 'active' : 'inactive'}">
+            ${source.is_active ? 'Active' : 'Inactive'}
+          </span>
+          ${source.is_featured ? '<span class="featured-badge">⭐ Featured</span>' : ''}
+        </td>
+        <td>
+          <div class="actions">
+            <button class="btn-sm" data-id="${source.id}" data-action="edit">Edit</button>
+            <button class="btn-sm btn-danger" data-id="${source.id}" data-action="delete">Delete</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+    
+    // Add event listeners
+    document.querySelectorAll('[data-action="edit"]').forEach(btn => {
+      btn.addEventListener('click', () => editSource(parseInt(btn.dataset.id)));
+    });
+    
+    document.querySelectorAll('[data-action="delete"]').forEach(btn => {
+      btn.addEventListener('click', () => deleteSource(parseInt(btn.dataset.id)));
+    });
+  }
+  
+  // Escape HTML
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // Delete source
+  async function deleteSource(id) {
+    const source = sources.find(s => s.id === id);
+    if (!confirm(`Are you sure you want to delete "${source?.name}"?`)) return;
+    
+    try {
+      const response = await fetch(`/api/admin/sources/${id}`, {
+        method: 'DELETE'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Source deleted successfully');
+        await loadSources();
+        renderTable();
+      } else {
+        alert(data.error || 'Failed to delete source');
+      }
+    } catch (error) {
+      console.error('Error deleting source:', error);
+      alert('An error occurred while deleting');
+    }
+  }
+  
+  // Edit source
+  function editSource(id) {
+    const source = sources.find(s => s.id === id);
+    if (!source) return;
+    
+    editingId = id;
+    modalTitle.textContent = 'Edit Source';
+    modalSubmitBtn.textContent = 'Update Source';
+    
+    formSourceType.value = source.source_type_actual || 'state';
+    formStateId.value = source.state_id || '';
+    formName.value = source.name || '';
+    formUrl.value = source.url || '';
+    formCategoryId.value = source.category_id || '';
+    formDescription.value = source.description || '';
+    formLogoUrl.value = source.logo_url || '';
+    formSourceTypeLabel.value = source.source_type || 'official';
+    formIsActive.value = source.is_active !== undefined ? source.is_active : 1;
+    formIsFeatured.value = source.is_featured !== undefined ? source.is_featured : 0;
+    formTrustScore.value = source.trust_score || 0;
+    scoreDisplay.textContent = `${source.trust_score || 0}%`;
+    formEditId.value = id;
+    
+    // Toggle state field visibility
+    toggleStateField();
+    
+    modal.style.display = 'flex';
+  }
+  
+  // Toggle state field
+  function toggleStateField() {
+    const stateGroup = document.getElementById('state-select-group');
+    if (formSourceType.value === 'master') {
+      stateGroup.style.display = 'none';
+    } else {
+      stateGroup.style.display = 'block';
+    }
+  }
+  
+  // Submit form
+  async function handleSubmit(e) {
+    e.preventDefault();
+    
+    const formData = {
+      name: formName.value,
+      url: formUrl.value,
+      category_id: parseInt(formCategoryId.value) || null,
+      description: formDescription.value,
+      source_type: formSourceTypeLabel.value,
+      logo_url: formLogoUrl.value,
+      is_active: parseInt(formIsActive.value),
+      is_featured: parseInt(formIsFeatured.value),
+      trust_score: parseInt(formTrustScore.value) || 0,
+      source_type_actual: formSourceType.value,
+      state_id: parseInt(formStateId.value) || null
+    };
+    
+    // Validate
+    if (!formData.name || !formData.url || !formData.category_id) {
+      alert('Name, URL, and category are required');
+      return;
+    }
+    
+    if (formData.source_type_actual === 'state' && !formData.state_id) {
+      alert('State is required for state-specific sources');
+      return;
+    }
+    
+    try {
+      const url = editingId ? `/api/admin/sources/${editingId}` : '/api/admin/sources';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert(editingId ? 'Source updated successfully' : 'Source created successfully');
+        modal.style.display = 'none';
+        resetForm();
+        await loadSources();
+        renderTable();
+      } else {
+        alert(data.error || 'Failed to save source');
+      }
+    } catch (error) {
+      console.error('Error saving source:', error);
+      alert('An error occurred while saving');
+    }
+  }
+  
+  // Reset form
+  function resetForm() {
+    form.reset();
+    editingId = null;
+    formEditId.value = '';
+    modalTitle.textContent = 'Add New Source';
+    modalSubmitBtn.textContent = 'Create Source';
+    formSourceType.value = 'state';
+    toggleStateField();
+    scoreDisplay.textContent = '0%';
+  }
+  
+  // Event listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    
+    // Filters
+    filterType.addEventListener('change', () => {
+      loadSources().then(() => renderTable());
+    });
+    filterCategory.addEventListener('change', () => {
+      loadSources().then(() => renderTable());
+    });
+    filterState.addEventListener('change', () => {
+      loadSources().then(() => renderTable());
+    });
+    
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        loadSources().then(() => renderTable());
+      }, 300);
+    });
+    
+    // Add button
+    document.getElementById('add-source-btn').addEventListener('click', () => {
+      resetForm();
+      modal.style.display = 'flex';
+    });
+    
+    // Modal close
+    document.getElementById('modal-close-btn').addEventListener('click', () => {
+      modal.style.display = 'none';
+      resetForm();
+    });
+    document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+      modal.style.display = 'none';
+      resetForm();
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+        resetForm();
+      }
+    });
+    
+    // Trust score display
+    formTrustScore.addEventListener('input', () => {
+      scoreDisplay.textContent = `${formTrustScore.value}%`;
+    });
+    
+    // Toggle state field
+    formSourceType.addEventListener('change', toggleStateField);
+    
+    // Form submit
+    form.addEventListener('submit', handleSubmit);
+  });
+</script>
+
+<style>
+  .sources-manager {
+    width: 100%;
+  }
+  
+  .manager-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  
+  .filters select,
+  .filters input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    font-size: 0.9rem;
+  }
+  
+  .filters input {
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .sources-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  
+  .sources-table th,
+  .sources-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .sources-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .source-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .source-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  
+  .source-info div {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .source-info small {
+    color: #6c757d;
+    font-size: 0.75rem;
+    word-break: break-all;
+  }
+  
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .state-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background: #d4edda;
+    color: #155724;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .type-badge.master {
+    background: #cce5ff;
+    color: #004085;
+  }
+  
+  .type-badge.state {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .trust-score {
+    width: 100px;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .score-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+    border-radius: 3px;
+    font-size: 0;
+    line-height: 6px;
+    color: transparent;
+    white-space: nowrap;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .status-badge.active {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .status-badge.inactive {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .featured-badge {
+    display: inline-block;
+    margin-left: 0.25rem;
+    font-size: 0.75rem;
+  }
+  
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.75rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    background: #e9ecef;
+  }
+  
+  .btn-sm:hover {
+    background-color: #dee2e6;
+  }
+  
+  .btn-sm.btn-danger {
+    color: #dc3545;
+  }
+  
+  .btn-sm.btn-danger:hover {
+    background-color: #f8d7da;
+  }
+  
+  .btn-primary {
+    padding: 0.5rem 1rem;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-primary:hover {
+    background: #0056b3;
+  }
+  
+  .btn-secondary {
+    padding: 0.5rem 1rem;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .btn-secondary:hover {
+    background: #5a6268;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+  }
+  
+  .empty-state p {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+  
+  .loading {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+  }
+  
+  /* Modal Styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  .modal {
+    background: white;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6c757d;
+  }
+  
+  .close-btn:hover {
+    color: #333;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+  }
+  
+  .form-group textarea {
+    resize: vertical;
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  
+  .score-value {
+    display: inline-block;
+    margin-left: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+  
+  .text-muted {
+    color: #6c757d;
+  }
+</style>
