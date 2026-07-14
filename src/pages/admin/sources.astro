@@ -1,3 +1,931 @@
+---
+// Admin Sources Management Page
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Sources Management">
+  <div class="sources-page">
+    <div class="page-header">
+      <div>
+        <h1>Sources Management</h1>
+        <p class="text-muted">Manage trusted content sources across all categories</p>
+      </div>
+      <button class="btn-add" id="add-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Source
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-container">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" id="total-count">0</div>
+          <div class="stat-label">Total Sources</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" id="master-count">0</div>
+          <div class="stat-label">Universal</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" id="state-count">0</div>
+          <div class="stat-label">State-Specific</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </div>
+        <div>
+          <div class="stat-value" id="featured-count">0</div>
+          <div class="stat-label">Featured</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filters">
+        <select id="filter-type">
+          <option value="all">All Types</option>
+          <option value="master">Universal</option>
+          <option value="state">State-Specific</option>
+        </select>
+        <select id="filter-category">
+          <option value="">All Categories</option>
+        </select>
+        <select id="filter-state">
+          <option value="">All States</option>
+        </select>
+        <div class="search-box">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search sources..." />
+        </div>
+      </div>
+      <button class="btn-refresh" onclick="loadData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading-state" class="loading">
+      <div class="spinner"></div>
+      <p>Loading sources...</p>
+    </div>
+
+    <!-- Table -->
+    <div id="table-wrap" style="display:none;">
+      <table class="sources-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Category</th>
+            <th>State</th>
+            <th>Type</th>
+            <th>Trust</th>
+            <th>Status</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Empty -->
+    <div id="empty-state" style="display:none;" class="empty">
+      <div class="empty-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </div>
+      <h3>No sources found</h3>
+      <p>Try adjusting your filters or add a new source</p>
+    </div>
+
+    <!-- Modal -->
+    <div id="source-modal" class="modal-overlay" style="display:none;">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-title">Add Source</h2>
+          <button class="modal-close" id="modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <form id="source-form">
+          <input type="hidden" id="form-edit-id" />
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Type</label>
+              <select id="form-type">
+                <option value="master">Universal</option>
+                <option value="state">State-Specific</option>
+              </select>
+            </div>
+            <div class="form-group" id="state-group">
+              <label>State</label>
+              <select id="form-state"><option value="">Select a state</option></select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="form-name" placeholder="Enter source name..." required />
+          </div>
+
+          <div class="form-group">
+            <label>URL *</label>
+            <input type="url" id="form-url" placeholder="https://example.com" required />
+          </div>
+
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="form-category" required><option value="">Select a category</option></select>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="form-desc" rows="2" placeholder="Brief description..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Logo URL</label>
+            <input type="url" id="form-logo" placeholder="https://example.com/logo.png" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Source Type</label>
+              <select id="form-source-type">
+                <option value="official">Official</option>
+                <option value="news">News</option>
+                <option value="review">Review</option>
+                <option value="community">Community</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Trust Score</label>
+              <div class="trust-slider">
+                <input type="range" id="form-trust" min="0" max="100" value="50" />
+                <span id="trust-label">50%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="form-active" checked />
+                Active
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="form-featured" />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                Featured
+              </label>
+            </div>
+          </div>
+
+          <div id="form-message" class="form-message" style="display:none;"></div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
+            <button type="submit" class="btn-primary" id="modal-submit">Save Source</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+  </div>
+</AdminLayout>
+
+<style>
+  .sources-page {
+    padding: 2rem;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .page-header .text-muted {
+    color: #64748b;
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+  }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    border-radius: 0.5rem;
+    color: #475569;
+    flex-shrink: 0;
+  }
+
+  .stat-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .filters-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  .filters select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background: white;
+    font-size: 0.875rem;
+    color: #0f172a;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 140px;
+  }
+
+  .filters select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .btn-refresh {
+    padding: 0.5rem 0.75rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-refresh:hover {
+    background: #f1f5f9;
+    transform: rotate(45deg);
+  }
+
+  .loading {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #94a3b8;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .sources-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .sources-table thead {
+    background: #f8fafc;
+  }
+
+  .sources-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .sources-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .sources-table tr:hover td {
+    background: #fafbfc;
+  }
+
+  .source-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .source-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+
+  .source-name {
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .source-url {
+    display: block;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    word-break: break-all;
+  }
+
+  .badge-category {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: #f1f5f9;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  .badge-state {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge-type {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-type.master {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .badge-type.state {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .trust-bar-wrap {
+    width: 80px;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .trust-bar-fill {
+    height: 100%;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+    transition: width 0.3s;
+  }
+
+  .trust-value {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-left: 0.5rem;
+  }
+
+  .badge-status {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-status.active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .badge-status.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .badge-featured {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.25rem;
+  }
+
+  .badge-featured svg {
+    width: 14px;
+    height: 14px;
+    fill: #f59e0b;
+    stroke: #f59e0b;
+  }
+
+  .actions-header {
+    text-align: right;
+  }
+
+  .actions-cell {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.625rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .btn-sm-edit {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .btn-sm-edit:hover {
+    background: #c7d2fe;
+  }
+
+  .btn-sm-delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .btn-sm-delete:hover {
+    background: #fecaca;
+  }
+
+  .empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #94a3b8;
+  }
+
+  .empty-icon {
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+  }
+
+  .empty-icon svg {
+    width: 64px;
+    height: 64px;
+  }
+
+  .empty h3 {
+    color: #475569;
+    margin: 0 0 0.5rem;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal {
+    background: white;
+    border-radius: 1rem;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modalIn 0.2s ease-out;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    transition: background 0.15s;
+  }
+
+  .modal-close:hover {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding-top: 0.25rem;
+    font-weight: 400;
+    font-size: 0.875rem;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+  }
+
+  .checkbox-label svg {
+    width: 16px;
+    height: 16px;
+    color: #f59e0b;
+  }
+
+  .trust-slider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .trust-slider input[type="range"] {
+    flex: 1;
+    padding: 0;
+  }
+
+  .trust-slider span {
+    font-weight: 600;
+    color: #0f172a;
+    min-width: 2.5rem;
+  }
+
+  .form-message {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .form-message.success {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .btn-primary {
+    padding: 0.5rem 1.25rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-secondary {
+    padding: 0.5rem 1.25rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: #e2e8f0;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: white;
+    opacity: 0;
+    transform: translateY(1rem);
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast.success {
+    background: #22c55e;
+  }
+
+  .toast.error {
+    background: #ef4444;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+
+    .filters {
+      flex-direction: column;
+    }
+
+    .filters select,
+    .search-box {
+      width: 100%;
+      min-width: unset;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .actions-cell {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .sources-table {
+      font-size: 0.75rem;
+    }
+
+    .sources-table th,
+    .sources-table td {
+      padding: 0.5rem;
+    }
+  }
+</style>
+
 <script>
   // ============================================
   // STATE
@@ -6,7 +934,6 @@
   let categories = [];
   let states = [];
   let editingId = null;
-  let isSubmitting = false;
 
   // ============================================
   // DOM REFS
@@ -17,25 +944,39 @@
   const emptyEl = $('empty-state');
   const tableBody = $('table-body');
   const modal = $('source-modal');
-  const tableCount = $('table-count');
+  const toast = $('toast');
 
   const filterType = $('filter-type');
   const filterCategory = $('filter-category');
   const filterState = $('filter-state');
   const searchInput = $('search-input');
 
+  const form = $('source-form');
+  const fType = $('form-type');
+  const fState = $('form-state');
+  const fName = $('form-name');
+  const fUrl = $('form-url');
+  const fCategory = $('form-category');
+  const fDesc = $('form-desc');
+  const fLogo = $('form-logo');
+  const fSourceType = $('form-source-type');
+  const fActive = $('form-active');
+  const fFeatured = $('form-featured');
+  const fTrust = $('form-trust');
+  const fTrustLabel = $('trust-label');
+  const fEditId = $('form-edit-id');
+  const modalTitle = $('modal-title');
+  const modalSubmit = $('modal-submit');
+
   // ============================================
   // TOAST
   // ============================================
   function showToast(message, type = 'success') {
-    const container = document.getElementById('toast');
-    const toast = document.createElement('div');
+    toast.textContent = message;
     toast.className = `toast ${type}`;
-    toast.innerHTML = message;
-    container.appendChild(toast);
-    setTimeout(() => {
-      if (toast.parentNode) toast.remove();
-    }, 3000);
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
   }
 
   // ============================================
@@ -46,7 +987,7 @@
     tableWrap.style.display = 'none';
     emptyEl.style.display = 'none';
     
-    loadSources()
+    Promise.all([loadSources(), loadCategories(), loadStates()])
       .then(() => {
         loadingEl.style.display = 'none';
         renderTable();
@@ -54,49 +995,23 @@
       })
       .catch((err) => {
         console.error('Failed to load data:', err);
-        showToast('❌ Failed to load data: ' + err.message, 'error');
+        showToast('Failed to load data: ' + err.message, 'error');
         loadingEl.style.display = 'none';
       });
   }
 
   function loadSources() {
-    // Build query parameters from filters
     const params = new URLSearchParams();
+    if (filterType.value && filterType.value !== 'all') params.append('type', filterType.value);
+    if (filterCategory.value) params.append('category', filterCategory.value);
+    if (filterState.value) params.append('state', filterState.value);
+    if (searchInput.value) params.append('search', searchInput.value);
     
-    // Type filter
-    if (filterType.value && filterType.value !== 'all') {
-      params.append('type', filterType.value);
-    }
-    
-    // Category filter
-    if (filterCategory.value && filterCategory.value !== '') {
-      params.append('category', filterCategory.value);
-    }
-    
-    // State filter
-    if (filterState.value && filterState.value !== '') {
-      params.append('state', filterState.value);
-    }
-    
-    // Search filter
-    if (searchInput.value && searchInput.value.trim() !== '') {
-      params.append('search', searchInput.value.trim());
-    }
-    
-    const url = '/api/admin/sources?' + params.toString();
-    console.log('🔍 Fetching:', url);
-    
-    return fetch(url)
-      .then(r => {
-        if (!r.ok) {
-          throw new Error(`HTTP ${r.status}`);
-        }
-        return r.json();
-      })
+    return fetch('/api/admin/sources?' + params.toString())
+      .then(r => r.json())
       .then(data => {
         if (data.success) {
           sources = data.data || [];
-          console.log('✅ Loaded', sources.length, 'sources');
         } else {
           console.error('API error:', data.error);
           sources = [];
@@ -105,13 +1020,9 @@
       .catch(err => {
         console.error('Error loading sources:', err);
         sources = [];
-        showToast('❌ Error loading sources: ' + err.message, 'error');
       });
   }
 
-  // ============================================
-  // LOAD CATEGORIES & STATES (Only once)
-  // ============================================
   function loadCategories() {
     return fetch('/api/admin/sources/categories')
       .then(r => r.json())
@@ -136,19 +1047,12 @@
       .catch(err => console.error('Error loading states:', err));
   }
 
-  function loadCategoriesAndStates() {
-    return Promise.all([loadCategories(), loadStates()]);
-  }
-
   // ============================================
   // POPULATE SELECTS
   // ============================================
   function populateSelects(type) {
     if (type === 'category') {
-      // Populate both filter and form category selects
-      const selects = [filterCategory, $('form-category')];
-      selects.forEach(sel => {
-        if (!sel) return;
+      [filterCategory, fCategory].forEach(sel => {
         const val = sel.value;
         sel.innerHTML = '<option value="">All Categories</option>';
         categories.forEach(c => {
@@ -160,10 +1064,7 @@
         sel.value = val;
       });
     } else if (type === 'state') {
-      // Populate both filter and form state selects
-      const selects = [filterState, $('form-state')];
-      selects.forEach(sel => {
-        if (!sel) return;
+      [filterState, fState].forEach(sel => {
         const val = sel.value;
         sel.innerHTML = '<option value="">All States</option>';
         states.forEach(s => {
@@ -199,30 +1100,20 @@
     if (!sources || sources.length === 0) {
       tableWrap.style.display = 'none';
       emptyEl.style.display = 'block';
-      tableCount.textContent = 'Showing 0 sources';
       return;
     }
     
     tableWrap.style.display = 'block';
     emptyEl.style.display = 'none';
-    tableCount.textContent = `Showing ${sources.length} source${sources.length > 1 ? 's' : ''}`;
     
     let html = '';
-    sources.forEach((s, index) => {
+    sources.forEach(s => {
       const trust = Math.min(s.trust_score || 0, 100);
-      const statusClass = s.is_active ? 'active' : 'inactive';
-      const statusText = s.is_active ? 'Active' : 'Inactive';
-      const typeClass = s.source_type_actual || 'master';
-      const typeLabel = s.source_type_actual === 'master' ? '🌐 Universal' : '📍 State';
-      const featuredStar = s.is_featured ? '⭐' : '';
-      
       html += `
-        <tr style="animation: fadeIn 0.3s ease ${index * 0.05}s both;">
+        <tr>
           <td>
             <div class="source-cell">
-              ${s.logo_url 
-                ? `<img src="${s.logo_url}" class="source-logo" alt="${s.name}" onerror="this.style.display='none'" />` 
-                : `<div class="source-logo-placeholder">📄</div>`}
+              ${s.logo_url ? `<img src="${s.logo_url}" class="source-logo" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📄</div>`}
               <div>
                 <div class="source-name">${escapeHtml(s.name)}</div>
                 <span class="source-url">${escapeHtml(s.url)}</span>
@@ -231,27 +1122,32 @@
           </td>
           <td><span class="badge-category">${escapeHtml(s.category_name || 'Uncategorized')}</span></td>
           <td>${s.state_code ? `<span class="badge-state">${escapeHtml(s.state_code)}</span>` : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>'}</td>
-          <td><span class="badge-type ${typeClass}">${typeLabel}</span></td>
+          <td><span class="badge-type ${s.source_type_actual || 'master'}">${s.source_type_actual === 'master' ? 'Universal' : 'State'}</span></td>
           <td>
-            <div class="trust-cell">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
               <div class="trust-bar-wrap"><div class="trust-bar-fill" style="width:${trust}%"></div></div>
               <span class="trust-value">${trust}%</span>
             </div>
           </td>
           <td>
-            <span class="badge-status ${statusClass}">${statusText}</span>
-            ${featuredStar ? `<span class="badge-featured">${featuredStar}</span>` : ''}
+            <span class="badge-status ${s.is_active ? 'active' : 'inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span>
+            ${s.is_featured ? `<span class="badge-featured">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+            </span>` : ''}
           </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="editSource(${s.id})" title="Edit">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <button class="btn-sm btn-sm-edit" onclick="editSource(${s.id})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
+                Edit
               </button>
-              <button class="btn-sm btn-sm-delete" onclick="deleteSource(${s.id})" title="Delete">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <button class="btn-sm btn-sm-delete" onclick="deleteSource(${s.id})">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
@@ -272,40 +1168,18 @@
   }
 
   // ============================================
-  // MODAL FUNCTIONS
+  // ADD / EDIT
   // ============================================
   function openModal(type = 'master', data = null) {
-    const form = $('source-form');
-    const formMessage = $('form-message');
-    const fType = $('form-type');
-    const fState = $('form-state');
-    const fName = $('form-name');
-    const fUrl = $('form-url');
-    const fCategory = $('form-category');
-    const fDesc = $('form-desc');
-    const fLogo = $('form-logo');
-    const fSourceType = $('form-source-type');
-    const fActive = $('form-active');
-    const fFeatured = $('form-featured');
-    const fTrust = $('form-trust');
-    const fTrustLabel = $('trust-label');
-    const fEditId = $('form-edit-id');
-    const modalTitle = $('modal-title');
-    const modalSubtitle = $('modal-subtitle');
-    const submitText = $('submit-text');
-    
     form.reset();
     editingId = null;
     fEditId.value = '';
-    formMessage.style.display = 'none';
-    formMessage.className = 'form-message';
+    $('form-message').style.display = 'none';
     
     if (data) {
       editingId = data.id;
       modalTitle.textContent = 'Edit Source';
-      modalSubtitle.textContent = 'Update an existing source';
-      submitText.textContent = 'Update Source';
-      
+      modalSubmit.textContent = 'Update Source';
       fType.value = data.source_type_actual || 'master';
       fState.value = data.state_id || '';
       fName.value = data.name || '';
@@ -321,9 +1195,7 @@
       fEditId.value = data.id;
     } else {
       modalTitle.textContent = 'Add Source';
-      modalSubtitle.textContent = 'Add a new trusted source to your collection';
-      submitText.textContent = 'Create Source';
-      
+      modalSubmit.textContent = 'Save Source';
       fType.value = type;
       fActive.checked = true;
       fFeatured.checked = false;
@@ -333,7 +1205,6 @@
     
     toggleStateField();
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
   }
 
   window.editSource = function(id) {
@@ -342,84 +1213,46 @@
   };
 
   function toggleStateField() {
-    const fType = $('form-type');
-    const stateGroup = $('state-group');
-    if (stateGroup) {
-      stateGroup.style.display = fType.value === 'master' ? 'none' : 'block';
-    }
+    const group = $('state-group');
+    group.style.display = fType.value === 'master' ? 'none' : 'block';
   }
 
   function closeModal() {
     modal.style.display = 'none';
-    document.body.style.overflow = '';
-    isSubmitting = false;
   }
 
   // ============================================
-  // DELETE SOURCE
+  // DELETE
   // ============================================
   window.deleteSource = function(id) {
     const source = sources.find(s => s.id === id);
-    if (!source) {
-      showToast('❌ Source not found', 'error');
-      return;
-    }
-    
-    if (!confirm(`Delete "${source.name}"? This action cannot be undone.`)) return;
-    
-    const type = source.source_type_actual || 'master';
+    if (!confirm(`Delete "${source?.name}"? This cannot be undone.`)) return;
     
     fetch('/api/admin/sources/' + id, { 
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: type })
+      body: JSON.stringify({ type: source?.source_type_actual || 'master' })
     })
-      .then(r => {
-        if (!r.ok) {
-          return r.json().then(data => {
-            throw new Error(data.error || `HTTP ${r.status}`);
-          });
-        }
-        return r.json();
-      })
+      .then(r => r.json())
       .then(data => {
         if (data.success) {
-          showToast(`✅ "${source.name}" deleted successfully`, 'success');
+          showToast('✅ Source deleted successfully', 'success');
           loadData();
         } else {
           showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
         }
       })
       .catch(err => {
-        console.error('Delete error:', err);
-        showToast('❌ Error: ' + err.message, 'error');
+        showToast('❌ Error deleting source', 'error');
+        console.error(err);
       });
   };
 
   // ============================================
-  // FORM SUBMIT
+  // SUBMIT FORM
   // ============================================
-  document.getElementById('source-form').addEventListener('submit', function(e) {
+  form.addEventListener('submit', function(e) {
     e.preventDefault();
-    
-    if (isSubmitting) return;
-    isSubmitting = true;
-    const submitText = $('submit-text');
-    submitText.textContent = 'Saving...';
-    
-    const fName = $('form-name');
-    const fUrl = $('form-url');
-    const fCategory = $('form-category');
-    const fDesc = $('form-desc');
-    const fSourceType = $('form-source-type');
-    const fLogo = $('form-logo');
-    const fActive = $('form-active');
-    const fFeatured = $('form-featured');
-    const fTrust = $('form-trust');
-    const fType = $('form-type');
-    const fState = $('form-state');
-    const fEditId = $('form-edit-id');
-    const formMessage = $('form-message');
     
     const data = {
       name: fName.value.trim(),
@@ -437,15 +1270,11 @@
     
     if (!data.name || !data.url || !data.category_id) {
       showFormMessage('Name, URL, and category are required', 'error');
-      isSubmitting = false;
-      submitText.textContent = editingId ? 'Update Source' : 'Create Source';
       return;
     }
     
     if (data.source_type_actual === 'state' && !data.state_id) {
       showFormMessage('State is required for state-specific sources', 'error');
-      isSubmitting = false;
-      submitText.textContent = editingId ? 'Update Source' : 'Create Source';
       return;
     }
     
@@ -465,117 +1294,46 @@
           loadData();
         } else {
           showFormMessage(result.error || 'Failed to save', 'error');
-          isSubmitting = false;
-          submitText.textContent = editingId ? 'Update Source' : 'Create Source';
         }
       })
       .catch(err => {
-        showFormMessage('Error saving source: ' + err.message, 'error');
-        isSubmitting = false;
-        submitText.textContent = editingId ? 'Update Source' : 'Create Source';
+        showFormMessage('Error saving source', 'error');
+        console.error(err);
       });
   });
 
   function showFormMessage(msg, type) {
-    const formMessage = $('form-message');
-    formMessage.textContent = msg;
-    formMessage.className = 'form-message ' + type;
-    formMessage.style.display = 'block';
+    const el = $('form-message');
+    el.textContent = msg;
+    el.className = 'form-message ' + type;
+    el.style.display = 'block';
   }
 
   // ============================================
   // EVENT LISTENERS
   // ============================================
-  document.addEventListener('DOMContentLoaded', function() {
-    // Load categories and states first, then load sources
-    loadCategoriesAndStates()
-      .then(() => {
-        loadData();
-      })
-      .catch(err => {
-        console.error('Error loading categories/states:', err);
-        loadData(); // Still try to load sources
-      });
-    
-    // Add button
-    document.getElementById('add-btn').addEventListener('click', () => openModal('master'));
-    
-    // Modal close buttons
-    document.getElementById('modal-close').addEventListener('click', closeModal);
-    document.getElementById('modal-cancel').addEventListener('click', closeModal);
-    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-    
-    // Trust slider
-    const fTrust = $('form-trust');
-    const fTrustLabel = $('trust-label');
-    if (fTrust) {
-      fTrust.addEventListener('input', () => {
-        fTrustLabel.textContent = fTrust.value + '%';
-      });
-    }
-    
-    // Type toggle
-    const fType = $('form-type');
-    if (fType) {
-      fType.addEventListener('change', toggleStateField);
-    }
-    
-    // FILTERS - each filter triggers a reload
-    if (filterType) {
-      filterType.addEventListener('change', function() {
-        console.log('🔄 Filter changed: type =', this.value);
-        loadData();
-      });
-    }
-    
-    if (filterCategory) {
-      filterCategory.addEventListener('change', function() {
-        console.log('🔄 Filter changed: category =', this.value);
-        loadData();
-      });
-    }
-    
-    if (filterState) {
-      filterState.addEventListener('change', function() {
-        console.log('🔄 Filter changed: state =', this.value);
-        loadData();
-      });
-    }
-    
-    // Search with debounce
-    if (searchInput) {
-      let searchTimer;
-      searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => {
-          console.log('🔍 Search:', this.value);
-          loadData();
-        }, 300);
-      });
-    }
-    
-    // Refresh button
-    const refreshBtn = document.querySelector('.btn-refresh');
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', loadData);
-    }
-    
-    // Keyboard shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.ctrlKey && e.key === 'n') {
-        e.preventDefault();
-        openModal('master');
-      }
-      if (e.key === 'Escape' && modal.style.display === 'flex') {
-        closeModal();
-      }
-    });
+  $('add-btn').addEventListener('click', () => openModal('master'));
+  $('modal-close').addEventListener('click', closeModal);
+  $('modal-cancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+  fType.addEventListener('change', toggleStateField);
+  fTrust.addEventListener('input', () => {
+    fTrustLabel.textContent = fTrust.value + '%';
   });
 
-  // Expose functions to window for inline onclick handlers
-  window.editSource = editSource;
-  window.deleteSource = deleteSource;
-  window.loadData = loadData;
-  window.openModal = openModal;
-  window.closeModal = closeModal;
+  filterType.addEventListener('change', loadData);
+  filterCategory.addEventListener('change', loadData);
+  filterState.addEventListener('change', loadData);
+  
+  let searchTimer;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadData, 300);
+  });
+
+  // ============================================
+  // INIT
+  // ============================================
+  document.addEventListener('DOMContentLoaded', loadData);
 </script>
