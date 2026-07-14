@@ -1,38 +1,24 @@
-// API endpoint for US states
-export async function onRequest(context) {
-  const { request, env } = context;
-  
-  if (request.method === 'GET') {
-    return await handleGet(request, env);
-  }
-  
-  if (request.method === 'POST') {
-    return await handlePost(request, env);
-  }
-  
-  if (request.method === 'PUT') {
-    return await handlePut(request, env);
-  }
-  
-  if (request.method === 'DELETE') {
-    return await handleDelete(request, env);
-  }
-  
-  return new Response(JSON.stringify({ 
-    success: false, 
-    error: 'Method not allowed' 
-  }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
+// /src/pages/api/admin/sources/states.ts
+import type { APIRoute } from 'astro';
 
-async function handleGet(request, env) {
+export const GET: APIRoute = async ({ request, locals }) => {
   try {
     const url = new URL(request.url);
     const region = url.searchParams.get('region');
     const isActive = url.searchParams.get('is_active');
     const search = url.searchParams.get('search');
+    
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     let query = `
       SELECT 
@@ -53,7 +39,7 @@ async function handleGet(request, env) {
       WHERE 1=1
     `;
     
-    const params = [];
+    const params: any[] = [];
     
     if (region) {
       query += ` AND region = ?`;
@@ -72,31 +58,42 @@ async function handleGet(request, env) {
     
     query += ` ORDER BY name ASC`;
     
-    const result = await env.DB
-      .prepare(query)
-      .bind(...params)
-      .all();
+    const result = await env.DB.prepare(query).bind(...params).all();
     
-    return new Response(JSON.stringify({ success: true, data: result.results }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      data: result.results || [] 
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in states GET:', error);
+    console.error('Error fetching states:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to fetch states',
-      details: error.message 
+      success: false,
+      error: 'Failed to fetch states: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};
 
-async function handlePost(request, env) {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     const { 
       name, 
@@ -108,7 +105,7 @@ async function handlePost(request, env) {
     
     if (!name || !code || !abbreviation) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'Name, code, and abbreviation are required' 
       }), {
         status: 400,
@@ -124,7 +121,7 @@ async function handlePost(request, env) {
     
     if (existing) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'State with this code or abbreviation already exists' 
       }), {
         status: 409,
@@ -132,48 +129,54 @@ async function handlePost(request, env) {
       });
     }
     
-    const query = `
+    const result = await env.DB.prepare(`
       INSERT INTO sources_states (
         name, code, abbreviation, region, is_active
       ) VALUES (?, ?, ?, ?, ?)
-    `;
-    
-    const result = await env.DB
-      .prepare(query)
-      .bind(name, code, abbreviation, region, parseInt(is_active))
-      .run();
+    `).bind(name, code, abbreviation, region, parseInt(is_active)).run();
     
     return new Response(JSON.stringify({ 
       success: true, 
       data: { 
-        id: result.meta?.last_row_id || result.lastID,
+        id: result.lastID || result.meta?.last_row_id,
         ...body 
       } 
     }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in states POST:', error);
+    console.error('Error creating state:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to create state',
-      details: error.message 
+      success: false,
+      error: 'Failed to create state: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};
 
-async function handlePut(request, env) {
+export const PUT: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
     const { id, name, code, abbreviation, region, is_active } = body;
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     if (!id) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'State ID is required' 
       }), {
         status: 400,
@@ -181,7 +184,7 @@ async function handlePut(request, env) {
       });
     }
     
-    const query = `
+    const result = await env.DB.prepare(`
       UPDATE sources_states SET
         name = ?,
         code = ?,
@@ -190,19 +193,24 @@ async function handlePut(request, env) {
         is_active = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `;
+    `).bind(
+      name || '',
+      code || '',
+      abbreviation || '',
+      region || '',
+      is_active !== undefined ? parseInt(is_active) : 1,
+      parseInt(id)
+    ).run();
     
-    await env.DB
-      .prepare(query)
-      .bind(
-        name || '',
-        code || '',
-        abbreviation || '',
-        region || '',
-        is_active !== undefined ? parseInt(is_active) : 1,
-        parseInt(id)
-      )
-      .run();
+    if (result.changes === 0) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'State not found' 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     return new Response(JSON.stringify({ 
       success: true, 
@@ -211,27 +219,38 @@ async function handlePut(request, env) {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in states PUT:', error);
+    console.error('Error updating state:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to update state',
-      details: error.message 
+      success: false,
+      error: 'Failed to update state: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};
 
-async function handleDelete(request, env) {
+export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     if (!id) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'State ID is required' 
       }), {
         status: 400,
@@ -247,7 +266,7 @@ async function handleDelete(request, env) {
     
     if (usage && usage.count > 0) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'Cannot delete state that has sources associated with it' 
       }), {
         status: 409,
@@ -255,10 +274,20 @@ async function handleDelete(request, env) {
       });
     }
     
-    await env.DB
+    const result = await env.DB
       .prepare('DELETE FROM sources_states WHERE id = ?')
       .bind(parseInt(id))
       .run();
+    
+    if (result.changes === 0) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'State not found' 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     return new Response(JSON.stringify({ 
       success: true, 
@@ -267,15 +296,15 @@ async function handleDelete(request, env) {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in states DELETE:', error);
+    console.error('Error deleting state:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to delete state',
-      details: error.message 
+      success: false,
+      error: 'Failed to delete state: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};

@@ -1,37 +1,23 @@
-// API endpoint for sources categories
-export async function onRequest(context) {
-  const { request, env } = context;
-  
-  if (request.method === 'GET') {
-    return await handleGet(request, env);
-  }
-  
-  if (request.method === 'POST') {
-    return await handlePost(request, env);
-  }
-  
-  if (request.method === 'PUT') {
-    return await handlePut(request, env);
-  }
-  
-  if (request.method === 'DELETE') {
-    return await handleDelete(request, env);
-  }
-  
-  return new Response(JSON.stringify({ 
-    success: false, 
-    error: 'Method not allowed' 
-  }), {
-    status: 405,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
+// /src/pages/api/admin/sources/categories.ts
+import type { APIRoute } from 'astro';
 
-async function handleGet(request, env) {
+export const GET: APIRoute = async ({ request, locals }) => {
   try {
     const url = new URL(request.url);
     const isActive = url.searchParams.get('is_active');
     const search = url.searchParams.get('search');
+    
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     let query = `
       SELECT 
@@ -57,7 +43,7 @@ async function handleGet(request, env) {
       WHERE 1=1
     `;
     
-    const params = [];
+    const params: any[] = [];
     
     if (isActive !== null && isActive !== undefined) {
       query += ` AND is_active = ?`;
@@ -71,31 +57,42 @@ async function handleGet(request, env) {
     
     query += ` ORDER BY display_order ASC, name ASC`;
     
-    const result = await env.DB
-      .prepare(query)
-      .bind(...params)
-      .all();
+    const result = await env.DB.prepare(query).bind(...params).all();
     
-    return new Response(JSON.stringify({ success: true, data: result.results }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      data: result.results || [] 
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in categories GET:', error);
+    console.error('Error fetching categories:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to fetch categories',
-      details: error.message 
+      success: false,
+      error: 'Failed to fetch categories: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};
 
-async function handlePost(request, env) {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     const { 
       name, 
@@ -108,7 +105,7 @@ async function handlePost(request, env) {
     
     if (!name || !slug) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'Name and slug are required' 
       }), {
         status: 400,
@@ -124,7 +121,7 @@ async function handlePost(request, env) {
     
     if (existing) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'Category with this slug already exists' 
       }), {
         status: 409,
@@ -132,48 +129,54 @@ async function handlePost(request, env) {
       });
     }
     
-    const query = `
+    const result = await env.DB.prepare(`
       INSERT INTO sources_categories (
         name, slug, icon, description, display_order, is_active
       ) VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    
-    const result = await env.DB
-      .prepare(query)
-      .bind(name, slug, icon, description, parseInt(display_order), parseInt(is_active))
-      .run();
+    `).bind(name, slug, icon, description, parseInt(display_order), parseInt(is_active)).run();
     
     return new Response(JSON.stringify({ 
       success: true, 
       data: { 
-        id: result.meta?.last_row_id || result.lastID,
+        id: result.lastID || result.meta?.last_row_id,
         ...body 
       } 
     }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in categories POST:', error);
+    console.error('Error creating category:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to create category',
-      details: error.message 
+      success: false,
+      error: 'Failed to create category: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};
 
-async function handlePut(request, env) {
+export const PUT: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
     const { id, name, slug, icon, description, display_order, is_active } = body;
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     if (!id) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'Category ID is required' 
       }), {
         status: 400,
@@ -181,7 +184,7 @@ async function handlePut(request, env) {
       });
     }
     
-    const query = `
+    const result = await env.DB.prepare(`
       UPDATE sources_categories SET
         name = ?,
         slug = ?,
@@ -191,20 +194,25 @@ async function handlePut(request, env) {
         is_active = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `;
+    `).bind(
+      name || '',
+      slug || '',
+      icon || '📁',
+      description || '',
+      display_order !== undefined ? parseInt(display_order) : 0,
+      is_active !== undefined ? parseInt(is_active) : 1,
+      parseInt(id)
+    ).run();
     
-    await env.DB
-      .prepare(query)
-      .bind(
-        name || '',
-        slug || '',
-        icon || '📁',
-        description || '',
-        display_order !== undefined ? parseInt(display_order) : 0,
-        is_active !== undefined ? parseInt(is_active) : 1,
-        parseInt(id)
-      )
-      .run();
+    if (result.changes === 0) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Category not found' 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     return new Response(JSON.stringify({ 
       success: true, 
@@ -213,27 +221,38 @@ async function handlePut(request, env) {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in categories PUT:', error);
+    console.error('Error updating category:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to update category',
-      details: error.message 
+      success: false,
+      error: 'Failed to update category: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};
 
-async function handleDelete(request, env) {
+export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
+    const env = locals.runtime?.env || (globalThis as any).env;
+    
+    if (!env || !env.DB) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Database connection not available' 
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     if (!id) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'Category ID is required' 
       }), {
         status: 400,
@@ -242,19 +261,18 @@ async function handleDelete(request, env) {
     }
     
     // Check if category is in use
-    const usageQuery = `
-      SELECT 
-        (SELECT COUNT(*) FROM sources_state WHERE category_id = ?) +
-        (SELECT COUNT(*) FROM sources_master WHERE category_id = ?) as usage_count
-    `;
     const usage = await env.DB
-      .prepare(usageQuery)
+      .prepare(`
+        SELECT 
+          (SELECT COUNT(*) FROM sources_state WHERE category_id = ?) +
+          (SELECT COUNT(*) FROM sources_master WHERE category_id = ?) as usage_count
+      `)
       .bind(parseInt(id), parseInt(id))
       .first();
     
     if (usage && usage.usage_count > 0) {
       return new Response(JSON.stringify({ 
-        success: false, 
+        success: false,
         error: 'Cannot delete category that is in use by sources' 
       }), {
         status: 409,
@@ -262,10 +280,20 @@ async function handleDelete(request, env) {
       });
     }
     
-    await env.DB
+    const result = await env.DB
       .prepare('DELETE FROM sources_categories WHERE id = ?')
       .bind(parseInt(id))
       .run();
+    
+    if (result.changes === 0) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Category not found' 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     
     return new Response(JSON.stringify({ 
       success: true, 
@@ -274,15 +302,15 @@ async function handleDelete(request, env) {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
+    
   } catch (error) {
-    console.error('Error in categories DELETE:', error);
+    console.error('Error deleting category:', error);
     return new Response(JSON.stringify({ 
-      success: false, 
-      error: 'Failed to delete category',
-      details: error.message 
+      success: false,
+      error: 'Failed to delete category: ' + (error as Error).message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
-}
+};

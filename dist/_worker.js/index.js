@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { renderers } from './renderers.mjs';
 import { createExports } from './_@astrojs-ssr-adapter.mjs';
-import { manifest } from './manifest_DrlmMFf7.mjs';
+import { manifest } from './manifest_CF3o6apH.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -79,8 +79,8 @@ const pageMap = new Map([
     ["src/pages/api/admin/products/index.js", _page23],
     ["src/pages/api/admin/sources/categories.js", _page24],
     ["src/pages/api/admin/sources/states.js", _page25],
-    ["src/pages/api/admin/sources/[id].js", _page26],
-    ["src/pages/api/admin/sources/index.js", _page27],
+    ["src/pages/api/admin/sources/[id].ts", _page26],
+    ["src/pages/api/admin/sources/index.ts", _page27],
     ["src/pages/api/admin/templates/categories.js", _page28],
     ["src/pages/api/admin/templates/[id]/usage.js", _page29],
     ["src/pages/api/admin/templates/[id].js", _page30],
