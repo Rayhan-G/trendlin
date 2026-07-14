@@ -9,7 +9,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
     <div class="page-header">
       <div>
         <h1>📅 Content Calendar</h1>
-        <p class="text-muted">Drag, schedule, and manage your content</p>
+        <p class="text-muted">Plan, schedule, and manage your content</p>
       </div>
       <div class="header-actions">
         <button class="btn-add" id="add-content-btn">
@@ -78,13 +78,12 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
         </div>
       </div>
       <button class="btn-refresh" onclick="loadData()">⟳</button>
-      <button class="btn-view" onclick="switchView('month')">📅 Month</button>
-      <button class="btn-view" onclick="switchView('week')">📆 Week</button>
-      <button class="btn-view" onclick="switchView('list')">📋 List</button>
+      <button class="btn-view active" data-view="calendar" onclick="switchView('calendar')">📅 Calendar</button>
+      <button class="btn-view" data-view="list" onclick="switchView('list')">📋 List</button>
     </div>
 
     <!-- ============================================ -->
-    <!-- CALENDAR VIEW (Month) -->
+    <!-- CALENDAR VIEW -->
     <!-- ============================================ -->
     <div id="calendar-view" class="view-content active">
       <div class="calendar-nav">
@@ -109,30 +108,9 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
     </div>
 
     <!-- ============================================ -->
-    <!-- WEEK VIEW -->
-    <!-- ============================================ -->
-    <div id="week-view" class="view-content">
-      <div class="calendar-nav">
-        <button class="nav-btn" onclick="changeWeek(-1)">←</button>
-        <h2 id="week-title">Week of July 14</h2>
-        <button class="nav-btn" onclick="changeWeek(1)">→</button>
-        <button class="nav-btn today-btn" onclick="goTodayWeek()">Today</button>
-      </div>
-
-      <div class="week-grid">
-        <div id="week-days" class="week-days"></div>
-      </div>
-    </div>
-
-    <!-- ============================================ -->
     <!-- LIST VIEW -->
     <!-- ============================================ -->
     <div id="list-view" class="view-content">
-      <div id="list-loading" class="loading" style="display:none;">
-        <div class="spinner"></div>
-        <p>Loading content...</p>
-      </div>
-
       <div id="list-table-wrap">
         <table class="content-table">
           <thead>
@@ -153,6 +131,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
         <div class="empty-icon">📭</div>
         <h3>No content found</h3>
         <p>Create your first piece of content</p>
+        <button class="btn-add" onclick="openModal()" style="margin-top:1rem;">+ Create Content</button>
       </div>
     </div>
 
@@ -255,27 +234,6 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
             <div class="form-group">
               <label>Meta Keywords</label>
               <input type="text" id="form-meta-keywords" placeholder="keyword1, keyword2" />
-            </div>
-          </details>
-
-          <details class="source-details">
-            <summary>Source Information</summary>
-            <div class="form-group">
-              <label>Source URL</label>
-              <input type="url" id="form-source-url" placeholder="https://example.com" />
-            </div>
-            <div class="form-group">
-              <label>Source Name</label>
-              <input type="text" id="form-source-name" placeholder="Source name..." />
-            </div>
-            <div class="form-group">
-              <label>Source Type</label>
-              <select id="form-source-type">
-                <option value="original">Original</option>
-                <option value="curated">Curated</option>
-                <option value="guest">Guest Post</option>
-                <option value="sponsored">Sponsored</option>
-              </select>
             </div>
           </details>
 
@@ -625,115 +583,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
     margin-right: 4px;
   }
 
-  .calendar-day .day-event .event-actions {
-    display: none;
-    position: absolute;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    gap: 2px;
-  }
-
-  .calendar-day .day-event:hover .event-actions {
-    display: flex;
-  }
-
-  .calendar-day .day-event .event-actions button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 0.6rem;
-    padding: 1px 4px;
-    border-radius: 3px;
-  }
-
-  .calendar-day .day-event .event-actions .edit-btn:hover {
-    background: #dbeafe;
-    color: #2563eb;
-  }
-
-  .calendar-day .day-event .event-actions .delete-btn:hover {
-    background: #fee2e2;
-    color: #dc2626;
-  }
-
-  /* Week View */
-  .week-grid {
-    background: white;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-  }
-
-  .week-days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-  }
-
-  .week-day {
-    min-height: 300px;
-    padding: 0.5rem;
-    border-right: 1px solid #f1f5f9;
-    border-bottom: 1px solid #f1f5f9;
-  }
-
-  .week-day .week-day-header {
-    font-weight: 600;
-    font-size: 0.75rem;
-    color: #475569;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e2e8f0;
-    margin-bottom: 0.5rem;
-  }
-
-  .week-day .week-day-header .week-day-date {
-    font-weight: 700;
-    color: #0f172a;
-  }
-
-  .week-day .week-day-header .week-day-date.today {
-    color: #3b82f6;
-  }
-
-  .week-day .day-event {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
-    border-radius: 0.25rem;
-    margin-bottom: 0.2rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .week-day .day-event:hover {
-    transform: scale(1.02);
-  }
-
   /* List View */
-  .loading {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: #94a3b8;
-  }
-
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #e2e8f0;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 1rem;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .content-table {
     width: 100%;
     border-collapse: collapse;
@@ -928,21 +778,18 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
     cursor: pointer;
   }
 
-  .seo-details,
-  .source-details {
+  .seo-details {
     margin-bottom: 1rem;
   }
 
-  .seo-details summary,
-  .source-details summary {
+  .seo-details summary {
     cursor: pointer;
     font-weight: 500;
     color: #3b82f6;
     padding: 0.5rem 0;
   }
 
-  .seo-details summary:hover,
-  .source-details summary:hover {
+  .seo-details summary:hover {
     color: #2563eb;
   }
 
@@ -1116,16 +963,6 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       padding: 0.1rem 0.3rem;
     }
 
-    .week-days {
-      grid-template-columns: 1fr;
-    }
-
-    .week-day {
-      min-height: auto;
-      border-right: none;
-      padding: 0.5rem;
-    }
-
     .content-table {
       font-size: 0.75rem;
     }
@@ -1161,8 +998,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
   let editingId = null;
   let currentMonth = new Date().getMonth();
   let currentYear = new Date().getFullYear();
-  let currentWeekStart = new Date();
-  let currentView = 'month';
+  let currentView = 'calendar';
 
   // ============================================
   // TOAST
@@ -1190,6 +1026,9 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       renderView();
       populateFilters();
       populateFormSelects();
+    }).catch(err => {
+      console.error('Error loading data:', err);
+      showToast('Error loading data', 'error');
     });
   }
 
@@ -1210,6 +1049,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       .then(data => {
         if (data.success) {
           contentItems = data.data || [];
+          console.log('Loaded content items:', contentItems.length);
         } else {
           console.error('API error:', data.error);
           contentItems = [];
@@ -1303,19 +1143,19 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
     document.querySelectorAll('.btn-view').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
 
-    // Find and highlight the active view button
     const buttons = document.querySelectorAll('.btn-view');
-    const viewMap = { month: 0, week: 1, list: 2 };
+    const viewMap = { calendar: 0, list: 1 };
     if (buttons[viewMap[view]]) {
       buttons[viewMap[view]].classList.add('active');
     }
 
     document.getElementById(`${view}-view`).classList.add('active');
+    renderView();
+  }
 
-    if (view === 'list') {
+  function renderView() {
+    if (currentView === 'list') {
       renderList();
-    } else if (view === 'week') {
-      renderWeek();
     } else {
       renderCalendar();
     }
@@ -1375,102 +1215,36 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       html += `<div class="calendar-day" onclick="openModalByDate('${dateStr}')">`;
       html += `<div class="day-number ${isToday ? 'today' : ''}">${d}</div>`;
 
-      dayContent.slice(0, 5).forEach(item => {
-        const type = contentTypes.find(t => t.id === item.content_type_id);
-        const status = contentStatuses.find(s => s.id === item.status_id);
-        const color = status ? status.color : '#94a3b8';
-        const icon = type ? type.icon : '📄';
-        const time = item.scheduled_publish_at ?
-          new Date(item.scheduled_publish_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
-          '';
+      if (dayContent.length === 0) {
+        html += `<div style="font-size:0.65rem;color:#94a3b8;padding:0.2rem;">No content</div>`;
+      } else {
+        dayContent.slice(0, 4).forEach(item => {
+          const type = contentTypes.find(t => t.id === item.content_type_id);
+          const status = contentStatuses.find(s => s.id === item.status_id);
+          const color = status ? status.color : '#94a3b8';
+          const icon = type ? type.icon : '📄';
+          const time = item.scheduled_publish_at ?
+            new Date(item.scheduled_publish_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) :
+            '';
 
-        html += `
-          <div class="day-event" style="background:${color}20;border-left:3px solid ${color}" 
-               onclick="event.stopPropagation();editContent(${item.id})">
-            <span class="event-status-dot" style="background:${color}"></span>
-            <span class="event-time">${time}</span> ${icon} ${escapeHtml(item.title)}
-            <span class="event-actions">
-              <button class="edit-btn" onclick="event.stopPropagation();editContent(${item.id})">✏️</button>
-              <button class="delete-btn" onclick="event.stopPropagation();deleteContent(${item.id})">🗑️</button>
-            </span>
-          </div>
-        `;
-      });
+          html += `
+            <div class="day-event" style="background:${color}20;border-left:3px solid ${color}" 
+                 onclick="event.stopPropagation();editContent(${item.id})">
+              <span class="event-status-dot" style="background:${color}"></span>
+              <span class="event-time">${time}</span> ${icon} ${escapeHtml(item.title)}
+            </div>
+          `;
+        });
 
-      if (dayContent.length > 5) {
-        html += `<div style="font-size:0.65rem;color:#94a3b8;padding:0.2rem;">+${dayContent.length - 5} more</div>`;
+        if (dayContent.length > 4) {
+          html += `<div style="font-size:0.65rem;color:#94a3b8;padding:0.2rem;">+${dayContent.length - 4} more</div>`;
+        }
       }
 
       html += `</div>`;
     }
 
     document.getElementById('calendar-days').innerHTML = html;
-  }
-
-  // ============================================
-  // WEEK VIEW
-  // ============================================
-  function changeWeek(delta) {
-    currentWeekStart.setDate(currentWeekStart.getDate() + delta * 7);
-    renderWeek();
-  }
-
-  function goTodayWeek() {
-    currentWeekStart = new Date();
-    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
-    renderWeek();
-  }
-
-  function renderWeek() {
-    const weekStart = new Date(currentWeekStart);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-
-    document.getElementById('week-title').textContent =
-      `Week of ${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
-
-    const today = new Date();
-    let html = '';
-
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(weekStart);
-      date.setDate(date.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      const isToday = date.toDateString() === today.toDateString();
-      const dayName = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i];
-
-      const dayContent = contentItems.filter(c => {
-        if (!c.scheduled_publish_at) return false;
-        const pubDate = new Date(c.scheduled_publish_at);
-        return pubDate.toDateString() === date.toDateString();
-      });
-
-      html += `<div class="week-day">`;
-      html += `
-        <div class="week-day-header">
-          <span>${dayName}</span>
-          <span class="week-day-date ${isToday ? 'today' : ''}">${date.getDate()}</span>
-        </div>
-      `;
-
-      dayContent.forEach(item => {
-        const type = contentTypes.find(t => t.id === item.content_type_id);
-        const status = contentStatuses.find(s => s.id === item.status_id);
-        const color = status ? status.color : '#94a3b8';
-        const icon = type ? type.icon : '📄';
-
-        html += `
-          <div class="day-event" style="background:${color}20;border-left:2px solid ${color}"
-               onclick="editContent(${item.id})">
-            ${icon} ${escapeHtml(item.title)}
-          </div>
-        `;
-      });
-
-      html += `</div>`;
-    }
-
-    document.getElementById('week-days').innerHTML = html;
   }
 
   // ============================================
@@ -1539,16 +1313,6 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
     });
 
     tbody.innerHTML = html;
-  }
-
-  function renderView() {
-    if (currentView === 'list') {
-      renderList();
-    } else if (currentView === 'week') {
-      renderWeek();
-    } else {
-      renderCalendar();
-    }
   }
 
   // ============================================
@@ -1645,14 +1409,10 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       document.getElementById('form-meta-title').value = data.meta_title || '';
       document.getElementById('form-meta-desc').value = data.meta_description || '';
       document.getElementById('form-meta-keywords').value = data.meta_keywords || '';
-      document.getElementById('form-source-url').value = data.source_url || '';
-      document.getElementById('form-source-name').value = data.source_name || '';
-      document.getElementById('form-source-type').value = data.source_type || 'original';
     } else {
       document.getElementById('modal-title').textContent = 'Create Content';
       document.getElementById('modal-submit').textContent = 'Save Content';
       document.getElementById('form-status').value = contentStatuses.find(s => s.slug === 'draft')?.id || '';
-      document.getElementById('form-source-type').value = 'original';
     }
 
     document.getElementById('content-modal').style.display = 'flex';
@@ -1748,9 +1508,6 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       meta_description: document.getElementById('form-meta-desc').value.trim(),
       meta_keywords: document.getElementById('form-meta-keywords').value.trim(),
       scheduled_publish_at: document.getElementById('form-scheduled').value || null,
-      source_url: document.getElementById('form-source-url').value.trim(),
-      source_name: document.getElementById('form-source-name').value.trim(),
-      source_type: document.getElementById('form-source-type').value,
       is_featured: document.getElementById('form-featured').checked ? 1 : 0,
       is_published: document.getElementById('form-published').checked ? 1 : 0
     };
@@ -1830,7 +1587,6 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
   // ============================================
   document.addEventListener('DOMContentLoaded', () => {
     loadData();
-    // Set default view
-    switchView('month');
+    switchView('calendar');
   });
 </script>
