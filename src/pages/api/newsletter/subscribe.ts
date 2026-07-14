@@ -3,7 +3,7 @@ import { EmailService } from '@/lib/email-service';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    // ✅ Get database
+    // ✅ Get database from locals
     const db = (locals as any).runtime?.env?.DB;
     
     if (!db) {
@@ -17,8 +17,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // ✅ Initialize email service
-    const emailService = new EmailService(import.meta.env.RESEND_API_KEY);
+    // ✅ Get Resend API Key from locals (Cloudflare Pages environment)
+    const apiKey = (locals as any).runtime?.env?.RESEND_API_KEY;
+    
+    if (!apiKey) {
+      console.error('❌ Resend API key not found in locals');
+      console.log('Available env keys:', (locals as any).runtime?.env ? Object.keys((locals as any).runtime.env) : []);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Email service not configured. Please try again later.' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Resend API key found, initializing email service...');
+
+    // ✅ Initialize email service with API key
+    const emailService = new EmailService(apiKey);
 
     const body = await request.json();
     const { email, firstName, categories } = body;
@@ -90,7 +108,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           `).bind(...values).run();
 
           // ✅ Send verification email
+          console.log(`📧 Sending verification email to ${email}...`);
           await emailService.sendNewsletterVerification(email, token, firstName || existing.first_name);
+          console.log(`✅ Verification email sent to ${email}`);
 
           return new Response(
             JSON.stringify({ 
@@ -162,7 +182,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // ✅ Send verification email
     try {
+      console.log(`📧 Sending verification email to ${email}...`);
       await emailService.sendNewsletterVerification(email, token, firstName);
+      console.log(`✅ Verification email sent to ${email}`);
     } catch (emailError) {
       console.error('Email sending error:', emailError);
       // Don't fail the subscription if email fails
