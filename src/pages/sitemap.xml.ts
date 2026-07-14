@@ -12,18 +12,21 @@ export const GET: APIRoute = async ({ locals }) => {
 
   const baseUrl = 'https://trendlin.com';
 
-  const postUrls = results.map((post: any) => `
+  const postUrls = results.map((post: any) => {
+    const lastmod = new Date(post.updated_at).toISOString();
+
+    return `
     <url>
       <loc>${baseUrl}/posts/${post.slug}</loc>
-      <lastmod>${post.updated_at}</lastmod>
-    </url>
-  `).join('');
+      <lastmod>${lastmod}</lastmod>
+    </url>`;
+  }).join('');
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>${baseUrl}</loc>
+    <loc>${baseUrl}/</loc>
   </url>
 
   ${postUrls}
