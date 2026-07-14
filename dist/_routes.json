@@ -5,7 +5,7 @@
   ],
   "exclude": [
     "/_astro/*",
-    "/favicon.svg.svg",
+    "/favicon.svg",
     "/popup-controller.js",
     "/scripts/*"
   ]
