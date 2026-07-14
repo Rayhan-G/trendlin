@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { renderers } from './renderers.mjs';
 import { createExports } from './_@astrojs-ssr-adapter.mjs';
-import { manifest } from './manifest_BwC4P4K_.mjs';
+import { manifest } from './manifest_DVTtRgrK.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -62,8 +62,9 @@ const _page53 = () => import('./pages/cookies.astro.mjs');
 const _page54 = () => import('./pages/disclosure.astro.mjs');
 const _page55 = () => import('./pages/posts/_slug_.astro.mjs');
 const _page56 = () => import('./pages/privacy.astro.mjs');
-const _page57 = () => import('./pages/terms.astro.mjs');
-const _page58 = () => import('./pages/index.astro.mjs');
+const _page57 = () => import('./pages/sitemap.xml.astro.mjs');
+const _page58 = () => import('./pages/terms.astro.mjs');
+const _page59 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/@astrojs/cloudflare/dist/entrypoints/image-endpoint.js", _page0],
     ["src/pages/about.astro", _page1],
@@ -122,8 +123,9 @@ const pageMap = new Map([
     ["src/pages/disclosure.astro", _page54],
     ["src/pages/posts/[slug].astro", _page55],
     ["src/pages/privacy.astro", _page56],
-    ["src/pages/terms.astro", _page57],
-    ["src/pages/index.astro", _page58]
+    ["src/pages/sitemap.xml.ts", _page57],
+    ["src/pages/terms.astro", _page58],
+    ["src/pages/index.astro", _page59]
 ]);
 
 const _manifest = Object.assign(manifest, {
