@@ -1,30 +1,30 @@
 ---
-// AdminSources.astro - Sources management component
+// SourceManager.astro - Sources management component
 ---
 
-<div id="admin-sources">
-  <div class="toolbar">
-    <div class="filters">
-      <select id="s-filter-type">
+<div id="app-source-manager">
+  <div class="manager-toolbar">
+    <div class="manager-filters">
+      <select id="sm-type">
         <option value="all">All Types</option>
         <option value="master">Universal</option>
         <option value="state">State-Specific</option>
       </select>
-      <select id="s-filter-category">
+      <select id="sm-category">
         <option value="">All Categories</option>
       </select>
-      <select id="s-filter-state">
+      <select id="sm-state">
         <option value="">All States</option>
       </select>
-      <input type="text" id="s-search" placeholder="Search sources..." />
+      <input type="text" id="sm-search" placeholder="Search sources..." />
     </div>
-    <button class="btn-primary" id="s-add-btn">+ Add Source</button>
+    <button class="btn-primary" id="sm-add-btn">+ Add Source</button>
   </div>
   
-  <div id="s-loading" class="loading-text">Loading...</div>
+  <div id="sm-loading" class="loading-text">Loading...</div>
   
-  <div id="s-table-wrap" style="display:none;">
-    <table class="s-table">
+  <div id="sm-table-wrap" style="display:none;">
+    <table class="sm-table">
       <thead>
         <tr>
           <th>Source</th>
@@ -36,86 +36,95 @@
           <th style="width:120px;">Actions</th>
         </tr>
       </thead>
-      <tbody id="s-table-body"></tbody>
+      <tbody id="sm-table-body"></tbody>
     </table>
   </div>
   
-  <div id="s-empty" style="display:none;" class="empty-text">
+  <div id="sm-empty" style="display:none;" class="empty-text">
     <p>No sources found</p>
     <small>Adjust filters or add a new source</small>
   </div>
 </div>
 
-<!-- Modal Dialog -->
-<div id="s-modal" style="display:none;" class="modal-overlay">
+<!-- Modal -->
+<div id="sm-modal" style="display:none;" class="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
-      <h2 id="s-modal-title">Add Source</h2>
-      <button class="close-btn" id="s-modal-close">×</button>
+      <h2 id="sm-modal-title">Add Source</h2>
+      <button class="close-btn" id="sm-modal-close">×</button>
     </div>
-    <form id="s-form">
+    <form id="sm-form">
       <div class="form-group">
         <label>Type</label>
-        <select id="sf-type">
+        <select id="smf-type">
           <option value="state">State-Specific</option>
           <option value="master">Universal</option>
         </select>
       </div>
-      <div class="form-group" id="sf-state-group">
+      <div class="form-group" id="smf-state-group">
         <label>State</label>
-        <select id="sf-state"><option value="">Select a state</option></select>
+        <select id="smf-state"><option value="">Select a state</option></select>
       </div>
       <div class="form-group">
         <label>Name *</label>
-        <input type="text" id="sf-name" required />
+        <input type="text" id="smf-name" required />
       </div>
       <div class="form-group">
         <label>URL *</label>
-        <input type="url" id="sf-url" required />
+        <input type="url" id="smf-url" required />
       </div>
       <div class="form-group">
         <label>Category *</label>
-        <select id="sf-category" required><option value="">Select a category</option></select>
+        <select id="smf-category" required><option value="">Select a category</option></select>
       </div>
       <div class="form-group">
         <label>Description</label>
-        <textarea id="sf-desc" rows="2"></textarea>
+        <textarea id="smf-desc" rows="2"></textarea>
       </div>
       <div class="form-group">
         <label>Logo URL</label>
-        <input type="url" id="sf-logo" />
+        <input type="url" id="smf-logo" />
+      </div>
+      <div class="form-group">
+        <label>Source Type</label>
+        <select id="smf-source-type">
+          <option value="official">Official</option>
+          <option value="community">Community</option>
+          <option value="news">News</option>
+          <option value="other">Other</option>
+        </select>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Active</label>
-          <select id="sf-active">
+          <select id="smf-active">
             <option value="1">Yes</option>
             <option value="0">No</option>
           </select>
         </div>
         <div class="form-group">
           <label>Featured</label>
-          <select id="sf-featured">
+          <select id="smf-featured">
             <option value="1">Yes</option>
             <option value="0">No</option>
           </select>
         </div>
       </div>
       <div class="form-group">
-        <label>Trust Score: <span id="sf-trust-label">0%</span></label>
-        <input type="range" id="sf-trust" min="0" max="100" value="0" />
+        <label>Trust Score: <span id="smf-trust-label">0%</span></label>
+        <input type="range" id="smf-trust" min="0" max="100" value="0" />
       </div>
-      <input type="hidden" id="sf-edit-id" />
+      <input type="hidden" id="smf-edit-id" />
       <div class="form-actions">
-        <button type="button" class="btn-secondary" id="s-modal-cancel">Cancel</button>
-        <button type="submit" class="btn-primary" id="s-modal-submit">Create</button>
+        <button type="button" class="btn-secondary" id="sm-modal-cancel">Cancel</button>
+        <button type="submit" class="btn-primary" id="sm-modal-submit">Create</button>
       </div>
     </form>
   </div>
 </div>
 
 <style>
-  .toolbar {
+  .manager-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -123,14 +132,14 @@
     flex-wrap: wrap;
     gap: 1rem;
   }
-  .filters {
+  .manager-filters {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
     flex: 1;
   }
-  .filters select,
-  .filters input {
+  .manager-filters select,
+  .manager-filters input {
     padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 6px;
@@ -138,22 +147,16 @@
     font-size: 0.875rem;
     color: #1f2937;
   }
-  .filters input {
+  .manager-filters input {
     flex: 1;
     min-width: 200px;
   }
-  .filters select:focus,
-  .filters input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-  }
-  .s-table {
+  .sm-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
   }
-  .s-table th {
+  .sm-table th {
     background: #f9fafb;
     padding: 0.75rem 1rem;
     text-align: left;
@@ -161,12 +164,12 @@
     color: #374151;
     border-bottom: 2px solid #e5e7eb;
   }
-  .s-table td {
+  .sm-table td {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid #e5e7eb;
     vertical-align: middle;
   }
-  .s-table tr:hover {
+  .sm-table tr:hover {
     background: #f9fafb;
   }
   .source-cell {
@@ -414,34 +417,33 @@
     function get(id) { return document.getElementById(id); }
     
     function init() {
-      // Get DOM references
-      var loadingEl = get('s-loading');
-      var tableWrap = get('s-table-wrap');
-      var emptyEl = get('s-empty');
-      var tableBody = get('s-table-body');
-      var modal = get('s-modal');
+      var loadingEl = get('sm-loading');
+      var tableWrap = get('sm-table-wrap');
+      var emptyEl = get('sm-empty');
+      var tableBody = get('sm-table-body');
+      var modal = get('sm-modal');
       
-      var filterType = get('s-filter-type');
-      var filterCategory = get('s-filter-category');
-      var filterState = get('s-filter-state');
-      var searchInput = get('s-search');
+      var filterType = get('sm-type');
+      var filterCategory = get('sm-category');
+      var filterState = get('sm-state');
+      var searchInput = get('sm-search');
       
-      var form = get('s-form');
-      var fType = get('sf-type');
-      var fState = get('sf-state');
-      var fName = get('sf-name');
-      var fUrl = get('sf-url');
-      var fCategory = get('sf-category');
-      var fDesc = get('sf-desc');
-      var fLogo = get('sf-logo');
-      var fSourceType = get('sf-source-type');
-      var fActive = get('sf-active');
-      var fFeatured = get('sf-featured');
-      var fTrust = get('sf-trust');
-      var fTrustLabel = get('sf-trust-label');
-      var fEditId = get('sf-edit-id');
-      var modalTitle = get('s-modal-title');
-      var modalSubmit = get('s-modal-submit');
+      var form = get('sm-form');
+      var fType = get('smf-type');
+      var fState = get('smf-state');
+      var fName = get('smf-name');
+      var fUrl = get('smf-url');
+      var fCategory = get('smf-category');
+      var fDesc = get('smf-desc');
+      var fLogo = get('smf-logo');
+      var fSourceType = get('smf-source-type');
+      var fActive = get('smf-active');
+      var fFeatured = get('smf-featured');
+      var fTrust = get('smf-trust');
+      var fTrustLabel = get('smf-trust-label');
+      var fEditId = get('smf-edit-id');
+      var modalTitle = get('sm-modal-title');
+      var modalSubmit = get('sm-modal-submit');
       
       function loadData() {
         loadingEl.style.display = 'block';
@@ -594,6 +596,7 @@
         fCategory.value = source.category_id || '';
         fDesc.value = source.description || '';
         fLogo.value = source.logo_url || '';
+        fSourceType.value = source.source_type || 'official';
         fActive.value = source.is_active !== undefined ? source.is_active : 1;
         fFeatured.value = source.is_featured !== undefined ? source.is_featured : 0;
         fTrust.value = source.trust_score || 0;
@@ -628,7 +631,7 @@
       };
       
       function toggleStateField() {
-        var group = get('sf-state-group');
+        var group = get('smf-state-group');
         group.style.display = fType.value === 'master' ? 'none' : 'block';
       }
       
@@ -705,17 +708,17 @@
         searchTimer = setTimeout(function() { loadSources().then(renderTable); }, 300);
       });
       
-      get('s-add-btn').addEventListener('click', function() {
+      get('sm-add-btn').addEventListener('click', function() {
         resetForm();
         modal.style.display = 'flex';
       });
       
-      get('s-modal-close').addEventListener('click', function() {
+      get('sm-modal-close').addEventListener('click', function() {
         modal.style.display = 'none';
         resetForm();
       });
       
-      get('s-modal-cancel').addEventListener('click', function() {
+      get('sm-modal-cancel').addEventListener('click', function() {
         modal.style.display = 'none';
         resetForm();
       });
@@ -734,7 +737,6 @@
       fType.addEventListener('change', toggleStateField);
       form.addEventListener('submit', handleSubmit);
       
-      // Start
       loadData();
     }
     

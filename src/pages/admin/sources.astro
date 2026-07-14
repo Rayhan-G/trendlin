@@ -1,7 +1,7 @@
 ---
 // Admin Sources Management Page
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import AdminSources from '../../components/admin/AdminSources.astro';
+import SourceManager from '../../components/SourceManager.astro';
 ---
 
 <AdminLayout title="Sources Management">
@@ -12,7 +12,7 @@ import AdminSources from '../../components/admin/AdminSources.astro';
     </div>
     
     <div class="sources-container">
-      <AdminSources client:load />
+      <SourceManager client:load />
     </div>
   </div>
 </AdminLayout>
