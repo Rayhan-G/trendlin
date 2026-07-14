@@ -1,16 +1,13 @@
 import type { APIRoute } from 'astro';
+import { EmailService } from '@/lib/email-service';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    // ✅ CORRECT: Access D1 from locals.env (NOT locals.runtime.env)
-    const db = locals.env?.DB;
+    // ✅ Get database
+    const db = (locals as any).runtime?.env?.DB;
     
     if (!db) {
-      console.error('❌ D1 Database not available');
-      console.log('locals keys:', Object.keys(locals));
-      console.log('has env:', !!locals.env);
-      console.log('env keys:', locals.env ? Object.keys(locals.env) : []);
-      
+      console.error('❌ Database not available');
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -20,7 +17,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    console.log('✅ Database connected successfully');
+    // ✅ Initialize email service
+    const emailService = new EmailService(import.meta.env.RESEND_API_KEY);
 
     const body = await request.json();
     const { email, firstName, categories } = body;
@@ -69,6 +67,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       
       if (existing.verified === 0) {
         try {
+          // Update subscriber
           await db.prepare(`
             UPDATE subscribers 
             SET verification_token = ?,
@@ -77,6 +76,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             WHERE email = ?
           `).bind(token, categories.join(','), email.toLowerCase().trim()).run();
 
+          // Update preferences
           await db.prepare(`
             DELETE FROM newsletter_preferences WHERE subscriber_id = ?
           `).bind(existing.id).run();
@@ -89,10 +89,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
             VALUES ${placeholders}
           `).bind(...values).run();
 
+          // ✅ Send verification email
+          await emailService.sendNewsletterVerification(email, token, firstName || existing.first_name);
+
           return new Response(
             JSON.stringify({ 
               success: true, 
-              message: 'Verification email resent. Please check your inbox.' 
+              message: 'Verification email sent! Please check your inbox.' 
             }),
             { status: 200, headers: { 'Content-Type': 'application/json' } }
           );
@@ -153,7 +156,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
         `).bind(...values).run();
       } catch (prefError) {
         console.error('Preferences error:', prefError);
+        // Don't fail the subscription if preferences fail
       }
+    }
+
+    // ✅ Send verification email
+    try {
+      await emailService.sendNewsletterVerification(email, token, firstName);
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      // Don't fail the subscription if email fails
+      // The user can request a new verification email later
     }
 
     return new Response(

@@ -72,7 +72,11 @@ function baseTemplate(content, label, tag) {
   `;
 }
 
-// ----- 1. ADMIN NOTIFICATION (NO automated message) -----
+// ============================================
+// CONTACT EMAIL TEMPLATES
+// ============================================
+
+// ----- 1. ADMIN NOTIFICATION -----
 export function contactEmailTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -103,7 +107,7 @@ export function contactEmailTemplate(data) {
   `, 'New Contact', 'Admin');
 }
 
-// ----- 2. GENERAL AUTO-REPLY (WITH automated message) -----
+// ----- 2. GENERAL AUTO-REPLY -----
 export function autoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -117,7 +121,7 @@ export function autoReplyTemplate(data) {
       <p><strong>Subject:</strong> ${data.subject}</p>
       <p style="margin-top:4px;"><strong>Message:</strong> ${data.message.substring(0, 160)}${data.message.length > 160 ? '...' : ''}</p>
     </div>
-    <p style="color:#666666;font-size:14px;margin:0;">Explore <a href="#" class="link">Trendlin</a></p>
+    <p style="color:#666666;font-size:14px;margin:0;">Explore <a href="https://trendlin.com" class="link">Trendlin</a></p>
     <div class="footer">
       Trendlin
       <div class="small">This is an automated message. Please do not reply to this email.</div>
@@ -125,7 +129,7 @@ export function autoReplyTemplate(data) {
   `, 'General Inquiry', 'Auto-reply');
 }
 
-// ----- 3. PRIVACY AUTO-REPLY (WITH automated message) -----
+// ----- 3. PRIVACY AUTO-REPLY -----
 export function privacyAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -138,7 +142,7 @@ export function privacyAutoReplyTemplate(data) {
     <div class="info-box">
       <p>Your privacy matters to us. Your request has been logged and will be handled with care.</p>
     </div>
-    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Privacy Policy</a></p>
+    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="https://trendlin.com/privacy" class="link">Privacy Policy</a></p>
     <div class="footer">
       Trendlin
       <div class="small">This is an automated message. Please do not reply to this email.</div>
@@ -146,7 +150,7 @@ export function privacyAutoReplyTemplate(data) {
   `, 'Privacy Inquiry', 'Privacy Team');
 }
 
-// ----- 4. LEGAL AUTO-REPLY (WITH automated message) -----
+// ----- 4. LEGAL AUTO-REPLY -----
 export function legalAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -159,7 +163,7 @@ export function legalAutoReplyTemplate(data) {
     <div class="info-box">
       <p>Your message has been forwarded to our legal department for review.</p>
     </div>
-    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Terms of Service</a></p>
+    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="https://trendlin.com/terms" class="link">Terms of Service</a></p>
     <div class="footer">
       Trendlin
       <div class="small">This is an automated message. Please do not reply to this email.</div>
@@ -167,7 +171,7 @@ export function legalAutoReplyTemplate(data) {
   `, 'Legal Inquiry', 'Legal Team');
 }
 
-// ----- 5. COOKIE AUTO-REPLY (WITH automated message) -----
+// ----- 5. COOKIE AUTO-REPLY -----
 export function cookieAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -180,7 +184,7 @@ export function cookieAutoReplyTemplate(data) {
     <div class="info-box">
       <p>You can manage cookie preferences in your browser settings at any time.</p>
     </div>
-    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Cookie Policy</a></p>
+    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="https://trendlin.com/cookies" class="link">Cookie Policy</a></p>
     <div class="footer">
       Trendlin
       <div class="small">This is an automated message. Please do not reply to this email.</div>
@@ -188,7 +192,7 @@ export function cookieAutoReplyTemplate(data) {
   `, 'Cookie Policy', 'Support Team');
 }
 
-// ----- 6. TERMS AUTO-REPLY (WITH automated message) -----
+// ----- 6. TERMS AUTO-REPLY -----
 export function termsAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -201,7 +205,7 @@ export function termsAutoReplyTemplate(data) {
     <div class="info-box">
       <p>Our Terms of Service outline the rules for using our platform.</p>
     </div>
-    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="#" class="link">Terms of Service</a></p>
+    <p style="color:#666666;font-size:14px;margin:0;">Review our <a href="https://trendlin.com/terms" class="link">Terms of Service</a></p>
     <div class="footer">
       Trendlin
       <div class="small">This is an automated message. Please do not reply to this email.</div>
@@ -209,7 +213,7 @@ export function termsAutoReplyTemplate(data) {
   `, 'Terms of Service', 'Legal Team');
 }
 
-// ----- 7. PARTNERSHIP AUTO-REPLY (WITH automated message) -----
+// ----- 7. PARTNERSHIP AUTO-REPLY -----
 export function partnershipAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -230,7 +234,7 @@ export function partnershipAutoReplyTemplate(data) {
   `, 'Partnership', 'Partnership Team');
 }
 
-// ----- 8. FEEDBACK AUTO-REPLY (WITH automated message) -----
+// ----- 8. FEEDBACK AUTO-REPLY -----
 export function feedbackAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -251,7 +255,7 @@ export function feedbackAutoReplyTemplate(data) {
   `, 'Feedback', 'Feedback Team');
 }
 
-// ----- 9. TECHNICAL AUTO-REPLY (WITH automated message) -----
+// ----- 9. TECHNICAL AUTO-REPLY -----
 export function technicalAutoReplyTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -272,7 +276,7 @@ export function technicalAutoReplyTemplate(data) {
   `, 'Technical Issue', 'Tech Support');
 }
 
-// ----- 10. NOTIFICATION (NO automated message) -----
+// ----- 10. NOTIFICATION -----
 export function notificationEmailTemplate(data) {
   return baseTemplate(`
     <div class="line"></div>
@@ -285,4 +289,86 @@ export function notificationEmailTemplate(data) {
       Trendlin
     </div>
   `, 'Notification', 'System');
+}
+
+// ============================================
+// NEWSLETTER EMAIL TEMPLATES
+// ============================================
+
+// ----- 11. NEWSLETTER VERIFICATION EMAIL -----
+export function newsletterVerificationTemplate(data) {
+  return baseTemplate(`
+    <div class="line"></div>
+    <div class="center">
+      <div style="font-size: 48px; margin-bottom: 16px;">✉️</div>
+      <div class="title">Verify Your Email</div>
+      <div class="sub">Confirm your subscription to Trendlin</div>
+    </div>
+    <div class="greeting">Hello${data.firstName ? ` ${data.firstName}` : ''},</div>
+    <div class="text">Thanks for subscribing to the Trendlin newsletter! Please confirm your email address by clicking the button below:</div>
+    <div class="center" style="margin: 24px 0;">
+      <a href="${data.verificationUrl}" class="btn">Confirm Email</a>
+    </div>
+    <div class="info-box">
+      <p style="font-size: 13px; color: #666666;">Or copy and paste this link into your browser:</p>
+      <p style="font-size: 13px; word-break: break-all; color: #000000; background: #f5f5f5; padding: 8px 12px; border-radius: 4px;">${data.verificationUrl}</p>
+    </div>
+    <p style="color: #999999; font-size: 13px;">This link will expire in 24 hours.</p>
+    <div class="footer">
+      Trendlin
+      <div class="small">If you didn't sign up for Trendlin, you can safely ignore this email.</div>
+    </div>
+  `, 'Verify Email', 'Newsletter');
+}
+
+// ----- 12. NEWSLETTER WELCOME EMAIL -----
+export function newsletterWelcomeTemplate(data) {
+  const categoryList = data.categories && data.categories.length > 0 ? data.categories.join(', ') : 'all topics';
+  
+  return baseTemplate(`
+    <div class="line"></div>
+    <div class="center">
+      <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
+      <div class="title">Welcome to Trendlin!</div>
+      <div class="sub">Your source for honest reviews & local insights</div>
+    </div>
+    <div class="greeting">Hello${data.firstName ? ` ${data.firstName}` : ''}!</div>
+    <div class="text">Thank you for subscribing to the Trendlin newsletter. We're excited to have you on board!</div>
+    <div class="info-box">
+      <p><strong>📬 You'll receive updates on:</strong></p>
+      <p style="margin-top: 4px; color: #555555;">${categoryList}</p>
+    </div>
+    <div class="text">Here's what you can expect:</div>
+    <ul style="color: #333333; font-size: 15px; line-height: 1.8; padding-left: 20px;">
+      <li>📝 Honest product reviews</li>
+      <li>🛍️ Buying guides and recommendations</li>
+      <li>🏙️ Local LA insights and events</li>
+      <li>💡 Tips and trends</li>
+    </ul>
+    <div class="center" style="margin: 24px 0;">
+      <a href="https://trendlin.com" class="btn">Start Exploring</a>
+    </div>
+    <div class="footer">
+      Trendlin
+      <div class="small">You can <a href="https://trendlin.com/preferences" style="color: #000000;">manage your preferences</a> or <a href="https://trendlin.com/unsubscribe" style="color: #000000;">unsubscribe</a> anytime.</div>
+    </div>
+  `, 'Welcome', 'Newsletter');
+}
+
+// ----- 13. NEWSLETTER DIGEST -----
+export function newsletterDigestTemplate(data) {
+  return baseTemplate(`
+    <div class="line"></div>
+    <div class="center">
+      <div style="font-size: 36px; margin-bottom: 12px;">📰</div>
+      <div class="title">${data.title || 'Trendlin Weekly Digest'}</div>
+      <div class="sub">${data.subtitle || 'The latest reviews and insights'}</div>
+    </div>
+    ${data.content || ''}
+    <div class="footer">
+      Trendlin
+      <div class="small">You received this email because you subscribed to our newsletter.</div>
+      <div class="small"><a href="https://trendlin.com/unsubscribe" style="color: #000000;">Unsubscribe</a> | <a href="https://trendlin.com/preferences" style="color: #000000;">Manage Preferences</a></div>
+    </div>
+  `, 'Newsletter', 'Weekly');
 }

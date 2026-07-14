@@ -2,11 +2,11 @@ import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   try {
-    // ✅ CORRECT: Access D1 from locals.env
-    const db = locals.env?.DB;
+    // ✅ Use the working pattern
+    const db = (locals as any).runtime?.env?.DB;
     
     if (!db) {
-      console.error('❌ D1 Database not available');
+      console.error('❌ Database not available');
       return new Response(
         JSON.stringify({ 
           success: false, 

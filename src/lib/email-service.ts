@@ -13,11 +13,17 @@ import {
   termsAutoReplyTemplate,
   partnershipAutoReplyTemplate,
   feedbackAutoReplyTemplate,
-  technicalAutoReplyTemplate
+  technicalAutoReplyTemplate,
+  newsletterVerificationTemplate,
+  newsletterWelcomeTemplate,
+  newsletterDigestTemplate
 } from './email-templates.js';
 
 export class EmailService {
-  constructor(apiKey) {
+  private resend: any;
+  private fromEmail: string;
+
+  constructor(apiKey: string) {
     if (!apiKey) {
       throw new Error('Resend API key is required');
     }
@@ -29,7 +35,15 @@ export class EmailService {
   // ============================================
   // Send Contact Form Email (with subject-based auto-reply)
   // ============================================
-  async sendContactEmail(data) {
+  async sendContactEmail(data: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+    phone?: string;
+    ip?: string;
+    userAgent?: string;
+  }) {
     try {
       const { name, email, subject, message, phone, ip, userAgent } = data;
       
@@ -97,7 +111,7 @@ export class EmailService {
         adminResult,
         autoReplyResult
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Email sending error:', error);
       throw new Error(`Failed to send email: ${error.message}`);
     }
@@ -106,7 +120,12 @@ export class EmailService {
   // ============================================
   // Send Direct Email Auto-Reply (for privacy@, legal@, etc.)
   // ============================================
-  async sendDirectEmailAutoReply(data) {
+  async sendDirectEmailAutoReply(data: {
+    to: string;
+    from: string;
+    subject: string;
+    message: string;
+  }) {
     try {
       const { to, from, subject, message } = data;
       
@@ -176,7 +195,7 @@ export class EmailService {
         success: true,
         result
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Auto-reply error:', error);
       throw new Error(`Failed to send auto-reply: ${error.message}`);
     }
@@ -185,7 +204,12 @@ export class EmailService {
   // ============================================
   // Send Notification
   // ============================================
-  async sendNotification(data) {
+  async sendNotification(data: {
+    to: string;
+    title: string;
+    message: string;
+    cta?: { text: string; url: string };
+  }) {
     try {
       const { to, title, message, cta } = data;
       
@@ -204,7 +228,7 @@ export class EmailService {
         success: true,
         result
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Notification error:', error);
       throw new Error(`Failed to send notification: ${error.message}`);
     }
@@ -213,7 +237,7 @@ export class EmailService {
   // ============================================
   // Send Welcome Email
   // ============================================
-  async sendWelcomeEmail(email, name) {
+  async sendWelcomeEmail(email: string, name: string) {
     try {
       const result = await this.resend.emails.send({
         from: `Trendlin <${this.fromEmail}>`,
@@ -236,9 +260,84 @@ export class EmailService {
         success: true,
         result
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Welcome email error:', error);
       throw new Error(`Failed to send welcome email: ${error.message}`);
+    }
+  }
+
+  // ============================================
+  // NEWSLETTER: Send Verification Email
+  // ============================================
+  async sendNewsletterVerification(email: string, token: string, firstName?: string) {
+    try {
+      const verificationUrl = `${process.env.SITE || 'https://trendlin.com'}/api/newsletter/verify?email=${encodeURIComponent(email)}&token=${token}`;
+      
+      const result = await this.resend.emails.send({
+        from: `Trendlin <${this.fromEmail}>`,
+        to: email,
+        subject: 'Verify Your Email - Trendlin Newsletter',
+        html: newsletterVerificationTemplate({
+          firstName: firstName || '',
+          verificationUrl
+        }),
+      });
+
+      return { success: true, result };
+    } catch (error: any) {
+      console.error('❌ Newsletter verification email error:', error);
+      throw new Error(`Failed to send verification email: ${error.message}`);
+    }
+  }
+
+  // ============================================
+  // NEWSLETTER: Send Welcome Email
+  // ============================================
+  async sendNewsletterWelcome(email: string, firstName?: string, categories?: string[]) {
+    try {
+      const result = await this.resend.emails.send({
+        from: `Trendlin <${this.fromEmail}>`,
+        to: email,
+        subject: '🎉 Welcome to Trendlin Newsletter!',
+        html: newsletterWelcomeTemplate({
+          firstName: firstName || '',
+          categories: categories || []
+        }),
+      });
+
+      return { success: true, result };
+    } catch (error: any) {
+      console.error('❌ Welcome email error:', error);
+      throw new Error(`Failed to send welcome email: ${error.message}`);
+    }
+  }
+
+  // ============================================
+  // NEWSLETTER: Send Digest
+  // ============================================
+  async sendNewsletterDigest(data: {
+    to: string;
+    subject: string;
+    title: string;
+    subtitle?: string;
+    content: string;
+  }) {
+    try {
+      const result = await this.resend.emails.send({
+        from: `Trendlin <${this.fromEmail}>`,
+        to: data.to,
+        subject: data.subject,
+        html: newsletterDigestTemplate({
+          title: data.title,
+          subtitle: data.subtitle || 'The latest reviews and insights',
+          content: data.content
+        }),
+      });
+
+      return { success: true, result };
+    } catch (error: any) {
+      console.error('❌ Digest email error:', error);
+      throw new Error(`Failed to send digest: ${error.message}`);
     }
   }
 }
