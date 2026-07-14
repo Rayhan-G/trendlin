@@ -154,6 +154,13 @@ const currentYear = new Date().getFullYear();
         <a href="/privacy" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200">Privacy</a>
         <a href="/terms" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200">Terms</a>
         <a href="/cookies" class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200">Cookies</a>
+        <!-- ✅ UNSUBSCRIBE BUTTON -->
+        <button 
+          id="open-unsubscribe-modal"
+          class="hover:text-red-600 dark:hover:text-red-400 transition-colors duration-200 text-red-500 dark:text-red-400 font-medium"
+        >
+          Unsubscribe
+        </button>
       </div>
     </div>
   </div>
@@ -315,11 +322,86 @@ CATEGORY SELECTION MODAL
 </div>
 
 <!-- ==========================================
-JAVASCRIPT
+UNSUBSCRIBE MODAL
+========================================== -->
+<div id="unsubscribe-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+  <!-- Backdrop -->
+  <div id="unsubscribe-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+  <!-- Modal -->
+  <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+    <!-- Close button -->
+    <button
+      id="unsubscribe-modal-close"
+      class="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      aria-label="Close modal"
+      type="button"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <!-- Header -->
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+        </svg>
+      </div>
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+        Unsubscribe from Trendlin?
+      </h2>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        Enter your email to unsubscribe from our newsletter
+      </p>
+    </div>
+
+    <!-- Form -->
+    <form id="unsubscribe-email-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Email Address
+        </label>
+        <input
+          id="unsubscribe-email-input"
+          type="email"
+          placeholder="you@example.com"
+          required
+          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+        />
+      </div>
+
+      <div id="unsubscribe-email-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+
+      <div class="flex gap-3 pt-2">
+        <button
+          id="unsubscribe-email-cancel"
+          type="button"
+          class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+        >
+          Cancel
+        </button>
+        <button
+          id="unsubscribe-email-submit"
+          type="submit"
+          class="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+        >
+          Continue
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+JAVASCRIPT - ALL FUNCTIONALITY
 ========================================== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Elements
+    // ==========================================
+    // SUBSCRIPTION MODAL
+    // ==========================================
     const modal = document.getElementById('category-modal');
     const openModalBtn = document.getElementById('open-category-modal');
     const closeModalBtn = document.getElementById('modal-close');
@@ -335,13 +417,11 @@ JAVASCRIPT
 
     let selectedCategories = [];
 
-    // Update selected count
     function updateSelectedCount() {
       const checked = document.querySelectorAll('input[name="modal-categories"]:checked');
       selectedCategories = Array.from(checked).map(cb => cb.value);
       selectedCount.textContent = selectedCategories.length;
       
-      // Update visual state of checkboxes
       checkboxes.forEach(cb => {
         const label = cb.closest('label');
         if (cb.checked) {
@@ -354,7 +434,6 @@ JAVASCRIPT
       });
     }
 
-    // Show message function
     function showMessage(msg, type) {
       messageEl.textContent = msg;
       messageEl.className = `text-xs mt-1 ${type === 'success' ? 'text-green-600 dark:text-green-400' : type === 'error' ? 'text-red-600 dark:text-red-400' : ''}`;
@@ -367,7 +446,6 @@ JAVASCRIPT
       }
     }
 
-    // Open modal - with subscription check
     openModalBtn?.addEventListener('click', async () => {
       const email = emailInput.value.trim();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -375,39 +453,32 @@ JAVASCRIPT
         return;
       }
 
-      // Check if email is already subscribed
       try {
         const checkResponse = await fetch(`/api/newsletter/check?email=${encodeURIComponent(email)}`);
         const checkData = await checkResponse.json();
 
         if (checkResponse.ok && checkData.subscribed === true) {
-          // User is already subscribed
           showMessage('✅ You are already subscribed to our newsletter!', 'success');
           return;
         }
         
         if (checkResponse.ok && checkData.subscribed === false && checkData.verified === false) {
-          // User exists but not verified
           showMessage('⚠️ Please verify your email. Check your inbox for the verification link.', 'error');
           return;
         }
       } catch (error) {
         console.error('Check subscription error:', error);
-        // Continue to modal if check fails
       }
       
-      // Reset modal state
       modalError.classList.add('hidden');
       checkboxes.forEach(cb => cb.checked = false);
       updateSelectedCount();
       
-      // Show modal
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.body.style.overflow = 'hidden';
     });
 
-    // Close modal
     function closeModal() {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
@@ -418,7 +489,6 @@ JAVASCRIPT
     cancelBtn?.addEventListener('click', closeModal);
     backdrop?.addEventListener('click', closeModal);
 
-    // Select All
     selectAllBtn?.addEventListener('click', () => {
       const allChecked = checkboxes.length === document.querySelectorAll('input[name="modal-categories"]:checked').length;
       checkboxes.forEach(cb => cb.checked = !allChecked);
@@ -426,12 +496,10 @@ JAVASCRIPT
       selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
     });
 
-    // Update count on checkbox change
     checkboxes.forEach(cb => {
       cb.addEventListener('change', updateSelectedCount);
     });
 
-    // Confirm subscription
     confirmBtn?.addEventListener('click', async () => {
       const checked = document.querySelectorAll('input[name="modal-categories"]:checked');
       const categories = Array.from(checked).map(cb => cb.value);
@@ -443,7 +511,6 @@ JAVASCRIPT
 
       modalError.classList.add('hidden');
       
-      // Disable confirm button
       confirmBtn.disabled = true;
       const originalText = confirmBtn.textContent;
       confirmBtn.textContent = 'Subscribing...';
@@ -466,10 +533,8 @@ JAVASCRIPT
         if (response.ok) {
           showMessage('✅ Please check your email to confirm your subscription!', 'success');
           emailInput.value = '';
-          // Close modal on success
           closeModal();
         } else {
-          // Show error but keep modal open
           showMessage(data.message || 'Something went wrong. Please try again.', 'error');
           modalError.textContent = data.message || 'Something went wrong. Please try again.';
           modalError.classList.remove('hidden');
@@ -485,8 +550,101 @@ JAVASCRIPT
       }
     });
 
-    // Initial count
     updateSelectedCount();
+
+    // ==========================================
+    // UNSUBSCRIBE MODAL
+    // ==========================================
+    const unsubscribeModal = document.getElementById('unsubscribe-modal');
+    const openUnsubscribeBtn = document.getElementById('open-unsubscribe-modal');
+    const closeUnsubscribeModal = document.getElementById('unsubscribe-modal-close');
+    const unsubscribeCancel = document.getElementById('unsubscribe-email-cancel');
+    const unsubscribeBackdrop = document.getElementById('unsubscribe-backdrop');
+    const unsubscribeEmailForm = document.getElementById('unsubscribe-email-form');
+    const unsubscribeEmailInput = document.getElementById('unsubscribe-email-input');
+    const unsubscribeEmailError = document.getElementById('unsubscribe-email-error');
+
+    // Open unsubscribe modal
+    openUnsubscribeBtn?.addEventListener('click', () => {
+      unsubscribeModal.classList.remove('hidden');
+      unsubscribeModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+      unsubscribeEmailInput.value = '';
+      unsubscribeEmailError.classList.add('hidden');
+    });
+
+    // Close unsubscribe modal
+    function closeUnsubscribeModalFn() {
+      unsubscribeModal.classList.add('hidden');
+      unsubscribeModal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    closeUnsubscribeModal?.addEventListener('click', closeUnsubscribeModalFn);
+    unsubscribeCancel?.addEventListener('click', closeUnsubscribeModalFn);
+    unsubscribeBackdrop?.addEventListener('click', closeUnsubscribeModalFn);
+
+    // Handle unsubscribe email submission
+    unsubscribeEmailForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = unsubscribeEmailInput.value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        unsubscribeEmailError.textContent = 'Please enter a valid email address.';
+        unsubscribeEmailError.classList.remove('hidden');
+        return;
+      }
+
+      const submitBtn = unsubscribeEmailForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      unsubscribeEmailError.classList.add('hidden');
+
+      try {
+        const checkResponse = await fetch(`/api/newsletter/check?email=${encodeURIComponent(email)}`);
+        const checkData = await checkResponse.json();
+
+        if (!checkData.subscribed) {
+          unsubscribeEmailError.textContent = 'This email is not subscribed to our newsletter.';
+          unsubscribeEmailError.classList.remove('hidden');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Continue';
+          return;
+        }
+
+        const response = await fetch('/api/newsletter/send-unsubscribe-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          unsubscribeEmailError.className = 'text-sm text-green-600 dark:text-green-400';
+          unsubscribeEmailError.textContent = '✅ Unsubscribe link sent to your email. Please check your inbox.';
+          unsubscribeEmailError.classList.remove('hidden');
+          submitBtn.textContent = 'Sent!';
+          setTimeout(() => {
+            closeUnsubscribeModalFn();
+            submitBtn.textContent = 'Continue';
+            submitBtn.disabled = false;
+          }, 3000);
+        } else {
+          unsubscribeEmailError.className = 'text-sm text-red-600 dark:text-red-400';
+          unsubscribeEmailError.textContent = data.message || 'Something went wrong. Please try again.';
+          unsubscribeEmailError.classList.remove('hidden');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Continue';
+        }
+      } catch (error) {
+        unsubscribeEmailError.className = 'text-sm text-red-600 dark:text-red-400';
+        unsubscribeEmailError.textContent = 'Network error. Please try again.';
+        unsubscribeEmailError.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Continue';
+      }
+    });
   });
 </script>
 
