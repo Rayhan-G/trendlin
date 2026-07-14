@@ -1,90 +1,214 @@
-// ============================================
-// API: /api/admin/sources
-// GET - List all sources (master + state)
-// POST - Create new source
-// ============================================
+// API endpoint for sources - GET (list) and POST (create)
+// Cloudflare Workers with D1
 
-export async function GET({ locals }) {
+export async function onRequest(context) {
+  const { request, env } = context;
+  
+  if (request.method === 'GET') {
+    return await handleGet(request, env);
+  }
+  
+  if (request.method === 'POST') {
+    return await handlePost(request, env);
+  }
+  
+  return new Response(JSON.stringify({ 
+    success: false, 
+    error: 'Method not allowed' 
+  }), {
+    status: 405,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
+
+async function handleGet(request, env) {
   try {
-    const { DB } = locals.runtime.env;
+    const url = new URL(request.url);
+    const categoryId = url.searchParams.get('category');
+    const stateId = url.searchParams.get('state');
+    const search = url.searchParams.get('search');
+    const type = url.searchParams.get('type') || 'all'; // 'master', 'state', or 'all'
     
-    console.log('📡 Fetching sources...');
+    let query = '';
+    const params = [];
     
-    // Fetch master sources with category info
-    const masterResult = await DB.prepare(`
-      SELECT 
-        sm.id,
-        sm.name,
-        sm.url,
-        sm.category_id,
-        sm.description,
-        sm.source_type,
-        sm.logo_url,
-        sm.is_active,
-        sm.is_featured,
-        sm.trust_score,
-        sm.usage_count,
-        sm.created_at,
-        sm.updated_at,
-        sc.name as category_name,
-        sc.icon as category_icon,
-        'master' as source_type
-      FROM sources_master sm
-      LEFT JOIN sources_categories sc ON sc.id = sm.category_id
-      ORDER BY sm.name ASC
-    `).all();
+    if (type === 'master') {
+      // Get only master sources
+      query = `
+        SELECT 
+          s.id,
+          s.name,
+          s.url,
+          s.category_id,
+          s.description,
+          s.source_type,
+          s.logo_url,
+          s.is_active,
+          s.is_featured,
+          s.trust_score,
+          s.usage_count,
+          c.name as category_name,
+          c.icon as category_icon,
+          NULL as state_id,
+          NULL as state_name,
+          NULL as state_code,
+          'master' as source_type_actual
+        FROM sources_master s
+        JOIN sources_categories c ON s.category_id = c.id
+        WHERE 1=1
+      `;
+      
+      if (categoryId) {
+        query += ` AND s.category_id = ?`;
+        params.push(categoryId);
+      }
+      
+      if (search) {
+        query += ` AND (s.name LIKE ? OR s.description LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      
+      query += ` ORDER BY s.is_featured DESC, s.name ASC`;
+      
+    } else if (type === 'state') {
+      // Get only state sources
+      query = `
+        SELECT 
+          s.id,
+          s.name,
+          s.url,
+          s.category_id,
+          s.description,
+          s.source_type,
+          s.logo_url,
+          s.is_active,
+          s.is_featured,
+          s.trust_score,
+          s.usage_count,
+          s.address,
+          s.phone,
+          s.email,
+          c.name as category_name,
+          c.icon as category_icon,
+          st.id as state_id,
+          st.name as state_name,
+          st.code as state_code,
+          'state' as source_type_actual
+        FROM sources_state s
+        JOIN sources_categories c ON s.category_id = c.id
+        LEFT JOIN sources_states st ON s.state_id = st.id
+        WHERE 1=1
+      `;
+      
+      if (categoryId) {
+        query += ` AND s.category_id = ?`;
+        params.push(categoryId);
+      }
+      
+      if (stateId) {
+        query += ` AND s.state_id = ?`;
+        params.push(stateId);
+      }
+      
+      if (search) {
+        query += ` AND (s.name LIKE ? OR s.description LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
+      
+      query += ` ORDER BY s.is_featured DESC, s.name ASC`;
+      
+    } else {
+      // 'all' - combine both master and state sources using UNION
+      const masterQuery = `
+        SELECT 
+          s.id,
+          s.name,
+          s.url,
+          s.category_id,
+          s.description,
+          s.source_type,
+          s.logo_url,
+          s.is_active,
+          s.is_featured,
+          s.trust_score,
+          s.usage_count,
+          c.name as category_name,
+          c.icon as category_icon,
+          NULL as state_id,
+          NULL as state_name,
+          NULL as state_code,
+          'master' as source_type_actual
+        FROM sources_master s
+        JOIN sources_categories c ON s.category_id = c.id
+        WHERE 1=1
+      `;
+      
+      const stateQuery = `
+        SELECT 
+          s.id,
+          s.name,
+          s.url,
+          s.category_id,
+          s.description,
+          s.source_type,
+          s.logo_url,
+          s.is_active,
+          s.is_featured,
+          s.trust_score,
+          s.usage_count,
+          s.address,
+          s.phone,
+          s.email,
+          c.name as category_name,
+          c.icon as category_icon,
+          st.id as state_id,
+          st.name as state_name,
+          st.code as state_code,
+          'state' as source_type_actual
+        FROM sources_state s
+        JOIN sources_categories c ON s.category_id = c.id
+        LEFT JOIN sources_states st ON s.state_id = st.id
+        WHERE 1=1
+      `;
+      
+      // Combine with UNION
+      let whereClause = '';
+      const unionParams = [];
+      
+      if (categoryId) {
+        whereClause = ` AND category_id = ?`;
+        unionParams.push(categoryId);
+      }
+      
+      if (stateId) {
+        whereClause += ` AND state_id = ?`;
+        unionParams.push(stateId);
+      }
+      
+      if (search) {
+        whereClause += ` AND (name LIKE ? OR description LIKE ?)`;
+        unionParams.push(`%${search}%`, `%${search}%`);
+      }
+      
+      query = `(${masterQuery}${whereClause}) UNION ALL (${stateQuery}${whereClause}) ORDER BY is_featured DESC, name ASC`;
+      params.push(...unionParams, ...unionParams); // Duplicate params for both parts
+    }
     
-    // Fetch state sources with category and state info
-    const stateResult = await DB.prepare(`
-      SELECT 
-        ss.id,
-        ss.name,
-        ss.url,
-        ss.category_id,
-        ss.description,
-        ss.source_type,
-        ss.logo_url,
-        ss.is_active,
-        ss.is_featured,
-        ss.trust_score,
-        ss.usage_count,
-        ss.address,
-        ss.phone,
-        ss.email,
-        ss.created_at,
-        ss.updated_at,
-        sc.name as category_name,
-        sc.icon as category_icon,
-        st.name as state_name,
-        st.code as state_code,
-        st.abbreviation as state_abbr,
-        ss.state_id,
-        'state' as source_type
-      FROM sources_state ss
-      LEFT JOIN sources_categories sc ON sc.id = ss.category_id
-      LEFT JOIN sources_states st ON st.id = ss.state_id
-      ORDER BY st.name ASC, ss.name ASC
-    `).all();
+    const result = await env.DB.prepare(query).bind(...params).all();
     
-    const masterSources = masterResult.results || [];
-    const stateSources = stateResult.results || [];
-    
-    console.log(`✅ Found ${masterSources.length} master sources, ${stateSources.length} state sources`);
-    
-    return new Response(JSON.stringify({
-      success: true,
-      master: masterSources,
-      state: stateSources
+    return new Response(JSON.stringify({ 
+      success: true, 
+      data: result.results || [] 
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
-    
   } catch (error) {
-    console.error('❌ Error fetching sources:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message
+    console.error('Error in sources GET:', error);
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Failed to fetch sources',
+      details: error.message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
@@ -92,45 +216,32 @@ export async function GET({ locals }) {
   }
 }
 
-export async function POST({ request, locals }) {
+async function handlePost(request, env) {
   try {
-    const { DB } = locals.runtime.env;
-    const data = await request.json();
+    const body = await request.json();
     
-    console.log('📝 Creating source with data:', data);
-    
-    const {
-      type, // 'master' or 'state'
-      name,
-      url,
-      category_id,
-      description,
-      source_type,
-      logo_url,
-      is_active,
-      is_featured,
-      state_id,
-      address,
-      phone,
-      email
-    } = data;
+    const { 
+      name, 
+      url, 
+      category_id, 
+      description, 
+      source_type = 'official',
+      logo_url = '',
+      is_active = 1,
+      is_featured = 0,
+      trust_score = 0,
+      state_id = null,
+      source_type_actual = 'state',
+      address = '',
+      phone = '',
+      email = ''
+    } = body;
     
     // Validate required fields
-    if (!name || !url || !category_id || !type) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Name, URL, category, and type are required'
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    // Validate type
-    if (!['master', 'state'].includes(type)) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Type must be "master" or "state"'
+    if (!name || !url || !category_id) {
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'Name, URL, and category are required' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -138,160 +249,83 @@ export async function POST({ request, locals }) {
     }
     
     let result;
-    let sourceId;
     
-    if (type === 'master') {
-      // Check if source with same name exists
-      const existing = await DB.prepare(`
-        SELECT id FROM sources_master WHERE name = ?
-      `).bind(name).first();
-      
-      if (existing) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'A source with this name already exists'
-        }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-      
-      // Insert master source
-      result = await DB.prepare(`
+    if (source_type_actual === 'master') {
+      // Insert into master sources
+      const query = `
         INSERT INTO sources_master (
-          name, url, category_id, description,
-          source_type, logo_url, is_active, is_featured
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        RETURNING id
-      `).bind(
-        name, 
-        url, 
-        category_id,
-        description || '', 
-        source_type || 'official',
-        logo_url || '',
-        is_active !== undefined ? (is_active ? 1 : 0) : 1,
-        is_featured ? 1 : 0
-      ).run();
+          name, url, category_id, description, source_type, 
+          logo_url, is_active, is_featured, trust_score
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
       
-      sourceId = result.meta?.last_row_id || result.lastRowId;
-      
-      console.log(`✅ Created master source with ID: ${sourceId}`);
-      
-      // Get the newly created source
-      const newSource = await DB.prepare(`
-        SELECT 
-          sm.id, sm.name, sm.url, sm.category_id,
-          sm.description, sm.source_type, sm.logo_url,
-          sm.is_active, sm.is_featured, sm.trust_score,
-          sm.usage_count, sm.created_at,
-          sc.name as category_name,
-          sc.icon as category_icon
-        FROM sources_master sm
-        LEFT JOIN sources_categories sc ON sc.id = sm.category_id
-        WHERE sm.id = ?
-      `).bind(sourceId).first();
-      
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'Universal source created successfully',
-        source: { ...newSource, source_type: 'master' }
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
+      result = await env.DB
+        .prepare(query)
+        .bind(name, url, category_id, description, source_type,
+          logo_url, is_active, is_featured, trust_score)
+        .run();
+        
     } else {
-      // STATE SOURCE
+      // Insert into state sources
       if (!state_id) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'State ID is required for state sources'
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'State ID is required for state sources' 
         }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' }
         });
       }
       
-      // Check if source with same name exists for this state
-      const existing = await DB.prepare(`
-        SELECT id FROM sources_state 
-        WHERE name = ? AND state_id = ?
-      `).bind(name, state_id).first();
+      // Check for duplicate per state
+      const checkQuery = `SELECT id FROM sources_state WHERE state_id = ? AND name = ?`;
+      const existing = await env.DB
+        .prepare(checkQuery)
+        .bind(state_id, name)
+        .first();
       
       if (existing) {
-        return new Response(JSON.stringify({
-          success: false,
-          error: 'A source with this name already exists for this state'
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: 'A source with this name already exists in this state' 
         }), {
-          status: 400,
+          status: 409,
           headers: { 'Content-Type': 'application/json' }
         });
       }
       
-      // Insert state source
-      result = await DB.prepare(`
+      const query = `
         INSERT INTO sources_state (
-          state_id, name, url, category_id, description,
-          source_type, logo_url, address, phone, email,
-          is_active, is_featured
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        RETURNING id
-      `).bind(
-        state_id, 
-        name, 
-        url, 
-        category_id,
-        description || '', 
-        source_type || 'official',
-        logo_url || '', 
-        address || '', 
-        phone || '', 
-        email || '',
-        is_active !== undefined ? (is_active ? 1 : 0) : 1,
-        is_featured ? 1 : 0
-      ).run();
+          state_id, name, url, category_id, description, source_type,
+          logo_url, is_active, is_featured, trust_score,
+          address, phone, email
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
       
-      sourceId = result.meta?.last_row_id || result.lastRowId;
-      
-      console.log(`✅ Created state source with ID: ${sourceId}`);
-      
-      // Get the newly created source
-      const newSource = await DB.prepare(`
-        SELECT 
-          ss.id, ss.name, ss.url, ss.category_id,
-          ss.description, ss.source_type, ss.logo_url,
-          ss.is_active, ss.is_featured, ss.trust_score,
-          ss.usage_count, ss.address, ss.phone, ss.email,
-          ss.created_at,
-          sc.name as category_name,
-          sc.icon as category_icon,
-          st.name as state_name,
-          st.code as state_code,
-          ss.state_id
-        FROM sources_state ss
-        LEFT JOIN sources_categories sc ON sc.id = ss.category_id
-        LEFT JOIN sources_states st ON st.id = ss.state_id
-        WHERE ss.id = ?
-      `).bind(sourceId).first();
-      
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'State source created successfully',
-        source: { ...newSource, source_type: 'state' }
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      result = await env.DB
+        .prepare(query)
+        .bind(state_id, name, url, category_id, description, source_type,
+          logo_url, is_active, is_featured, trust_score,
+          address, phone, email)
+        .run();
     }
     
+    return new Response(JSON.stringify({ 
+      success: true, 
+      data: { 
+        id: result.meta?.last_row_id || result.lastID,
+        ...body 
+      } 
+    }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error) {
-    console.error('❌ Error creating source:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message
+    console.error('Error in sources POST:', error);
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Failed to create source',
+      details: error.message 
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
