@@ -7,7 +7,6 @@
   let states = [];
   let editingId = null;
   let isSubmitting = false;
-  let isLoading = false;
 
   // ============================================
   // DOM REFS
@@ -30,7 +29,6 @@
   // ============================================
   function showToast(message, type = 'success') {
     const container = document.getElementById('toast');
-    if (!container) return;
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = message;
@@ -44,33 +42,51 @@
   // LOAD DATA
   // ============================================
   function loadData() {
-    if (isLoading) return;
-    isLoading = true;
+    loadingEl.style.display = 'block';
+    tableWrap.style.display = 'none';
+    emptyEl.style.display = 'none';
     
-    if (loadingEl) loadingEl.style.display = 'block';
-    if (tableWrap) tableWrap.style.display = 'none';
-    if (emptyEl) emptyEl.style.display = 'none';
-    
+    loadSources()
+      .then(() => {
+        loadingEl.style.display = 'none';
+        renderTable();
+        updateStats();
+      })
+      .catch((err) => {
+        console.error('Failed to load data:', err);
+        showToast('❌ Failed to load data: ' + err.message, 'error');
+        loadingEl.style.display = 'none';
+      });
+  }
+
+  function loadSources() {
     // Build query parameters from filters
     const params = new URLSearchParams();
     
-    if (filterType && filterType.value && filterType.value !== 'all') {
+    // Type filter
+    if (filterType.value && filterType.value !== 'all') {
       params.append('type', filterType.value);
     }
-    if (filterCategory && filterCategory.value && filterCategory.value !== '') {
+    
+    // Category filter
+    if (filterCategory.value && filterCategory.value !== '') {
       params.append('category', filterCategory.value);
     }
-    if (filterState && filterState.value && filterState.value !== '') {
+    
+    // State filter
+    if (filterState.value && filterState.value !== '') {
       params.append('state', filterState.value);
     }
-    if (searchInput && searchInput.value && searchInput.value.trim() !== '') {
+    
+    // Search filter
+    if (searchInput.value && searchInput.value.trim() !== '') {
       params.append('search', searchInput.value.trim());
     }
     
     const url = '/api/admin/sources?' + params.toString();
     console.log('🔍 Fetching:', url);
     
-    fetch(url)
+    return fetch(url)
       .then(r => {
         if (!r.ok) {
           throw new Error(`HTTP ${r.status}`);
@@ -85,79 +101,43 @@
           console.error('API error:', data.error);
           sources = [];
         }
-        renderTable();
-        updateStats();
       })
       .catch(err => {
         console.error('Error loading sources:', err);
         sources = [];
-        renderTable();
-        updateStats();
         showToast('❌ Error loading sources: ' + err.message, 'error');
-      })
-      .finally(() => {
-        isLoading = false;
-        if (loadingEl) loadingEl.style.display = 'none';
       });
   }
 
   // ============================================
-  // LOAD CATEGORIES & STATES
+  // LOAD CATEGORIES & STATES (Only once)
   // ============================================
   function loadCategories() {
     return fetch('/api/admin/sources/categories')
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
+      .then(r => r.json())
       .then(data => {
         if (data.success) {
           categories = data.data || [];
           populateSelects('category');
-          console.log('✅ Loaded', categories.length, 'categories');
         }
       })
-      .catch(err => {
-        console.error('Error loading categories:', err);
-        // Use fallback categories if API fails
-        categories = [
-          { id: 1, name: 'Health & Wellness', icon: '🏥' },
-          { id: 2, name: 'Food & Dining', icon: '🍽️' },
-          { id: 3, name: 'Entertainment', icon: '🎬' },
-          { id: 4, name: 'Lifestyle', icon: '🏠' },
-          { id: 5, name: 'Technology', icon: '💻' },
-          { id: 6, name: 'Shopping', icon: '🛍️' },
-          { id: 7, name: 'Real Estate', icon: '🏡' }
-        ];
-        populateSelects('category');
-      });
+      .catch(err => console.error('Error loading categories:', err));
   }
 
   function loadStates() {
     return fetch('/api/admin/sources/states')
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
+      .then(r => r.json())
       .then(data => {
         if (data.success) {
           states = data.data || [];
           populateSelects('state');
-          console.log('✅ Loaded', states.length, 'states');
         }
       })
-      .catch(err => {
-        console.error('Error loading states:', err);
-        // Use fallback states if API fails
-        states = [
-          { id: 1, name: 'California', code: 'CA' },
-          { id: 2, name: 'New York', code: 'NY' },
-          { id: 3, name: 'Texas', code: 'TX' },
-          { id: 4, name: 'Florida', code: 'FL' },
-          { id: 5, name: 'Illinois', code: 'IL' }
-        ];
-        populateSelects('state');
-      });
+      .catch(err => console.error('Error loading states:', err));
+  }
+
+  function loadCategoriesAndStates() {
+    return Promise.all([loadCategories(), loadStates()]);
   }
 
   // ============================================
@@ -165,6 +145,7 @@
   // ============================================
   function populateSelects(type) {
     if (type === 'category') {
+      // Populate both filter and form category selects
       const selects = [filterCategory, $('form-category')];
       selects.forEach(sel => {
         if (!sel) return;
@@ -179,6 +160,7 @@
         sel.value = val;
       });
     } else if (type === 'state') {
+      // Populate both filter and form state selects
       const selects = [filterState, $('form-state')];
       selects.forEach(sel => {
         if (!sel) return;
@@ -204,15 +186,10 @@
     const state = sources.filter(s => s.source_type_actual === 'state').length;
     const featured = sources.filter(s => s.is_featured).length;
     
-    const totalEl = $('total-count');
-    const masterEl = $('master-count');
-    const stateEl = $('state-count');
-    const featuredEl = $('featured-count');
-    
-    if (totalEl) totalEl.textContent = total;
-    if (masterEl) masterEl.textContent = master;
-    if (stateEl) stateEl.textContent = state;
-    if (featuredEl) featuredEl.textContent = featured;
+    $('total-count').textContent = total;
+    $('master-count').textContent = master;
+    $('state-count').textContent = state;
+    $('featured-count').textContent = featured;
   }
 
   // ============================================
@@ -220,17 +197,15 @@
   // ============================================
   function renderTable() {
     if (!sources || sources.length === 0) {
-      if (tableWrap) tableWrap.style.display = 'none';
-      if (emptyEl) emptyEl.style.display = 'block';
-      if (tableCount) tableCount.textContent = 'Showing 0 sources';
+      tableWrap.style.display = 'none';
+      emptyEl.style.display = 'block';
+      tableCount.textContent = 'Showing 0 sources';
       return;
     }
     
-    if (tableWrap) tableWrap.style.display = 'block';
-    if (emptyEl) emptyEl.style.display = 'none';
-    if (tableCount) tableCount.textContent = `Showing ${sources.length} source${sources.length > 1 ? 's' : ''}`;
-    
-    if (!tableBody) return;
+    tableWrap.style.display = 'block';
+    emptyEl.style.display = 'none';
+    tableCount.textContent = `Showing ${sources.length} source${sources.length > 1 ? 's' : ''}`;
     
     let html = '';
     sources.forEach((s, index) => {
@@ -269,13 +244,13 @@
           </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="window.editSource(${s.id})" title="Edit">
+              <button class="btn-sm btn-sm-edit" onclick="editSource(${s.id})" title="Edit">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                 </svg>
               </button>
-              <button class="btn-sm btn-sm-delete" onclick="window.deleteSource(${s.id})" title="Delete">
+              <button class="btn-sm btn-sm-delete" onclick="deleteSource(${s.id})" title="Delete">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -299,7 +274,7 @@
   // ============================================
   // MODAL FUNCTIONS
   // ============================================
-  window.openModal = function(type = 'master', data = null) {
+  function openModal(type = 'master', data = null) {
     const form = $('source-form');
     const formMessage = $('form-message');
     const fType = $('form-type');
@@ -319,76 +294,66 @@
     const modalSubtitle = $('modal-subtitle');
     const submitText = $('submit-text');
     
-    if (form) form.reset();
+    form.reset();
     editingId = null;
-    if (fEditId) fEditId.value = '';
-    if (formMessage) {
-      formMessage.style.display = 'none';
-      formMessage.className = 'form-message';
-    }
+    fEditId.value = '';
+    formMessage.style.display = 'none';
+    formMessage.className = 'form-message';
     
     if (data) {
       editingId = data.id;
-      if (modalTitle) modalTitle.textContent = 'Edit Source';
-      if (modalSubtitle) modalSubtitle.textContent = 'Update an existing source';
-      if (submitText) submitText.textContent = 'Update Source';
+      modalTitle.textContent = 'Edit Source';
+      modalSubtitle.textContent = 'Update an existing source';
+      submitText.textContent = 'Update Source';
       
-      if (fType) fType.value = data.source_type_actual || 'master';
-      if (fState) fState.value = data.state_id || '';
-      if (fName) fName.value = data.name || '';
-      if (fUrl) fUrl.value = data.url || '';
-      if (fCategory) fCategory.value = data.category_id || '';
-      if (fDesc) fDesc.value = data.description || '';
-      if (fLogo) fLogo.value = data.logo_url || '';
-      if (fSourceType) fSourceType.value = data.source_type || 'official';
-      if (fActive) fActive.checked = data.is_active === 1;
-      if (fFeatured) fFeatured.checked = data.is_featured === 1;
-      if (fTrust) {
-        fTrust.value = data.trust_score || 50;
-        if (fTrustLabel) fTrustLabel.textContent = (data.trust_score || 50) + '%';
-      }
-      if (fEditId) fEditId.value = data.id;
+      fType.value = data.source_type_actual || 'master';
+      fState.value = data.state_id || '';
+      fName.value = data.name || '';
+      fUrl.value = data.url || '';
+      fCategory.value = data.category_id || '';
+      fDesc.value = data.description || '';
+      fLogo.value = data.logo_url || '';
+      fSourceType.value = data.source_type || 'official';
+      fActive.checked = data.is_active === 1;
+      fFeatured.checked = data.is_featured === 1;
+      fTrust.value = data.trust_score || 50;
+      fTrustLabel.textContent = (data.trust_score || 50) + '%';
+      fEditId.value = data.id;
     } else {
-      if (modalTitle) modalTitle.textContent = 'Add Source';
-      if (modalSubtitle) modalSubtitle.textContent = 'Add a new trusted source to your collection';
-      if (submitText) submitText.textContent = 'Create Source';
+      modalTitle.textContent = 'Add Source';
+      modalSubtitle.textContent = 'Add a new trusted source to your collection';
+      submitText.textContent = 'Create Source';
       
-      if (fType) fType.value = type;
-      if (fActive) fActive.checked = true;
-      if (fFeatured) fFeatured.checked = false;
-      if (fTrust) {
-        fTrust.value = 50;
-        if (fTrustLabel) fTrustLabel.textContent = '50%';
-      }
+      fType.value = type;
+      fActive.checked = true;
+      fFeatured.checked = false;
+      fTrust.value = 50;
+      fTrustLabel.textContent = '50%';
     }
     
     toggleStateField();
-    if (modal) {
-      modal.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    }
-  };
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
 
   window.editSource = function(id) {
     const source = sources.find(s => s.id === id);
-    if (source) window.openModal(source.source_type_actual || 'master', source);
+    if (source) openModal(source.source_type_actual || 'master', source);
   };
 
   function toggleStateField() {
     const fType = $('form-type');
     const stateGroup = $('state-group');
-    if (stateGroup && fType) {
+    if (stateGroup) {
       stateGroup.style.display = fType.value === 'master' ? 'none' : 'block';
     }
   }
 
-  window.closeModal = function() {
-    if (modal) {
-      modal.style.display = 'none';
-      document.body.style.overflow = '';
-    }
+  function closeModal() {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
     isSubmitting = false;
-  };
+  }
 
   // ============================================
   // DELETE SOURCE
@@ -434,132 +399,116 @@
   // ============================================
   // FORM SUBMIT
   // ============================================
-  document.addEventListener('DOMContentLoaded', function() {
-    const form = $('source-form');
-    if (form) {
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (isSubmitting) return;
-        isSubmitting = true;
-        const submitText = $('submit-text');
-        if (submitText) submitText.textContent = 'Saving...';
-        
-        const fName = $('form-name');
-        const fUrl = $('form-url');
-        const fCategory = $('form-category');
-        const fDesc = $('form-desc');
-        const fSourceType = $('form-source-type');
-        const fLogo = $('form-logo');
-        const fActive = $('form-active');
-        const fFeatured = $('form-featured');
-        const fTrust = $('form-trust');
-        const fType = $('form-type');
-        const fState = $('form-state');
-        const fEditId = $('form-edit-id');
-        const formMessage = $('form-message');
-        
-        const data = {
-          name: fName ? fName.value.trim() : '',
-          url: fUrl ? fUrl.value.trim() : '',
-          category_id: fCategory ? parseInt(fCategory.value) || null : null,
-          description: fDesc ? fDesc.value.trim() : '',
-          source_type: fSourceType ? fSourceType.value : 'official',
-          logo_url: fLogo ? fLogo.value.trim() : '',
-          is_active: fActive ? (fActive.checked ? 1 : 0) : 1,
-          is_featured: fFeatured ? (fFeatured.checked ? 1 : 0) : 0,
-          trust_score: fTrust ? parseInt(fTrust.value) || 0 : 0,
-          source_type_actual: fType ? fType.value : 'master',
-          state_id: fState ? parseInt(fState.value) || null : null
-        };
-        
-        if (!data.name || !data.url || !data.category_id) {
-          showFormMessage('Name, URL, and category are required', 'error');
-          isSubmitting = false;
-          if (submitText) submitText.textContent = editingId ? 'Update Source' : 'Create Source';
-          return;
-        }
-        
-        if (data.source_type_actual === 'state' && !data.state_id) {
-          showFormMessage('State is required for state-specific sources', 'error');
-          isSubmitting = false;
-          if (submitText) submitText.textContent = editingId ? 'Update Source' : 'Create Source';
-          return;
-        }
-        
-        const url = editingId ? '/api/admin/sources/' + editingId : '/api/admin/sources';
-        const method = editingId ? 'PUT' : 'POST';
-        
-        fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        })
-          .then(r => r.json())
-          .then(result => {
-            if (result.success) {
-              showToast(editingId ? '✅ Source updated!' : '✅ Source created!', 'success');
-              window.closeModal();
-              loadData();
-            } else {
-              showFormMessage(result.error || 'Failed to save', 'error');
-              isSubmitting = false;
-              if (submitText) submitText.textContent = editingId ? 'Update Source' : 'Create Source';
-            }
-          })
-          .catch(err => {
-            showFormMessage('Error saving source: ' + err.message, 'error');
-            isSubmitting = false;
-            if (submitText) submitText.textContent = editingId ? 'Update Source' : 'Create Source';
-          });
-      });
-    }
-
-    function showFormMessage(msg, type) {
-      const formMessage = $('form-message');
-      if (!formMessage) return;
-      formMessage.textContent = msg;
-      formMessage.className = 'form-message ' + type;
-      formMessage.style.display = 'block';
-    }
-
-    // ============================================
-    // EVENT LISTENERS
-    // ============================================
+  document.getElementById('source-form').addEventListener('submit', function(e) {
+    e.preventDefault();
     
+    if (isSubmitting) return;
+    isSubmitting = true;
+    const submitText = $('submit-text');
+    submitText.textContent = 'Saving...';
+    
+    const fName = $('form-name');
+    const fUrl = $('form-url');
+    const fCategory = $('form-category');
+    const fDesc = $('form-desc');
+    const fSourceType = $('form-source-type');
+    const fLogo = $('form-logo');
+    const fActive = $('form-active');
+    const fFeatured = $('form-featured');
+    const fTrust = $('form-trust');
+    const fType = $('form-type');
+    const fState = $('form-state');
+    const fEditId = $('form-edit-id');
+    const formMessage = $('form-message');
+    
+    const data = {
+      name: fName.value.trim(),
+      url: fUrl.value.trim(),
+      category_id: parseInt(fCategory.value) || null,
+      description: fDesc.value.trim(),
+      source_type: fSourceType.value,
+      logo_url: fLogo.value.trim(),
+      is_active: fActive.checked ? 1 : 0,
+      is_featured: fFeatured.checked ? 1 : 0,
+      trust_score: parseInt(fTrust.value) || 0,
+      source_type_actual: fType.value,
+      state_id: parseInt(fState.value) || null
+    };
+    
+    if (!data.name || !data.url || !data.category_id) {
+      showFormMessage('Name, URL, and category are required', 'error');
+      isSubmitting = false;
+      submitText.textContent = editingId ? 'Update Source' : 'Create Source';
+      return;
+    }
+    
+    if (data.source_type_actual === 'state' && !data.state_id) {
+      showFormMessage('State is required for state-specific sources', 'error');
+      isSubmitting = false;
+      submitText.textContent = editingId ? 'Update Source' : 'Create Source';
+      return;
+    }
+    
+    const url = editingId ? '/api/admin/sources/' + editingId : '/api/admin/sources';
+    const method = editingId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.success) {
+          showToast(editingId ? '✅ Source updated!' : '✅ Source created!', 'success');
+          closeModal();
+          loadData();
+        } else {
+          showFormMessage(result.error || 'Failed to save', 'error');
+          isSubmitting = false;
+          submitText.textContent = editingId ? 'Update Source' : 'Create Source';
+        }
+      })
+      .catch(err => {
+        showFormMessage('Error saving source: ' + err.message, 'error');
+        isSubmitting = false;
+        submitText.textContent = editingId ? 'Update Source' : 'Create Source';
+      });
+  });
+
+  function showFormMessage(msg, type) {
+    const formMessage = $('form-message');
+    formMessage.textContent = msg;
+    formMessage.className = 'form-message ' + type;
+    formMessage.style.display = 'block';
+  }
+
+  // ============================================
+  // EVENT LISTENERS
+  // ============================================
+  document.addEventListener('DOMContentLoaded', function() {
     // Load categories and states first, then load sources
-    Promise.all([loadCategories(), loadStates()])
+    loadCategoriesAndStates()
       .then(() => {
-        console.log('✅ Categories and states loaded');
         loadData();
       })
       .catch(err => {
         console.error('Error loading categories/states:', err);
-        // Still try to load sources
-        loadData();
+        loadData(); // Still try to load sources
       });
     
     // Add button
-    const addBtn = $('add-btn');
-    if (addBtn) {
-      addBtn.addEventListener('click', () => window.openModal('master'));
-    }
+    document.getElementById('add-btn').addEventListener('click', () => openModal('master'));
     
     // Modal close buttons
-    const modalClose = $('modal-close');
-    const modalCancel = $('modal-cancel');
-    if (modalClose) modalClose.addEventListener('click', window.closeModal);
-    if (modalCancel) modalCancel.addEventListener('click', window.closeModal);
-    if (modal) {
-      modal.addEventListener('click', e => { 
-        if (e.target === modal) window.closeModal(); 
-      });
-    }
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
     
     // Trust slider
     const fTrust = $('form-trust');
     const fTrustLabel = $('trust-label');
-    if (fTrust && fTrustLabel) {
+    if (fTrust) {
       fTrust.addEventListener('input', () => {
         fTrustLabel.textContent = fTrust.value + '%';
       });
@@ -571,28 +520,29 @@
       fType.addEventListener('change', toggleStateField);
     }
     
-    // FILTERS
+    // FILTERS - each filter triggers a reload
     if (filterType) {
       filterType.addEventListener('change', function() {
-        console.log('🔄 Filter: type =', this.value);
+        console.log('🔄 Filter changed: type =', this.value);
         loadData();
       });
     }
     
     if (filterCategory) {
       filterCategory.addEventListener('change', function() {
-        console.log('🔄 Filter: category =', this.value);
+        console.log('🔄 Filter changed: category =', this.value);
         loadData();
       });
     }
     
     if (filterState) {
       filterState.addEventListener('change', function() {
-        console.log('🔄 Filter: state =', this.value);
+        console.log('🔄 Filter changed: state =', this.value);
         loadData();
       });
     }
     
+    // Search with debounce
     if (searchInput) {
       let searchTimer;
       searchInput.addEventListener('input', function() {
@@ -614,18 +564,18 @@
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
-        window.openModal('master');
+        openModal('master');
       }
-      if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
-        window.closeModal();
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        closeModal();
       }
     });
   });
 
-  // Expose functions to window
-  window.loadData = loadData;
+  // Expose functions to window for inline onclick handlers
   window.editSource = editSource;
   window.deleteSource = deleteSource;
+  window.loadData = loadData;
   window.openModal = openModal;
   window.closeModal = closeModal;
 </script>
