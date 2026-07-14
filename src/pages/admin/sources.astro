@@ -213,7 +213,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" id="form-active" checked />
-                <span>Active</span>
+                Active
               </label>
             </div>
             <div class="form-group">
@@ -222,7 +222,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
-                <span>Featured</span>
+                Featured
               </label>
             </div>
           </div>
@@ -243,63 +243,49 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 </AdminLayout>
 
 <style>
-  * {
-    box-sizing: border-box;
-  }
-
   .sources-page {
     padding: 2rem;
-    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   }
 
   .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     margin-bottom: 2rem;
   }
 
   .page-header h1 {
     font-size: 1.875rem;
-    font-weight: 600;
-    color: #0a0a0a;
+    font-weight: 700;
+    color: #0f172a;
     margin: 0;
-    letter-spacing: -0.025em;
   }
 
   .page-header .text-muted {
-    color: #6b7280;
+    color: #64748b;
     margin: 0.25rem 0 0;
     font-size: 0.875rem;
-    font-weight: 400;
   }
 
   .btn-add {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 1.25rem;
-    background: #0a0a0a;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     color: white;
     border: none;
-    border-radius: 0.5rem;
-    font-weight: 500;
+    border-radius: 0.75rem;
+    font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: inherit;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 
   .btn-add:hover {
-    background: #1a1a1a;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  .btn-add:active {
-    transform: translateY(0);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
   }
 
   .stats-grid {
@@ -313,16 +299,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1.25rem 1.5rem;
+    padding: 1.25rem;
     background: white;
     border-radius: 0.75rem;
-    border: 1px solid #e5e7eb;
-    transition: all 0.15s ease;
-  }
-
-  .stat-card:hover {
-    border-color: #d1d5db;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
 
   .stat-icon {
@@ -331,9 +312,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f3f4f6;
+    background: #f1f5f9;
     border-radius: 0.5rem;
-    color: #374151;
+    color: #475569;
     flex-shrink: 0;
   }
 
@@ -344,15 +325,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   .stat-value {
     font-size: 1.5rem;
-    font-weight: 600;
-    color: #0a0a0a;
+    font-weight: 700;
+    color: #0f172a;
     line-height: 1.2;
-    letter-spacing: -0.025em;
   }
 
   .stat-label {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: #94a3b8;
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -374,30 +354,20 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   .filters select {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     background: white;
     font-size: 0.875rem;
-    color: #0a0a0a;
+    color: #0f172a;
     cursor: pointer;
     outline: none;
-    transition: all 0.15s ease;
+    transition: border-color 0.2s;
     min-width: 140px;
-    font-family: inherit;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    padding-right: 2rem;
-  }
-
-  .filters select:hover {
-    border-color: #d1d5db;
   }
 
   .filters select:focus {
-    border-color: #0a0a0a;
-    box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .search-box {
@@ -409,22 +379,16 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .search-box input {
     width: 100%;
     padding: 0.5rem 0.75rem 0.5rem 2.25rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     font-size: 0.875rem;
     outline: none;
-    transition: all 0.15s ease;
-    font-family: inherit;
-    background: white;
-  }
-
-  .search-box input:hover {
-    border-color: #d1d5db;
+    transition: border-color 0.2s;
   }
 
   .search-box input:focus {
-    border-color: #0a0a0a;
-    box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .search-icon {
@@ -432,43 +396,37 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #9ca3af;
-    pointer-events: none;
+    color: #94a3b8;
   }
 
   .btn-refresh {
     padding: 0.5rem 0.75rem;
     background: white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     cursor: pointer;
-    transition: all 0.15s ease;
-    display: inline-flex;
+    transition: all 0.2s;
+    display: flex;
     align-items: center;
     justify-content: center;
-    color: #374151;
   }
 
   .btn-refresh:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
-  }
-
-  .btn-refresh:active {
+    background: #f1f5f9;
     transform: rotate(45deg);
   }
 
   .loading {
     text-align: center;
     padding: 4rem 2rem;
-    color: #6b7280;
+    color: #94a3b8;
   }
 
   .spinner {
     width: 40px;
     height: 40px;
-    border: 2.5px solid #e5e7eb;
-    border-top-color: #0a0a0a;
+    border: 3px solid #e2e8f0;
+    border-top-color: #3b82f6;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin: 0 auto 1rem;
@@ -484,11 +442,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     background: white;
     border-radius: 0.75rem;
     overflow: hidden;
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
 
   .sources-table thead {
-    background: #f9fafb;
+    background: #f8fafc;
   }
 
   .sources-table th {
@@ -496,25 +454,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     text-align: left;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #6b7280;
+    color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e2e8f0;
   }
 
   .sources-table td {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
-    font-size: 0.875rem;
-    color: #0a0a0a;
   }
 
-  .sources-table tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  .sources-table tbody tr:hover td {
+  .sources-table tr:hover td {
     background: #fafbfc;
   }
 
@@ -525,46 +477,45 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   .source-logo {
-    width: 40px;
-    height: 40px;
-    border-radius: 0.5rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     object-fit: cover;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
 
   .source-name {
-    font-weight: 500;
-    color: #0a0a0a;
+    font-weight: 600;
+    color: #0f172a;
   }
 
   .source-url {
     display: block;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: #94a3b8;
     word-break: break-all;
-    margin-top: 0.125rem;
   }
 
   .badge-category {
     display: inline-block;
     padding: 0.25rem 0.625rem;
-    background: #f3f4f6;
+    background: #f1f5f9;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #374151;
+    color: #475569;
   }
 
   .badge-state {
     display: inline-block;
     padding: 0.25rem 0.625rem;
-    background: #eff6ff;
+    background: #dbeafe;
     color: #1e40af;
     border-radius: 9999px;
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .badge-type {
@@ -576,37 +527,35 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   .badge-type.master {
-    background: #f3f0ff;
-    color: #5b21b6;
+    background: #e0e7ff;
+    color: #3730a3;
   }
 
   .badge-type.state {
-    background: #ecfdf5;
+    background: #d1fae5;
     color: #065f46;
   }
 
   .trust-bar-wrap {
     width: 80px;
-    height: 4px;
-    background: #e5e7eb;
+    height: 6px;
+    background: #e2e8f0;
     border-radius: 9999px;
     overflow: hidden;
     position: relative;
-    flex-shrink: 0;
   }
 
   .trust-bar-fill {
     height: 100%;
     border-radius: 9999px;
-    background: #0a0a0a;
-    transition: width 0.3s ease;
+    background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+    transition: width 0.3s;
   }
 
   .trust-value {
     font-size: 0.75rem;
-    color: #6b7280;
-    font-weight: 500;
-    min-width: 2.5rem;
+    color: #94a3b8;
+    margin-left: 0.5rem;
   }
 
   .badge-status {
@@ -618,12 +567,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   .badge-status.active {
-    background: #ecfdf5;
-    color: #065f46;
+    background: #dcfce7;
+    color: #166534;
   }
 
   .badge-status.inactive {
-    background: #fef2f2;
+    background: #fee2e2;
     color: #991b1b;
   }
 
@@ -631,7 +580,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     display: inline-flex;
     align-items: center;
     margin-left: 0.25rem;
-    color: #f59e0b;
   }
 
   .badge-featured svg {
@@ -652,46 +600,45 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   .btn-sm {
-    padding: 0.375rem 0.75rem;
+    padding: 0.25rem 0.625rem;
     border: none;
     border-radius: 0.375rem;
     font-size: 0.75rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: inherit;
+    transition: all 0.15s;
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
   }
 
   .btn-sm-edit {
-    background: #f3f4f6;
-    color: #374151;
+    background: #e0e7ff;
+    color: #3730a3;
   }
 
   .btn-sm-edit:hover {
-    background: #e5e7eb;
+    background: #c7d2fe;
   }
 
   .btn-sm-delete {
-    background: #fef2f2;
+    background: #fee2e2;
     color: #991b1b;
   }
 
   .btn-sm-delete:hover {
-    background: #fee2e2;
+    background: #fecaca;
   }
 
   .empty {
     text-align: center;
     padding: 4rem 2rem;
-    color: #6b7280;
+    color: #94a3b8;
   }
 
   .empty-icon {
-    margin-bottom: 1.5rem;
-    color: #d1d5db;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
   }
 
   .empty-icon svg {
@@ -700,15 +647,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   .empty h3 {
-    color: #0a0a0a;
+    color: #475569;
     margin: 0 0 0.5rem;
-    font-weight: 500;
-    font-size: 1.125rem;
-  }
-
-  .empty p {
-    margin: 0;
-    font-size: 0.875rem;
   }
 
   /* Modal */
@@ -718,9 +658,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(10, 10, 10, 0.5);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
     display: none;
     align-items: center;
     justify-content: center;
@@ -731,17 +670,17 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .modal {
     background: white;
     border-radius: 1rem;
-    max-width: 560px;
+    max-width: 600px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
     padding: 2rem;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-    animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modalIn 0.2s ease-out;
   }
 
   @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.96) translateY(8px); }
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
   }
 
@@ -755,26 +694,25 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .modal-header h2 {
     margin: 0;
     font-size: 1.25rem;
-    font-weight: 600;
-    color: #0a0a0a;
+    color: #0f172a;
   }
 
   .modal-close {
     background: none;
     border: none;
     cursor: pointer;
-    color: #6b7280;
+    color: #94a3b8;
     padding: 0.25rem;
-    border-radius: 0.375rem;
-    transition: all 0.15s ease;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 0.375rem;
+    transition: background 0.15s;
   }
 
   .modal-close:hover {
-    background: #f3f4f6;
-    color: #0a0a0a;
+    background: #f1f5f9;
+    color: #475569;
   }
 
   .form-group {
@@ -785,8 +723,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     display: block;
     font-weight: 500;
     font-size: 0.875rem;
-    color: #0a0a0a;
-    margin-bottom: 0.375rem;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
   }
 
   .form-group input,
@@ -794,32 +732,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .form-group textarea {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
     font-size: 0.875rem;
-    transition: all 0.15s ease;
+    transition: border-color 0.2s;
     font-family: inherit;
-    background: white;
-    color: #0a0a0a;
-  }
-
-  .form-group input:hover,
-  .form-group select:hover,
-  .form-group textarea:hover {
-    border-color: #d1d5db;
   }
 
   .form-group input:focus,
   .form-group select:focus,
   .form-group textarea:focus {
     outline: none;
-    border-color: #0a0a0a;
-    box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .form-group textarea {
     resize: vertical;
-    min-height: 60px;
   }
 
   .form-row {
@@ -829,22 +758,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   .checkbox-label {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    padding: 0.25rem 0;
+    padding-top: 0.25rem;
     font-weight: 400;
     font-size: 0.875rem;
-    color: #0a0a0a;
   }
 
   .checkbox-label input[type="checkbox"] {
     width: 1rem;
     height: 1rem;
     cursor: pointer;
-    accent-color: #0a0a0a;
-    margin: 0;
   }
 
   .checkbox-label svg {
@@ -857,63 +783,34 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.25rem 0;
   }
 
   .trust-slider input[type="range"] {
     flex: 1;
     padding: 0;
-    height: 4px;
-    border-radius: 9999px;
-    background: #e5e7eb;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-
-  .trust-slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #0a0a0a;
-    cursor: pointer;
-    border: none;
-  }
-
-  .trust-slider input[type="range"]::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #0a0a0a;
-    cursor: pointer;
-    border: none;
   }
 
   .trust-slider span {
-    font-weight: 500;
-    color: #0a0a0a;
-    min-width: 2.75rem;
-    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0f172a;
+    min-width: 2.5rem;
   }
 
   .form-message {
-    padding: 0.75rem 1rem;
+    padding: 0.75rem;
     border-radius: 0.5rem;
     font-size: 0.875rem;
     margin-bottom: 0.5rem;
   }
 
   .form-message.error {
-    background: #fef2f2;
+    background: #fee2e2;
     color: #991b1b;
-    border: 1px solid #fecaca;
   }
 
   .form-message.success {
-    background: #ecfdf5;
-    color: #065f46;
-    border: 1px solid #a7f3d0;
+    background: #dcfce7;
+    color: #166534;
   }
 
   .form-actions {
@@ -922,46 +819,40 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     justify-content: flex-end;
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid #e2e8f0;
   }
 
   .btn-primary {
     padding: 0.5rem 1.25rem;
-    background: #0a0a0a;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     color: white;
     border: none;
     border-radius: 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: inherit;
+    transition: all 0.2s;
   }
 
   .btn-primary:hover {
-    background: #1a1a1a;
-  }
-
-  .btn-primary:active {
-    transform: scale(0.98);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 
   .btn-secondary {
     padding: 0.5rem 1.25rem;
-    background: white;
-    color: #374151;
-    border: 1px solid #e5e7eb;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
     border-radius: 0.5rem;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
-    transition: all 0.15s ease;
-    font-family: inherit;
+    transition: all 0.2s;
   }
 
   .btn-secondary:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
+    background: #e2e8f0;
   }
 
   .toast {
@@ -974,43 +865,31 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.875rem;
     color: white;
     opacity: 0;
-    transform: translateY(1rem) scale(0.95);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(1rem);
+    transition: all 0.3s;
     pointer-events: none;
     z-index: 2000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
 
   .toast.show {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 
   .toast.success {
-    background: #0a0a0a;
+    background: #22c55e;
   }
 
   .toast.error {
-    background: #991b1b;
+    background: #ef4444;
   }
 
   @media (max-width: 768px) {
-    .sources-page {
-      padding: 1rem;
-    }
-
     .page-header {
       flex-direction: column;
       align-items: stretch;
       gap: 1rem;
-    }
-
-    .page-header h1 {
-      font-size: 1.5rem;
-    }
-
-    .btn-add {
-      justify-content: center;
     }
 
     .filters {
@@ -1034,41 +913,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     .actions-cell {
       flex-direction: column;
       gap: 0.25rem;
-      align-items: flex-end;
     }
 
     .sources-table {
       font-size: 0.75rem;
-      display: block;
-      overflow-x: auto;
     }
 
     .sources-table th,
     .sources-table td {
       padding: 0.5rem;
-      white-space: nowrap;
-    }
-
-    .modal {
-      padding: 1.5rem;
-      margin: 0.5rem;
-    }
-
-    .toast {
-      bottom: 1rem;
-      right: 1rem;
-      left: 1rem;
-      text-align: center;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .stats-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .stat-card {
-      padding: 1rem;
     }
   }
 </style>
@@ -1205,7 +1058,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         categories.forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.id;
-          opt.textContent = c.name;
+          opt.textContent = (c.icon || '📁') + ' ' + c.name;
           sel.appendChild(opt);
         });
         sel.value = val;
@@ -1260,7 +1113,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <tr>
           <td>
             <div class="source-cell">
-              ${s.logo_url ? `<img src="${s.logo_url}" class="source-logo" alt="${escapeHtml(s.name)}" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:#6b7280;">📄</div>`}
+              ${s.logo_url ? `<img src="${s.logo_url}" class="source-logo" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📄</div>`}
               <div>
                 <div class="source-name">${escapeHtml(s.name)}</div>
                 <span class="source-url">${escapeHtml(s.url)}</span>
@@ -1268,7 +1121,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             </div>
           </td>
           <td><span class="badge-category">${escapeHtml(s.category_name || 'Uncategorized')}</span></td>
-          <td>${s.state_code ? `<span class="badge-state">${escapeHtml(s.state_code)}</span>` : '<span style="color:#6b7280;font-size:0.75rem;">—</span>'}</td>
+          <td>${s.state_code ? `<span class="badge-state">${escapeHtml(s.state_code)}</span>` : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>'}</td>
           <td><span class="badge-type ${s.source_type_actual || 'master'}">${s.source_type_actual === 'master' ? 'Universal' : 'State'}</span></td>
           <td>
             <div style="display:flex;align-items:center;gap:0.5rem;">
@@ -1383,14 +1236,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          showToast('Source deleted successfully', 'success');
+          showToast('✅ Source deleted successfully', 'success');
           loadData();
         } else {
-          showToast(data.error || 'Failed to delete', 'error');
+          showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
         }
       })
       .catch(err => {
-        showToast('Error deleting source', 'error');
+        showToast('❌ Error deleting source', 'error');
         console.error(err);
       });
   };
@@ -1436,7 +1289,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       .then(r => r.json())
       .then(result => {
         if (result.success) {
-          showToast(editingId ? 'Source updated!' : 'Source created!', 'success');
+          showToast(editingId ? '✅ Source updated!' : '✅ Source created!', 'success');
           closeModal();
           loadData();
         } else {
@@ -1477,19 +1330,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   searchInput.addEventListener('input', () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(loadData, 300);
-  });
-
-  // ============================================
-  // KEYBOARD SHORTCUTS
-  // ============================================
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.style.display === 'flex') {
-      closeModal();
-    }
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      searchInput.focus();
-    }
   });
 
   // ============================================
