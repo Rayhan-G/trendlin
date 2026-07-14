@@ -6,133 +6,207 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 <AdminLayout title="Sources Management">
   <div class="sources-page">
     <div class="page-header">
-      <h1>Sources Management</h1>
-      <p class="text-muted">Manage trusted content sources for all platforms</p>
+      <div>
+        <h1>📚 Sources Management</h1>
+        <p class="text-muted">Manage trusted content sources across all categories</p>
+      </div>
+      <button class="btn-add" id="add-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Add Source
+      </button>
     </div>
-    
-    <div class="sources-container">
-      <!-- Inline component -->
-      <div id="sources-app">
-        <div class="manager-toolbar">
-          <div class="manager-filters">
-            <select id="filter-type">
-              <option value="all">All Types</option>
-              <option value="master">Universal</option>
-              <option value="state">State-Specific</option>
-            </select>
-            <select id="filter-category">
-              <option value="">All Categories</option>
-            </select>
-            <select id="filter-state">
-              <option value="">All States</option>
-            </select>
-            <input type="text" id="search-input" placeholder="Search sources..." />
-          </div>
-          <button class="btn-primary" id="add-btn">+ Add Source</button>
-        </div>
-        
-        <div id="loading-state" class="loading-text">Loading...</div>
-        
-        <div id="table-wrap" style="display:none;">
-          <table class="sources-table">
-            <thead>
-              <tr>
-                <th>Source</th>
-                <th>Category</th>
-                <th>State</th>
-                <th>Type</th>
-                <th>Trust</th>
-                <th>Status</th>
-                <th style="width:120px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-          </table>
-        </div>
-        
-        <div id="empty-state" style="display:none;" class="empty-text">
-          <p>No sources found</p>
-          <small>Adjust filters or add a new source</small>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-container">
+      <div class="stat-card">
+        <div class="stat-icon">📌</div>
+        <div>
+          <div class="stat-value" id="total-count">0</div>
+          <div class="stat-label">Total Sources</div>
         </div>
       </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌐</div>
+        <div>
+          <div class="stat-value" id="master-count">0</div>
+          <div class="stat-label">Universal</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📍</div>
+        <div>
+          <div class="stat-value" id="state-count">0</div>
+          <div class="stat-label">State-Specific</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">⭐</div>
+        <div>
+          <div class="stat-value" id="featured-count">0</div>
+          <div class="stat-label">Featured</div>
+        </div>
+      </div>
+    </div>
 
-      <!-- Modal -->
-      <div id="source-modal" style="display:none;" class="modal-overlay">
-        <div class="modal-box">
-          <div class="modal-header">
-            <h2 id="modal-title">Add Source</h2>
-            <button class="close-btn" id="modal-close">×</button>
-          </div>
-          <form id="source-form">
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filters">
+        <select id="filter-type">
+          <option value="all">All Types</option>
+          <option value="master">🌐 Universal</option>
+          <option value="state">📍 State-Specific</option>
+        </select>
+        <select id="filter-category">
+          <option value="">All Categories</option>
+        </select>
+        <select id="filter-state">
+          <option value="">All States</option>
+        </select>
+        <div class="search-box">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search sources..." />
+        </div>
+      </div>
+      <button class="btn-refresh" onclick="loadData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading-state" class="loading">
+      <div class="spinner"></div>
+      <p>Loading sources...</p>
+    </div>
+
+    <!-- Table -->
+    <div id="table-wrap" style="display:none;">
+      <table class="sources-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Category</th>
+            <th>State</th>
+            <th>Type</th>
+            <th>Trust</th>
+            <th>Status</th>
+            <th class="actions-header">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Empty -->
+    <div id="empty-state" style="display:none;" class="empty">
+      <div class="empty-icon">📭</div>
+      <h3>No sources found</h3>
+      <p>Try adjusting your filters or add a new source</p>
+    </div>
+
+    <!-- Modal -->
+    <div id="source-modal" class="modal-overlay" style="display:none;">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="modal-title">Add Source</h2>
+          <button class="modal-close" id="modal-close">&times;</button>
+        </div>
+        <form id="source-form">
+          <input type="hidden" id="form-edit-id" />
+          
+          <div class="form-row">
             <div class="form-group">
               <label>Type</label>
               <select id="form-type">
-                <option value="state">State-Specific</option>
-                <option value="master">Universal</option>
+                <option value="master">🌐 Universal</option>
+                <option value="state">📍 State-Specific</option>
               </select>
             </div>
             <div class="form-group" id="state-group">
               <label>State</label>
               <select id="form-state"><option value="">Select a state</option></select>
             </div>
-            <div class="form-group">
-              <label>Name *</label>
-              <input type="text" id="form-name" required />
-            </div>
-            <div class="form-group">
-              <label>URL *</label>
-              <input type="url" id="form-url" required />
-            </div>
-            <div class="form-group">
-              <label>Category *</label>
-              <select id="form-category" required><option value="">Select a category</option></select>
-            </div>
-            <div class="form-group">
-              <label>Description</label>
-              <textarea id="form-desc" rows="2"></textarea>
-            </div>
-            <div class="form-group">
-              <label>Logo URL</label>
-              <input type="url" id="form-logo" />
-            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="form-name" placeholder="Enter source name..." required />
+          </div>
+
+          <div class="form-group">
+            <label>URL *</label>
+            <input type="url" id="form-url" placeholder="https://example.com" required />
+          </div>
+
+          <div class="form-group">
+            <label>Category *</label>
+            <select id="form-category" required><option value="">Select a category</option></select>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="form-desc" rows="2" placeholder="Brief description..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Logo URL</label>
+            <input type="url" id="form-logo" placeholder="https://example.com/logo.png" />
+          </div>
+
+          <div class="form-row">
             <div class="form-group">
               <label>Source Type</label>
               <select id="form-source-type">
                 <option value="official">Official</option>
-                <option value="community">Community</option>
                 <option value="news">News</option>
-                <option value="other">Other</option>
+                <option value="review">Review</option>
+                <option value="community">Community</option>
               </select>
             </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Active</label>
-                <select id="form-active">
-                  <option value="1">Yes</option>
-                  <option value="0">No</option>
-                </select>
+            <div class="form-group">
+              <label>Trust Score</label>
+              <div class="trust-slider">
+                <input type="range" id="form-trust" min="0" max="100" value="50" />
+                <span id="trust-label">50%</span>
               </div>
-              <div class="form-group">
-                <label>Featured</label>
-                <select id="form-featured">
-                  <option value="1">Yes</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="form-active" checked />
+                Active
+              </label>
             </div>
             <div class="form-group">
-              <label>Trust Score: <span id="trust-label">0%</span></label>
-              <input type="range" id="form-trust" min="0" max="100" value="0" />
+              <label class="checkbox-label">
+                <input type="checkbox" id="form-featured" />
+                ⭐ Featured
+              </label>
             </div>
-            <input type="hidden" id="form-edit-id" />
-            <div class="form-actions">
-              <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
-              <button type="submit" class="btn-primary" id="modal-submit">Create</button>
-            </div>
-          </form>
-        </div>
+          </div>
+
+          <div id="form-message" class="form-message" style="display:none;"></div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
+            <button type="submit" class="btn-primary" id="modal-submit">Save Source</button>
+          </div>
+        </form>
       </div>
     </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
   </div>
 </AdminLayout>
 
@@ -140,697 +214,1040 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .sources-page {
     padding: 2rem;
   }
-  
+
   .page-header {
-    margin-bottom: 2rem;
-  }
-  
-  .page-header h1 {
-    font-size: 2rem;
-    font-weight: 600;
-    color: #1a1a2e;
-    margin: 0;
-  }
-  
-  .page-header .text-muted {
-    color: #6c757d;
-    margin: 0.5rem 0 0;
-  }
-  
-  .sources-container {
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    padding: 1.5rem;
-  }
-  
-  .manager-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .page-header .text-muted {
+    color: #64748b;
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+  }
+
+  .btn-add {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .stat-icon {
+    font-size: 1.75rem;
+    line-height: 1;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .filters-bar {
+    display: flex;
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
-    gap: 1rem;
   }
-  
-  .manager-filters {
+
+  .filters {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
     flex: 1;
   }
-  
-  .manager-filters select,
-  .manager-filters input {
+
+  .filters select {
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
     background: white;
     font-size: 0.875rem;
-    color: #1f2937;
+    color: #0f172a;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 140px;
   }
-  
-  .manager-filters input {
+
+  .filters select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .search-box {
+    position: relative;
     flex: 1;
     min-width: 200px;
   }
-  
+
+  .search-box input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .btn-refresh {
+    padding: 0.5rem 0.75rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-refresh:hover {
+    background: #f1f5f9;
+    transform: rotate(45deg);
+  }
+
+  .loading {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #94a3b8;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
   .sources-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.875rem;
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
   }
-  
+
+  .sources-table thead {
+    background: #f8fafc;
+  }
+
   .sources-table th {
-    background: #f9fafb;
     padding: 0.75rem 1rem;
     text-align: left;
+    font-size: 0.75rem;
     font-weight: 600;
-    color: #374151;
-    border-bottom: 2px solid #e5e7eb;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
   }
-  
+
   .sources-table td {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
   }
-  
-  .sources-table tr:hover {
-    background: #f9fafb;
+
+  .sources-table tr:hover td {
+    background: #fafbfc;
   }
-  
+
   .source-cell {
     display: flex;
     align-items: center;
     gap: 0.75rem;
   }
-  
+
   .source-logo {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     object-fit: cover;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
-  
+
   .source-name {
-    font-weight: 500;
-    color: #1f2937;
+    font-weight: 600;
+    color: #0f172a;
   }
-  
+
   .source-url {
     display: block;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: #94a3b8;
     word-break: break-all;
   }
-  
-  .badge-cat {
+
+  .badge-category {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
-    background: #f3f4f6;
-    border-radius: 4px;
+    padding: 0.25rem 0.625rem;
+    background: #f1f5f9;
+    border-radius: 9999px;
     font-size: 0.75rem;
-    color: #374151;
+    font-weight: 500;
+    color: #475569;
   }
-  
+
   .badge-state {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
-    background: #d1fae5;
-    color: #065f46;
-    border-radius: 4px;
+    padding: 0.25rem 0.625rem;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
   }
-  
+
   .badge-type {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
   }
-  
+
   .badge-type.master {
-    background: #dbeafe;
-    color: #1e40af;
+    background: #e0e7ff;
+    color: #3730a3;
   }
-  
+
   .badge-type.state {
     background: #d1fae5;
     color: #065f46;
   }
-  
-  .trust-wrap {
+
+  .trust-bar-wrap {
     width: 80px;
     height: 6px;
-    background: #e5e7eb;
-    border-radius: 3px;
+    background: #e2e8f0;
+    border-radius: 9999px;
     overflow: hidden;
+    position: relative;
   }
-  
-  .trust-bar {
+
+  .trust-bar-fill {
     height: 100%;
-    border-radius: 3px;
-    background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+    transition: width 0.3s;
   }
-  
+
+  .trust-value {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-left: 0.5rem;
+  }
+
   .badge-status {
     display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
   }
-  
+
   .badge-status.active {
-    background: #d1fae5;
-    color: #065f46;
+    background: #dcfce7;
+    color: #166534;
   }
-  
+
   .badge-status.inactive {
     background: #fee2e2;
     color: #991b1b;
   }
-  
+
   .badge-featured {
     display: inline-block;
     margin-left: 0.25rem;
     font-size: 0.75rem;
   }
-  
+
+  .actions-header {
+    text-align: right;
+  }
+
   .actions-cell {
     display: flex;
     gap: 0.5rem;
+    justify-content: flex-end;
   }
-  
+
   .btn-sm {
-    padding: 0.25rem 0.75rem;
+    padding: 0.25rem 0.625rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 0.375rem;
     font-size: 0.75rem;
+    font-weight: 500;
     cursor: pointer;
-    background: #f3f4f6;
-    color: #374151;
-    transition: background 0.2s;
+    transition: all 0.15s;
   }
-  
-  .btn-sm:hover {
-    background: #e5e7eb;
+
+  .btn-sm-edit {
+    background: #e0e7ff;
+    color: #3730a3;
   }
-  
-  .btn-sm.danger {
-    color: #dc2626;
+
+  .btn-sm-edit:hover {
+    background: #c7d2fe;
   }
-  
-  .btn-sm.danger:hover {
+
+  .btn-sm-delete {
     background: #fee2e2;
+    color: #991b1b;
   }
-  
-  .btn-primary {
-    padding: 0.5rem 1rem;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
+
+  .btn-sm-delete:hover {
+    background: #fecaca;
   }
-  
-  .btn-primary:hover {
-    background: #2563eb;
-  }
-  
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    background: #6b7280;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-  }
-  
-  .btn-secondary:hover {
-    background: #4b5563;
-  }
-  
-  .loading-text,
-  .empty-text {
+
+  .empty {
     text-align: center;
-    padding: 3rem;
-    color: #6b7280;
+    padding: 4rem 2rem;
+    color: #94a3b8;
   }
-  
-  .empty-text p {
-    font-size: 1.1rem;
-    margin: 0;
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
   }
-  
-  .empty-text small {
-    color: #9ca3af;
+
+  .empty h3 {
+    color: #475569;
+    margin: 0 0 0.5rem;
   }
-  
+
+  /* Modal */
   .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    padding: 1rem;
   }
-  
-  .modal-box {
+
+  .modal {
     background: white;
-    border-radius: 12px;
+    border-radius: 1rem;
     max-width: 600px;
-    width: 90%;
+    width: 100%;
     max-height: 90vh;
     overflow-y: auto;
     padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modalIn 0.2s ease-out;
   }
-  
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
   }
-  
+
   .modal-header h2 {
     margin: 0;
     font-size: 1.25rem;
-    color: #1f2937;
+    color: #0f172a;
   }
-  
-  .close-btn {
+
+  .modal-close {
     background: none;
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #6b7280;
+    color: #94a3b8;
     padding: 0;
     line-height: 1;
   }
-  
-  .close-btn:hover {
-    color: #1f2937;
+
+  .modal-close:hover {
+    color: #475569;
   }
-  
+
   .form-group {
     margin-bottom: 1rem;
   }
-  
+
   .form-group label {
     display: block;
-    margin-bottom: 0.25rem;
     font-weight: 500;
-    color: #374151;
     font-size: 0.875rem;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
   }
-  
+
   .form-group input,
   .form-group select,
   .form-group textarea {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
     font-size: 0.875rem;
-    box-sizing: border-box;
+    transition: border-color 0.2s;
+    font-family: inherit;
   }
-  
+
   .form-group input:focus,
   .form-group select:focus,
   .form-group textarea:focus {
     outline: none;
     border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-  
+
   .form-group textarea {
     resize: vertical;
   }
-  
+
   .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
   }
-  
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding-top: 0.25rem;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+  }
+
+  .trust-slider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .trust-slider input[type="range"] {
+    flex: 1;
+    padding: 0;
+  }
+
+  .trust-slider span {
+    font-weight: 600;
+    color: #0f172a;
+    min-width: 2.5rem;
+  }
+
+  .form-message {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .form-message.success {
+    background: #dcfce7;
+    color: #166534;
+  }
+
   .form-actions {
     display: flex;
-    justify-content: flex-end;
     gap: 0.75rem;
+    justify-content: flex-end;
     margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .btn-primary {
+    padding: 0.5rem 1.25rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-secondary {
+    padding: 0.5rem 1.25rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    background: #e2e8f0;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: white;
+    opacity: 0;
+    transform: translateY(1rem);
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast.success {
+    background: #22c55e;
+  }
+
+  .toast.error {
+    background: #ef4444;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+    }
+
+    .filters {
+      flex-direction: column;
+    }
+
+    .filters select,
+    .search-box {
+      width: 100%;
+      min-width: unset;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .actions-cell {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .sources-table {
+      font-size: 0.75rem;
+    }
+
+    .sources-table th,
+    .sources-table td {
+      padding: 0.5rem;
+    }
   }
 </style>
 
 <script>
-  (function() {
-    var sources = [];
-    var categories = [];
-    var states = [];
-    var editingId = null;
+  // ============================================
+  // STATE
+  // ============================================
+  let sources = [];
+  let categories = [];
+  let states = [];
+  let editingId = null;
+
+  // ============================================
+  // DOM REFS
+  // ============================================
+  const $ = (id) => document.getElementById(id);
+  const loadingEl = $('loading-state');
+  const tableWrap = $('table-wrap');
+  const emptyEl = $('empty-state');
+  const tableBody = $('table-body');
+  const modal = $('source-modal');
+  const toast = $('toast');
+
+  const filterType = $('filter-type');
+  const filterCategory = $('filter-category');
+  const filterState = $('filter-state');
+  const searchInput = $('search-input');
+
+  const form = $('source-form');
+  const fType = $('form-type');
+  const fState = $('form-state');
+  const fName = $('form-name');
+  const fUrl = $('form-url');
+  const fCategory = $('form-category');
+  const fDesc = $('form-desc');
+  const fLogo = $('form-logo');
+  const fSourceType = $('form-source-type');
+  const fActive = $('form-active');
+  const fFeatured = $('form-featured');
+  const fTrust = $('form-trust');
+  const fTrustLabel = $('trust-label');
+  const fEditId = $('form-edit-id');
+  const modalTitle = $('modal-title');
+  const modalSubmit = $('modal-submit');
+
+  // ============================================
+  // TOAST
+  // ============================================
+  function showToast(message, type = 'success') {
+    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    toast.classList.add('show');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // ============================================
+  // LOAD DATA
+  // ============================================
+  function loadData() {
+    loadingEl.style.display = 'block';
+    tableWrap.style.display = 'none';
+    emptyEl.style.display = 'none';
     
-    function get(id) { return document.getElementById(id); }
+    Promise.all([loadSources(), loadCategories(), loadStates()])
+      .then(() => {
+        loadingEl.style.display = 'none';
+        renderTable();
+        updateStats();
+      })
+      .catch((err) => {
+        console.error('Failed to load data:', err);
+        showToast('Failed to load data: ' + err.message, 'error');
+        loadingEl.style.display = 'none';
+      });
+  }
+
+  function loadSources() {
+    const params = new URLSearchParams();
+    if (filterType.value && filterType.value !== 'all') params.append('type', filterType.value);
+    if (filterCategory.value) params.append('category', filterCategory.value);
+    if (filterState.value) params.append('state', filterState.value);
+    if (searchInput.value) params.append('search', searchInput.value);
     
-    function init() {
-      var loadingEl = get('loading-state');
-      var tableWrap = get('table-wrap');
-      var emptyEl = get('empty-state');
-      var tableBody = get('table-body');
-      var modal = get('source-modal');
-      
-      var filterType = get('filter-type');
-      var filterCategory = get('filter-category');
-      var filterState = get('filter-state');
-      var searchInput = get('search-input');
-      
-      var form = get('source-form');
-      var fType = get('form-type');
-      var fState = get('form-state');
-      var fName = get('form-name');
-      var fUrl = get('form-url');
-      var fCategory = get('form-category');
-      var fDesc = get('form-desc');
-      var fLogo = get('form-logo');
-      var fSourceType = get('form-source-type');
-      var fActive = get('form-active');
-      var fFeatured = get('form-featured');
-      var fTrust = get('form-trust');
-      var fTrustLabel = get('trust-label');
-      var fEditId = get('form-edit-id');
-      var modalTitle = get('modal-title');
-      var modalSubmit = get('modal-submit');
-      
-      function loadData() {
-        loadingEl.style.display = 'block';
-        tableWrap.style.display = 'none';
-        emptyEl.style.display = 'none';
-        
-        Promise.all([loadSources(), loadCategories(), loadStates()])
-          .then(function() {
-            loadingEl.style.display = 'none';
-            renderTable();
-          })
-          .catch(function(err) {
-            console.error('Failed to load data:', err);
-            alert('Failed to load data');
-            loadingEl.style.display = 'none';
-          });
-      }
-      
-      function loadSources() {
-        var params = new URLSearchParams();
-        if (filterType.value && filterType.value !== 'all') params.append('type', filterType.value);
-        if (filterCategory.value) params.append('category', filterCategory.value);
-        if (filterState.value) params.append('state', filterState.value);
-        if (searchInput.value) params.append('search', searchInput.value);
-        
-        return fetch('/api/admin/sources?' + params.toString())
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            sources = data.success ? (data.data || []) : [];
-          })
-          .catch(function(err) {
-            console.error('Error loading sources:', err);
-            sources = [];
-          });
-      }
-      
-      function loadCategories() {
-        return fetch('/api/admin/sources/categories')
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.success) {
-              categories = data.data || [];
-              populateSelects('category');
-            }
-          })
-          .catch(function(err) {
-            console.error('Error loading categories:', err);
-          });
-      }
-      
-      function loadStates() {
-        return fetch('/api/admin/sources/states')
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.success) {
-              states = data.data || [];
-              populateSelects('state');
-            }
-          })
-          .catch(function(err) {
-            console.error('Error loading states:', err);
-          });
-      }
-      
-      function populateSelects(type) {
-        if (type === 'category') {
-          [filterCategory, fCategory].forEach(function(sel) {
-            var val = sel.value;
-            sel.innerHTML = '<option value="">' + (sel === filterCategory ? 'All Categories' : 'Select a category') + '</option>';
-            categories.forEach(function(c) {
-              var opt = document.createElement('option');
-              opt.value = c.id;
-              opt.textContent = (c.icon || '📁') + ' ' + c.name;
-              sel.appendChild(opt);
-            });
-            sel.value = val;
-          });
-        } else if (type === 'state') {
-          [filterState, fState].forEach(function(sel) {
-            var val = sel.value;
-            sel.innerHTML = '<option value="">' + (sel === filterState ? 'All States' : 'Select a state') + '</option>';
-            states.forEach(function(s) {
-              var opt = document.createElement('option');
-              opt.value = s.id;
-              opt.textContent = (s.code || s.abbreviation) + ' - ' + s.name;
-              sel.appendChild(opt);
-            });
-            sel.value = val;
-          });
+    return fetch('/api/admin/sources?' + params.toString())
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          sources = data.data || [];
+        } else {
+          console.error('API error:', data.error);
+          sources = [];
         }
-      }
-      
-      function renderTable() {
-        if (sources.length === 0) {
-          tableWrap.style.display = 'none';
-          emptyEl.style.display = 'block';
-          return;
-        }
-        
-        tableWrap.style.display = 'block';
-        emptyEl.style.display = 'none';
-        
-        var html = '';
-        for (var i = 0; i < sources.length; i++) {
-          var s = sources[i];
-          var trust = Math.min(s.trust_score || 0, 100);
-          html += '<tr>';
-          html += '<td><div class="source-cell">';
-          if (s.logo_url) html += '<img src="' + escapeHtml(s.logo_url) + '" class="source-logo" />';
-          html += '<div><div class="source-name">' + escapeHtml(s.name) + '</div>';
-          html += '<span class="source-url">' + escapeHtml(s.url) + '</span></div></div></td>';
-          html += '<td><span class="badge-cat">' + escapeHtml(s.category_name || 'Uncategorized') + '</span></td>';
-          html += '<td>' + (s.state_code ? '<span class="badge-state">' + escapeHtml(s.state_code) + '</span>' : '<span style="color:#6b7280;font-size:0.75rem;">Universal</span>') + '</td>';
-          html += '<td><span class="badge-type ' + (s.source_type_actual || 'state') + '">' + (s.source_type_actual === 'master' ? '🌐 Universal' : '📍 State') + '</span></td>';
-          html += '<td><div class="trust-wrap"><div class="trust-bar" style="width:' + trust + '%"></div></div></td>';
-          html += '<td><span class="badge-status ' + (s.is_active ? 'active' : 'inactive') + '">' + (s.is_active ? 'Active' : 'Inactive') + '</span>';
-          if (s.is_featured) html += ' <span class="badge-featured">⭐</span>';
-          html += '</td>';
-          html += '<td><div class="actions-cell">';
-          html += '<button class="btn-sm" data-id="' + s.id + '" onclick="window.editSource(' + s.id + ')">Edit</button>';
-          html += '<button class="btn-sm danger" data-id="' + s.id + '" onclick="window.deleteSource(' + s.id + ')">Delete</button>';
-          html += '</div></td>';
-          html += '</tr>';
-        }
-        tableBody.innerHTML = html;
-      }
-      
-      function escapeHtml(text) {
-        if (!text) return '';
-        var div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-      }
-      
-      window.editSource = function(id) {
-        var source = null;
-        for (var i = 0; i < sources.length; i++) {
-          if (sources[i].id === id) { source = sources[i]; break; }
-        }
-        if (!source) return;
-        
-        editingId = id;
-        modalTitle.textContent = 'Edit Source';
-        modalSubmit.textContent = 'Update Source';
-        
-        fType.value = source.source_type_actual || 'state';
-        fState.value = source.state_id || '';
-        fName.value = source.name || '';
-        fUrl.value = source.url || '';
-        fCategory.value = source.category_id || '';
-        fDesc.value = source.description || '';
-        fLogo.value = source.logo_url || '';
-        fSourceType.value = source.source_type || 'official';
-        fActive.value = source.is_active !== undefined ? source.is_active : 1;
-        fFeatured.value = source.is_featured !== undefined ? source.is_featured : 0;
-        fTrust.value = source.trust_score || 0;
-        fTrustLabel.textContent = (source.trust_score || 0) + '%';
-        fEditId.value = id;
-        
-        toggleStateField();
-        modal.style.display = 'flex';
-      };
-      
-      window.deleteSource = function(id) {
-        var name = '';
-        for (var i = 0; i < sources.length; i++) {
-          if (sources[i].id === id) { name = sources[i].name; break; }
-        }
-        if (!confirm('Delete "' + name + '"?')) return;
-        
-        fetch('/api/admin/sources/' + id, { method: 'DELETE' })
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            if (data.success) {
-              alert('Deleted successfully');
-              loadSources().then(renderTable);
-            } else {
-              alert(data.error || 'Failed to delete');
-            }
-          })
-          .catch(function(err) {
-            console.error('Error deleting:', err);
-            alert('Error deleting');
-          });
-      };
-      
-      function toggleStateField() {
-        var group = get('state-group');
-        group.style.display = fType.value === 'master' ? 'none' : 'block';
-      }
-      
-      function resetForm() {
-        form.reset();
-        editingId = null;
-        fEditId.value = '';
-        modalTitle.textContent = 'Add Source';
-        modalSubmit.textContent = 'Create Source';
-        fType.value = 'state';
-        toggleStateField();
-        fTrustLabel.textContent = '0%';
-      }
-      
-      function handleSubmit(e) {
-        e.preventDefault();
-        
-        var data = {
-          name: fName.value,
-          url: fUrl.value,
-          category_id: parseInt(fCategory.value) || null,
-          description: fDesc.value,
-          source_type: fSourceType.value,
-          logo_url: fLogo.value,
-          is_active: parseInt(fActive.value),
-          is_featured: parseInt(fFeatured.value),
-          trust_score: parseInt(fTrust.value) || 0,
-          source_type_actual: fType.value,
-          state_id: parseInt(fState.value) || null
-        };
-        
-        if (!data.name || !data.url || !data.category_id) {
-          alert('Name, URL, and category are required');
-          return;
-        }
-        if (data.source_type_actual === 'state' && !data.state_id) {
-          alert('State is required for state-specific sources');
-          return;
-        }
-        
-        var url = editingId ? '/api/admin/sources/' + editingId : '/api/admin/sources';
-        var method = editingId ? 'PUT' : 'POST';
-        
-        fetch(url, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        })
-          .then(function(r) { return r.json(); })
-          .then(function(result) {
-            if (result.success) {
-              alert(editingId ? 'Updated!' : 'Created!');
-              modal.style.display = 'none';
-              resetForm();
-              loadSources().then(renderTable);
-            } else {
-              alert(result.error || 'Failed to save');
-            }
-          })
-          .catch(function(err) {
-            console.error('Error saving:', err);
-            alert('Error saving');
-          });
-      }
-      
-      // Event listeners
-      filterType.addEventListener('change', function() { loadSources().then(renderTable); });
-      filterCategory.addEventListener('change', function() { loadSources().then(renderTable); });
-      filterState.addEventListener('change', function() { loadSources().then(renderTable); });
-      
-      var searchTimer;
-      searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(function() { loadSources().then(renderTable); }, 300);
+      })
+      .catch(err => {
+        console.error('Error loading sources:', err);
+        sources = [];
       });
-      
-      get('add-btn').addEventListener('click', function() {
-        resetForm();
-        modal.style.display = 'flex';
-      });
-      
-      get('modal-close').addEventListener('click', function() {
-        modal.style.display = 'none';
-        resetForm();
-      });
-      
-      get('modal-cancel').addEventListener('click', function() {
-        modal.style.display = 'none';
-        resetForm();
-      });
-      
-      modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-          modal.style.display = 'none';
-          resetForm();
+  }
+
+  function loadCategories() {
+    return fetch('/api/admin/sources/categories')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          categories = data.data || [];
+          populateSelects('category');
         }
+      })
+      .catch(err => console.error('Error loading categories:', err));
+  }
+
+  function loadStates() {
+    return fetch('/api/admin/sources/states')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          states = data.data || [];
+          populateSelects('state');
+        }
+      })
+      .catch(err => console.error('Error loading states:', err));
+  }
+
+  // ============================================
+  // POPULATE SELECTS
+  // ============================================
+  function populateSelects(type) {
+    if (type === 'category') {
+      [filterCategory, fCategory].forEach(sel => {
+        const val = sel.value;
+        sel.innerHTML = '<option value="">All Categories</option>';
+        categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = (c.icon || '📁') + ' ' + c.name;
+          sel.appendChild(opt);
+        });
+        sel.value = val;
       });
-      
-      fTrust.addEventListener('input', function() {
-        fTrustLabel.textContent = this.value + '%';
+    } else if (type === 'state') {
+      [filterState, fState].forEach(sel => {
+        const val = sel.value;
+        sel.innerHTML = '<option value="">All States</option>';
+        states.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = (s.code || s.abbreviation) + ' - ' + s.name;
+          sel.appendChild(opt);
+        });
+        sel.value = val;
       });
-      
-      fType.addEventListener('change', toggleStateField);
-      form.addEventListener('submit', handleSubmit);
-      
-      loadData();
+    }
+  }
+
+  // ============================================
+  // UPDATE STATS
+  // ============================================
+  function updateStats() {
+    const total = sources.length;
+    const master = sources.filter(s => s.source_type_actual === 'master').length;
+    const state = sources.filter(s => s.source_type_actual === 'state').length;
+    const featured = sources.filter(s => s.is_featured).length;
+    
+    $('total-count').textContent = total;
+    $('master-count').textContent = master;
+    $('state-count').textContent = state;
+    $('featured-count').textContent = featured;
+  }
+
+  // ============================================
+  // RENDER TABLE
+  // ============================================
+  function renderTable() {
+    if (!sources || sources.length === 0) {
+      tableWrap.style.display = 'none';
+      emptyEl.style.display = 'block';
+      return;
     }
     
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
+    tableWrap.style.display = 'block';
+    emptyEl.style.display = 'none';
+    
+    let html = '';
+    sources.forEach(s => {
+      const trust = Math.min(s.trust_score || 0, 100);
+      html += `
+        <tr>
+          <td>
+            <div class="source-cell">
+              ${s.logo_url ? `<img src="${s.logo_url}" class="source-logo" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📄</div>`}
+              <div>
+                <div class="source-name">${escapeHtml(s.name)}</div>
+                <span class="source-url">${escapeHtml(s.url)}</span>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge-category">${escapeHtml(s.category_name || 'Uncategorized')}</span></td>
+          <td>${s.state_code ? `<span class="badge-state">${escapeHtml(s.state_code)}</span>` : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>'}</td>
+          <td><span class="badge-type ${s.source_type_actual || 'master'}">${s.source_type_actual === 'master' ? '🌐 Universal' : '📍 State'}</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <div class="trust-bar-wrap"><div class="trust-bar-fill" style="width:${trust}%"></div></div>
+              <span class="trust-value">${trust}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge-status ${s.is_active ? 'active' : 'inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span>
+            ${s.is_featured ? '<span class="badge-featured">⭐</span>' : ''}
+          </td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-sm btn-sm-edit" onclick="editSource(${s.id})">✏️ Edit</button>
+              <button class="btn-sm btn-sm-delete" onclick="deleteSource(${s.id})">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+    tableBody.innerHTML = html;
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // ============================================
+  // ADD / EDIT
+  // ============================================
+  function openModal(type = 'master', data = null) {
+    form.reset();
+    editingId = null;
+    fEditId.value = '';
+    $('form-message').style.display = 'none';
+    
+    if (data) {
+      editingId = data.id;
+      modalTitle.textContent = 'Edit Source';
+      modalSubmit.textContent = 'Update Source';
+      fType.value = data.source_type_actual || 'master';
+      fState.value = data.state_id || '';
+      fName.value = data.name || '';
+      fUrl.value = data.url || '';
+      fCategory.value = data.category_id || '';
+      fDesc.value = data.description || '';
+      fLogo.value = data.logo_url || '';
+      fSourceType.value = data.source_type || 'official';
+      fActive.checked = data.is_active === 1;
+      fFeatured.checked = data.is_featured === 1;
+      fTrust.value = data.trust_score || 50;
+      fTrustLabel.textContent = (data.trust_score || 50) + '%';
+      fEditId.value = data.id;
     } else {
-      init();
+      modalTitle.textContent = 'Add Source';
+      modalSubmit.textContent = 'Save Source';
+      fType.value = type;
+      fActive.checked = true;
+      fFeatured.checked = false;
+      fTrust.value = 50;
+      fTrustLabel.textContent = '50%';
     }
-  })();
+    
+    toggleStateField();
+    modal.style.display = 'flex';
+  }
+
+  window.editSource = function(id) {
+    const source = sources.find(s => s.id === id);
+    if (source) openModal(source.source_type_actual || 'master', source);
+  };
+
+  function toggleStateField() {
+    const group = $('state-group');
+    group.style.display = fType.value === 'master' ? 'none' : 'block';
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+  }
+
+  // ============================================
+  // DELETE
+  // ============================================
+  window.deleteSource = function(id) {
+    const source = sources.find(s => s.id === id);
+    if (!confirm(`Delete "${source?.name}"? This cannot be undone.`)) return;
+    
+    fetch('/api/admin/sources/' + id, { 
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: source?.source_type_actual || 'master' })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          showToast('✅ Source deleted successfully', 'success');
+          loadData();
+        } else {
+          showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
+        }
+      })
+      .catch(err => {
+        showToast('❌ Error deleting source', 'error');
+        console.error(err);
+      });
+  };
+
+  // ============================================
+  // SUBMIT FORM
+  // ============================================
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+      name: fName.value.trim(),
+      url: fUrl.value.trim(),
+      category_id: parseInt(fCategory.value) || null,
+      description: fDesc.value.trim(),
+      source_type: fSourceType.value,
+      logo_url: fLogo.value.trim(),
+      is_active: fActive.checked ? 1 : 0,
+      is_featured: fFeatured.checked ? 1 : 0,
+      trust_score: parseInt(fTrust.value) || 0,
+      source_type_actual: fType.value,
+      state_id: parseInt(fState.value) || null
+    };
+    
+    if (!data.name || !data.url || !data.category_id) {
+      showFormMessage('Name, URL, and category are required', 'error');
+      return;
+    }
+    
+    if (data.source_type_actual === 'state' && !data.state_id) {
+      showFormMessage('State is required for state-specific sources', 'error');
+      return;
+    }
+    
+    const url = editingId ? '/api/admin/sources/' + editingId : '/api/admin/sources';
+    const method = editingId ? 'PUT' : 'POST';
+    
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(r => r.json())
+      .then(result => {
+        if (result.success) {
+          showToast(editingId ? '✅ Source updated!' : '✅ Source created!', 'success');
+          closeModal();
+          loadData();
+        } else {
+          showFormMessage(result.error || 'Failed to save', 'error');
+        }
+      })
+      .catch(err => {
+        showFormMessage('Error saving source', 'error');
+        console.error(err);
+      });
+  });
+
+  function showFormMessage(msg, type) {
+    const el = $('form-message');
+    el.textContent = msg;
+    el.className = 'form-message ' + type;
+    el.style.display = 'block';
+  }
+
+  // ============================================
+  // EVENT LISTENERS
+  // ============================================
+  $('add-btn').addEventListener('click', () => openModal('master'));
+  $('modal-close').addEventListener('click', closeModal);
+  $('modal-cancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+
+  fType.addEventListener('change', toggleStateField);
+  fTrust.addEventListener('input', () => {
+    fTrustLabel.textContent = fTrust.value + '%';
+  });
+
+  filterType.addEventListener('change', loadData);
+  filterCategory.addEventListener('change', loadData);
+  filterState.addEventListener('change', loadData);
+  
+  let searchTimer;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(loadData, 300);
+  });
+
+  // ============================================
+  // INIT
+  // ============================================
+  document.addEventListener('DOMContentLoaded', loadData);
 </script>
