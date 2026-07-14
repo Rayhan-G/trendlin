@@ -1,6 +1,6 @@
 // src/pages/api/newsletter/verify-unsubscribe.ts
 import type { APIRoute } from 'astro';
-import { getSubscriberByEmailAndToken } from '@/lib/newsletter';
+import { getSubscriberByEmailAndToken } from '@/lib/newsletter'; // ✅ This should work now
 
 export const GET: APIRoute = async ({ url }) => {
   try {

@@ -1,6 +1,6 @@
 // src/pages/api/newsletter/unsubscribe.ts
 import type { APIRoute } from 'astro';
-import { unsubscribeSubscriber } from '@/lib/newsletter';
+import { unsubscribeSubscriber } from '@/lib/newsletter'; // ✅ This should work now
 
 export const POST: APIRoute = async ({ request }) => {
   try {
