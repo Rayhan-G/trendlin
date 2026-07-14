@@ -2,11 +2,15 @@ import type { APIRoute } from 'astro';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    // ✅ CORRECT: Access D1 from locals.env in Cloudflare Pages
+    // ✅ CORRECT: Access D1 from locals.env (NOT locals.runtime.env)
     const db = locals.env?.DB;
     
     if (!db) {
       console.error('❌ D1 Database not available');
+      console.log('locals keys:', Object.keys(locals));
+      console.log('has env:', !!locals.env);
+      console.log('env keys:', locals.env ? Object.keys(locals.env) : []);
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -15,6 +19,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('✅ Database connected successfully');
 
     const body = await request.json();
     const { email, firstName, categories } = body;
