@@ -2,13 +2,6 @@
 // Admin Sources Management Page
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import SourcesManager from '../../components/admin/SourcesManager.astro';
-import { checkAuth } from '../../lib/auth.js';
-
-// Check authentication
-const auth = await checkAuth(Astro.request);
-if (!auth.authenticated) {
-  return Astro.redirect('/admin/login');
-}
 ---
 
 <AdminLayout title="Sources Management">
