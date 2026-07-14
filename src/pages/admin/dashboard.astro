@@ -115,7 +115,74 @@ try {
   console.error('Error fetching sources:', error);
 }
 
-const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources;
+// ============================================
+// FETCH CONTENT CALENDAR STATS
+// ============================================
+let contentStats = {
+  total: 0,
+  published: 0,
+  scheduled: 0,
+  drafts: 0,
+  thisMonth: 0,
+  byStatus: [],
+  byType: []
+};
+
+try {
+  const contentStatsResponse = await fetch(`${Astro.url.origin}/api/admin/content/stats`);
+  if (contentStatsResponse.ok) {
+    const data = await contentStatsResponse.json();
+    if (data && data.success) {
+      contentStats = data.data;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching content stats:', error);
+}
+
+// ============================================
+// FETCH RECENT CONTENT
+// ============================================
+let recentContent = [];
+
+try {
+  const recentContentResponse = await fetch(`${Astro.url.origin}/api/admin/content?limit=5`);
+  if (recentContentResponse.ok) {
+    const data = await recentContentResponse.json();
+    if (data && data.success) {
+      recentContent = data.data || [];
+    }
+  }
+} catch (error) {
+  console.error('Error fetching recent content:', error);
+}
+
+// ============================================
+// FETCH CONTENT STATUSES AND TYPES FOR DISPLAY
+// ============================================
+let contentStatuses = [];
+let contentTypes = [];
+
+try {
+  const [statusRes, typeRes] = await Promise.all([
+    fetch(`${Astro.url.origin}/api/admin/content/status`),
+    fetch(`${Astro.url.origin}/api/admin/content/types`)
+  ]);
+
+  if (statusRes.ok) {
+    const data = await statusRes.json();
+    if (data && data.success) contentStatuses = data.data || [];
+  }
+
+  if (typeRes.ok) {
+    const data = await typeRes.json();
+    if (data && data.success) contentTypes = data.data || [];
+  }
+} catch (error) {
+  console.error('Error fetching content metadata:', error);
+}
+
+const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources + contentStats.total;
 ---
 
 <AdminLayout title="Dashboard - Trendlin">
@@ -148,7 +215,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- 5 STATS CARDS - Premium Design -->
+  <!-- 6 STATS CARDS - Premium Design (Added Content Calendar) -->
   <!-- ============================================ -->
   <div class="stats-grid">
     
@@ -306,12 +373,165 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
         <a href="/admin/sources/new" class="stat-action-btn stat-action-btn-cyan">+ New Source</a>
       </div>
     </div>
+
+    <!-- 6. CONTENT CALENDAR (NEW) -->
+    <div class="stat-card stat-card-pink">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Content Calendar</div>
+            <div class="stat-value">{contentStats.total}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {contentStats.published} Published
+          </span>
+          <span class="stat-badge stat-badge-blue">
+            <span class="stat-dot stat-dot-blue"></span>
+            {contentStats.scheduled} Scheduled
+          </span>
+          <span class="stat-badge stat-badge-yellow">
+            <span class="stat-dot stat-dot-yellow"></span>
+            {contentStats.drafts} Drafts
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/content" class="stat-action-link">View Calendar →</a>
+        <a href="/admin/content" class="stat-action-btn stat-action-btn-pink">+ New Content</a>
+      </div>
+    </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- RECENT POSTS SECTION -->
+  <!-- RECENT CONTENT + RECENT POSTS SIDEBAR -->
   <!-- ============================================ -->
-  <div class="recent-posts-section">
+  <div class="recent-content-grid">
+    <!-- Recent Content Calendar Items -->
+    <div class="recent-posts-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">📅 Recent Content</h2>
+          <p class="section-subtitle">Your latest scheduled and published content</p>
+        </div>
+        <div class="section-actions">
+          <a href="/admin/content" class="btn-new-post">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Content
+          </a>
+        </div>
+      </div>
+
+      <div class="table-container">
+        {recentContent.length > 0 ? (
+          <div class="table-scroll">
+            <table class="posts-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th class="type-col">Type</th>
+                  <th class="status-col">Status</th>
+                  <th class="date-col">Scheduled</th>
+                  <th class="actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentContent.map((item) => {
+                  const status = contentStatuses.find(s => s.id === item.status_id);
+                  const type = contentTypes.find(t => t.id === item.content_type_id);
+                  const statusColor = status ? status.color : '#94a3b8';
+                  const statusName = status ? status.name : 'Unknown';
+                  const typeIcon = type ? type.icon : '📄';
+                  const typeName = type ? type.name : 'Unknown';
+
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <div class="post-title-cell">
+                          <span class="post-title">{item.title}</span>
+                        </div>
+                      </td>
+                      <td class="type-col">
+                        <span class="type-badge" style="background: {type ? type.color + '20' : '#94a3b820'}; color: {type ? type.color : '#94a3b8'}">
+                          {typeIcon} {typeName}
+                        </span>
+                      </td>
+                      <td class="status-col">
+                        <span class="status-badge" style="background: {statusColor}20; color: {statusColor}">
+                          <span class="status-dot" style="background: {statusColor}"></span>
+                          {statusName}
+                        </span>
+                      </td>
+                      <td class="date-col">
+                        {item.scheduled_publish_at ? new Date(item.scheduled_publish_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        }) : '—'}
+                      </td>
+                      <td class="actions-col">
+                        <div class="action-buttons">
+                          <a href={`/admin/content/edit/${item.id}`} class="action-btn action-btn-edit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Edit
+                          </a>
+                          <button 
+                            class="action-btn action-btn-delete delete-content-btn"
+                            data-id={item.id}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <p>No content yet</p>
+            <a href="/admin/content" class="empty-action">Create your first content →</a>
+          </div>
+        )}
+      </div>
+
+      {recentContent.length > 0 && (
+        <div class="view-all-container">
+          <a href="/admin/content" class="view-all-link">
+            View all {contentStats.total} content items →
+          </a>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- RECENT POSTS SECTION (Existing) -->
+  <!-- ============================================ -->
+  <div class="recent-posts-section" style="margin-top: 1.5rem;">
     <div class="section-header">
       <div>
         <h2 class="section-title">📄 Recent Posts</h2>
@@ -424,6 +644,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 <!-- ============================================ -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Delete Posts
     const deleteButtons = document.querySelectorAll('.delete-btn');
     
     deleteButtons.forEach(function(button) {
@@ -459,6 +680,49 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
         } catch (error) {
           console.error('Error:', error);
           alert('❌ Failed to delete post');
+          this.innerHTML = originalText;
+          this.disabled = false;
+          this.classList.remove('opacity-50');
+        }
+      });
+    });
+
+    // Delete Content Calendar Items
+    const deleteContentButtons = document.querySelectorAll('.delete-content-btn');
+    
+    deleteContentButtons.forEach(function(button) {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const contentId = this.getAttribute('data-id');
+        
+        if (!confirm('Are you sure you want to delete this content?')) {
+          return;
+        }
+        
+        const originalText = this.innerHTML;
+        this.innerHTML = 'Deleting...';
+        this.disabled = true;
+        this.classList.add('opacity-50');
+        
+        try {
+          const response = await fetch(`/api/admin/content/${contentId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+          }
+          
+          alert('✅ Content deleted successfully!');
+          window.location.reload();
+          
+        } catch (error) {
+          console.error('Error:', error);
+          alert('❌ Failed to delete content');
           this.innerHTML = originalText;
           this.disabled = false;
           this.classList.remove('opacity-50');
@@ -537,7 +801,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
      ============================================ */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
   }
@@ -586,6 +850,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-card-green .stat-icon-wrapper { background: #d1fae5; }
   .stat-card-indigo .stat-icon-wrapper { background: #e0e7ff; }
   .stat-card-cyan .stat-icon-wrapper { background: #cffafe; }
+  .stat-card-pink .stat-icon-wrapper { background: #fce7f3; }
 
   .stat-icon {
     width: 20px;
@@ -597,6 +862,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-card-green .stat-icon { color: #16a34a; }
   .stat-card-indigo .stat-icon { color: #4f46e5; }
   .stat-card-cyan .stat-icon { color: #0891b2; }
+  .stat-card-pink .stat-icon { color: #db2777; }
 
   .stat-label {
     font-size: 0.75rem;
@@ -618,6 +884,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-card-green .stat-value { color: #16a34a; }
   .stat-card-indigo .stat-value { color: #4f46e5; }
   .stat-card-cyan .stat-value { color: #0891b2; }
+  .stat-card-pink .stat-value { color: #db2777; }
 
   .stat-badges {
     display: flex;
@@ -705,9 +972,21 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-action-btn-cyan { background: #0891b2; }
   .stat-action-btn-cyan:hover { background: #0e7490; }
 
+  .stat-action-btn-pink { background: #db2777; }
+  .stat-action-btn-pink:hover { background: #be185d; }
+
   .stat-action-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  /* ============================================
+     RECENT CONTENT GRID
+     ============================================ */
+  .recent-content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
   /* ============================================
@@ -848,6 +1127,10 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     width: 110px;
   }
 
+  .type-col {
+    width: 130px;
+  }
+
   .date-col {
     width: 120px;
   }
@@ -901,6 +1184,16 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
   .status-published .status-dot { background: #22c55e; }
   .status-draft .status-dot { background: #eab308; }
+
+  .type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
 
   .action-buttons {
     display: flex;
@@ -994,6 +1287,10 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     color: #1d4ed8;
   }
 
+  .opacity-50 {
+    opacity: 0.5;
+  }
+
   /* ============================================
      RESPONSIVE
      ============================================ */
@@ -1049,6 +1346,10 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
     .status-col {
       width: 80px;
+    }
+
+    .type-col {
+      width: 100px;
     }
 
     .date-col {
