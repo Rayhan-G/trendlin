@@ -1,5 +1,10 @@
-// API endpoint for sources categories
-export async function onRequest(context) {
+globalThis.process ??= {}; globalThis.process.env ??= {};
+export { renderers } from '../../../../renderers.mjs';
+
+// API endpoint for sources categories - GET, POST, PUT, DELETE
+// Cloudflare Workers with D1
+
+async function onRequest(context) {
   const { request, env } = context;
   
   if (request.method === 'GET') {
@@ -106,6 +111,7 @@ async function handlePost(request, env) {
       is_active = 1
     } = body;
     
+    // Validate required fields
     if (!name || !slug) {
       return new Response(JSON.stringify({ 
         success: false, 
@@ -140,7 +146,7 @@ async function handlePost(request, env) {
     
     const result = await env.DB
       .prepare(query)
-      .bind(name, slug, icon, description, parseInt(display_order), parseInt(is_active))
+      .bind(name, slug, icon, description, display_order, is_active)
       .run();
     
     return new Response(JSON.stringify({ 
@@ -200,9 +206,9 @@ async function handlePut(request, env) {
         slug || '',
         icon || '📁',
         description || '',
-        display_order !== undefined ? parseInt(display_order) : 0,
-        is_active !== undefined ? parseInt(is_active) : 1,
-        parseInt(id)
+        display_order || 0,
+        is_active !== undefined ? is_active : 1,
+        id
       )
       .run();
     
@@ -249,7 +255,7 @@ async function handleDelete(request, env) {
     `;
     const usage = await env.DB
       .prepare(usageQuery)
-      .bind(parseInt(id), parseInt(id))
+      .bind(id, id)
       .first();
     
     if (usage && usage.usage_count > 0) {
@@ -264,7 +270,7 @@ async function handleDelete(request, env) {
     
     await env.DB
       .prepare('DELETE FROM sources_categories WHERE id = ?')
-      .bind(parseInt(id))
+      .bind(id)
       .run();
     
     return new Response(JSON.stringify({ 
@@ -286,3 +292,12 @@ async function handleDelete(request, env) {
     });
   }
 }
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  onRequest
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

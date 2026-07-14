@@ -1,6 +1,4 @@
-// API endpoint for US states - GET, POST, PUT, DELETE
-// Cloudflare Workers with D1
-
+// API endpoint for US states
 export async function onRequest(context) {
   const { request, env } = context;
   
@@ -108,7 +106,6 @@ async function handlePost(request, env) {
       is_active = 1
     } = body;
     
-    // Validate required fields
     if (!name || !code || !abbreviation) {
       return new Response(JSON.stringify({ 
         success: false, 
@@ -143,7 +140,7 @@ async function handlePost(request, env) {
     
     const result = await env.DB
       .prepare(query)
-      .bind(name, code, abbreviation, region, is_active)
+      .bind(name, code, abbreviation, region, parseInt(is_active))
       .run();
     
     return new Response(JSON.stringify({ 
@@ -202,8 +199,8 @@ async function handlePut(request, env) {
         code || '',
         abbreviation || '',
         region || '',
-        is_active !== undefined ? is_active : 1,
-        id
+        is_active !== undefined ? parseInt(is_active) : 1,
+        parseInt(id)
       )
       .run();
     
@@ -245,7 +242,7 @@ async function handleDelete(request, env) {
     // Check if state has sources
     const usage = await env.DB
       .prepare('SELECT COUNT(*) as count FROM sources_state WHERE state_id = ?')
-      .bind(id)
+      .bind(parseInt(id))
       .first();
     
     if (usage && usage.count > 0) {
@@ -260,7 +257,7 @@ async function handleDelete(request, env) {
     
     await env.DB
       .prepare('DELETE FROM sources_states WHERE id = ?')
-      .bind(id)
+      .bind(parseInt(id))
       .run();
     
     return new Response(JSON.stringify({ 

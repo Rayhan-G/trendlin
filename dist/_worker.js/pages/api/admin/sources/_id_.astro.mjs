@@ -1,5 +1,10 @@
+globalThis.process ??= {}; globalThis.process.env ??= {};
+export { renderers } from '../../../../renderers.mjs';
+
 // API endpoint for individual source operations - GET, PUT, DELETE
-export async function onRequest(context) {
+// Cloudflare Workers with D1
+
+async function onRequest(context) {
   const { request, env, params } = context;
   
   if (request.method === 'GET') {
@@ -58,7 +63,7 @@ async function handleGet(params, env) {
     
     let result = await env.DB
       .prepare(query)
-      .bind(parseInt(id))
+      .bind(id)
       .first();
     
     if (!result) {
@@ -89,7 +94,7 @@ async function handleGet(params, env) {
       
       result = await env.DB
         .prepare(query)
-        .bind(parseInt(id))
+        .bind(id)
         .first();
     }
     
@@ -145,14 +150,14 @@ async function handlePut(request, params, env) {
     let checkQuery = `SELECT id, 'state' as type FROM sources_state WHERE id = ?`;
     let result = await env.DB
       .prepare(checkQuery)
-      .bind(parseInt(id))
+      .bind(id)
       .first();
     
     if (!result) {
       checkQuery = `SELECT id, 'master' as type FROM sources_master WHERE id = ?`;
       result = await env.DB
         .prepare(checkQuery)
-        .bind(parseInt(id))
+        .bind(id)
         .first();
     }
     
@@ -189,14 +194,14 @@ async function handlePut(request, params, env) {
         .bind(
           name || '',
           url || '',
-          parseInt(category_id),
+          category_id,
           description || '',
           source_type || 'official',
           logo_url || '',
-          is_active !== undefined ? parseInt(is_active) : 1,
-          is_featured !== undefined ? parseInt(is_featured) : 0,
-          trust_score !== undefined ? parseInt(trust_score) : 0,
-          parseInt(id)
+          is_active !== undefined ? is_active : 1,
+          is_featured !== undefined ? is_featured : 0,
+          trust_score || 0,
+          id
         )
         .run();
         
@@ -224,20 +229,20 @@ async function handlePut(request, params, env) {
       await env.DB
         .prepare(query)
         .bind(
-          state_id ? parseInt(state_id) : null,
+          state_id || null,
           name || '',
           url || '',
-          parseInt(category_id),
+          category_id,
           description || '',
           source_type || 'official',
           logo_url || '',
           address || '',
           phone || '',
           email || '',
-          is_active !== undefined ? parseInt(is_active) : 1,
-          is_featured !== undefined ? parseInt(is_featured) : 0,
-          trust_score !== undefined ? parseInt(trust_score) : 0,
-          parseInt(id)
+          is_active !== undefined ? is_active : 1,
+          is_featured !== undefined ? is_featured : 0,
+          trust_score || 0,
+          id
         )
         .run();
     }
@@ -270,14 +275,14 @@ async function handleDelete(params, env) {
     let checkQuery = `SELECT id, 'state' as type FROM sources_state WHERE id = ?`;
     let result = await env.DB
       .prepare(checkQuery)
-      .bind(parseInt(id))
+      .bind(id)
       .first();
     
     if (!result) {
       checkQuery = `SELECT id, 'master' as type FROM sources_master WHERE id = ?`;
       result = await env.DB
         .prepare(checkQuery)
-        .bind(parseInt(id))
+        .bind(id)
         .first();
     }
     
@@ -296,12 +301,12 @@ async function handleDelete(params, env) {
     if (sourceType === 'master') {
       await env.DB
         .prepare('DELETE FROM sources_master WHERE id = ?')
-        .bind(parseInt(id))
+        .bind(id)
         .run();
     } else {
       await env.DB
         .prepare('DELETE FROM sources_state WHERE id = ?')
-        .bind(parseInt(id))
+        .bind(id)
         .run();
     }
     
@@ -324,3 +329,12 @@ async function handleDelete(params, env) {
     });
   }
 }
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  onRequest
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

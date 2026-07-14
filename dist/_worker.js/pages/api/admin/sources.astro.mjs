@@ -1,5 +1,10 @@
+globalThis.process ??= {}; globalThis.process.env ??= {};
+export { renderers } from '../../../renderers.mjs';
+
 // API endpoint for sources - GET (list) and POST (create)
-export async function onRequest(context) {
+// Cloudflare Workers with D1
+
+async function onRequest(context) {
   const { request, env } = context;
   
   if (request.method === 'GET') {
@@ -25,13 +30,13 @@ async function handleGet(request, env) {
     const categoryId = url.searchParams.get('category');
     const stateId = url.searchParams.get('state');
     const search = url.searchParams.get('search');
-    const type = url.searchParams.get('type') || 'all';
-    const featured = url.searchParams.get('featured') === 'true';
+    const type = url.searchParams.get('type') || 'all'; // 'master', 'state', or 'all'
     
     let query = '';
     const params = [];
     
     if (type === 'master') {
+      // Get only master sources
       query = `
         SELECT 
           s.id,
@@ -58,7 +63,7 @@ async function handleGet(request, env) {
       
       if (categoryId) {
         query += ` AND s.category_id = ?`;
-        params.push(parseInt(categoryId));
+        params.push(categoryId);
       }
       
       if (search) {
@@ -66,13 +71,10 @@ async function handleGet(request, env) {
         params.push(`%${search}%`, `%${search}%`);
       }
       
-      if (featured) {
-        query += ` AND s.is_featured = 1`;
-      }
-      
-      query += ` ORDER BY s.is_featured DESC, s.trust_score DESC, s.name ASC`;
+      query += ` ORDER BY s.is_featured DESC, s.name ASC`;
       
     } else if (type === 'state') {
+      // Get only state sources
       query = `
         SELECT 
           s.id,
@@ -103,12 +105,12 @@ async function handleGet(request, env) {
       
       if (categoryId) {
         query += ` AND s.category_id = ?`;
-        params.push(parseInt(categoryId));
+        params.push(categoryId);
       }
       
       if (stateId) {
         query += ` AND s.state_id = ?`;
-        params.push(parseInt(stateId));
+        params.push(stateId);
       }
       
       if (search) {
@@ -116,14 +118,10 @@ async function handleGet(request, env) {
         params.push(`%${search}%`, `%${search}%`);
       }
       
-      if (featured) {
-        query += ` AND s.is_featured = 1`;
-      }
-      
-      query += ` ORDER BY s.is_featured DESC, s.trust_score DESC, s.name ASC`;
+      query += ` ORDER BY s.is_featured DESC, s.name ASC`;
       
     } else {
-      // 'all' - combine both using UNION
+      // 'all' - combine both master and state sources using UNION
       const masterQuery = `
         SELECT 
           s.id,
@@ -142,10 +140,7 @@ async function handleGet(request, env) {
           NULL as state_id,
           NULL as state_name,
           NULL as state_code,
-          'master' as source_type_actual,
-          NULL as address,
-          NULL as phone,
-          NULL as email
+          'master' as source_type_actual
         FROM sources_master s
         JOIN sources_categories c ON s.category_id = c.id
         WHERE 1=1
@@ -179,17 +174,18 @@ async function handleGet(request, env) {
         WHERE 1=1
       `;
       
+      // Combine with UNION
       let whereClause = '';
       const unionParams = [];
       
       if (categoryId) {
         whereClause = ` AND category_id = ?`;
-        unionParams.push(parseInt(categoryId));
+        unionParams.push(categoryId);
       }
       
       if (stateId) {
         whereClause += ` AND state_id = ?`;
-        unionParams.push(parseInt(stateId));
+        unionParams.push(stateId);
       }
       
       if (search) {
@@ -197,12 +193,8 @@ async function handleGet(request, env) {
         unionParams.push(`%${search}%`, `%${search}%`);
       }
       
-      if (featured) {
-        whereClause += ` AND is_featured = 1`;
-      }
-      
-      query = `(${masterQuery}${whereClause}) UNION ALL (${stateQuery}${whereClause}) ORDER BY is_featured DESC, trust_score DESC, name ASC`;
-      params.push(...unionParams, ...unionParams);
+      query = `(${masterQuery}${whereClause}) UNION ALL (${stateQuery}${whereClause}) ORDER BY is_featured DESC, name ASC`;
+      params.push(...unionParams, ...unionParams); // Duplicate params for both parts
     }
     
     const result = await env.DB.prepare(query).bind(...params).all();
@@ -272,8 +264,8 @@ async function handlePost(request, env) {
       
       result = await env.DB
         .prepare(query)
-        .bind(name, url, parseInt(category_id), description || '', source_type,
-          logo_url || '', parseInt(is_active), parseInt(is_featured), parseInt(trust_score) || 0)
+        .bind(name, url, category_id, description, source_type,
+          logo_url, is_active, is_featured, trust_score)
         .run();
         
     } else {
@@ -292,7 +284,7 @@ async function handlePost(request, env) {
       const checkQuery = `SELECT id FROM sources_state WHERE state_id = ? AND name = ?`;
       const existing = await env.DB
         .prepare(checkQuery)
-        .bind(parseInt(state_id), name)
+        .bind(state_id, name)
         .first();
       
       if (existing) {
@@ -315,21 +307,9 @@ async function handlePost(request, env) {
       
       result = await env.DB
         .prepare(query)
-        .bind(
-          parseInt(state_id), 
-          name, 
-          url, 
-          parseInt(category_id), 
-          description || '', 
-          source_type,
-          logo_url || '', 
-          parseInt(is_active), 
-          parseInt(is_featured), 
-          parseInt(trust_score) || 0,
-          address || '', 
-          phone || '', 
-          email || ''
-        )
+        .bind(state_id, name, url, category_id, description, source_type,
+          logo_url, is_active, is_featured, trust_score,
+          address, phone, email)
         .run();
     }
     
@@ -355,3 +335,12 @@ async function handlePost(request, env) {
     });
   }
 }
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  onRequest
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

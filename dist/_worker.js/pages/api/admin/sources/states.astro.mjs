@@ -1,5 +1,10 @@
-// API endpoint for sources categories
-export async function onRequest(context) {
+globalThis.process ??= {}; globalThis.process.env ??= {};
+export { renderers } from '../../../../renderers.mjs';
+
+// API endpoint for US states - GET, POST, PUT, DELETE
+// Cloudflare Workers with D1
+
+async function onRequest(context) {
   const { request, env } = context;
   
   if (request.method === 'GET') {
@@ -30,6 +35,7 @@ export async function onRequest(context) {
 async function handleGet(request, env) {
   try {
     const url = new URL(request.url);
+    const region = url.searchParams.get('region');
     const isActive = url.searchParams.get('is_active');
     const search = url.searchParams.get('search');
     
@@ -37,27 +43,27 @@ async function handleGet(request, env) {
       SELECT 
         id,
         name,
-        slug,
-        icon,
-        description,
-        display_order,
+        code,
+        abbreviation,
+        region,
         is_active,
         created_at,
         updated_at,
         (
           SELECT COUNT(*) 
           FROM sources_state 
-          WHERE category_id = sources_categories.id AND is_active = 1
-        ) + (
-          SELECT COUNT(*) 
-          FROM sources_master 
-          WHERE category_id = sources_categories.id AND is_active = 1
+          WHERE state_id = sources_states.id AND is_active = 1
         ) as source_count
-      FROM sources_categories
+      FROM sources_states
       WHERE 1=1
     `;
     
     const params = [];
+    
+    if (region) {
+      query += ` AND region = ?`;
+      params.push(region);
+    }
     
     if (isActive !== null && isActive !== undefined) {
       query += ` AND is_active = ?`;
@@ -65,11 +71,11 @@ async function handleGet(request, env) {
     }
     
     if (search) {
-      query += ` AND (name LIKE ? OR description LIKE ?)`;
-      params.push(`%${search}%`, `%${search}%`);
+      query += ` AND (name LIKE ? OR code LIKE ? OR abbreviation LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
     
-    query += ` ORDER BY display_order ASC, name ASC`;
+    query += ` ORDER BY name ASC`;
     
     const result = await env.DB
       .prepare(query)
@@ -81,10 +87,10 @@ async function handleGet(request, env) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Error in categories GET:', error);
+    console.error('Error in states GET:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: 'Failed to fetch categories',
+      error: 'Failed to fetch states',
       details: error.message 
     }), {
       status: 500,
@@ -99,33 +105,33 @@ async function handlePost(request, env) {
     
     const { 
       name, 
-      slug, 
-      icon = '📁', 
-      description = '', 
-      display_order = 0,
+      code, 
+      abbreviation, 
+      region = '', 
       is_active = 1
     } = body;
     
-    if (!name || !slug) {
+    // Validate required fields
+    if (!name || !code || !abbreviation) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Name and slug are required' 
+        error: 'Name, code, and abbreviation are required' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
     
-    // Check for duplicate slug
+    // Check for duplicate code or abbreviation
     const existing = await env.DB
-      .prepare('SELECT id FROM sources_categories WHERE slug = ?')
-      .bind(slug)
+      .prepare('SELECT id FROM sources_states WHERE code = ? OR abbreviation = ?')
+      .bind(code, abbreviation)
       .first();
     
     if (existing) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Category with this slug already exists' 
+        error: 'State with this code or abbreviation already exists' 
       }), {
         status: 409,
         headers: { 'Content-Type': 'application/json' }
@@ -133,14 +139,14 @@ async function handlePost(request, env) {
     }
     
     const query = `
-      INSERT INTO sources_categories (
-        name, slug, icon, description, display_order, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO sources_states (
+        name, code, abbreviation, region, is_active
+      ) VALUES (?, ?, ?, ?, ?)
     `;
     
     const result = await env.DB
       .prepare(query)
-      .bind(name, slug, icon, description, parseInt(display_order), parseInt(is_active))
+      .bind(name, code, abbreviation, region, is_active)
       .run();
     
     return new Response(JSON.stringify({ 
@@ -154,10 +160,10 @@ async function handlePost(request, env) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Error in categories POST:', error);
+    console.error('Error in states POST:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: 'Failed to create category',
+      error: 'Failed to create state',
       details: error.message 
     }), {
       status: 500,
@@ -169,12 +175,12 @@ async function handlePost(request, env) {
 async function handlePut(request, env) {
   try {
     const body = await request.json();
-    const { id, name, slug, icon, description, display_order, is_active } = body;
+    const { id, name, code, abbreviation, region, is_active } = body;
     
     if (!id) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Category ID is required' 
+        error: 'State ID is required' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -182,12 +188,11 @@ async function handlePut(request, env) {
     }
     
     const query = `
-      UPDATE sources_categories SET
+      UPDATE sources_states SET
         name = ?,
-        slug = ?,
-        icon = ?,
-        description = ?,
-        display_order = ?,
+        code = ?,
+        abbreviation = ?,
+        region = ?,
         is_active = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
@@ -197,12 +202,11 @@ async function handlePut(request, env) {
       .prepare(query)
       .bind(
         name || '',
-        slug || '',
-        icon || '📁',
-        description || '',
-        display_order !== undefined ? parseInt(display_order) : 0,
-        is_active !== undefined ? parseInt(is_active) : 1,
-        parseInt(id)
+        code || '',
+        abbreviation || '',
+        region || '',
+        is_active !== undefined ? is_active : 1,
+        id
       )
       .run();
     
@@ -214,10 +218,10 @@ async function handlePut(request, env) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Error in categories PUT:', error);
+    console.error('Error in states PUT:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: 'Failed to update category',
+      error: 'Failed to update state',
       details: error.message 
     }), {
       status: 500,
@@ -234,28 +238,23 @@ async function handleDelete(request, env) {
     if (!id) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Category ID is required' 
+        error: 'State ID is required' 
       }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
     
-    // Check if category is in use
-    const usageQuery = `
-      SELECT 
-        (SELECT COUNT(*) FROM sources_state WHERE category_id = ?) +
-        (SELECT COUNT(*) FROM sources_master WHERE category_id = ?) as usage_count
-    `;
+    // Check if state has sources
     const usage = await env.DB
-      .prepare(usageQuery)
-      .bind(parseInt(id), parseInt(id))
+      .prepare('SELECT COUNT(*) as count FROM sources_state WHERE state_id = ?')
+      .bind(id)
       .first();
     
-    if (usage && usage.usage_count > 0) {
+    if (usage && usage.count > 0) {
       return new Response(JSON.stringify({ 
         success: false, 
-        error: 'Cannot delete category that is in use by sources' 
+        error: 'Cannot delete state that has sources associated with it' 
       }), {
         status: 409,
         headers: { 'Content-Type': 'application/json' }
@@ -263,8 +262,8 @@ async function handleDelete(request, env) {
     }
     
     await env.DB
-      .prepare('DELETE FROM sources_categories WHERE id = ?')
-      .bind(parseInt(id))
+      .prepare('DELETE FROM sources_states WHERE id = ?')
+      .bind(id)
       .run();
     
     return new Response(JSON.stringify({ 
@@ -275,10 +274,10 @@ async function handleDelete(request, env) {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error('Error in categories DELETE:', error);
+    console.error('Error in states DELETE:', error);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: 'Failed to delete category',
+      error: 'Failed to delete state',
       details: error.message 
     }), {
       status: 500,
@@ -286,3 +285,12 @@ async function handleDelete(request, env) {
     });
   }
 }
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  onRequest
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };
