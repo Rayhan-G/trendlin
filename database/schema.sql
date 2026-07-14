@@ -1,7 +1,6 @@
 -- ============================================
--- TRENDLIN DATABASE SCHEMA
--- 4 Platforms: reddit, youtube, tiktok, shop
--- + Reliable Websites System with 3 Levels
+-- TRENDLIN D1 DATABASE SCHEMA
+-- Cloudflare D1 (SQLite) Compatible
 -- ============================================
 
 -- ============================================
@@ -24,6 +23,7 @@ CREATE TABLE IF NOT EXISTS admins (
 
 CREATE INDEX IF NOT EXISTS idx_admins_username ON admins(username);
 CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
+CREATE INDEX IF NOT EXISTS idx_admins_reset_token ON admins(reset_token);
 
 -- ============================================
 -- SESSIONS TABLE - Session Management
@@ -42,7 +42,83 @@ CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 
 -- ============================================
--- POSTS TABLE - Blog/Article Content
+-- SUBSCRIBERS TABLE - Newsletter System
+-- ============================================
+CREATE TABLE IF NOT EXISTS subscribers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  first_name TEXT DEFAULT '',
+  last_name TEXT DEFAULT '',
+  verified INTEGER DEFAULT 0,
+  verification_token TEXT UNIQUE,
+  subscribed INTEGER DEFAULT 1,
+  categories TEXT DEFAULT 'general',
+  ip_address TEXT,
+  user_agent TEXT,
+  referrer TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  verified_at DATETIME,
+  unsubscribed_at DATETIME,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_subscribers_verified ON subscribers(verified);
+CREATE INDEX IF NOT EXISTS idx_subscribers_subscribed ON subscribers(subscribed);
+CREATE INDEX IF NOT EXISTS idx_subscribers_verification_token ON subscribers(verification_token);
+CREATE INDEX IF NOT EXISTS idx_subscribers_created_at ON subscribers(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_subscribers_verified_subscribed ON subscribers(verified, subscribed);
+
+-- ============================================
+-- NEWSLETTER_CAMPAIGNS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS newsletter_campaigns (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subject TEXT NOT NULL,
+  content TEXT NOT NULL,
+  category TEXT DEFAULT 'general',
+  sent_count INTEGER DEFAULT 0,
+  opened_count INTEGER DEFAULT 0,
+  clicked_count INTEGER DEFAULT 0,
+  unsubscribed_count INTEGER DEFAULT 0,
+  bounced_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'draft',
+  scheduled_at DATETIME,
+  sent_at DATETIME,
+  created_by INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_campaigns_status ON newsletter_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_campaigns_scheduled_at ON newsletter_campaigns(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_campaigns_sent_at ON newsletter_campaigns(sent_at);
+CREATE INDEX IF NOT EXISTS idx_campaigns_created_at ON newsletter_campaigns(created_at DESC);
+
+-- ============================================
+-- NEWSLETTER_ACTIVITY TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS newsletter_activity (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subscriber_id INTEGER NOT NULL,
+  campaign_id INTEGER NOT NULL,
+  action TEXT NOT NULL,
+  url TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subscriber_id) REFERENCES subscribers(id) ON DELETE CASCADE,
+  FOREIGN KEY (campaign_id) REFERENCES newsletter_campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_activity_subscriber ON newsletter_activity(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_activity_campaign ON newsletter_activity(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_activity_action ON newsletter_activity(action);
+CREATE INDEX IF NOT EXISTS idx_activity_created_at ON newsletter_activity(created_at DESC);
+
+-- ============================================
+-- POSTS TABLE - Blog Content
 -- ============================================
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -72,9 +148,10 @@ CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
 CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category);
 CREATE INDEX IF NOT EXISTS idx_posts_is_todays_pick ON posts(is_todays_pick);
 CREATE INDEX IF NOT EXISTS idx_posts_is_recently_added ON posts(is_recently_added);
+CREATE INDEX IF NOT EXISTS idx_posts_published_at ON posts(published_at DESC);
 
 -- ============================================
--- CATEGORIES TABLE (Blog Categories)
+-- CATEGORIES TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,7 +165,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
 
 -- ============================================
--- MEDIA TABLE - For managing images and videos
+-- MEDIA TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS media (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -113,7 +190,7 @@ CREATE INDEX IF NOT EXISTS idx_media_folder ON media(folder);
 CREATE INDEX IF NOT EXISTS idx_media_uploader_id ON media(uploader_id);
 
 -- ============================================
--- PRODUCTS TABLE - Product Recommendations
+-- PRODUCTS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS products (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -136,8 +213,7 @@ CREATE INDEX IF NOT EXISTS idx_products_is_top_pick ON products(is_top_pick);
 CREATE INDEX IF NOT EXISTS idx_products_is_newly_released ON products(is_newly_released);
 
 -- ============================================
--- PRODUCT RESOURCES TABLE - 4 Platforms Only
--- reddit | youtube | tiktok | shop
+-- PRODUCT RESOURCES TABLE - 4 Platforms
 -- ============================================
 CREATE TABLE IF NOT EXISTS product_resources (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -165,7 +241,7 @@ CREATE INDEX IF NOT EXISTS idx_resources_featured ON product_resources(is_featur
 CREATE INDEX IF NOT EXISTS idx_resources_active ON product_resources(is_active);
 
 -- ============================================
--- TEMPLATES TABLE - Category-based Templates
+-- TEMPLATES TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS templates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -188,14 +264,9 @@ CREATE INDEX IF NOT EXISTS idx_templates_is_active ON templates(is_active);
 
 -- ============================================
 -- RELIABLE WEBSITES - 3 Level System
--- Level 1: Categories (8 main categories + Shopping)
--- Level 2: Subcategories (10-20 per category)
--- Level 3: Sub-Subcategories (optional, for deeper organization)
 -- ============================================
 
--- ============================================
--- RELIABLE_CATEGORIES - Level 1 (9 Categories)
--- ============================================
+-- LEVEL 1: Categories
 CREATE TABLE IF NOT EXISTS reliable_categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -209,10 +280,9 @@ CREATE TABLE IF NOT EXISTS reliable_categories (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reliable_categories_slug ON reliable_categories(slug);
+CREATE INDEX IF NOT EXISTS idx_reliable_categories_active ON reliable_categories(is_active);
 
--- ============================================
--- RELIABLE_SUBCATEGORIES - Level 2
--- ============================================
+-- LEVEL 2: Subcategories
 CREATE TABLE IF NOT EXISTS reliable_subcategories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category_id INTEGER NOT NULL,
@@ -228,10 +298,9 @@ CREATE TABLE IF NOT EXISTS reliable_subcategories (
 
 CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_category ON reliable_subcategories(category_id);
 CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_slug ON reliable_subcategories(slug);
+CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_active ON reliable_subcategories(is_active);
 
--- ============================================
--- RELIABLE_SUB_SUBCATEGORIES - Level 3
--- ============================================
+-- LEVEL 3: Sub-Subcategories
 CREATE TABLE IF NOT EXISTS reliable_sub_subcategories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subcategory_id INTEGER NOT NULL,
@@ -247,14 +316,13 @@ CREATE TABLE IF NOT EXISTS reliable_sub_subcategories (
 
 CREATE INDEX IF NOT EXISTS idx_sub_subcategories_subcategory ON reliable_sub_subcategories(subcategory_id);
 CREATE INDEX IF NOT EXISTS idx_sub_subcategories_slug ON reliable_sub_subcategories(slug);
+CREATE INDEX IF NOT EXISTS idx_sub_subcategories_active ON reliable_sub_subcategories(is_active);
 
--- ============================================
--- RELIABLE_WEBSITES - Websites linked to Level 2 or Level 3
--- ============================================
+-- RELIABLE WEBSITES
 CREATE TABLE IF NOT EXISTS reliable_websites (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subcategory_id INTEGER NOT NULL,
-  sub_subcategory_id INTEGER, -- Optional, can be NULL
+  sub_subcategory_id INTEGER,
   name TEXT NOT NULL,
   url TEXT NOT NULL,
   description TEXT,
@@ -281,10 +349,9 @@ CREATE INDEX IF NOT EXISTS idx_reliable_websites_score ON reliable_websites(reli
 CREATE INDEX IF NOT EXISTS idx_reliable_websites_name ON reliable_websites(name);
 CREATE INDEX IF NOT EXISTS idx_reliable_websites_active ON reliable_websites(is_active);
 CREATE INDEX IF NOT EXISTS idx_reliable_websites_featured ON reliable_websites(is_featured);
+CREATE INDEX IF NOT EXISTS idx_reliable_websites_url ON reliable_websites(url);
 
--- ============================================
--- RELIABLE_VERIFICATION_LOG - Track verification history
--- ============================================
+-- RELIABLE VERIFICATION LOG
 CREATE TABLE IF NOT EXISTS reliable_verification_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   website_id INTEGER NOT NULL,
@@ -305,7 +372,7 @@ CREATE INDEX IF NOT EXISTS idx_verification_date ON reliable_verification_log(ve
 -- CONTENT CALENDAR TABLES
 -- ============================================
 
--- CONTENT_TYPES - Content types (Article, Video, Podcast, etc.)
+-- CONTENT TYPES
 CREATE TABLE IF NOT EXISTS content_types (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -318,7 +385,9 @@ CREATE TABLE IF NOT EXISTS content_types (
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- CONTENT_CATEGORIES - Content categories (mapped to reliable_categories)
+CREATE INDEX IF NOT EXISTS idx_content_types_slug ON content_types(slug);
+
+-- CONTENT CATEGORIES
 CREATE TABLE IF NOT EXISTS content_categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category_id INTEGER NOT NULL,
@@ -331,7 +400,10 @@ CREATE TABLE IF NOT EXISTS content_categories (
   FOREIGN KEY (category_id) REFERENCES reliable_categories(id) ON DELETE CASCADE
 );
 
--- CONTENT_STATUS - Content status flow
+CREATE INDEX IF NOT EXISTS idx_content_categories_category ON content_categories(category_id);
+CREATE INDEX IF NOT EXISTS idx_content_categories_slug ON content_categories(slug);
+
+-- CONTENT STATUS
 CREATE TABLE IF NOT EXISTS content_status (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -341,14 +413,17 @@ CREATE TABLE IF NOT EXISTS content_status (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO content_status (name, slug, color, display_order) VALUES
+CREATE INDEX IF NOT EXISTS idx_content_status_slug ON content_status(slug);
+
+-- Insert default statuses
+INSERT OR IGNORE INTO content_status (name, slug, color, display_order) VALUES
 ('Idea', 'idea', '#94a3b8', 1),
 ('Draft', 'draft', '#f59e0b', 2),
 ('In Review', 'in-review', '#8b5cf6', 3),
 ('Scheduled', 'scheduled', '#3b82f6', 4),
 ('Published', 'published', '#22c55e', 5);
 
--- CONTENT - Main content table
+-- CONTENT
 CREATE TABLE IF NOT EXISTS content (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -365,8 +440,6 @@ CREATE TABLE IF NOT EXISTS content (
   meta_title TEXT,
   meta_description TEXT,
   meta_keywords TEXT,
-  
-  -- Scheduling
   scheduled_publish_at DATETIME,
   published_at DATETIME,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -374,12 +447,9 @@ CREATE TABLE IF NOT EXISTS content (
   is_published INTEGER DEFAULT 0,
   is_featured INTEGER DEFAULT 0,
   views INTEGER DEFAULT 0,
-  
-  -- External sources
   source_url TEXT,
   source_name TEXT,
   source_type TEXT DEFAULT 'original',
-  
   FOREIGN KEY (content_type_id) REFERENCES content_types(id) ON DELETE CASCADE,
   FOREIGN KEY (category_id) REFERENCES content_categories(id) ON DELETE SET NULL,
   FOREIGN KEY (status_id) REFERENCES content_status(id) ON DELETE SET NULL,
@@ -392,8 +462,9 @@ CREATE INDEX IF NOT EXISTS idx_content_scheduled_publish_at ON content(scheduled
 CREATE INDEX IF NOT EXISTS idx_content_published_at ON content(published_at);
 CREATE INDEX IF NOT EXISTS idx_content_category ON content(category_id);
 CREATE INDEX IF NOT EXISTS idx_content_type ON content(content_type_id);
+CREATE INDEX IF NOT EXISTS idx_content_is_published ON content(is_published);
 
--- CONTENT_RESOURCES - Sources/links used in content
+-- CONTENT RESOURCES
 CREATE TABLE IF NOT EXISTS content_resources (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   content_id INTEGER NOT NULL,
@@ -408,7 +479,9 @@ CREATE TABLE IF NOT EXISTS content_resources (
   FOREIGN KEY (reliable_website_id) REFERENCES reliable_websites(id) ON DELETE SET NULL
 );
 
--- CONTENT_HISTORY - Track content changes
+CREATE INDEX IF NOT EXISTS idx_content_resources_content ON content_resources(content_id);
+
+-- CONTENT HISTORY
 CREATE TABLE IF NOT EXISTS content_history (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   content_id INTEGER NOT NULL,
@@ -421,3 +494,5 @@ CREATE TABLE IF NOT EXISTS content_history (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (content_id) REFERENCES content(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_content_history_content ON content_history(content_id);

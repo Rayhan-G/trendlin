@@ -1,0 +1,314 @@
+---
+// src/pages/unsubscribe/index.astro
+import Layout from '@/layouts/BaseLayout.astro';
+import UnsubscribeModal from '@/components/UnsubscribeModal.astro';
+---
+
+<Layout title="Unsubscribe | Trendlin">
+  <div 
+    id="unsubscribe-app"
+    class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900"
+  >
+    <!-- Loading State -->
+    <div id="loading-state" class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="error-state" class="hidden max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+      <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Something Went Wrong</h2>
+      <p id="error-message" class="text-gray-600 dark:text-gray-400"></p>
+      <a
+        href="/"
+        class="inline-block mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Return Home
+      </a>
+    </div>
+
+    <!-- Success State -->
+    <div id="success-state" class="hidden max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+      <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Unsubscribed Successfully</h2>
+      <p id="success-message" class="text-gray-600 dark:text-gray-400"></p>
+      <p class="text-sm text-gray-500 dark:text-gray-500 mt-4">
+        You won't receive any more emails from us. If this was a mistake, you can{' '}
+        <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">resubscribe</a>.
+      </p>
+    </div>
+
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
+  </div>
+</Layout>
+
+<script>
+  import { UNSUBSCRIBE_REASONS } from '@/types/newsletter';
+
+  // Get URL parameters
+  const params = new URLSearchParams(window.location.search);
+  const email = params.get('email');
+  const token = params.get('token');
+
+  const loadingState = document.getElementById('loading-state');
+  const errorState = document.getElementById('error-state');
+  const errorMessage = document.getElementById('error-message');
+  const successState = document.getElementById('success-state');
+  const successMessage = document.getElementById('success-message');
+  const modalContainer = document.getElementById('modal-container');
+
+  let subscriberData: { email: string; firstName: string } | null = null;
+  let isLoading = false;
+
+  // Validate and fetch subscriber data
+  async function verifySubscriber() {
+    if (!email || !token) {
+      showError('Invalid unsubscribe link. Please contact support.');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/newsletter/verify-unsubscribe?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
+      );
+      const data = await response.json();
+
+      if (data.success) {
+        subscriberData = data.data;
+        showModal();
+      } else {
+        showError(data.message || 'Invalid unsubscribe link.');
+      }
+    } catch (error) {
+      showError('An error occurred. Please try again.');
+    } finally {
+      loadingState?.classList.add('hidden');
+    }
+  }
+
+  function showModal() {
+    if (!subscriberData) return;
+
+    modalContainer!.innerHTML = `
+      <div id="modal-wrapper">
+        ${renderModal(subscriberData.email)}
+      </div>
+    `;
+
+    // Attach event listeners
+    document.addEventListener('unsubscribe-confirm', handleConfirm);
+    document.addEventListener('unsubscribe-close', handleClose);
+  }
+
+  function renderModal(email: string) {
+    return `
+      <div id="unsubscribe-modal" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+        <div id="modal-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+        <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+          <button
+            id="modal-close"
+            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            aria-label="Close modal"
+            type="button"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <div class="text-center mb-6">
+            <div class="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg class="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Unsubscribe from Trendlin?</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">We're sorry to see you go, ${email}</p>
+          </div>
+          <form id="unsubscribe-form" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Why are you unsubscribing?
+              </label>
+              <div class="space-y-2" id="reason-options">
+                ${UNSUBSCRIBE_REASONS.map(reason => `
+                  <label class="flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600">
+                    <input
+                      type="radio"
+                      name="unsubscribeReason"
+                      value="${reason.value}"
+                      class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                    />
+                    <span class="text-sm text-gray-700 dark:text-gray-300">${reason.label}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+            <div id="other-reason-container" class="hidden animate-slide-down">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Please specify</label>
+              <input
+                id="other-reason"
+                type="text"
+                placeholder="Tell us why you're leaving..."
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Any additional feedback? <span class="text-gray-400 text-xs">(optional)</span>
+              </label>
+              <textarea
+                id="feedback"
+                rows="3"
+                placeholder="We'd love to hear how we can improve..."
+                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all resize-none"
+              ></textarea>
+            </div>
+            <div class="flex gap-3 pt-2">
+              <button
+                id="modal-cancel"
+                type="button"
+                class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                id="modal-confirm"
+                type="submit"
+                class="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+              >
+                Yes, Unsubscribe
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+  }
+
+  // Handle confirm unsubscribe
+  async function handleConfirm(event: CustomEvent) {
+    const { reason, feedback } = event.detail;
+    
+    if (!email || !token) return;
+
+    isLoading = true;
+    const confirmBtn = document.getElementById('modal-confirm');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = `
+        <span class="flex items-center justify-center gap-2">
+          <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          Processing...
+        </span>
+      `;
+    }
+
+    try {
+      const response = await fetch('/api/newsletter/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, token, reason, feedback }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        showSuccess(data.message);
+        closeModal();
+      } else {
+        alert(data.message || 'Failed to unsubscribe. Please try again.');
+      }
+    } catch (error) {
+      alert('An error occurred. Please try again.');
+    } finally {
+      isLoading = false;
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Yes, Unsubscribe';
+      }
+    }
+  }
+
+  function handleClose() {
+    closeModal();
+    if (!isLoading) {
+      showError('Unsubscribe cancelled.');
+    }
+  }
+
+  function closeModal() {
+    const modal = document.getElementById('unsubscribe-modal');
+    if (modal) {
+      modal.remove();
+    }
+  }
+
+  function showError(message: string) {
+    loadingState?.classList.add('hidden');
+    errorState?.classList.remove('hidden');
+    errorMessage!.textContent = message;
+  }
+
+  function showSuccess(message: string) {
+    loadingState?.classList.add('hidden');
+    errorState?.classList.add('hidden');
+    successState?.classList.remove('hidden');
+    successMessage!.textContent = message;
+  }
+
+  // Initialize
+  verifySubscriber();
+</script>
+
+<style is:global>
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
+  .animate-slide-down {
+    animation: slide-down 0.2s ease-out;
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
