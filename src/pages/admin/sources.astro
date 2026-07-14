@@ -4,14 +4,18 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Sources Management">
-  <div class="sources-page">
-    <div class="page-header">
+  <div class="sources-app" x-data="sourcesApp()">
+    <!-- Header -->
+    <div class="sources-header">
       <div>
-        <h1>📚 Sources Management</h1>
-        <p class="text-muted">Manage trusted content sources across all categories</p>
+        <h1 class="sources-title">
+          <span class="title-icon">📚</span>
+          Sources Management
+        </h1>
+        <p class="sources-subtitle">Manage your content sources across all categories and states</p>
       </div>
-      <button class="btn-add" id="add-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="btn-primary" @click="openModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
@@ -20,29 +24,30 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     </div>
 
     <!-- Stats -->
-    <div class="stats-grid" id="stats-container">
-      <div class="stat-card">
-        <div class="stat-icon">📌</div>
+    <div class="stats-grid">
+      <div class="stat-card" style="--accent: #3b82f6;">
+        <div class="stat-icon">📊</div>
         <div>
           <div class="stat-value" id="total-count">0</div>
           <div class="stat-label">Total Sources</div>
         </div>
+        <div class="stat-change positive">+12%</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="--accent: #8b5cf6;">
         <div class="stat-icon">🌐</div>
         <div>
           <div class="stat-value" id="master-count">0</div>
           <div class="stat-label">Universal</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="--accent: #22c55e;">
         <div class="stat-icon">📍</div>
         <div>
           <div class="stat-value" id="state-count">0</div>
           <div class="stat-label">State-Specific</div>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="--accent: #f59e0b;">
         <div class="stat-icon">⭐</div>
         <div>
           <div class="stat-value" id="featured-count">0</div>
@@ -52,29 +57,35 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     </div>
 
     <!-- Filters -->
-    <div class="filters-bar">
-      <div class="filters">
-        <select id="filter-type">
-          <option value="all">All Types</option>
-          <option value="master">🌐 Universal</option>
-          <option value="state">📍 State-Specific</option>
-        </select>
-        <select id="filter-category">
-          <option value="">All Categories</option>
-        </select>
-        <select id="filter-state">
-          <option value="">All States</option>
-        </select>
-        <div class="search-box">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <div class="filters-section">
+      <div class="filters-left">
+        <div class="filter-group">
+          <select id="filter-type" class="filter-select">
+            <option value="all">All Types</option>
+            <option value="master">🌐 Universal</option>
+            <option value="state">📍 State-Specific</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select id="filter-category" class="filter-select">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <select id="filter-state" class="filter-select">
+            <option value="">All States</option>
+          </select>
+        </div>
+        <div class="search-wrapper">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="search-input" placeholder="Search sources..." />
+          <input type="text" id="search-input" placeholder="Search sources..." class="search-input" />
         </div>
       </div>
-      <button class="btn-refresh" onclick="loadData()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button class="btn-refresh" onclick="loadData()" title="Refresh">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"></polyline>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
         </svg>
@@ -82,13 +93,13 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     </div>
 
     <!-- Loading -->
-    <div id="loading-state" class="loading">
-      <div class="spinner"></div>
-      <p>Loading sources...</p>
+    <div id="loading-state" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading your sources...</p>
     </div>
 
     <!-- Table -->
-    <div id="table-wrap" style="display:none;">
+    <div id="table-wrap" class="table-wrap" style="display:none;">
       <table class="sources-table">
         <thead>
           <tr>
@@ -98,180 +109,232 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <th>Type</th>
             <th>Trust</th>
             <th>Status</th>
-            <th class="actions-header">Actions</th>
+            <th class="actions-th">Actions</th>
           </tr>
         </thead>
         <tbody id="table-body"></tbody>
       </table>
+      <div class="table-footer">
+        <span class="table-count" id="table-count">Showing 0 sources</span>
+        <div class="table-pagination">
+          <button class="pagination-btn" disabled>Previous</button>
+          <span class="pagination-info">Page 1</span>
+          <button class="pagination-btn" disabled>Next</button>
+        </div>
+      </div>
     </div>
 
     <!-- Empty -->
-    <div id="empty-state" style="display:none;" class="empty">
+    <div id="empty-state" class="empty-state" style="display:none;">
       <div class="empty-icon">📭</div>
       <h3>No sources found</h3>
-      <p>Try adjusting your filters or add a new source</p>
+      <p>Try adjusting your filters or add a new source to get started</p>
+      <button class="btn-primary" onclick="document.getElementById('add-btn').click()">+ Add Source</button>
     </div>
 
     <!-- Modal -->
     <div id="source-modal" class="modal-overlay" style="display:none;">
-      <div class="modal">
+      <div class="modal-container">
         <div class="modal-header">
-          <h2 id="modal-title">Add Source</h2>
-          <button class="modal-close" id="modal-close">&times;</button>
+          <div>
+            <h2 id="modal-title" class="modal-title">Add Source</h2>
+            <p class="modal-subtitle" id="modal-subtitle">Add a new trusted source to your collection</p>
+          </div>
+          <button class="modal-close" id="modal-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
-        <form id="source-form">
+        <form id="source-form" class="modal-form">
           <input type="hidden" id="form-edit-id" />
           
-          <div class="form-row">
+          <div class="form-grid">
             <div class="form-group">
-              <label>Type</label>
-              <select id="form-type">
+              <label>Source Type</label>
+              <select id="form-type" class="form-select">
                 <option value="master">🌐 Universal</option>
                 <option value="state">📍 State-Specific</option>
               </select>
             </div>
             <div class="form-group" id="state-group">
               <label>State</label>
-              <select id="form-state"><option value="">Select a state</option></select>
+              <select id="form-state" class="form-select">
+                <option value="">Select a state</option>
+              </select>
             </div>
           </div>
 
           <div class="form-group">
-            <label>Name *</label>
-            <input type="text" id="form-name" placeholder="Enter source name..." required />
+            <label>Source Name <span class="required">*</span></label>
+            <input type="text" id="form-name" class="form-input" placeholder="e.g., WebMD, TechCrunch" required />
           </div>
 
           <div class="form-group">
-            <label>URL *</label>
-            <input type="url" id="form-url" placeholder="https://example.com" required />
+            <label>URL <span class="required">*</span></label>
+            <input type="url" id="form-url" class="form-input" placeholder="https://example.com" required />
           </div>
 
           <div class="form-group">
-            <label>Category *</label>
-            <select id="form-category" required><option value="">Select a category</option></select>
+            <label>Category <span class="required">*</span></label>
+            <select id="form-category" class="form-select" required>
+              <option value="">Select a category</option>
+            </select>
           </div>
 
           <div class="form-group">
             <label>Description</label>
-            <textarea id="form-desc" rows="2" placeholder="Brief description..."></textarea>
+            <textarea id="form-desc" class="form-textarea" rows="2" placeholder="Brief description of this source..."></textarea>
           </div>
 
           <div class="form-group">
             <label>Logo URL</label>
-            <input type="url" id="form-logo" placeholder="https://example.com/logo.png" />
+            <input type="url" id="form-logo" class="form-input" placeholder="https://example.com/logo.png" />
           </div>
 
-          <div class="form-row">
+          <div class="form-grid">
             <div class="form-group">
               <label>Source Type</label>
-              <select id="form-source-type">
-                <option value="official">Official</option>
-                <option value="news">News</option>
-                <option value="review">Review</option>
-                <option value="community">Community</option>
+              <select id="form-source-type" class="form-select">
+                <option value="official">🏛️ Official</option>
+                <option value="news">📰 News</option>
+                <option value="review">⭐ Review</option>
+                <option value="community">👥 Community</option>
               </select>
             </div>
             <div class="form-group">
               <label>Trust Score</label>
-              <div class="trust-slider">
-                <input type="range" id="form-trust" min="0" max="100" value="50" />
-                <span id="trust-label">50%</span>
+              <div class="trust-slider-group">
+                <input type="range" id="form-trust" class="trust-slider" min="0" max="100" value="50" />
+                <span id="trust-label" class="trust-value-label">50%</span>
               </div>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input type="checkbox" id="form-active" checked />
-                Active
-              </label>
-            </div>
-            <div class="form-group">
-              <label class="checkbox-label">
-                <input type="checkbox" id="form-featured" />
-                ⭐ Featured
-              </label>
-            </div>
+          <div class="form-check-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="form-active" checked />
+              <span class="checkbox-text">Active</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="form-featured" />
+              <span class="checkbox-text">⭐ Featured</span>
+            </label>
           </div>
 
           <div id="form-message" class="form-message" style="display:none;"></div>
 
           <div class="form-actions">
             <button type="button" class="btn-secondary" id="modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary" id="modal-submit">Save Source</button>
+            <button type="submit" class="btn-primary" id="modal-submit">
+              <span id="submit-text">Save Source</span>
+            </button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast-container"></div>
   </div>
 </AdminLayout>
 
 <style>
-  .sources-page {
-    padding: 2rem;
+  /* ============================================
+     ROOT VARIABLES
+     ============================================ */
+  .sources-app {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --secondary: #8b5cf6;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .page-header {
+  /* ============================================
+     HEADER
+     ============================================ */
+  .sources-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
 
-  .page-header h1 {
-    font-size: 1.875rem;
+  .sources-title {
+    font-size: 1.75rem;
     font-weight: 700;
-    color: #0f172a;
-    margin: 0;
-  }
-
-  .page-header .text-muted {
-    color: #64748b;
-    margin: 0.25rem 0 0;
-    font-size: 0.875rem;
-  }
-
-  .btn-add {
+    color: var(--gray-900);
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: white;
-    border: none;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    margin: 0;
   }
 
-  .btn-add:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  .title-icon {
+    font-size: 1.5rem;
   }
 
+  .sources-subtitle {
+    color: var(--gray-500);
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+  }
+
+  /* ============================================
+     STATS
+     ============================================ */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
 
   .stat-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1.25rem;
-    background: white;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid var(--gray-200);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--accent, var(--primary));
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
   }
 
   .stat-icon {
@@ -282,69 +345,79 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .stat-value {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--gray-900);
     line-height: 1.2;
   }
 
   .stat-label {
     font-size: 0.75rem;
-    color: #94a3b8;
     font-weight: 500;
+    color: var(--gray-400);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  .filters-bar {
+  .stat-change {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    margin-left: auto;
+  }
+
+  .stat-change.positive {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  /* ============================================
+     FILTERS
+     ============================================ */
+  .filters-section {
     display: flex;
     gap: 0.75rem;
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
+    align-items: center;
   }
 
-  .filters {
+  .filters-left {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
     flex: 1;
   }
 
-  .filters select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    background: white;
-    font-size: 0.875rem;
-    color: #0f172a;
-    cursor: pointer;
-    outline: none;
-    transition: border-color 0.2s;
-    min-width: 140px;
+  .filter-group {
+    position: relative;
   }
 
-  .filters select:focus {
-    border-color: #3b82f6;
+  .filter-select {
+    padding: 0.5rem 2rem 0.5rem 1rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    background: white;
+    font-size: 0.875rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition);
+    min-width: 140px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+  }
+
+  .filter-select:focus {
+    border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
-  .search-box {
+  .search-wrapper {
     position: relative;
     flex: 1;
     min-width: 200px;
-  }
-
-  .search-box input {
-    width: 100%;
-    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .search-box input:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .search-icon {
@@ -352,57 +425,136 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     left: 0.75rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #94a3b8;
+    color: var(--gray-400);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.5rem 1rem 0.5rem 2.5rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    outline: none;
+    transition: var(--transition);
+    background: white;
+  }
+
+  .search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
   .btn-refresh {
     padding: 0.5rem 0.75rem;
     background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition);
     display: flex;
     align-items: center;
     justify-content: center;
+    color: var(--gray-500);
   }
 
   .btn-refresh:hover {
-    background: #f1f5f9;
+    background: var(--gray-50);
+    color: var(--gray-700);
     transform: rotate(45deg);
   }
 
-  .loading {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: #94a3b8;
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 
-  .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #e2e8f0;
-    border-top-color: #3b82f6;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 1rem;
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .btn-secondary {
+    padding: 0.5rem 1.25rem;
+    background: white;
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-secondary:hover {
+    background: var(--gray-50);
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.625rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-sm-edit {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .btn-sm-edit:hover {
+    background: #bfdbfe;
+  }
+
+  .btn-sm-delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .btn-sm-delete:hover {
+    background: #fecaca;
+  }
+
+  /* ============================================
+     TABLE
+     ============================================ */
+  .table-wrap {
+    background: white;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+    box-shadow: var(--shadow);
   }
 
   .sources-table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
-    border-radius: 0.75rem;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-size: 0.875rem;
   }
 
   .sources-table thead {
-    background: #f8fafc;
+    background: var(--gray-50);
   }
 
   .sources-table th {
@@ -410,22 +562,37 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     text-align: left;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--gray-500);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--gray-200);
   }
 
   .sources-table td {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--gray-100);
     vertical-align: middle;
   }
 
-  .sources-table tr:hover td {
-    background: #fafbfc;
+  .sources-table tbody tr {
+    transition: var(--transition);
   }
 
+  .sources-table tbody tr:hover {
+    background: var(--gray-50);
+  }
+
+  .sources-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .actions-th {
+    text-align: right;
+  }
+
+  /* ============================================
+     TABLE CELLS
+     ============================================ */
   .source-cell {
     display: flex;
     align-items: center;
@@ -437,36 +604,49 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     height: 36px;
     border-radius: 50%;
     object-fit: cover;
-    background: #f1f5f9;
-    border: 1px solid #e2e8f0;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    flex-shrink: 0;
+  }
+
+  .source-logo-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
     flex-shrink: 0;
   }
 
   .source-name {
     font-weight: 600;
-    color: #0f172a;
+    color: var(--gray-900);
   }
 
   .source-url {
     display: block;
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--gray-400);
     word-break: break-all;
   }
 
   .badge-category {
     display: inline-block;
-    padding: 0.25rem 0.625rem;
-    background: #f1f5f9;
+    padding: 0.2rem 0.625rem;
+    background: var(--gray-100);
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
-    color: #475569;
+    color: var(--gray-600);
   }
 
   .badge-state {
     display: inline-block;
-    padding: 0.25rem 0.625rem;
+    padding: 0.2rem 0.625rem;
     background: #dbeafe;
     color: #1e40af;
     border-radius: 9999px;
@@ -476,7 +656,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   .badge-type {
     display: inline-block;
-    padding: 0.25rem 0.625rem;
+    padding: 0.2rem 0.625rem;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
@@ -495,28 +675,35 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   .trust-bar-wrap {
     width: 80px;
     height: 6px;
-    background: #e2e8f0;
+    background: var(--gray-200);
     border-radius: 9999px;
     overflow: hidden;
-    position: relative;
+    display: inline-block;
   }
 
   .trust-bar-fill {
     height: 100%;
     border-radius: 9999px;
-    background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
-    transition: width 0.3s;
+    background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));
+    transition: width 0.6s ease;
+  }
+
+  .trust-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .trust-value {
     font-size: 0.75rem;
-    color: #94a3b8;
-    margin-left: 0.5rem;
+    color: var(--gray-500);
+    font-weight: 500;
+    min-width: 2.5rem;
   }
 
   .badge-status {
     display: inline-block;
-    padding: 0.25rem 0.625rem;
+    padding: 0.2rem 0.625rem;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
@@ -538,61 +725,117 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     font-size: 0.75rem;
   }
 
-  .actions-header {
-    text-align: right;
-  }
-
   .actions-cell {
     display: flex;
     gap: 0.5rem;
     justify-content: flex-end;
   }
 
-  .btn-sm {
-    padding: 0.25rem 0.625rem;
-    border: none;
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
+  /* ============================================
+     TABLE FOOTER
+     ============================================ */
+  .table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    font-size: 0.875rem;
+    color: var(--gray-500);
+  }
+
+  .table-count {
     font-weight: 500;
+  }
+
+  .table-pagination {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .pagination-btn {
+    padding: 0.25rem 0.75rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    background: white;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: var(--transition);
+    font-size: 0.75rem;
+    color: var(--gray-600);
   }
 
-  .btn-sm-edit {
-    background: #e0e7ff;
-    color: #3730a3;
+  .pagination-btn:hover:not(:disabled) {
+    background: var(--gray-50);
+    border-color: var(--gray-300);
   }
 
-  .btn-sm-edit:hover {
-    background: #c7d2fe;
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
-  .btn-sm-delete {
-    background: #fee2e2;
-    color: #991b1b;
+  .pagination-info {
+    font-size: 0.75rem;
+    color: var(--gray-400);
   }
 
-  .btn-sm-delete:hover {
-    background: #fecaca;
-  }
-
-  .empty {
+  /* ============================================
+     LOADING
+     ============================================ */
+  .loading-state {
     text-align: center;
     padding: 4rem 2rem;
-    color: #94a3b8;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-state p {
+    color: var(--gray-400);
+    font-size: 0.9rem;
+  }
+
+  /* ============================================
+     EMPTY STATE
+     ============================================ */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
   }
 
   .empty-icon {
     font-size: 4rem;
     margin-bottom: 1rem;
+    display: block;
   }
 
-  .empty h3 {
-    color: #475569;
+  .empty-state h3 {
+    color: var(--gray-700);
     margin: 0 0 0.5rem;
+    font-size: 1.25rem;
   }
 
-  /* Modal */
+  .empty-state p {
+    color: var(--gray-400);
+    margin: 0 0 1.5rem;
+  }
+
+  /* ============================================
+     MODAL
+     ============================================ */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -600,98 +843,188 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     right: 0;
     bottom: 0;
     background: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
     display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
+    animation: fadeIn 0.2s ease;
   }
 
-  .modal {
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .modal-container {
     background: white;
-    border-radius: 1rem;
+    border-radius: 16px;
     max-width: 600px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
     padding: 2rem;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-    animation: modalIn 0.2s ease-out;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    animation: slideUp 0.3s ease;
   }
 
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
   .modal-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1.5rem;
   }
 
-  .modal-header h2 {
+  .modal-title {
     margin: 0;
     font-size: 1.25rem;
-    color: #0f172a;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+
+  .modal-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--gray-500);
   }
 
   .modal-close {
     background: none;
     border: none;
-    font-size: 1.5rem;
     cursor: pointer;
-    color: #94a3b8;
-    padding: 0;
-    line-height: 1;
+    color: var(--gray-400);
+    padding: 0.25rem;
+    border-radius: 8px;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .modal-close:hover {
-    color: #475569;
+    background: var(--gray-100);
+    color: var(--gray-700);
   }
 
-  .form-group {
-    margin-bottom: 1rem;
+  /* ============================================
+     FORM
+     ============================================ */
+  .modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
   }
 
-  .form-group label {
-    display: block;
-    font-weight: 500;
-    font-size: 0.875rem;
-    color: #0f172a;
-    margin-bottom: 0.25rem;
-  }
-
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    transition: border-color 0.2s;
-    font-family: inherit;
-  }
-
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .form-group textarea {
-    resize: vertical;
-  }
-
-  .form-row {
+  .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .form-group label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--gray-700);
+  }
+
+  .form-group .required {
+    color: var(--danger);
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: var(--transition);
+    font-family: inherit;
+    width: 100%;
+    box-sizing: border-box;
+    background: white;
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+
+  .form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    cursor: pointer;
+  }
+
+  .trust-slider-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .trust-slider {
+    flex: 1;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--gray-200);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .trust-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  }
+
+  .trust-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    cursor: pointer;
+  }
+
+  .trust-value-label {
+    font-weight: 600;
+    color: var(--gray-700);
+    min-width: 2.5rem;
+    text-align: center;
+  }
+
+  .form-check-group {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
   }
 
   .checkbox-label {
@@ -699,149 +1032,129 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    padding-top: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--gray-700);
   }
 
   .checkbox-label input[type="checkbox"] {
-    width: 1rem;
-    height: 1rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 4px;
+    border: 2px solid var(--gray-300);
     cursor: pointer;
-  }
-
-  .trust-slider {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .trust-slider input[type="range"] {
-    flex: 1;
-    padding: 0;
-  }
-
-  .trust-slider span {
-    font-weight: 600;
-    color: #0f172a;
-    min-width: 2.5rem;
+    accent-color: var(--primary);
   }
 
   .form-message {
     padding: 0.75rem;
-    border-radius: 0.5rem;
+    border-radius: 8px;
     font-size: 0.875rem;
-    margin-bottom: 0.5rem;
   }
 
   .form-message.error {
     background: #fee2e2;
     color: #991b1b;
+    border: 1px solid #fecaca;
   }
 
   .form-message.success {
     background: #dcfce7;
     color: #166534;
+    border: 1px solid #bbf7d0;
   }
 
   .form-actions {
     display: flex;
     gap: 0.75rem;
     justify-content: flex-end;
-    margin-top: 1.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #e2e8f0;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-200);
   }
 
-  .btn-primary {
-    padding: 0.5rem 1.25rem;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-primary:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-
-  .btn-secondary {
-    padding: 0.5rem 1.25rem;
-    background: #f1f5f9;
-    color: #475569;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn-secondary:hover {
-    background: #e2e8f0;
-  }
-
-  .toast {
+  /* ============================================
+     TOAST
+     ============================================ */
+  .toast-container {
     position: fixed;
     bottom: 2rem;
     right: 2rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.5rem;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 400px;
+  }
+
+  .toast {
+    padding: 0.75rem 1.25rem;
+    border-radius: 10px;
     font-weight: 500;
     font-size: 0.875rem;
     color: white;
-    opacity: 0;
-    transform: translateY(1rem);
-    transition: all 0.3s;
-    pointer-events: none;
-    z-index: 2000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
-  .toast.show {
-    opacity: 1;
-    transform: translateY(0);
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes fadeOut {
+    to { opacity: 0; transform: translateX(20px); }
   }
 
   .toast.success {
-    background: #22c55e;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
   }
 
   .toast.error {
-    background: #ef4444;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+  }
+
+  .toast.info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
   }
 
   @media (max-width: 768px) {
-    .page-header {
+    .sources-header {
       flex-direction: column;
       align-items: stretch;
-      gap: 1rem;
     }
 
-    .filters {
+    .filters-left {
       flex-direction: column;
     }
 
-    .filters select,
-    .search-box {
+    .filter-select {
       width: 100%;
       min-width: unset;
     }
 
-    .form-row {
+    .search-wrapper {
+      width: 100%;
+    }
+
+    .form-grid {
       grid-template-columns: 1fr;
     }
 
-    .stats-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-
-    .actions-cell {
+    .form-check-group {
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.5rem;
     }
 
     .sources-table {
@@ -850,8 +1163,66 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
     .sources-table th,
     .sources-table td {
-      padding: 0.5rem;
+      padding: 0.5rem 0.625rem;
     }
+
+    .actions-cell {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .table-footer {
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: center;
+    }
+
+    .stat-card {
+      padding: 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+    }
+
+    .modal-container {
+      padding: 1.5rem;
+    }
+
+    .toast-container {
+      left: 1rem;
+      right: 1rem;
+      bottom: 1rem;
+      max-width: unset;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .sources-title {
+      font-size: 1.25rem;
+    }
+  }
+
+  /* Scrollbar styling */
+  .modal-container::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .modal-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .modal-container::-webkit-scrollbar-thumb {
+    background: var(--gray-300);
+    border-radius: 9999px;
+  }
+
+  .modal-container::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-400);
   }
 </style>
 
@@ -863,6 +1234,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   let categories = [];
   let states = [];
   let editingId = null;
+  let isSubmitting = false;
 
   // ============================================
   // DOM REFS
@@ -873,7 +1245,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   const emptyEl = $('empty-state');
   const tableBody = $('table-body');
   const modal = $('source-modal');
-  const toast = $('toast');
+  const tableCount = $('table-count');
 
   const filterType = $('filter-type');
   const filterCategory = $('filter-category');
@@ -895,17 +1267,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   const fTrustLabel = $('trust-label');
   const fEditId = $('form-edit-id');
   const modalTitle = $('modal-title');
+  const modalSubtitle = $('modal-subtitle');
   const modalSubmit = $('modal-submit');
+  const submitText = $('submit-text');
+  const formMessage = $('form-message');
 
   // ============================================
   // TOAST
   // ============================================
   function showToast(message, type = 'success') {
-    toast.textContent = message;
+    const container = document.getElementById('toast');
+    const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    toast.classList.add('show');
-    clearTimeout(toast._timeout);
-    toast._timeout = setTimeout(() => toast.classList.remove('show'), 3000);
+    toast.innerHTML = message;
+    container.appendChild(toast);
+    setTimeout(() => {
+      if (toast.parentNode) toast.remove();
+    }, 3000);
   }
 
   // ============================================
@@ -924,7 +1302,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       })
       .catch((err) => {
         console.error('Failed to load data:', err);
-        showToast('Failed to load data: ' + err.message, 'error');
+        showToast('❌ Failed to load data: ' + err.message, 'error');
         loadingEl.style.display = 'none';
       });
   }
@@ -1029,20 +1407,30 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     if (!sources || sources.length === 0) {
       tableWrap.style.display = 'none';
       emptyEl.style.display = 'block';
+      tableCount.textContent = 'Showing 0 sources';
       return;
     }
     
     tableWrap.style.display = 'block';
     emptyEl.style.display = 'none';
+    tableCount.textContent = `Showing ${sources.length} source${sources.length > 1 ? 's' : ''}`;
     
     let html = '';
-    sources.forEach(s => {
+    sources.forEach((s, index) => {
       const trust = Math.min(s.trust_score || 0, 100);
+      const statusClass = s.is_active ? 'active' : 'inactive';
+      const statusText = s.is_active ? 'Active' : 'Inactive';
+      const typeClass = s.source_type_actual || 'master';
+      const typeLabel = s.source_type_actual === 'master' ? '🌐 Universal' : '📍 State';
+      const featuredStar = s.is_featured ? '⭐' : '';
+      
       html += `
-        <tr>
+        <tr style="animation: fadeIn 0.3s ease ${index * 0.05}s both;">
           <td>
             <div class="source-cell">
-              ${s.logo_url ? `<img src="${s.logo_url}" class="source-logo" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">📄</div>`}
+              ${s.logo_url 
+                ? `<img src="${s.logo_url}" class="source-logo" alt="${s.name}" onerror="this.style.display='none'" />` 
+                : `<div class="source-logo-placeholder">📄</div>`}
               <div>
                 <div class="source-name">${escapeHtml(s.name)}</div>
                 <span class="source-url">${escapeHtml(s.url)}</span>
@@ -1051,21 +1439,31 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           </td>
           <td><span class="badge-category">${escapeHtml(s.category_name || 'Uncategorized')}</span></td>
           <td>${s.state_code ? `<span class="badge-state">${escapeHtml(s.state_code)}</span>` : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>'}</td>
-          <td><span class="badge-type ${s.source_type_actual || 'master'}">${s.source_type_actual === 'master' ? '🌐 Universal' : '📍 State'}</span></td>
+          <td><span class="badge-type ${typeClass}">${typeLabel}</span></td>
           <td>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
+            <div class="trust-cell">
               <div class="trust-bar-wrap"><div class="trust-bar-fill" style="width:${trust}%"></div></div>
               <span class="trust-value">${trust}%</span>
             </div>
           </td>
           <td>
-            <span class="badge-status ${s.is_active ? 'active' : 'inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span>
-            ${s.is_featured ? '<span class="badge-featured">⭐</span>' : ''}
+            <span class="badge-status ${statusClass}">${statusText}</span>
+            ${featuredStar ? `<span class="badge-featured">${featuredStar}</span>` : ''}
           </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="editSource(${s.id})">✏️ Edit</button>
-              <button class="btn-sm btn-sm-delete" onclick="deleteSource(${s.id})">🗑️</button>
+              <button class="btn-sm btn-sm-edit" onclick="editSource(${s.id})" title="Edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button class="btn-sm btn-sm-delete" onclick="deleteSource(${s.id})" title="Delete">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
             </div>
           </td>
         </tr>
@@ -1082,18 +1480,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   // ============================================
-  // ADD / EDIT
+  // MODAL
   // ============================================
   function openModal(type = 'master', data = null) {
     form.reset();
     editingId = null;
     fEditId.value = '';
-    $('form-message').style.display = 'none';
+    formMessage.style.display = 'none';
+    formMessage.className = 'form-message';
     
     if (data) {
       editingId = data.id;
       modalTitle.textContent = 'Edit Source';
-      modalSubmit.textContent = 'Update Source';
+      modalSubtitle.textContent = 'Update an existing source';
+      submitText.textContent = 'Update Source';
+      
       fType.value = data.source_type_actual || 'master';
       fState.value = data.state_id || '';
       fName.value = data.name || '';
@@ -1109,7 +1510,9 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       fEditId.value = data.id;
     } else {
       modalTitle.textContent = 'Add Source';
-      modalSubmit.textContent = 'Save Source';
+      modalSubtitle.textContent = 'Add a new trusted source to your collection';
+      submitText.textContent = 'Create Source';
+      
       fType.value = type;
       fActive.checked = true;
       fFeatured.checked = false;
@@ -1119,6 +1522,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     
     toggleStateField();
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
   }
 
   window.editSource = function(id) {
@@ -1133,6 +1537,8 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 
   function closeModal() {
     modal.style.display = 'none';
+    document.body.style.overflow = '';
+    isSubmitting = false;
   }
 
   // ============================================
@@ -1140,25 +1546,39 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // ============================================
   window.deleteSource = function(id) {
     const source = sources.find(s => s.id === id);
-    if (!confirm(`Delete "${source?.name}"? This cannot be undone.`)) return;
+    if (!source) {
+      showToast('❌ Source not found', 'error');
+      return;
+    }
+    
+    if (!confirm(`Delete "${source.name}"? This action cannot be undone.`)) return;
+    
+    const type = source.source_type_actual || 'master';
     
     fetch('/api/admin/sources/' + id, { 
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: source?.source_type_actual || 'master' })
+      body: JSON.stringify({ type: type })
     })
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) {
+          return r.json().then(data => {
+            throw new Error(data.error || `HTTP ${r.status}`);
+          });
+        }
+        return r.json();
+      })
       .then(data => {
         if (data.success) {
-          showToast('✅ Source deleted successfully', 'success');
+          showToast(`✅ "${source.name}" deleted successfully`, 'success');
           loadData();
         } else {
           showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
         }
       })
       .catch(err => {
-        showToast('❌ Error deleting source', 'error');
-        console.error(err);
+        console.error('Delete error:', err);
+        showToast('❌ Error: ' + err.message, 'error');
       });
   };
 
@@ -1167,6 +1587,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // ============================================
   form.addEventListener('submit', function(e) {
     e.preventDefault();
+    
+    if (isSubmitting) return;
+    isSubmitting = true;
+    submitText.textContent = 'Saving...';
     
     const data = {
       name: fName.value.trim(),
@@ -1184,11 +1608,15 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     
     if (!data.name || !data.url || !data.category_id) {
       showFormMessage('Name, URL, and category are required', 'error');
+      isSubmitting = false;
+      submitText.textContent = editingId ? 'Update Source' : 'Create Source';
       return;
     }
     
     if (data.source_type_actual === 'state' && !data.state_id) {
       showFormMessage('State is required for state-specific sources', 'error');
+      isSubmitting = false;
+      submitText.textContent = editingId ? 'Update Source' : 'Create Source';
       return;
     }
     
@@ -1208,27 +1636,29 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           loadData();
         } else {
           showFormMessage(result.error || 'Failed to save', 'error');
+          isSubmitting = false;
+          submitText.textContent = editingId ? 'Update Source' : 'Create Source';
         }
       })
       .catch(err => {
-        showFormMessage('Error saving source', 'error');
-        console.error(err);
+        showFormMessage('Error saving source: ' + err.message, 'error');
+        isSubmitting = false;
+        submitText.textContent = editingId ? 'Update Source' : 'Create Source';
       });
   });
 
   function showFormMessage(msg, type) {
-    const el = $('form-message');
-    el.textContent = msg;
-    el.className = 'form-message ' + type;
-    el.style.display = 'block';
+    formMessage.textContent = msg;
+    formMessage.className = 'form-message ' + type;
+    formMessage.style.display = 'block';
   }
 
   // ============================================
   // EVENT LISTENERS
   // ============================================
-  $('add-btn').addEventListener('click', () => openModal('master'));
-  $('modal-close').addEventListener('click', closeModal);
-  $('modal-cancel').addEventListener('click', closeModal);
+  document.getElementById('add-btn').addEventListener('click', () => openModal('master'));
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-cancel').addEventListener('click', closeModal);
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 
   fType.addEventListener('change', toggleStateField);
@@ -1246,8 +1676,39 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     searchTimer = setTimeout(loadData, 300);
   });
 
+  // Close modal with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display === 'flex') {
+      closeModal();
+    }
+  });
+
+  // ============================================
+  // KEYBOARD SHORTCUTS
+  // ============================================
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+N for new source
+    if (e.ctrlKey && e.key === 'n') {
+      e.preventDefault();
+      openModal('master');
+    }
+    // Ctrl+R for refresh
+    if (e.ctrlKey && e.key === 'r') {
+      e.preventDefault();
+      loadData();
+    }
+  });
+
   // ============================================
   // INIT
   // ============================================
   document.addEventListener('DOMContentLoaded', loadData);
 </script>
+
+<!-- Add animation styles -->
+<style>
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
