@@ -1,6 +1,6 @@
 ---
 // Admin Content Calendar Page
-import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
 ---
 
 <AdminLayout title="Content Calendar">
@@ -416,7 +416,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     display: block;
   }
 
-  /* Calendar Styles */
   .calendar-nav {
     display: flex;
     align-items: center;
@@ -546,7 +545,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     opacity: 0.8;
   }
 
-  /* List View Styles */
   .filters-bar {
     display: flex;
     gap: 0.75rem;
@@ -702,7 +700,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     margin: 0;
   }
 
-  /* Modal */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -1163,7 +1160,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           document.getElementById('scheduled-count').textContent = data.data.scheduled || 0;
           document.getElementById('monthly-count').textContent = data.data.thisMonth || 0;
 
-          // Draft count from status
           const draftStatus = contentStatuses.find(s => s.slug === 'draft');
           if (draftStatus) {
             const draftData = data.data.byStatus.find(s => s.id === draftStatus.id);
@@ -1231,17 +1227,14 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     let html = '';
     let dayCount = 1;
 
-    // Empty days at start
     for (let i = 0; i < firstDay; i++) {
       html += `<div class="calendar-day empty"></div>`;
     }
 
-    // Days with content
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const isToday = d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
 
-      // Find content for this day
       const dayContent = contentItems.filter(c => {
         if (!c.scheduled_publish_at) return false;
         const pubDate = new Date(c.scheduled_publish_at);
@@ -1281,7 +1274,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function openModalByDate(dateStr) {
-    // Set scheduled date in modal
     const date = new Date(dateStr);
     date.setHours(9, 0, 0, 0);
     const formatted = date.toISOString().slice(0, 16);
@@ -1344,7 +1336,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           <td>
             <div class="actions-cell">
               <button class="btn-sm btn-sm-edit" onclick="editContent(${item.id})">✏️</button>
-              ${item.status_id === statuses.find(s => s.slug === 'scheduled')?.id ? 
+              ${item.status_id === contentStatuses.find(s => s.slug === 'scheduled')?.id ? 
                 `<button class="btn-sm btn-sm-publish" onclick="publishContent(${item.id})">🚀</button>` : 
                 ''}
               <button class="btn-sm btn-sm-delete" onclick="deleteContent(${item.id})">🗑️</button>
@@ -1361,7 +1353,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // POPULATE SELECTS
   // ============================================
   function populateFilters() {
-    // Status filter
     const statusSel = document.getElementById('filter-status');
     statusSel.innerHTML = '<option value="">All Statuses</option>';
     contentStatuses.forEach(s => {
@@ -1371,7 +1362,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       statusSel.appendChild(opt);
     });
 
-    // Category filter
     const catSel = document.getElementById('filter-category');
     catSel.innerHTML = '<option value="">All Categories</option>';
     contentCategories.forEach(c => {
@@ -1381,7 +1371,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       catSel.appendChild(opt);
     });
 
-    // Type filter
     const typeSel = document.getElementById('filter-type');
     typeSel.innerHTML = '<option value="">All Types</option>';
     contentTypes.forEach(t => {
@@ -1393,7 +1382,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   }
 
   function populateFormSelects() {
-    // Types
     const typeSel = document.getElementById('form-type');
     typeSel.innerHTML = '<option value="">Select Type</option>';
     contentTypes.forEach(t => {
@@ -1403,7 +1391,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       typeSel.appendChild(opt);
     });
 
-    // Categories
     const catSel = document.getElementById('form-category');
     catSel.innerHTML = '<option value="">None</option>';
     contentCategories.forEach(c => {
@@ -1413,7 +1400,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       catSel.appendChild(opt);
     });
 
-    // Statuses
     const statusSel = document.getElementById('form-status');
     statusSel.innerHTML = '';
     contentStatuses.forEach(s => {
@@ -1505,11 +1491,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   function publishContent(id) {
     if (!confirm('Publish this content now?')) return;
 
+    const statusId = contentStatuses.find(s => s.slug === 'published')?.id;
     fetch('/api/admin/content/' + id, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        status_id: contentStatuses.find(s => s.slug === 'published')?.id,
+        status_id: statusId,
         is_published: 1,
         published_at: new Date().toISOString()
       })
@@ -1618,14 +1605,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   // ============================================
   document.getElementById('add-content-btn').addEventListener('click', () => openModal());
 
-  // Close modal on overlay click
   document.getElementById('content-modal').addEventListener('click', function(e) {
     if (e.target === this) {
       this.style.display = 'none';
     }
   });
 
-  // Close modal on close button
   document.querySelector('#content-modal .modal-close').addEventListener('click', function() {
     document.getElementById('content-modal').style.display = 'none';
   });
