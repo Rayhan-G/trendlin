@@ -1,11 +1,11 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                          */
 import { c as createAstro, a as createComponent, g as renderComponent, e as renderScript, f as renderTemplate, m as maybeRenderHead, b as addAttribute } from '../../../../chunks/astro/server_DJuXqbzQ.mjs';
-import { $ as $$AdminLayout } from '../../../../chunks/AdminLayout_BJKxxyJ8.mjs';
+import { $ as $$AdminLayout } from '../../../../chunks/AdminLayout_BrpW5vUZ.mjs';
 /* empty css                                              */
 export { renderers } from '../../../../renderers.mjs';
 
-const $$Astro = createAstro("https://b484b1fd.my-content-site.pages.dev");
+const $$Astro = createAstro("https://trendlin.com");
 const $$Resources = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Resources;

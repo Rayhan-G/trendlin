@@ -3,7 +3,7 @@ globalThis.process ??= {}; globalThis.process.env ??= {};
 import { c as createAstro, a as createComponent } from '../../chunks/astro/server_DJuXqbzQ.mjs';
 export { renderers } from '../../renderers.mjs';
 
-const $$Astro = createAstro("https://b484b1fd.my-content-site.pages.dev");
+const $$Astro = createAstro("https://trendlin.com");
 const $$Logout = createComponent(($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Logout;

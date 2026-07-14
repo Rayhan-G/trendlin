@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                 */
 import { a as createComponent, g as renderComponent, f as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DJuXqbzQ.mjs';
-import { $ as $$BaseLayout } from '../chunks/BaseLayout_gEKe8TRP.mjs';
+import { $ as $$BaseLayout } from '../chunks/BaseLayout_atBcAxL6.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Disclosure = createComponent(($$result, $$props, $$slots) => {

@@ -1,12 +1,12 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                 */
 import { c as createAstro, a as createComponent, m as maybeRenderHead, b as addAttribute, f as renderTemplate, e as renderScript, g as renderComponent, r as renderHead } from '../chunks/astro/server_DJuXqbzQ.mjs';
-import { a as $$Footer, $ as $$Navbar } from '../chunks/Footer_nOJD1CSW.mjs';
-import { $ as $$PostCard } from '../chunks/PostCard_BNi7Aeop.mjs';
+import { $ as $$Footer, a as $$Navbar } from '../chunks/Footer_qI9WQHMq.mjs';
+import { $ as $$PostCard } from '../chunks/PostCard_Qbjf5sMy.mjs';
 /* empty css                                 */
 export { renderers } from '../renderers.mjs';
 
-const $$Astro$1 = createAstro("https://b484b1fd.my-content-site.pages.dev");
+const $$Astro$1 = createAstro("https://trendlin.com");
 const $$ProductCard = createComponent(($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro$1, $$props, $$slots);
   Astro2.self = $$ProductCard;
@@ -31,7 +31,7 @@ var __freeze = Object.freeze;
 var __defProp = Object.defineProperty;
 var __template = (cooked, raw) => __freeze(__defProp(cooked, "raw", { value: __freeze(cooked.slice()) }));
 var _a;
-const $$Astro = createAstro("https://b484b1fd.my-content-site.pages.dev");
+const $$Astro = createAstro("https://trendlin.com");
 const $$Index = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Index;
