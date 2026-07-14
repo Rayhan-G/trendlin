@@ -2,30 +2,28 @@
 
 import type { Subscriber, UnsubscribeRequest } from '@/types/newsletter';
 
-declare global {
-  var DB: D1Database;
-}
+// ✅ REMOVE: declare global { var DB: D1Database; }
 
 // ============================================
-// SUBSCRIBER FUNCTIONS
+// SUBSCRIBER FUNCTIONS - db passed as parameter
 // ============================================
 
-export async function getSubscriberByEmailAndToken(email: string, token: string): Promise<Subscriber | null> {
-  const result = await global.DB.prepare(
+export async function getSubscriberByEmailAndToken(email: string, token: string, db: any): Promise<Subscriber | null> {
+  const result = await db.prepare(
     `SELECT * FROM subscribers WHERE email = ? AND verification_token = ?`
   ).bind(email, token).first();
   return result as Subscriber | null;
 }
 
-export async function getSubscriberByEmail(email: string): Promise<Subscriber | null> {
-  const result = await global.DB.prepare(
+export async function getSubscriberByEmail(email: string, db: any): Promise<Subscriber | null> {
+  const result = await db.prepare(
     `SELECT * FROM subscribers WHERE email = ?`
   ).bind(email).first();
   return result as Subscriber | null;
 }
 
-export async function getSubscriberById(id: number): Promise<Subscriber | null> {
-  const result = await global.DB.prepare(
+export async function getSubscriberById(id: number, db: any): Promise<Subscriber | null> {
+  const result = await db.prepare(
     `SELECT * FROM subscribers WHERE id = ?`
   ).bind(id).first();
   return result as Subscriber | null;
@@ -35,8 +33,8 @@ export async function getSubscriberById(id: number): Promise<Subscriber | null> 
 // PREFERENCES FUNCTIONS
 // ============================================
 
-export async function getSubscriberPreferences(subscriberId: number) {
-  const results = await global.DB.prepare(`
+export async function getSubscriberPreferences(subscriberId: number, db: any) {
+  const results = await db.prepare(`
     SELECT category, subscribed 
     FROM newsletter_preferences 
     WHERE subscriber_id = ?
@@ -44,21 +42,22 @@ export async function getSubscriberPreferences(subscriberId: number) {
   return results.results;
 }
 
-export async function getSubscribedCategories(subscriberId: number): Promise<string[]> {
-  const results = await global.DB.prepare(`
+export async function getSubscribedCategories(subscriberId: number, db: any): Promise<string[]> {
+  const results = await db.prepare(`
     SELECT category 
     FROM newsletter_preferences 
     WHERE subscriber_id = ? AND subscribed = 1
   `).bind(subscriberId).all();
-  return results.results.map(r => r.category);
+  return results.results.map((r: any) => r.category);
 }
 
 export async function updateSubscriberPreferences(
   subscriberId: number, 
-  categories: string[]
+  categories: string[],
+  db: any
 ) {
   // Delete existing preferences
-  await global.DB.prepare(`
+  await db.prepare(`
     DELETE FROM newsletter_preferences 
     WHERE subscriber_id = ?
   `).bind(subscriberId).run();
@@ -68,14 +67,14 @@ export async function updateSubscriberPreferences(
     const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
     const values = categories.flatMap(cat => [subscriberId, cat]);
     
-    await global.DB.prepare(`
+    await db.prepare(`
       INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
       VALUES ${placeholders}
     `).bind(...values).run();
   }
 
   // Update subscribers table
-  await global.DB.prepare(`
+  await db.prepare(`
     UPDATE subscribers 
     SET categories = ?,
         updated_at = CURRENT_TIMESTAMP
@@ -85,8 +84,8 @@ export async function updateSubscriberPreferences(
   return { subscriberId, categories };
 }
 
-export async function subscriberWantsCategory(subscriberId: number, category: string): Promise<boolean> {
-  const result = await global.DB.prepare(`
+export async function subscriberWantsCategory(subscriberId: number, category: string, db: any): Promise<boolean> {
+  const result = await db.prepare(`
     SELECT 1 
     FROM newsletter_preferences 
     WHERE subscriber_id = ? AND category = ? AND subscribed = 1
@@ -103,12 +102,13 @@ export async function createSubscriberWithPreferences(
   firstName: string,
   selectedCategories: string[],
   verificationToken: string,
+  db: any,
   ipAddress?: string,
   userAgent?: string,
   referrer?: string
 ) {
   // Create subscriber
-  const result = await global.DB.prepare(`
+  const result = await db.prepare(`
     INSERT INTO subscribers (
       email, 
       first_name, 
@@ -137,7 +137,7 @@ export async function createSubscriberWithPreferences(
     const placeholders = selectedCategories.map(() => '(?, ?, 1)').join(', ');
     const values = selectedCategories.flatMap(cat => [result.id, cat]);
     
-    await global.DB.prepare(`
+    await db.prepare(`
       INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
       VALUES ${placeholders}
     `).bind(...values).run();
@@ -149,13 +149,14 @@ export async function createSubscriberWithPreferences(
 export async function verifyAndUpdatePreferences(
   email: string, 
   token: string, 
-  selectedCategories: string[]
+  selectedCategories: string[],
+  db: any
 ) {
-  const subscriber = await getSubscriberByEmailAndToken(email, token);
+  const subscriber = await getSubscriberByEmailAndToken(email, token, db);
   if (!subscriber) throw new Error('Invalid verification link');
 
   // Verify subscriber
-  await global.DB.prepare(`
+  await db.prepare(`
     UPDATE subscribers 
     SET verified = 1, 
         verified_at = CURRENT_TIMESTAMP,
@@ -166,7 +167,7 @@ export async function verifyAndUpdatePreferences(
   `).bind(selectedCategories.join(','), email, token).run();
 
   // Update preferences
-  await updateSubscriberPreferences(subscriber.id, selectedCategories);
+  await updateSubscriberPreferences(subscriber.id, selectedCategories, db);
 
   return subscriber;
 }
@@ -175,15 +176,15 @@ export async function verifyAndUpdatePreferences(
 // UNSUBSCRIBE FUNCTIONS
 // ============================================
 
-export async function unsubscribeSubscriber(data: UnsubscribeRequest) {
+export async function unsubscribeSubscriber(data: UnsubscribeRequest, db: any) {
   const { email, token, reason, feedback } = data;
 
-  const subscriber = await getSubscriberByEmailAndToken(email, token);
+  const subscriber = await getSubscriberByEmailAndToken(email, token, db);
   if (!subscriber) throw new Error('Invalid unsubscribe link');
   if (subscriber.subscribed === 0) throw new Error('Already unsubscribed');
 
   // Update subscriber
-  const result = await global.DB.prepare(`
+  const result = await db.prepare(`
     UPDATE subscribers 
     SET subscribed = 0, 
         unsubscribed_at = CURRENT_TIMESTAMP,
@@ -194,7 +195,7 @@ export async function unsubscribeSubscriber(data: UnsubscribeRequest) {
   `).bind(email, token).first();
 
   // Update preferences - set all to unsubscribed
-  await global.DB.prepare(`
+  await db.prepare(`
     UPDATE newsletter_preferences 
     SET subscribed = 0,
         updated_at = CURRENT_TIMESTAMP
@@ -203,7 +204,7 @@ export async function unsubscribeSubscriber(data: UnsubscribeRequest) {
 
   // Store feedback
   if (reason || feedback) {
-    await global.DB.prepare(`
+    await db.prepare(`
       INSERT INTO unsubscribe_feedback (subscriber_id, reason, feedback, created_at)
       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
     `).bind(subscriber.id, reason || null, feedback || null).run();
@@ -216,8 +217,8 @@ export async function unsubscribeSubscriber(data: UnsubscribeRequest) {
 // SENDING FUNCTIONS
 // ============================================
 
-export async function getSubscribersForCategory(category: string) {
-  const results = await global.DB.prepare(`
+export async function getSubscribersForCategory(category: string, db: any) {
+  const results = await db.prepare(`
     SELECT s.* 
     FROM subscribers s
     INNER JOIN newsletter_preferences p ON p.subscriber_id = s.id
@@ -229,11 +230,11 @@ export async function getSubscribersForCategory(category: string) {
   return results.results;
 }
 
-export async function getSubscribersForCategories(categories: string[]) {
+export async function getSubscribersForCategories(categories: string[], db: any) {
   if (categories.length === 0) return [];
   
   const placeholders = categories.map(() => '?').join(',');
-  const results = await global.DB.prepare(`
+  const results = await db.prepare(`
     SELECT DISTINCT s.* 
     FROM subscribers s
     INNER JOIN newsletter_preferences p ON p.subscriber_id = s.id
@@ -246,8 +247,8 @@ export async function getSubscribersForCategories(categories: string[]) {
   return results.results;
 }
 
-export async function getAllActiveSubscribers() {
-  const results = await global.DB.prepare(`
+export async function getAllActiveSubscribers(db: any) {
+  const results = await db.prepare(`
     SELECT s.* 
     FROM subscribers s
     WHERE s.verified = 1 
@@ -260,12 +261,12 @@ export async function getAllActiveSubscribers() {
 // REACTIVATE FUNCTIONS
 // ============================================
 
-export async function reactivateSubscriber(email: string, categories: string[]) {
-  const subscriber = await getSubscriberByEmail(email);
+export async function reactivateSubscriber(email: string, categories: string[], db: any) {
+  const subscriber = await getSubscriberByEmail(email, db);
   if (!subscriber) throw new Error('Subscriber not found');
 
   // Reactivate subscriber
-  await global.DB.prepare(`
+  await db.prepare(`
     UPDATE subscribers 
     SET subscribed = 1, 
         unsubscribed_at = NULL,
@@ -274,7 +275,7 @@ export async function reactivateSubscriber(email: string, categories: string[]) 
   `).bind(email).run();
 
   // Update preferences
-  await updateSubscriberPreferences(subscriber.id, categories);
+  await updateSubscriberPreferences(subscriber.id, categories, db);
 
   return subscriber;
 }
