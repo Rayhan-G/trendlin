@@ -924,12 +924,12 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   // ============================================
   // STATE
   // ============================================
-  let sources = [];
+  let allSources = [];
+  let filteredSources = [];
   let categories = [];
   let states = [];
   let editingId = null;
   let isLoading = false;
-  let isInitialized = false;
 
   // ============================================
   // DOM REFS
@@ -1061,7 +1061,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   }
 
   // ============================================
-  // LOAD SOURCES (WITH FILTERS)
+  // LOAD SOURCES (ONCE FROM API)
   // ============================================
   function loadSources() {
     if (isLoading) return;
@@ -1071,24 +1071,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     tableWrap.style.display = 'none';
     emptyEl.style.display = 'none';
     
-    // Build query parameters from filters
-    const params = new URLSearchParams();
-    
-    if (filterType && filterType.value && filterType.value !== 'all') {
-      params.append('type', filterType.value);
-    }
-    if (filterCategory && filterCategory.value && filterCategory.value !== '') {
-      params.append('category', filterCategory.value);
-    }
-    if (filterState && filterState.value && filterState.value !== '') {
-      params.append('state', filterState.value);
-    }
-    if (searchInput && searchInput.value && searchInput.value.trim() !== '') {
-      params.append('search', searchInput.value.trim());
-    }
-    
-    const url = '/api/admin/sources?' + params.toString();
-    console.log('🔍 Fetching:', url);
+    const url = '/api/admin/sources';
+    console.log('🔍 Fetching all sources...');
     
     return fetch(url)
       .then(r => {
@@ -1097,20 +1081,19 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       })
       .then(data => {
         if (data.success) {
-          sources = data.data || [];
-          console.log('✅ Loaded', sources.length, 'sources');
+          allSources = data.data || [];
+          console.log('✅ Loaded', allSources.length, 'total sources');
+          applyFilters(); // Apply frontend filters
         } else {
           console.error('API error:', data.error);
-          sources = [];
+          allSources = [];
+          applyFilters();
         }
-        renderTable();
-        updateStats();
       })
       .catch(err => {
         console.error('Error loading sources:', err);
-        sources = [];
-        renderTable();
-        updateStats();
+        allSources = [];
+        applyFilters();
         showToast('❌ Error loading sources: ' + err.message, 'error');
       })
       .finally(() => {
@@ -1120,13 +1103,55 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   }
 
   // ============================================
+  // APPLY FRONTEND FILTERS
+  // ============================================
+  function applyFilters() {
+    let result = [...allSources];
+    
+    // Filter by Type (Universal / State)
+    if (filterType && filterType.value && filterType.value !== 'all') {
+      result = result.filter(s => s.source_type_actual === filterType.value);
+      console.log('🔍 Filter by type:', filterType.value, '→', result.length, 'sources');
+    }
+    
+    // Filter by Category
+    if (filterCategory && filterCategory.value && filterCategory.value !== '') {
+      const catId = parseInt(filterCategory.value);
+      result = result.filter(s => s.category_id === catId);
+      console.log('🔍 Filter by category:', catId, '→', result.length, 'sources');
+    }
+    
+    // Filter by State
+    if (filterState && filterState.value && filterState.value !== '') {
+      const stateId = parseInt(filterState.value);
+      result = result.filter(s => s.state_id === stateId);
+      console.log('🔍 Filter by state:', stateId, '→', result.length, 'sources');
+    }
+    
+    // Filter by Search
+    if (searchInput && searchInput.value && searchInput.value.trim() !== '') {
+      const search = searchInput.value.trim().toLowerCase();
+      result = result.filter(s => 
+        s.name.toLowerCase().includes(search) || 
+        (s.description && s.description.toLowerCase().includes(search)) ||
+        (s.category_name && s.category_name.toLowerCase().includes(search))
+      );
+      console.log('🔍 Search:', search, '→', result.length, 'sources');
+    }
+    
+    filteredSources = result;
+    renderTable();
+    updateStats();
+  }
+
+  // ============================================
   // UPDATE STATS
   // ============================================
   function updateStats() {
-    const total = sources.length;
-    const master = sources.filter(s => s.source_type_actual === 'master').length;
-    const state = sources.filter(s => s.source_type_actual === 'state').length;
-    const featured = sources.filter(s => s.is_featured).length;
+    const total = filteredSources.length;
+    const master = filteredSources.filter(s => s.source_type_actual === 'master').length;
+    const state = filteredSources.filter(s => s.source_type_actual === 'state').length;
+    const featured = filteredSources.filter(s => s.is_featured).length;
     
     if ($('total-count')) $('total-count').textContent = total;
     if ($('master-count')) $('master-count').textContent = master;
@@ -1138,7 +1163,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   // RENDER TABLE
   // ============================================
   function renderTable() {
-    if (!sources || sources.length === 0) {
+    if (!filteredSources || filteredSources.length === 0) {
       tableWrap.style.display = 'none';
       emptyEl.style.display = 'block';
       return;
@@ -1148,7 +1173,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     emptyEl.style.display = 'none';
     
     let html = '';
-    sources.forEach((s, index) => {
+    filteredSources.forEach((s, index) => {
       const trust = Math.min(s.trust_score || 0, 100);
       html += `
         <tr style="animation: fadeIn 0.2s ease ${index * 0.05}s both;">
@@ -1239,7 +1264,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   };
 
   window.editSource = function(id) {
-    const source = sources.find(s => s.id === id);
+    const source = allSources.find(s => s.id === id);
     if (source) window.openModal(source.source_type_actual || 'master', source);
   };
 
@@ -1259,7 +1284,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   // DELETE
   // ============================================
   window.deleteSource = function(id) {
-    const source = sources.find(s => s.id === id);
+    const source = allSources.find(s => s.id === id);
     if (!source) {
       showToast('❌ Source not found', 'error');
       return;
@@ -1285,6 +1310,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       .then(data => {
         if (data.success) {
           showToast('✅ Source deleted successfully', 'success');
+          // Reload all sources after deletion
           loadSources();
         } else {
           showToast('❌ ' + (data.error || 'Failed to delete'), 'error');
@@ -1344,7 +1370,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         if (result.success) {
           showToast(editingId ? '✅ Source updated!' : '✅ Source created!', 'success');
           window.closeModal();
-          loadSources();
+          loadSources(); // Reload all sources
         } else {
           showFormMessage(result.error || 'Failed to save', 'error');
         }
@@ -1373,7 +1399,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     // Load categories and states first
     loadCategoriesAndStates()
       .then(() => {
-        // Then load sources with filters
+        // Then load all sources (only once from API)
         return loadSources();
       })
       .catch(err => {
@@ -1381,25 +1407,25 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         loadSources();
       });
     
-    // Setup event listeners for filters
+    // Setup event listeners for filters (frontend filtering)
     if (filterType) {
       filterType.addEventListener('change', function() {
         console.log('🔄 Filter: type =', this.value);
-        loadSources();
+        applyFilters(); // Just re-apply filters on frontend
       });
     }
     
     if (filterCategory) {
       filterCategory.addEventListener('change', function() {
         console.log('🔄 Filter: category =', this.value);
-        loadSources();
+        applyFilters();
       });
     }
     
     if (filterState) {
       filterState.addEventListener('change', function() {
         console.log('🔄 Filter: state =', this.value);
-        loadSources();
+        applyFilters();
       });
     }
     
@@ -1409,7 +1435,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         clearTimeout(searchTimer);
         searchTimer = setTimeout(() => {
           console.log('🔍 Search:', this.value);
-          loadSources();
+          applyFilters();
         }, 300);
       });
     }
@@ -1448,7 +1474,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     if (refreshBtn) {
       refreshBtn.addEventListener('click', function(e) {
         e.preventDefault();
-        loadSources();
+        loadSources(); // Reload from API
       });
     }
     
