@@ -99,7 +99,6 @@ const currentYear = new Date().getFullYear();
             
             <div class="flex items-center gap-3 mb-4">
               <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
-                <!-- Email Icon -->
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
@@ -132,8 +131,8 @@ const currentYear = new Date().getFullYear();
                 </button>
               </div>
 
-              <!-- Category Preferences -->
-              <div id="footer-categories-container" class="hidden">
+              <!-- Category Preferences - REMOVED hidden class -->
+              <div id="footer-categories-container">
                 <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select topics you're interested in:
                 </p>
@@ -216,7 +215,7 @@ const currentYear = new Date().getFullYear();
                   id="footer-toggle-categories"
                   class="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
                 >
-                  + Customize preferences
+                  − Hide preferences
                 </button>
               </div>
 
@@ -258,11 +257,11 @@ NEWSLETTER FORM JAVASCRIPT
     const toggleBtn = document.getElementById('footer-toggle-categories');
     const categoriesContainer = document.getElementById('footer-categories-container');
 
-    // Toggle categories visibility
+    // Toggle categories visibility (now visible by default)
     toggleBtn?.addEventListener('click', () => {
       const isHidden = categoriesContainer.classList.contains('hidden');
       categoriesContainer.classList.toggle('hidden');
-      toggleBtn.textContent = isHidden ? '− Hide preferences' : '+ Customize preferences';
+      toggleBtn.textContent = isHidden ? '− Hide preferences' : '+ Show preferences';
     });
 
     // Handle form submission
@@ -314,6 +313,7 @@ NEWSLETTER FORM JAVASCRIPT
           showMessage(data.message || 'Something went wrong. Please try again.', 'error');
         }
       } catch (error) {
+        console.error('Subscription error:', error);
         showMessage('Network error. Please try again.', 'error');
       } finally {
         submitBtn.disabled = false;

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <style>
+    /* Light Mode Palette: Deep Tech Indigo/Navy */
+    .trend-bg { fill: none; }
+    .bar-low { fill: #8a99ad; }
+    .bar-mid { fill: #4a5d78; }
+    .bar-high { fill: #0f172a; }
+
+    /* Dark Mode Palette: Electric Neon Accents */
+    @media (prefers-color-scheme: dark) {
+      .bar-low { fill: #38bdf8; }   /* Cyan */
+      .bar-mid { fill: #818cf8; }   /* Indigo */
+      .bar-high { fill: #f43f5e; }  /* Coral Peak */
+    }
+  </style>
+  
+  <rect class="trend-bg" width="100" height="100" rx="20"/>
+  
+  <!-- Stylized 'T' layout representing moving trendlines/global charts -->
+  <g transform="translate(10, 10)">
+    <!-- Top Horizontal Bar (The Trend Cap) -->
+    <rect class="bar-low" x="15" y="15" width="16" height="14" rx="4"/>
+    <rect class="bar-mid" x="35" y="15" width="24" height="14" rx="4"/>
+    <rect class="bar-high" x="63" y="15" width="16" height="14" rx="4"/>
+    
+    <!-- Vertical Stem (The Ascending Momentum Line) -->
+    <rect class="bar-mid" x="39" y="35" width="16" height="16" rx="4"/>
+    <rect class="bar-high" x="39" y="57" width="16" height="24" rx="4"/>
+  </g>
+</svg>

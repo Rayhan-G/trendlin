@@ -1,4 +1,4 @@
-echo {
+{
   "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
     "baseUrl": ".",
@@ -6,4 +6,4 @@ echo {
       "@/*": ["src/*"]
     }
   }
-} > tsconfig.json
+}
