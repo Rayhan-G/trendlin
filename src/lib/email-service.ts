@@ -16,7 +16,8 @@ import {
   technicalAutoReplyTemplate,
   newsletterVerificationTemplate,
   newsletterWelcomeTemplate,
-  newsletterDigestTemplate
+  newsletterDigestTemplate,
+  unsubscribeEmailTemplate  // ✅ ADD THIS
 } from './email-templates.js';
 
 export class EmailService {
@@ -28,13 +29,13 @@ export class EmailService {
       throw new Error('Resend API key is required');
     }
     this.resend = new Resend(apiKey);
-    // IMPORTANT: Use contact@trendlin.com for professional replies
-    this.fromEmail = 'contact@trendlin.com'; // Must be verified in Resend
+    this.fromEmail = 'contact@trendlin.com';
   }
 
   // ============================================
-  // Send Contact Form Email (with subject-based auto-reply)
+  // CONTACT EMAIL METHODS
   // ============================================
+
   async sendContactEmail(data: {
     name: string;
     email: string;
@@ -47,7 +48,6 @@ export class EmailService {
     try {
       const { name, email, subject, message, phone, ip, userAgent } = data;
       
-      // Send notification to admin
       const adminResult = await this.resend.emails.send({
         from: `Trendlin <${this.fromEmail}>`,
         to: 'contact@trendlin.com',
@@ -65,13 +65,9 @@ export class EmailService {
         replyTo: email,
       });
 
-      // ============================================
-      // Send subject-based auto-reply to user
-      // ============================================
       let autoReplyHtml = '';
       let autoReplySubject = '';
 
-      // Determine which template to use based on subject
       if (subject.includes('Privacy')) {
         autoReplySubject = 'Privacy Inquiry Received - Trendlin';
         autoReplyHtml = privacyAutoReplyTemplate({ name });
@@ -94,7 +90,6 @@ export class EmailService {
         autoReplySubject = 'Technical Issue Received - Trendlin';
         autoReplyHtml = technicalAutoReplyTemplate({ name });
       } else {
-        // Default General Inquiry
         autoReplySubject = 'Thank You for Contacting Trendlin';
         autoReplyHtml = autoReplyTemplate({ name, subject, message });
       }
@@ -117,9 +112,6 @@ export class EmailService {
     }
   }
 
-  // ============================================
-  // Send Direct Email Auto-Reply (for privacy@, legal@, etc.)
-  // ============================================
   async sendDirectEmailAutoReply(data: {
     to: string;
     from: string;
@@ -133,7 +125,6 @@ export class EmailService {
       let replyHtml = '';
       const senderName = from.split('@')[0] || 'User';
 
-      // Determine which team the email is for
       if (to.includes('privacy@trendlin.com')) {
         replySubject = 'Privacy Request Received - Trendlin';
         replyHtml = privacyAutoReplyTemplate({ name: senderName });
@@ -148,7 +139,6 @@ export class EmailService {
           message: message || 'We have received your email.'
         });
       } else {
-        // Default auto-reply for other addresses
         replySubject = 'Thank You for Contacting Trendlin';
         replyHtml = `
           <!DOCTYPE html>
@@ -183,7 +173,6 @@ export class EmailService {
         `;
       }
 
-      // Send auto-reply
       const result = await this.resend.emails.send({
         from: `Trendlin <${to}>`,
         to: [from],
@@ -201,9 +190,6 @@ export class EmailService {
     }
   }
 
-  // ============================================
-  // Send Notification
-  // ============================================
   async sendNotification(data: {
     to: string;
     title: string;
@@ -234,9 +220,6 @@ export class EmailService {
     }
   }
 
-  // ============================================
-  // Send Welcome Email
-  // ============================================
   async sendWelcomeEmail(email: string, name: string) {
     try {
       const result = await this.resend.emails.send({
@@ -267,8 +250,10 @@ export class EmailService {
   }
 
   // ============================================
-  // NEWSLETTER: Send Verification Email
+  // NEWSLETTER METHODS
   // ============================================
+
+  // ✅ Send Verification Email (for subscription)
   async sendNewsletterVerification(email: string, token: string, firstName?: string) {
     try {
       const verificationUrl = `${process.env.SITE || 'https://trendlin.com'}/api/newsletter/verify?email=${encodeURIComponent(email)}&token=${token}`;
@@ -290,9 +275,7 @@ export class EmailService {
     }
   }
 
-  // ============================================
-  // NEWSLETTER: Send Welcome Email
-  // ============================================
+  // ✅ Send Welcome Email (after verification)
   async sendNewsletterWelcome(email: string, firstName?: string, categories?: string[]) {
     try {
       const result = await this.resend.emails.send({
@@ -312,9 +295,29 @@ export class EmailService {
     }
   }
 
-  // ============================================
-  // NEWSLETTER: Send Digest
-  // ============================================
+  // ✅ Send Unsubscribe Email (exactly like verification)
+  async sendUnsubscribeEmail(email: string, token: string, firstName?: string) {
+    try {
+      const unsubscribeUrl = `${process.env.SITE || 'https://trendlin.com'}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
+      
+      const result = await this.resend.emails.send({
+        from: `Trendlin <${this.fromEmail}>`,
+        to: email,
+        subject: 'Unsubscribe from Trendlin Newsletter',
+        html: unsubscribeEmailTemplate({
+          firstName: firstName || '',
+          unsubscribeUrl
+        }),
+      });
+
+      return { success: true, result };
+    } catch (error: any) {
+      console.error('❌ Unsubscribe email error:', error);
+      throw new Error(`Failed to send unsubscribe email: ${error.message}`);
+    }
+  }
+
+  // ✅ Send Digest Email
   async sendNewsletterDigest(data: {
     to: string;
     subject: string;

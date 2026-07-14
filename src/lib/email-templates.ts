@@ -372,3 +372,29 @@ export function newsletterDigestTemplate(data) {
     </div>
   `, 'Newsletter', 'Weekly');
 }
+
+// ----- 14. UNSUBSCRIBE EMAIL -----
+export function unsubscribeEmailTemplate(data) {
+  return baseTemplate(`
+    <div class="line"></div>
+    <div class="center">
+      <div style="font-size: 48px; margin-bottom: 16px;">📧</div>
+      <div class="title">Unsubscribe from Trendlin</div>
+      <div class="sub">We're sorry to see you go</div>
+    </div>
+    <div class="greeting">Hello${data.firstName ? ` ${data.firstName}` : ''},</div>
+    <div class="text">We received a request to unsubscribe you from the Trendlin newsletter. If this was you, click the button below:</div>
+    <div class="center" style="margin: 24px 0;">
+      <a href="${data.unsubscribeUrl}" class="btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">Unsubscribe</a>
+    </div>
+    <div class="info-box">
+      <p style="font-size: 13px; color: #666666;">Or copy and paste this link into your browser:</p>
+      <p style="font-size: 13px; word-break: break-all; color: #000000; background: #f5f5f5; padding: 8px 12px; border-radius: 4px;">${data.unsubscribeUrl}</p>
+    </div>
+    <p style="color: #999999; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
+    <div class="footer">
+      Trendlin
+      <div class="small">This is an automated message. Please do not reply to this email.</div>
+    </div>
+  `, 'Unsubscribe', 'Newsletter');
+}
