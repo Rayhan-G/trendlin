@@ -354,12 +354,46 @@ JAVASCRIPT
       });
     }
 
-    // Open modal
-    openModalBtn?.addEventListener('click', () => {
+    // Show message function
+    function showMessage(msg, type) {
+      messageEl.textContent = msg;
+      messageEl.className = `text-xs mt-1 ${type === 'success' ? 'text-green-600 dark:text-green-400' : type === 'error' ? 'text-red-600 dark:text-red-400' : ''}`;
+      messageEl.classList.remove('hidden');
+      
+      if (msg && type === 'success') {
+        setTimeout(() => {
+          messageEl.classList.add('hidden');
+        }, 6000);
+      }
+    }
+
+    // Open modal - with subscription check
+    openModalBtn?.addEventListener('click', async () => {
       const email = emailInput.value.trim();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         showMessage('Please enter a valid email address first.', 'error');
         return;
+      }
+
+      // Check if email is already subscribed
+      try {
+        const checkResponse = await fetch(`/api/newsletter/check?email=${encodeURIComponent(email)}`);
+        const checkData = await checkResponse.json();
+
+        if (checkResponse.ok && checkData.subscribed === true) {
+          // User is already subscribed
+          showMessage('✅ You are already subscribed to our newsletter!', 'success');
+          return;
+        }
+        
+        if (checkResponse.ok && checkData.subscribed === false && checkData.verified === false) {
+          // User exists but not verified
+          showMessage('⚠️ Please verify your email. Check your inbox for the verification link.', 'error');
+          return;
+        }
+      } catch (error) {
+        console.error('Check subscription error:', error);
+        // Continue to modal if check fails
       }
       
       // Reset modal state
@@ -411,6 +445,7 @@ JAVASCRIPT
       
       // Disable confirm button
       confirmBtn.disabled = true;
+      const originalText = confirmBtn.textContent;
       confirmBtn.textContent = 'Subscribing...';
 
       const email = emailInput.value.trim();
@@ -431,31 +466,24 @@ JAVASCRIPT
         if (response.ok) {
           showMessage('✅ Please check your email to confirm your subscription!', 'success');
           emailInput.value = '';
+          // Close modal on success
           closeModal();
         } else {
+          // Show error but keep modal open
           showMessage(data.message || 'Something went wrong. Please try again.', 'error');
+          modalError.textContent = data.message || 'Something went wrong. Please try again.';
+          modalError.classList.remove('hidden');
         }
       } catch (error) {
         console.error('Subscription error:', error);
         showMessage('Network error. Please try again.', 'error');
+        modalError.textContent = 'Network error. Please try again.';
+        modalError.classList.remove('hidden');
       } finally {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Confirm Subscription';
+        confirmBtn.textContent = originalText;
       }
     });
-
-    // Show message function
-    function showMessage(msg, type) {
-      messageEl.textContent = msg;
-      messageEl.className = `text-xs mt-1 ${type === 'success' ? 'text-green-600 dark:text-green-400' : type === 'error' ? 'text-red-600 dark:text-red-400' : ''}`;
-      messageEl.classList.remove('hidden');
-      
-      if (msg && type === 'success') {
-        setTimeout(() => {
-          messageEl.classList.add('hidden');
-        }, 5000);
-      }
-    }
 
     // Initial count
     updateSelectedCount();

@@ -1,10 +1,22 @@
 import type { APIRoute } from 'astro';
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const body = await request.json();
-    console.log('Received body:', body); // Debug log
+    // ✅ CORRECT: Access D1 from locals.env in Cloudflare Pages
+    const db = locals.env?.DB;
     
+    if (!db) {
+      console.error('❌ D1 Database not available');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: 'Database not available. Please try again.' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body = await request.json();
     const { email, firstName, categories } = body;
 
     // Validate email
@@ -29,11 +41,12 @@ export const POST: APIRoute = async ({ request }) => {
     // Check if subscriber exists
     let existing = null;
     try {
-      existing = await global.DB.prepare(
+      const result = await db.prepare(
         'SELECT * FROM subscribers WHERE email = ?'
-      ).bind(email).first();
+      ).bind(email.toLowerCase().trim()).first();
+      existing = result;
     } catch (dbError) {
-      console.error('Database error:', dbError);
+      console.error('Database query error:', dbError);
       return new Response(
         JSON.stringify({ success: false, message: 'Database error. Please try again.' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -48,57 +61,72 @@ export const POST: APIRoute = async ({ request }) => {
         );
       }
       
-      // If not verified, update existing
       if (existing.verified === 0) {
-        await global.DB.prepare(`
-          UPDATE subscribers 
-          SET verification_token = ?,
-              categories = ?,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE email = ?
-        `).bind(token, categories.join(','), email).run();
+        try {
+          await db.prepare(`
+            UPDATE subscribers 
+            SET verification_token = ?,
+                categories = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE email = ?
+          `).bind(token, categories.join(','), email.toLowerCase().trim()).run();
 
-        // Update preferences
-        await global.DB.prepare(`
-          DELETE FROM newsletter_preferences WHERE subscriber_id = ?
-        `).bind(existing.id).run();
+          await db.prepare(`
+            DELETE FROM newsletter_preferences WHERE subscriber_id = ?
+          `).bind(existing.id).run();
 
-        const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
-        const values = categories.flatMap(cat => [existing.id, cat]);
-        
-        await global.DB.prepare(`
-          INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
-          VALUES ${placeholders}
-        `).bind(...values).run();
+          const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
+          const values = categories.flatMap(cat => [existing.id, cat]);
+          
+          await db.prepare(`
+            INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
+            VALUES ${placeholders}
+          `).bind(...values).run();
 
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Verification email resent. Please check your inbox.' 
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
+          return new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: 'Verification email resent. Please check your inbox.' 
+            }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          );
+        } catch (updateError) {
+          console.error('Update error:', updateError);
+          return new Response(
+            JSON.stringify({ success: false, message: 'Failed to update subscription. Please try again.' }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
       }
     }
 
     // Create new subscriber
-    const result = await global.DB.prepare(`
-      INSERT INTO subscribers (
-        email, 
-        first_name, 
-        categories, 
-        verification_token, 
-        verified, 
-        subscribed
-      )
-      VALUES (?, ?, ?, ?, 0, 1)
-      RETURNING id
-    `).bind(
-      email, 
-      firstName || '', 
-      categories.join(','), 
-      token
-    ).first();
+    let result;
+    try {
+      result = await db.prepare(`
+        INSERT INTO subscribers (
+          email, 
+          first_name, 
+          categories, 
+          verification_token, 
+          verified, 
+          subscribed
+        )
+        VALUES (?, ?, ?, ?, 0, 1)
+        RETURNING id
+      `).bind(
+        email.toLowerCase().trim(), 
+        firstName || '', 
+        categories.join(','), 
+        token
+      ).first();
+    } catch (insertError) {
+      console.error('Insert error:', insertError);
+      return new Response(
+        JSON.stringify({ success: false, message: 'Failed to create subscription. Please try again.' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!result) {
       return new Response(
@@ -109,13 +137,17 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Create preferences
     if (result && categories.length > 0) {
-      const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
-      const values = categories.flatMap(cat => [result.id, cat]);
-      
-      await global.DB.prepare(`
-        INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
-        VALUES ${placeholders}
-      `).bind(...values).run();
+      try {
+        const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
+        const values = categories.flatMap(cat => [result.id, cat]);
+        
+        await db.prepare(`
+          INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
+          VALUES ${placeholders}
+        `).bind(...values).run();
+      } catch (prefError) {
+        console.error('Preferences error:', prefError);
+      }
     }
 
     return new Response(
