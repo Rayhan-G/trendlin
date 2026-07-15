@@ -74,7 +74,13 @@ export const GET: APIRoute = async ({ url, locals }) => {
       WHERE subscriber_id = ? AND subscribed = 1
     `).bind(subscriber.id).all();
 
-    const categories = preferences.results.map((r: any) => r.category);
+    // ✅ If no preferences found, fall back to categories column
+    let categories = preferences.results.map((r: any) => r.category);
+    
+    if (categories.length === 0 && subscriber.categories) {
+      // Fallback: parse from subscribers table
+      categories = subscriber.categories.split(',').filter((c: string) => c.trim() !== '');
+    }
 
     // Generate token if none exists
     let token = subscriber.verification_token;
@@ -85,17 +91,24 @@ export const GET: APIRoute = async ({ url, locals }) => {
       `).bind(token, subscriber.id).run();
     }
 
+    // ✅ Determine status
+    let status = 'subscribed';
+    if (subscriber.verified === 0) {
+      status = 'pending';
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          status: 'subscribed',
-          subscribed: true,
+          status: status,
+          subscribed: subscriber.subscribed === 1,
           verified: subscriber.verified === 1,
-          categories: categories.length > 0 ? categories : (subscriber.categories ? subscriber.categories.split(',') : []),
+          categories: categories,
           token: token,
           firstName: subscriber.first_name || '',
           email: subscriber.email,
+          unsubscribedAt: subscriber.unsubscribed_at
         },
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

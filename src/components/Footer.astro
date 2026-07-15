@@ -147,6 +147,8 @@ SETTINGS MODAL
     </div>
 
     <div id="settings-content" class="hidden space-y-6">
+      
+      <!-- Subscription Status -->
       <div id="subscription-status" class="p-4 rounded-lg border">
         <div class="flex items-center justify-between">
           <div>
@@ -155,11 +157,25 @@ SETTINGS MODAL
           </div>
           <span id="status-badge" class="px-3 py-1 text-xs font-medium rounded-full"></span>
         </div>
+        <!-- Resend button for pending verification -->
+        <div id="resend-container" class="hidden mt-2">
+          <button id="resend-verification-btn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            Click here to resend verification email →
+          </button>
+        </div>
       </div>
 
+      <!-- Current Preferences (Read-only) -->
+      <div id="current-preferences" class="hidden">
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Current Preferences</p>
+        <div id="selected-categories-display" class="flex flex-wrap gap-2"></div>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Update your preferences below</p>
+      </div>
+
+      <!-- Category Preferences -->
       <div>
         <div class="flex justify-between items-center mb-3">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Your Interests</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Update Your Interests</label>
           <button id="select-all-settings" type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">Select All</button>
         </div>
         <div id="settings-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
@@ -172,6 +188,7 @@ SETTINGS MODAL
           <button id="settings-cancel" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium">Cancel</button>
           <button id="settings-save" type="button" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300">Save Preferences</button>
         </div>
+        <!-- Unsubscribe Button - Only shown for subscribed users -->
         <button id="settings-unsubscribe" type="button" class="hidden text-sm text-red-600 dark:text-red-400 hover:underline font-medium py-1">Unsubscribe from all emails →</button>
       </div>
     </div>
@@ -237,7 +254,7 @@ UNSUBSCRIBE CONFIRM MODAL
 </div>
 
 <!-- ==========================================
-JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
+JAVASCRIPT - COMPLETE WORKING VERSION
 ========================================== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -259,6 +276,10 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
     const statusText = document.getElementById('status-text');
     const statusBadge = document.getElementById('status-badge');
     const messageEl = document.getElementById('footer-settings-message');
+    const resendContainer = document.getElementById('resend-container');
+    const resendBtn = document.getElementById('resend-verification-btn');
+    const currentPrefsContainer = document.getElementById('current-preferences');
+    const selectedCategoriesDisplay = document.getElementById('selected-categories-display');
 
     const confirmModal = document.getElementById('unsubscribe-confirm-modal');
     const confirmBackdrop = document.getElementById('unsubscribe-confirm-backdrop');
@@ -271,7 +292,6 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
     let currentEmail = '';
     let currentToken = '';
     let currentCategories = [];
-    let isSubscribed = false;
 
     // Category data with SVG icons
     const CATEGORIES = [
@@ -355,34 +375,69 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
       });
     }
 
+    function displayCurrentPreferences(categories) {
+      if (!currentPrefsContainer || !selectedCategoriesDisplay) return;
+      
+      if (categories && categories.length > 0) {
+        currentPrefsContainer.classList.remove('hidden');
+        selectedCategoriesDisplay.innerHTML = '';
+        categories.forEach(catId => {
+          const cat = CATEGORIES.find(c => c.id === catId);
+          if (cat) {
+            const tag = document.createElement('span');
+            tag.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+            tag.innerHTML = `${cat.icon} ${cat.label}`;
+            selectedCategoriesDisplay.appendChild(tag);
+          }
+        });
+      } else {
+        currentPrefsContainer.classList.add('hidden');
+      }
+    }
+
     function updateStatus(data) {
       if (!statusText || !statusBadge) return;
       
-      if (data.subscribed && data.verified) {
-        isSubscribed = true;
-        statusText.textContent = 'You are currently subscribed to our newsletter.';
+      // Display current preferences
+      displayCurrentPreferences(data.categories || []);
+      
+      if (data.status === 'subscribed') {
+        // ✅ SUBSCRIBED - Show Unsubscribe button
+        statusText.textContent = '✅ You are subscribed to our newsletter!';
         statusBadge.textContent = 'Active';
         statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
         if (settingsUnsubscribe) settingsUnsubscribe.classList.remove('hidden');
+        if (resendContainer) resendContainer.classList.add('hidden');
         settingsSave.textContent = 'Save Preferences';
         settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
         
-      } else if (data.subscribed === false || data.unsubscribed) {
-        isSubscribed = false;
+      } else if (data.status === 'pending') {
+        // ⏳ PENDING VERIFICATION - Show Resend button
+        statusText.textContent = '⏳ Pending verification. Please check your email to verify your subscription.';
+        statusBadge.textContent = 'Pending';
+        statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+        if (settingsUnsubscribe) settingsUnsubscribe.classList.add('hidden');
+        if (resendContainer) resendContainer.classList.remove('hidden');
+        settingsSave.textContent = 'Subscribe';
+        settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
+        
+      } else if (data.status === 'unsubscribed') {
+        // ❌ UNSUBSCRIBED - Show Subscribe button
         statusText.textContent = 'You are not subscribed to our newsletter.';
         statusBadge.textContent = 'Not Subscribed';
         statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
         if (settingsUnsubscribe) settingsUnsubscribe.classList.add('hidden');
+        if (resendContainer) resendContainer.classList.add('hidden');
         settingsSave.textContent = 'Subscribe';
         settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
         
-      } else if (!data.verified) {
-        isSubscribed = false;
-        statusText.textContent = 'Please verify your email. Click "Subscribe" to resend.';
-        statusBadge.textContent = 'Pending Verification';
-        statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+      } else {
+        // NOT SUBSCRIBED (default)
+        statusText.textContent = 'You are not subscribed to our newsletter.';
+        statusBadge.textContent = 'Not Subscribed';
+        statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
         if (settingsUnsubscribe) settingsUnsubscribe.classList.add('hidden');
-        // ✅ Clicking "Subscribe" will resend verification
+        if (resendContainer) resendContainer.classList.add('hidden');
         settingsSave.textContent = 'Subscribe';
         settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
       }
@@ -417,7 +472,7 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
         } else {
           settingsEmailDisplay.textContent = `Email: ${email}`;
           renderCategories([]);
-          updateStatus({ subscribed: false, verified: false });
+          updateStatus({ status: 'not-subscribed', categories: [] });
         }
         settingsLoading?.classList.add('hidden');
         settingsContent?.classList.remove('hidden');
@@ -449,7 +504,32 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
       selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
     });
 
-    // Save / Subscribe - Simplified (No Resend Verification)
+    // Resend Verification
+    resendBtn?.addEventListener('click', async () => {
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Sending...';
+      
+      try {
+        const response = await fetch('/api/newsletter/resend-verification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: currentEmail }),
+        });
+        const data = await response.json();
+        if (data.success) {
+          showMessage('📧 Verification email resent! Please check your inbox.', 'success');
+        } else {
+          showMessage(data.message || 'Failed to resend verification.', 'error');
+        }
+      } catch (error) {
+        showMessage('Network error. Please try again.', 'error');
+      } finally {
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Click here to resend verification email →';
+      }
+    });
+
+    // Save / Subscribe
     settingsSave?.addEventListener('click', async () => {
       if (!categoriesGrid) return;
       const checked = categoriesGrid.querySelectorAll('input[type="checkbox"]:checked');
@@ -471,7 +551,7 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
         let data;
         
         if (originalText === 'Save Preferences') {
-          // ✅ Update preferences for subscribed user (no email)
+          // ✅ Update preferences for subscribed user
           response = await fetch('/api/newsletter/save-preferences', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -480,6 +560,7 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
           data = await response.json();
           if (data.success) {
             showMessage('✅ Preferences updated successfully!', 'success');
+            displayCurrentPreferences(categories);
             settingsEmailInput.value = '';
             closeSettingsModal();
           } else {
@@ -487,7 +568,7 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
             settingsError?.classList.remove('hidden');
           }
         } else {
-          // ✅ Subscribe (new) OR Resend Verification - same endpoint handles both
+          // ✅ Subscribe (new) or Resend Verification
           response = await fetch('/api/newsletter/subscribe', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -512,7 +593,7 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
       }
     });
 
-    // Unsubscribe - Immediate, no email verification
+    // Unsubscribe - Immediate
     settingsUnsubscribe?.addEventListener('click', () => {
       confirmModal?.classList.remove('hidden');
       confirmModal?.classList.add('flex');
@@ -551,7 +632,6 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
       confirmBtn.textContent = 'Processing...';
 
       try {
-        // ✅ Immediate unsubscribe - no email verification
         const response = await fetch('/api/newsletter/unsubscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -563,8 +643,7 @@ JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
           closeSettingsModal();
           showMessage('✅ You have been unsubscribed successfully.', 'success');
           settingsEmailInput.value = '';
-          // Update status locally
-          updateStatus({ subscribed: false, verified: false, unsubscribed: true });
+          updateStatus({ status: 'unsubscribed', categories: [] });
         } else {
           confirmError.textContent = data.message || 'Failed to unsubscribe.';
           confirmError?.classList.remove('hidden');
