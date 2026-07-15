@@ -59,7 +59,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
       
       // ✅ If exists but not verified - RESEND VERIFICATION
-      if (existing.verified === 0) {
+      if (existing.verified === 0 && existing.subscribed === 1) {
         await db.prepare(`
           UPDATE subscribers 
           SET verification_token = ?,
@@ -82,7 +82,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           VALUES ${placeholders}
         `).bind(...values).run();
 
-        // ✅ Send verification email (same as new subscription)
+        // Send verification email
         const emailService = new EmailService(apiKey);
         await emailService.sendNewsletterVerification(email, token, firstName || existing.first_name);
 
@@ -96,11 +96,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
         );
       }
 
-      // ✅ If unsubscribed, reactivate and send verification
+      // ✅ If unsubscribed - RESUBSCRIBE (reset verified to 0)
       if (existing.subscribed === 0) {
         await db.prepare(`
           UPDATE subscribers 
           SET subscribed = 1,
+              verified = 0,
+              verified_at = NULL,
               verification_token = ?,
               categories = ?,
               first_name = ?,
@@ -122,14 +124,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
           VALUES ${placeholders}
         `).bind(...values).run();
 
-        // ✅ Send verification email
+        // ✅ Send verification email (user must verify again)
         const emailService = new EmailService(apiKey);
         await emailService.sendNewsletterVerification(email, token, firstName || existing.first_name);
 
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: 'Verification email sent! Please check your inbox.',
+            message: 'Please check your email to verify your subscription.',
             requiresVerification: true
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -174,7 +176,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       `).bind(...values).run();
     }
 
-    // ✅ Send verification email
+    // Send verification email
     try {
       const emailService = new EmailService(apiKey);
       await emailService.sendNewsletterVerification(email, token, firstName);

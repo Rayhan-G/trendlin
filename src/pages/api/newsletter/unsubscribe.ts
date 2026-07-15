@@ -44,10 +44,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // ✅ Immediately unsubscribe - NO EMAIL VERIFICATION NEEDED
+    // ✅ Update subscriber - set subscribed = 0 AND verified = 0
     await db.prepare(`
       UPDATE subscribers 
       SET subscribed = 0, 
+          verified = 0,
+          verified_at = NULL,
           unsubscribed_at = CURRENT_TIMESTAMP,
           verification_token = NULL,
           updated_at = CURRENT_TIMESTAMP
