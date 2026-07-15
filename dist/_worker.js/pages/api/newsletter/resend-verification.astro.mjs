@@ -1,5 +1,6 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { h as getSubscriberByEmail } from '../../../chunks/newsletter_igr2G-4O.mjs';
+import { E as EmailService } from '../../../chunks/email-service_BZMp7oTW.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const POST = async ({ request, locals }) => {
@@ -34,10 +35,20 @@ const POST = async ({ request, locals }) => {
         { status: 400 }
       );
     }
-    const baseUrl = process.env.BASE_URL || "https://trendlin.com";
-    const verificationLink = `${baseUrl}/api/newsletter/verify?token=${subscriber.verification_token}`;
-    console.log(`[NEWSLETTER] Resending verification to ${email}`);
-    console.log(`[NEWSLETTER] Verification link: ${verificationLink}`);
+    const apiKey = process.env.RESEND_API_KEY || locals.env?.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error("❌ RESEND_API_KEY not set");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        { status: 500 }
+      );
+    }
+    const emailService = new EmailService(apiKey);
+    await emailService.sendNewsletterVerification(
+      email,
+      subscriber.verification_token,
+      subscriber.first_name || void 0
+    );
     return new Response(
       JSON.stringify({
         success: true,
@@ -46,7 +57,7 @@ const POST = async ({ request, locals }) => {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Error resending verification:", error);
+    console.error("❌ Error resending verification:", error);
     return new Response(
       JSON.stringify({ error: "Failed to resend verification" }),
       { status: 500 }

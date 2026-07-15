@@ -1,5 +1,6 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { h as getSubscriberByEmail, u as updateSubscriberPreferences, l as createSubscriber } from '../../../chunks/newsletter_igr2G-4O.mjs';
+import { E as EmailService } from '../../../chunks/email-service_BZMp7oTW.mjs';
 import { g as getDB } from '../../../chunks/db_Ck9stjmw.mjs';
 export { renderers } from '../../../renderers.mjs';
 
@@ -13,6 +14,15 @@ const POST = async ({ request, locals }) => {
         { status: 400 }
       );
     }
+    const apiKey = process.env.RESEND_API_KEY || locals.env?.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error("❌ RESEND_API_KEY not set in environment variables");
+      return new Response(
+        JSON.stringify({ error: "Email service not configured" }),
+        { status: 500 }
+      );
+    }
+    const emailService = new EmailService(apiKey);
     const existing = await getSubscriberByEmail(env, email);
     if (existing && token) {
       const preferences = {
@@ -51,28 +61,33 @@ const POST = async ({ request, locals }) => {
         );
       }
       if (existing.status === "pending") {
+        if (existing.verification_token) {
+          await emailService.sendNewsletterVerification(
+            email,
+            existing.verification_token,
+            firstName
+          );
+        }
         return new Response(
           JSON.stringify({
-            success: false,
-            message: "Please verify your email first. Check your inbox!",
+            success: true,
+            message: "Verification email resent! Please check your inbox.",
             status: "pending"
           }),
-          { status: 400 }
+          { status: 200 }
         );
       }
       if (existing.status === "unsubscribed") {
         const db = getDB(env);
+        const newToken = generateToken();
         await db.prepare(`
             UPDATE newsletter_subscribers 
             SET status = 'pending',
                 verification_token = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
-          `).bind(generateToken(), existing.id).run();
-        const updated = await getSubscriberByEmail(env, email);
-        if (updated && updated.verification_token) {
-          console.log(`[NEWSLETTER] Resubscribing ${email} with token ${updated.verification_token}`);
-        }
+          `).bind(newToken, existing.id).run();
+        await emailService.sendNewsletterVerification(email, newToken, firstName);
         return new Response(
           JSON.stringify({
             success: true,
@@ -85,7 +100,7 @@ const POST = async ({ request, locals }) => {
     const result = await createSubscriber(env, {
       email,
       first_name: firstName || "",
-      source: "footer",
+      source: "website",
       ip_address: request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for"),
       user_agent: request.headers.get("user-agent")
     });
@@ -99,7 +114,11 @@ const POST = async ({ request, locals }) => {
         await updateSubscriberPreferences(env, subscriber.unsubscribe_token, preferences);
       }
     }
-    console.log(`[NEWSLETTER] Verification token for ${email}: ${result.verificationToken}`);
+    await emailService.sendNewsletterVerification(
+      email,
+      result.verificationToken,
+      firstName
+    );
     return new Response(
       JSON.stringify({
         success: true,
@@ -108,7 +127,7 @@ const POST = async ({ request, locals }) => {
       { status: 200 }
     );
   } catch (error) {
-    console.error("Subscribe error:", error);
+    console.error("❌ Subscribe error:", error);
     return new Response(
       JSON.stringify({ error: "Failed to subscribe" }),
       { status: 500 }

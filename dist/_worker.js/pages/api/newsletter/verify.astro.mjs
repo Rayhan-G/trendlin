@@ -1,5 +1,6 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { v as verifySubscriber } from '../../../chunks/newsletter_igr2G-4O.mjs';
+import { E as EmailService } from '../../../chunks/email-service_BZMp7oTW.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const GET = async ({ url, locals }) => {
@@ -16,12 +17,32 @@ const GET = async ({ url, locals }) => {
         headers: { Location: "/verify-failed" }
       });
     }
+    try {
+      const apiKey = process.env.RESEND_API_KEY || locals.env?.RESEND_API_KEY;
+      if (apiKey && result.subscriber) {
+        const emailService = new EmailService(apiKey);
+        let categories = [];
+        try {
+          const prefs = result.subscriber.preferences ? JSON.parse(result.subscriber.preferences) : {};
+          categories = prefs.categories || [];
+        } catch (e) {
+        }
+        await emailService.sendNewsletterWelcome(
+          result.subscriber.email,
+          result.subscriber.first_name || void 0,
+          categories
+        );
+        console.log(`✅ Welcome email sent to ${result.subscriber.email}`);
+      }
+    } catch (emailError) {
+      console.error("❌ Failed to send welcome email:", emailError);
+    }
     return new Response(null, {
       status: 302,
       headers: { Location: "/verify-success" }
     });
   } catch (error) {
-    console.error("Verification error:", error);
+    console.error("❌ Verification error:", error);
     return new Response("Verification failed", { status: 500 });
   }
 };
