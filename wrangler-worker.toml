@@ -1,0 +1,15 @@
+name = "trendlin-newsletter-worker"
+main = "src/workers/send-newsletter.ts"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trendlin-db"
+database_id = "4c7e58ee-38af-49ed-ab76-62a07050a2f9"
+
+[vars]
+RESEND_API_KEY = "re_hNNZwqYV_LbLE6vDNxGAeau5kiZHraApW"
+SITE = "https://trendlin.com"
+
+[triggers]
+crons = ["*/5 * * * *"]
