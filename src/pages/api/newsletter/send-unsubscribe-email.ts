@@ -3,18 +3,16 @@ import { EmailService } from '@/lib/email-service';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    // ✅ Get database
     const db = (locals as any).runtime?.env?.DB;
     
     if (!db) {
-      console.error('❌ Database not available');
+      console.error('❌ Database not available in locals');
       return new Response(
         JSON.stringify({ success: false, message: 'Database not available' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // ✅ Get Resend API Key
     const apiKey = (locals as any).runtime?.env?.RESEND_API_KEY;
     if (!apiKey) {
       return new Response(
@@ -33,10 +31,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Check if subscriber exists
-    const subscriber = await db.prepare(
-      'SELECT * FROM subscribers WHERE email = ? AND subscribed = 1'
-    ).bind(email.toLowerCase().trim()).first();
+    // ✅ Check if subscriber exists and is subscribed
+    const subscriber = await db.prepare(`
+      SELECT * FROM subscribers WHERE email = ? AND subscribed = 1
+    `).bind(email.toLowerCase().trim()).first();
 
     if (!subscriber) {
       return new Response(
@@ -45,18 +43,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Generate a new token for unsubscribe
+    // ✅ Generate new token for unsubscribe
     const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
     
-    // Update token in database
     await db.prepare(`
       UPDATE subscribers 
       SET verification_token = ?,
           updated_at = CURRENT_TIMESTAMP
-      WHERE email = ?
-    `).bind(token, email.toLowerCase().trim()).run();
+      WHERE id = ?
+    `).bind(token, subscriber.id).run();
 
-    // ✅ Send unsubscribe email - SAME as verification
+    // ✅ Send unsubscribe email
     const emailService = new EmailService(apiKey);
     await emailService.sendUnsubscribeEmail(email, token, subscriber.first_name);
 
@@ -68,7 +65,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Send unsubscribe email error:', error);
+    console.error('❌ Send unsubscribe email error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
