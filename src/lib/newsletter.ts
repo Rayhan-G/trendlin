@@ -60,6 +60,15 @@ export interface NewsletterList {
 }
 
 // ============================================
+// UTILITY
+// ============================================
+
+function generateToken(): string {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
+}
+
+// ============================================
 // SUBSCRIBERS
 // ============================================
 
@@ -280,6 +289,36 @@ export async function getSubscriberStats(env: any) {
 }
 
 // ============================================
+// SUBSCRIBER PREFERENCES
+// ============================================
+
+export async function updateSubscriberPreferences(env: any, token: string, preferences: any) {
+  const db = getDB(env);
+  
+  const subscriber = await getSubscriberByToken(env, token, 'unsubscribe');
+  
+  if (!subscriber) {
+    return { success: false, error: 'Subscriber not found' };
+  }
+
+  await db
+    .prepare(`
+      UPDATE newsletter_subscribers 
+      SET preferences = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `)
+    .bind(JSON.stringify(preferences), subscriber.id)
+    .run();
+
+  return { success: true, subscriber };
+}
+
+export async function getSubscriberByUnsubscribeToken(env: any, token: string) {
+  return await getSubscriberByToken(env, token, 'unsubscribe');
+}
+
+// ============================================
 // CAMPAIGNS
 // ============================================
 
@@ -473,15 +512,6 @@ export async function getListById(env: any, id: number) {
 }
 
 // ============================================
-// UTILITY
-// ============================================
-
-function generateToken(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
-}
-
-// ============================================
 // CAMPAIGN RECIPIENTS & QUEUE
 // ============================================
 
@@ -515,7 +545,7 @@ export async function enqueueCampaign(env: any, campaignId: number) {
   for (const sub of subscribers.results) {
     await db
       .prepare(`
-        INSERT INTO newsletter_queue (campaign_id, subscriber_id)
+        INSERT OR IGNORE INTO newsletter_queue (campaign_id, subscriber_id)
         VALUES (?, ?)
       `)
       .bind(campaignId, sub.subscriber_id)
@@ -523,7 +553,7 @@ export async function enqueueCampaign(env: any, campaignId: number) {
 
     await db
       .prepare(`
-        INSERT INTO newsletter_campaign_recipients (campaign_id, subscriber_id)
+        INSERT OR IGNORE INTO newsletter_campaign_recipients (campaign_id, subscriber_id)
         VALUES (?, ?)
       `)
       .bind(campaignId, sub.subscriber_id)

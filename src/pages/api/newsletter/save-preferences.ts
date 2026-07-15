@@ -1,60 +1,69 @@
+// /src/pages/api/newsletter/save-preferences.ts
 import type { APIRoute } from 'astro';
-import { updateSubscriberPreferences } from '@/lib/newsletter';
-import type { PreferencesRequest } from '@/types/newsletter';
+import { updateSubscriberPreferences } from '../../../lib/newsletter';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const db = (locals as any)?.runtime?.env?.DB;
+    const { token, preferences, first_name, last_name } = await request.json();
+    const env = locals.env;
 
-    if (!db) {
+    if (!token) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Database not available' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Token is required' }),
+        { status: 400 }
       );
     }
 
-    const body: PreferencesRequest = await request.json();
-    const { email, token, categories } = body;
+    // Update preferences
+    const result = await updateSubscriberPreferences(env, token, preferences);
 
-    if (!email || !token) {
+    if (!result.success) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Missing required fields' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: result.error }),
+        { status: 404 }
       );
     }
 
-    const subscriber = await db.prepare(`
-      SELECT * FROM subscribers WHERE email = ? AND verification_token = ?
-    `).bind(email.toLowerCase().trim(), token).first();
+    // Update name if provided
+    if (first_name || last_name) {
+      const db = env.DB;
+      const updates: string[] = [];
+      const params: any[] = [];
 
-    if (!subscriber) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Invalid request' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+      if (first_name) {
+        updates.push('first_name = ?');
+        params.push(first_name);
+      }
+
+      if (last_name) {
+        updates.push('last_name = ?');
+        params.push(last_name);
+      }
+
+      if (updates.length > 0) {
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        params.push(result.subscriber.id);
+
+        await db
+          .prepare(`UPDATE newsletter_subscribers SET ${updates.join(', ')} WHERE id = ?`)
+          .bind(...params)
+          .run();
+      }
     }
-
-    await updateSubscriberPreferences(subscriber.id, categories, db);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Preferences updated successfully!',
-        data: {
-          email: subscriber.email,
-          categories: categories,
-        }
+        message: 'Preferences saved successfully'
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200 }
     );
+
   } catch (error) {
-    console.error('Save preferences error:', error);
+    console.error('Error saving preferences:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Something went wrong' 
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Failed to save preferences' }),
+      { status: 500 }
     );
   }
 };
