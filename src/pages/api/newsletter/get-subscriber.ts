@@ -41,6 +41,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       );
     }
 
+    // Get preferences
     const preferences = await db.prepare(`
       SELECT category FROM newsletter_preferences 
       WHERE subscriber_id = ? AND subscribed = 1
@@ -48,13 +49,23 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
     const categories = preferences.results.map((r: any) => r.category);
 
+    // Determine status
+    let status = 'not-subscribed';
+    if (subscriber.verified === 1 && subscriber.subscribed === 1) {
+      status = 'subscribed';
+    } else if (subscriber.verified === 0 && subscriber.subscribed === 1) {
+      status = 'pending';
+    } else if (subscriber.subscribed === 0) {
+      status = 'unsubscribed';
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         data: {
-          status: subscriber.status,
-          verified: subscriber.status === 'active',
-          subscribed: subscriber.status === 'active',
+          status,
+          verified: subscriber.verified === 1,
+          subscribed: subscriber.subscribed === 1,
           categories: categories.length > 0 ? categories : (subscriber.categories ? subscriber.categories.split(',') : []),
           token: subscriber.verification_token || '',
           firstName: subscriber.first_name || '',

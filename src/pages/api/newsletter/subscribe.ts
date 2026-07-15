@@ -1,128 +1,92 @@
+// /src/pages/api/newsletter/subscribe.ts
 import type { APIRoute } from 'astro';
-import { createSubscriber, getSubscriberByEmail } from '@/lib/newsletter';
-import { EmailService } from '@/lib/email-service';
+import { createD1Client } from '../../../lib/db';
+import { generateToken, sendVerificationEmail } from '../../../lib/newsletter';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const db = (locals as any)?.runtime?.env?.DB;
-    const apiKey = (locals as any)?.runtime?.env?.RESEND_API_KEY || 
-                   import.meta.env.RESEND_API_KEY || 
-                   process.env.RESEND_API_KEY;
+    const { email } = await request.json();
+    const db = createD1Client(locals.env.DB);
 
-    if (!db) {
+    // Validate email
+    if (!email || !email.includes('@')) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Database not available' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Invalid email address' }),
+        { status: 400 }
       );
     }
 
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Email service not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const body = await request.json();
-    const { email, firstName, categories, source } = body;
-
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Invalid email address' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const existing = await getSubscriberByEmail(email, db);
+    // Check if subscriber exists
+    const existing = await db.prepare(
+      'SELECT id, status FROM newsletter_subscribers WHERE email = ?'
+    ).bind(email).first();
 
     if (existing) {
       if (existing.status === 'active') {
         return new Response(
-          JSON.stringify({ success: false, message: 'Email already subscribed' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: false, 
+            message: 'You are already subscribed!' 
+          }),
+          { status: 200 }
         );
       }
-
+      
       if (existing.status === 'pending') {
-        const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
-        await db.prepare(`
-          UPDATE subscribers 
-          SET verification_token = ?,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `).bind(token, existing.id).run();
-
-        const emailService = new EmailService(apiKey);
-        await emailService.sendNewsletterVerification(email, token, firstName);
-
+        // Resend verification
+        const token = await generateToken();
+        await sendVerificationEmail(email, token);
         return new Response(
           JSON.stringify({ 
             success: true, 
             message: 'Verification email resent! Please check your inbox.' 
           }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (existing.status === 'unsubscribed') {
-        const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
-        await db.prepare(`
-          UPDATE subscribers 
-          SET status = 'pending',
-              verification_token = ?,
-              unsubscribed_at = NULL,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `).bind(token, existing.id).run();
-
-        if (categories && categories.length > 0) {
-          const categoriesStr = categories.join(',');
-          await db.prepare(`
-            UPDATE subscribers SET categories = ? WHERE id = ?
-          `).bind(categoriesStr, existing.id).run();
-        }
-
-        const emailService = new EmailService(apiKey);
-        await emailService.sendNewsletterVerification(email, token, firstName);
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Please check your email to verify your subscription.' 
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
+          { status: 200 }
         );
       }
     }
 
-    const subscriber = await createSubscriber({
-      email,
-      firstName,
-      categories: categories || ['general'],
-      source: source || 'website',
-      ipAddress: request.headers.get('cf-connecting-ip') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined,
-      referrer: request.headers.get('referer') || undefined,
-    }, db);
+    // Generate tokens
+    const verificationToken = await generateToken();
+    const unsubscribeToken = await generateToken();
 
-    const emailService = new EmailService(apiKey);
-    await emailService.sendNewsletterVerification(email, subscriber.verification_token!, firstName);
+    // Insert subscriber
+    await db.prepare(`
+      INSERT INTO newsletter_subscribers (
+        email, 
+        status, 
+        verification_token, 
+        unsubscribe_token,
+        source,
+        ip_address,
+        user_agent
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      email,
+      'pending',
+      verificationToken,
+      unsubscribeToken,
+      'website',
+      request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for'),
+      request.headers.get('user-agent')
+    ).run();
+
+    // Send verification email
+    await sendVerificationEmail(email, verificationToken);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Please check your email to verify your subscription.' 
+        message: 'Please check your email to verify your subscription!' 
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200 }
     );
+
   } catch (error) {
     console.error('Subscribe error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Something went wrong' 
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Failed to subscribe' }),
+      { status: 500 }
     );
   }
 };

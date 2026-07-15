@@ -2,7 +2,7 @@
 // EMAIL TEMPLATES - Trendlin (Professional)
 // ============================================
 
-function baseTemplate(content, label, tag) {
+function baseTemplate(content: string, label: string, tag: string): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -76,8 +76,16 @@ function baseTemplate(content, label, tag) {
 // CONTACT EMAIL TEMPLATES
 // ============================================
 
-// ----- 1. ADMIN NOTIFICATION -----
-export function contactEmailTemplate(data) {
+export function contactEmailTemplate(data: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  phone?: string;
+  ip?: string;
+  userAgent?: string;
+  timestamp?: string;
+}): string {
   return baseTemplate(`
     <div class="line"></div>
     <div style="margin-bottom:24px;">
@@ -101,14 +109,18 @@ export function contactEmailTemplate(data) {
       <div class="label-sm">Message</div>
       <div class="value" style="white-space:pre-wrap;">${data.message}</div>
     </div>
+    ${data.ip ? `<p style="color:#999999;font-size:11px;margin-top:16px;">IP: ${data.ip}</p>` : ''}
     <div class="footer">
       Trendlin
     </div>
   `, 'New Contact', 'Admin');
 }
 
-// ----- 2. GENERAL AUTO-REPLY -----
-export function autoReplyTemplate(data) {
+export function autoReplyTemplate(data: {
+  name: string;
+  subject: string;
+  message: string;
+}): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -129,8 +141,7 @@ export function autoReplyTemplate(data) {
   `, 'General Inquiry', 'Auto-reply');
 }
 
-// ----- 3. PRIVACY AUTO-REPLY -----
-export function privacyAutoReplyTemplate(data) {
+export function privacyAutoReplyTemplate(data: { name?: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -150,8 +161,7 @@ export function privacyAutoReplyTemplate(data) {
   `, 'Privacy Inquiry', 'Privacy Team');
 }
 
-// ----- 4. LEGAL AUTO-REPLY -----
-export function legalAutoReplyTemplate(data) {
+export function legalAutoReplyTemplate(data: { name?: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -171,8 +181,7 @@ export function legalAutoReplyTemplate(data) {
   `, 'Legal Inquiry', 'Legal Team');
 }
 
-// ----- 5. COOKIE AUTO-REPLY -----
-export function cookieAutoReplyTemplate(data) {
+export function cookieAutoReplyTemplate(data: { name?: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -192,8 +201,7 @@ export function cookieAutoReplyTemplate(data) {
   `, 'Cookie Policy', 'Support Team');
 }
 
-// ----- 6. TERMS AUTO-REPLY -----
-export function termsAutoReplyTemplate(data) {
+export function termsAutoReplyTemplate(data: { name?: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -213,8 +221,7 @@ export function termsAutoReplyTemplate(data) {
   `, 'Terms of Service', 'Legal Team');
 }
 
-// ----- 7. PARTNERSHIP AUTO-REPLY -----
-export function partnershipAutoReplyTemplate(data) {
+export function partnershipAutoReplyTemplate(data: { name?: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -234,8 +241,7 @@ export function partnershipAutoReplyTemplate(data) {
   `, 'Partnership', 'Partnership Team');
 }
 
-// ----- 8. FEEDBACK AUTO-REPLY -----
-export function feedbackAutoReplyTemplate(data) {
+export function feedbackAutoReplyTemplate(data: { name?: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -255,8 +261,7 @@ export function feedbackAutoReplyTemplate(data) {
   `, 'Feedback', 'Feedback Team');
 }
 
-// ----- 9. TECHNICAL AUTO-REPLY -----
-export function technicalAutoReplyTemplate(data) {
+export function technicalAutoReplyTemplate(data: { name?: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -276,8 +281,11 @@ export function technicalAutoReplyTemplate(data) {
   `, 'Technical Issue', 'Tech Support');
 }
 
-// ----- 10. NOTIFICATION -----
-export function notificationEmailTemplate(data) {
+export function notificationEmailTemplate(data: {
+  title: string;
+  message: string;
+  cta?: { text: string; url: string };
+}): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="title" style="margin-bottom:16px;">${data.title}</div>
@@ -295,8 +303,7 @@ export function notificationEmailTemplate(data) {
 // NEWSLETTER EMAIL TEMPLATES
 // ============================================
 
-// ----- 11. NEWSLETTER VERIFICATION EMAIL -----
-export function newsletterVerificationTemplate(data) {
+export function newsletterVerificationTemplate(data: { firstName?: string; verificationUrl: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -321,8 +328,7 @@ export function newsletterVerificationTemplate(data) {
   `, 'Verify Email', 'Newsletter');
 }
 
-// ----- 12. NEWSLETTER WELCOME EMAIL -----
-export function newsletterWelcomeTemplate(data) {
+export function newsletterWelcomeTemplate(data: { firstName?: string; categories?: string[] }): string {
   const categoryList = data.categories && data.categories.length > 0 ? data.categories.join(', ') : 'all topics';
   
   return baseTemplate(`
@@ -355,8 +361,12 @@ export function newsletterWelcomeTemplate(data) {
   `, 'Welcome', 'Newsletter');
 }
 
-// ----- 13. NEWSLETTER DIGEST -----
-export function newsletterDigestTemplate(data) {
+export function newsletterDigestTemplate(data: { 
+  title?: string; 
+  subtitle?: string; 
+  content?: string;
+  unsubscribeUrl?: string;
+}): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">
@@ -368,13 +378,12 @@ export function newsletterDigestTemplate(data) {
     <div class="footer">
       Trendlin
       <div class="small">You received this email because you subscribed to our newsletter.</div>
-      <div class="small"><a href="https://trendlin.com/unsubscribe" style="color: #000000;">Unsubscribe</a> | <a href="https://trendlin.com/preferences" style="color: #000000;">Manage Preferences</a></div>
+      <div class="small"><a href="${data.unsubscribeUrl || 'https://trendlin.com/unsubscribe'}" style="color: #000000;">Unsubscribe</a> | <a href="https://trendlin.com/preferences" style="color: #000000;">Manage Preferences</a></div>
     </div>
   `, 'Newsletter', 'Weekly');
 }
 
-// ----- 14. UNSUBSCRIBE EMAIL -----
-export function unsubscribeEmailTemplate(data) {
+export function unsubscribeEmailTemplate(data: { firstName?: string; unsubscribeUrl: string }): string {
   return baseTemplate(`
     <div class="line"></div>
     <div class="center">

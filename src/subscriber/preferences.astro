@@ -1,0 +1,171 @@
+---
+// /src/pages/subscriber/preferences.astro
+---
+
+<div class="preferences-container">
+  <h1>Manage Your Preferences</h1>
+  
+  <form id="preferences-form">
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="email" value="" readonly />
+    </div>
+
+    <div class="field">
+      <label>First Name</label>
+      <input type="text" id="first_name" />
+    </div>
+
+    <h3>Categories</h3>
+    <div class="categories">
+      <label>
+        <input type="checkbox" value="technology" />
+        Technology
+      </label>
+      <label>
+        <input type="checkbox" value="finance" />
+        Finance
+      </label>
+      <label>
+        <input type="checkbox" value="health" />
+        Health
+      </label>
+      <label>
+        <input type="checkbox" value="shopping" />
+        Shopping
+      </label>
+    </div>
+
+    <h3>Frequency</h3>
+    <div class="frequency">
+      <label>
+        <input type="radio" name="frequency" value="daily" />
+        Daily
+      </label>
+      <label>
+        <input type="radio" name="frequency" value="weekly" />
+        Weekly
+      </label>
+      <label>
+        <input type="radio" name="frequency" value="monthly" />
+        Monthly
+      </label>
+    </div>
+
+    <button type="submit">Save Preferences</button>
+  </form>
+</div>
+
+<style>
+  .preferences-container {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+  .field {
+    margin-bottom: 1.5rem;
+  }
+
+  .field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .field input[type="email"],
+  .field input[type="text"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+  }
+
+  .categories label {
+    display: block;
+    padding: 0.5rem 0;
+  }
+
+  .frequency label {
+    display: block;
+    padding: 0.5rem 0;
+  }
+
+  button {
+    padding: 0.75rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  // Load preferences from token
+  const urlParams = new URLSearchParams(window.location.search);
+  const token = urlParams.get('token');
+
+  if (token) {
+    fetch(`/api/newsletter/get-subscriber?token=${token}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('email').value = data.subscriber.email;
+          document.getElementById('first_name').value = data.subscriber.first_name || '';
+          
+          // Set preferences
+          if (data.subscriber.preferences) {
+            const prefs = JSON.parse(data.subscriber.preferences);
+            if (prefs.categories) {
+              document.querySelectorAll('.categories input[type="checkbox"]')
+                .forEach(cb => cb.checked = prefs.categories.includes(cb.value));
+            }
+            if (prefs.frequency) {
+              document.querySelector(`input[name="frequency"][value="${prefs.frequency}"]`).checked = true;
+            }
+          }
+        }
+      });
+  }
+
+  // Save preferences
+  document.getElementById('preferences-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const categories = Array.from(document.querySelectorAll('.categories input:checked'))
+      .map(cb => cb.value);
+    
+    const frequency = document.querySelector('input[name="frequency"]:checked')?.value || 'weekly';
+    
+    const data = {
+      token,
+      first_name: document.getElementById('first_name').value,
+      preferences: {
+        categories,
+        frequency
+      }
+    };
+    
+    try {
+      const response = await fetch('/api/newsletter/save-preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        alert('Preferences saved successfully!');
+      } else {
+        alert('Failed to save preferences: ' + result.error);
+      }
+    } catch (error) {
+      alert('Network error. Please try again.');
+    }
+  });
+</script>

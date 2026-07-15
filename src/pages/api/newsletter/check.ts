@@ -28,6 +28,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         JSON.stringify({
           success: true,
           subscribed: false,
+          verified: false,
           status: 'not-subscribed',
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -37,13 +38,15 @@ export const GET: APIRoute = async ({ url, locals }) => {
     return new Response(
       JSON.stringify({
         success: true,
-        subscribed: subscriber.status === 'active',
-        status: subscriber.status,
+        subscribed: subscriber.subscribed === 1,
+        verified: subscriber.verified === 1,
+        status: subscriber.verified === 1 && subscriber.subscribed === 1 ? 'active' : 
+                subscriber.verified === 0 && subscriber.subscribed === 1 ? 'pending' : 'unsubscribed',
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Check subscription error:', error);
+    console.error('Check error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 

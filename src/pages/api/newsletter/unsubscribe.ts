@@ -1,51 +1,63 @@
+// /src/pages/api/newsletter/unsubscribe.ts
 import type { APIRoute } from 'astro';
-import { unsubscribeSubscriber } from '@/lib/newsletter';
+import { createD1Client } from '../../../lib/db';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const db = (locals as any)?.runtime?.env?.DB;
+    const { email, token } = await request.json();
+    const db = createD1Client(locals.env.DB);
 
-    if (!db) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Database not available' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
+    let subscriber;
+
+    if (token) {
+      // Find by unsubscribe token
+      subscriber = await db.prepare(`
+        SELECT id, email FROM newsletter_subscribers 
+        WHERE unsubscribe_token = ?
+      `).bind(token).first();
+    } else if (email) {
+      // Find by email
+      subscriber = await db.prepare(`
+        SELECT id, email FROM newsletter_subscribers 
+        WHERE email = ?
+      `).bind(email).first();
     }
-
-    const body = await request.json();
-    const { token, reason, feedback } = body;
-
-    if (!token) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Missing unsubscribe token' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const subscriber = await unsubscribeSubscriber(token, reason, feedback, db);
 
     if (!subscriber) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Invalid unsubscribe token' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Subscriber not found' }),
+        { status: 404 }
       );
     }
 
+    // Update status
+    await db.prepare(`
+      UPDATE newsletter_subscribers 
+      SET status = 'unsubscribed', 
+          unsubscribed_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).bind(subscriber.id).run();
+
+    // Log event
+    await db.prepare(`
+      INSERT INTO newsletter_events (subscriber_id, type)
+      VALUES (?, 'unsubscribe')
+    `).bind(subscriber.id).run();
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'You have been unsubscribed successfully.',
+      JSON.stringify({ 
+        success: true, 
+        message: 'You have been unsubscribed successfully.' 
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200 }
     );
+
   } catch (error) {
     console.error('Unsubscribe error:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Something went wrong' 
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Failed to unsubscribe' }),
+      { status: 500 }
     );
   }
 };

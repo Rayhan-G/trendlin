@@ -41,7 +41,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    if (subscriber.status === 'active') {
+    if (subscriber.verified === 1) {
       return new Response(
         JSON.stringify({ success: false, message: 'Email already verified' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
@@ -49,7 +49,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
-    
     await db.prepare(`
       UPDATE subscribers 
       SET verification_token = ?,

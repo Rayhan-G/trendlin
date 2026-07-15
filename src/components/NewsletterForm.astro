@@ -1,0 +1,126 @@
+---
+// /src/components/NewsletterForm.astro
+---
+
+<div class="newsletter-container">
+  <form id="newsletter-form" class="newsletter-form">
+    <h2>Stay Updated</h2>
+    <p>Get the latest trends and insights delivered to your inbox.</p>
+    <div class="input-group">
+      <input 
+        type="email" 
+        id="email" 
+        placeholder="Enter your email" 
+        required 
+        class="email-input"
+      />
+      <button type="submit" class="subscribe-btn">Subscribe</button>
+    </div>
+    <div id="message" class="message"></div>
+  </form>
+</div>
+
+<style>
+  .newsletter-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: #f8fafc;
+    border-radius: 8px;
+  }
+
+  .newsletter-form h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #1e293b;
+  }
+
+  .newsletter-form p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .email-input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+
+  .email-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .subscribe-btn {
+    padding: 0.75rem 1.5rem;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .subscribe-btn:hover {
+    background: #2563eb;
+  }
+
+  .message {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    display: none;
+  }
+
+  .message.success {
+    display: block;
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .message.error {
+    display: block;
+    background: #fee2e2;
+    color: #991b1b;
+  }
+</style>
+
+<script>
+  document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const messageEl = document.getElementById('message');
+    
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        messageEl.className = 'message success';
+        messageEl.textContent = data.message;
+        document.getElementById('email').value = '';
+      } else {
+        messageEl.className = 'message error';
+        messageEl.textContent = data.message || 'Something went wrong. Please try again.';
+      }
+    } catch (error) {
+      messageEl.className = 'message error';
+      messageEl.textContent = 'Network error. Please try again.';
+    }
+  });
+</script>

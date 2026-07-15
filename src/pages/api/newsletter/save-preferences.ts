@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { updateSubscriberPreferences } from '@/lib/newsletter';
+import type { PreferencesRequest } from '@/types/newsletter';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -12,7 +13,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const body = await request.json();
+    const body: PreferencesRequest = await request.json();
     const { email, token, categories } = body;
 
     if (!email || !token) {
@@ -40,8 +41,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         success: true,
         message: 'Preferences updated successfully!',
         data: {
-          categories: categories,
           email: subscriber.email,
+          categories: categories,
         }
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

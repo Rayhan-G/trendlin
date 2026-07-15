@@ -1,7 +1,10 @@
 -- ============================================
--- TRENDLIN D1 DATABASE SCHEMA - REDESIGNED
+-- TRENDLIN D1 DATABASE SCHEMA - COMPLETE FIXED
 -- Cloudflare D1 (SQLite) Compatible
 -- ============================================
+
+-- Enable foreign key constraints
+PRAGMA foreign_keys = ON;
 
 -- ============================================
 -- ADMINS TABLE - Authentication
@@ -10,7 +13,7 @@ CREATE TABLE IF NOT EXISTS admins (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  email TEXT,
+  email TEXT UNIQUE,
   role TEXT DEFAULT 'admin',
   login_attempts INTEGER DEFAULT 0,
   locked_until DATETIME,
@@ -42,121 +45,306 @@ CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 
 -- ============================================
--- SUBSCRIBERS TABLE - Newsletter System (Redesigned)
+-- NEWSLETTER SYSTEM - Complete
 -- ============================================
-CREATE TABLE IF NOT EXISTS subscribers (
+
+-- 1. NEWSLETTER SUBSCRIBERS
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT UNIQUE NOT NULL,
   first_name TEXT DEFAULT '',
   last_name TEXT DEFAULT '',
-  status TEXT NOT NULL DEFAULT 'pending', -- pending | active | unsubscribed
+  status TEXT DEFAULT 'pending', -- pending | active | unsubscribed | suspended
   verification_token TEXT UNIQUE,
   unsubscribe_token TEXT UNIQUE,
-  categories TEXT DEFAULT 'general', -- Comma-separated: 'health-wellness,technology'
-  source TEXT DEFAULT 'website', -- website | footer | popup | landing-page
+  source TEXT DEFAULT 'website',
   ip_address TEXT,
   user_agent TEXT,
   referrer TEXT,
+  preferences TEXT DEFAULT '{}', -- JSON: {"categories": ["tech", "finance"], "frequency": "weekly"}
+  metadata TEXT DEFAULT '{}', -- JSON: {"last_open": "2024-01-01", "last_click": "2024-01-01", "total_emails": 0}
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   verified_at DATETIME,
   unsubscribed_at DATETIME,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_subscribers_email ON subscribers(email);
-CREATE INDEX IF NOT EXISTS idx_subscribers_status ON subscribers(status);
-CREATE INDEX IF NOT EXISTS idx_subscribers_verification_token ON subscribers(verification_token);
-CREATE INDEX IF NOT EXISTS idx_subscribers_unsubscribe_token ON subscribers(unsubscribe_token);
-CREATE INDEX IF NOT EXISTS idx_subscribers_created_at ON subscribers(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_subscribers_status_created ON subscribers(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ns_email ON newsletter_subscribers(email);
+CREATE INDEX IF NOT EXISTS idx_ns_status ON newsletter_subscribers(status);
+CREATE INDEX IF NOT EXISTS idx_ns_verification_token ON newsletter_subscribers(verification_token);
+CREATE INDEX IF NOT EXISTS idx_ns_unsubscribe_token ON newsletter_subscribers(unsubscribe_token);
+CREATE INDEX IF NOT EXISTS idx_ns_created_at ON newsletter_subscribers(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ns_status_created ON newsletter_subscribers(status, created_at DESC);
 
--- ============================================
--- NEWSLETTER_PREFERENCES TABLE - Category Preferences
--- ============================================
-CREATE TABLE IF NOT EXISTS newsletter_preferences (
+-- 2. NEWSLETTER LISTS
+CREATE TABLE IF NOT EXISTS newsletter_lists (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_nl_slug ON newsletter_lists(slug);
+CREATE INDEX IF NOT EXISTS idx_nl_active ON newsletter_lists(is_active);
+
+-- Insert default lists
+INSERT OR IGNORE INTO newsletter_lists (name, slug, description) VALUES
+('General Newsletter', 'general', 'All subscribers'),
+('Technology Weekly', 'technology', 'Tech news and updates'),
+('Finance Weekly', 'finance', 'Financial insights and tips'),
+('Health Weekly', 'health-wellness', 'Health and wellness updates'),
+('Entertainment Weekly', 'entertainment', 'Entertainment news'),
+('Shopping Deals', 'shopping', 'Best deals and shopping guides'),
+('Breaking News', 'breaking', 'Urgent news alerts'),
+('Editor''s Picks', 'editors-picks', 'Curated by our editors');
+
+-- 3. NEWSLETTER LIST MEMBERS
+CREATE TABLE IF NOT EXISTS newsletter_list_members (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subscriber_id INTEGER NOT NULL,
-  category TEXT NOT NULL,
+  list_id INTEGER NOT NULL,
   subscribed INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (subscriber_id) REFERENCES subscribers(id) ON DELETE CASCADE,
-  UNIQUE(subscriber_id, category)
+  FOREIGN KEY (subscriber_id) REFERENCES newsletter_subscribers(id) ON DELETE CASCADE,
+  FOREIGN KEY (list_id) REFERENCES newsletter_lists(id) ON DELETE CASCADE,
+  UNIQUE(subscriber_id, list_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_preferences_subscriber ON newsletter_preferences(subscriber_id);
-CREATE INDEX IF NOT EXISTS idx_preferences_category ON newsletter_preferences(category);
-CREATE INDEX IF NOT EXISTS idx_preferences_subscribed ON newsletter_preferences(subscriber_id, subscribed);
+CREATE INDEX IF NOT EXISTS idx_nlm_subscriber ON newsletter_list_members(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_nlm_list ON newsletter_list_members(list_id);
+CREATE INDEX IF NOT EXISTS idx_nlm_subscribed ON newsletter_list_members(subscribed);
 
--- ============================================
--- NEWSLETTER_CAMPAIGNS TABLE - Email Campaigns
--- ============================================
+-- 4. NEWSLETTER CAMPAIGNS
 CREATE TABLE IF NOT EXISTS newsletter_campaigns (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subject TEXT NOT NULL,
+  preview_text TEXT DEFAULT '',
   content_html TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'draft', -- draft | scheduled | sending | sent | failed
-  category TEXT DEFAULT 'general',
+  status TEXT DEFAULT 'draft', -- draft | pending_review | approved | scheduled | sending | completed | paused | cancelled
+  list_id INTEGER,
+  created_by INTEGER,
   scheduled_at DATETIME,
   sent_at DATETIME,
   total_recipients INTEGER DEFAULT 0,
+  delivered_count INTEGER DEFAULT 0,
   opened_count INTEGER DEFAULT 0,
+  unique_opens INTEGER DEFAULT 0,
   clicked_count INTEGER DEFAULT 0,
-  bounced_count INTEGER DEFAULT 0,
+  unique_clicks INTEGER DEFAULT 0,
   unsubscribed_count INTEGER DEFAULT 0,
+  bounced_count INTEGER DEFAULT 0,
+  spam_reports INTEGER DEFAULT 0,
+  template_id INTEGER,
+  metadata TEXT DEFAULT '{}', -- JSON: {"category": "tech", "tags": ["weekly"], "source": "manual"}
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (list_id) REFERENCES newsletter_lists(id) ON DELETE SET NULL,
+  FOREIGN KEY (template_id) REFERENCES newsletter_templates(id) ON DELETE SET NULL,
+  FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_nc_status ON newsletter_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_nc_scheduled_at ON newsletter_campaigns(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_nc_sent_at ON newsletter_campaigns(sent_at);
+CREATE INDEX IF NOT EXISTS idx_nc_created_at ON newsletter_campaigns(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_nc_status_scheduled ON newsletter_campaigns(status, scheduled_at);
+
+-- 5. NEWSLETTER CAMPAIGN BLOCKS
+CREATE TABLE IF NOT EXISTS newsletter_campaign_blocks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  type TEXT NOT NULL, -- heading | paragraph | image | article | divider | button | article_collection
+  content TEXT NOT NULL,
+  order_index INTEGER DEFAULT 0,
+  metadata TEXT DEFAULT '{}', -- JSON: {"article_id": 123, "url": "...", "articles": [1,2,3]}
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (campaign_id) REFERENCES newsletter_campaigns(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_ncb_campaign ON newsletter_campaign_blocks(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_ncb_order ON newsletter_campaign_blocks(order_index);
+
+-- 6. NEWSLETTER CAMPAIGN RECIPIENTS
+CREATE TABLE IF NOT EXISTS newsletter_campaign_recipients (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  subscriber_id INTEGER NOT NULL,
+  status TEXT DEFAULT 'queued', -- queued | sent | opened | clicked | bounced | failed | unsubscribed
+  sent_at DATETIME,
+  opened_at DATETIME,
+  clicked_at DATETIME,
+  clicked_url TEXT,
+  error_message TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (campaign_id) REFERENCES newsletter_campaigns(id) ON DELETE CASCADE,
+  FOREIGN KEY (subscriber_id) REFERENCES newsletter_subscribers(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_ncr_campaign ON newsletter_campaign_recipients(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_ncr_subscriber ON newsletter_campaign_recipients(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_ncr_status ON newsletter_campaign_recipients(status);
+CREATE INDEX IF NOT EXISTS idx_ncr_campaign_status ON newsletter_campaign_recipients(campaign_id, status);
+
+-- 7. NEWSLETTER QUEUE
+CREATE TABLE IF NOT EXISTS newsletter_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  campaign_id INTEGER NOT NULL,
+  subscriber_id INTEGER NOT NULL,
+  priority INTEGER DEFAULT 0,
+  attempts INTEGER DEFAULT 0,
+  max_attempts INTEGER DEFAULT 3,
+  status TEXT DEFAULT 'pending', -- pending | processing | completed | failed
+  error_message TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  processed_at DATETIME,
+  FOREIGN KEY (campaign_id) REFERENCES newsletter_campaigns(id) ON DELETE CASCADE,
+  FOREIGN KEY (subscriber_id) REFERENCES newsletter_subscribers(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_nq_status ON newsletter_queue(status);
+CREATE INDEX IF NOT EXISTS idx_nq_campaign ON newsletter_queue(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_nq_created_at ON newsletter_queue(created_at);
+CREATE INDEX IF NOT EXISTS idx_nq_priority_status ON newsletter_queue(priority DESC, status);
+
+-- 8. NEWSLETTER EVENTS
+CREATE TABLE IF NOT EXISTS newsletter_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  subscriber_id INTEGER NOT NULL,
+  campaign_id INTEGER,
+  type TEXT NOT NULL, -- subscribe | unsubscribe | open | click | bounce | complaint | sent
+  url TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  metadata TEXT DEFAULT '{}',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (subscriber_id) REFERENCES newsletter_subscribers(id) ON DELETE CASCADE,
+  FOREIGN KEY (campaign_id) REFERENCES newsletter_campaigns(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ne_subscriber ON newsletter_events(subscriber_id);
+CREATE INDEX IF NOT EXISTS idx_ne_campaign ON newsletter_events(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_ne_type ON newsletter_events(type);
+CREATE INDEX IF NOT EXISTS idx_ne_created_at ON newsletter_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ne_campaign_type ON newsletter_events(campaign_id, type);
+
+-- 9. NEWSLETTER TEMPLATES
+CREATE TABLE IF NOT EXISTS newsletter_templates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  content_html TEXT NOT NULL,
+  thumbnail_url TEXT,
+  is_active INTEGER DEFAULT 1,
+  usage_count INTEGER DEFAULT 0,
   created_by INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by) REFERENCES admins(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_campaigns_status ON newsletter_campaigns(status);
-CREATE INDEX IF NOT EXISTS idx_campaigns_scheduled_at ON newsletter_campaigns(scheduled_at);
-CREATE INDEX IF NOT EXISTS idx_campaigns_sent_at ON newsletter_campaigns(sent_at);
-CREATE INDEX IF NOT EXISTS idx_campaigns_created_at ON newsletter_campaigns(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_campaigns_status_scheduled ON newsletter_campaigns(status, scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_nt_active ON newsletter_templates(is_active);
+CREATE INDEX IF NOT EXISTS idx_nt_slug ON newsletter_templates(slug);
 
--- ============================================
--- NEWSLETTER_DELIVERIES TABLE - Track Individual Emails
--- ============================================
-CREATE TABLE IF NOT EXISTS newsletter_deliveries (
+-- Insert default templates
+INSERT OR IGNORE INTO newsletter_templates (name, slug, description, content_html) VALUES
+('Weekly Digest', 'weekly-digest', 'Weekly newsletter template', '<h1>Weekly Digest</h1><p>Your weekly update</p>'),
+('Breaking News', 'breaking-news', 'Breaking news alert', '<h1>Breaking News</h1><p>Urgent update</p>'),
+('Welcome Email', 'welcome', 'Welcome new subscribers', '<h1>Welcome!</h1><p>Thanks for subscribing</p>'),
+('Verification Email', 'verification', 'Email verification', '<h1>Verify Your Email</h1><p>Please verify your email address</p>');
+
+-- 10. NEWSLETTER SEGMENTS
+CREATE TABLE IF NOT EXISTS newsletter_segments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  campaign_id INTEGER NOT NULL,
-  subscriber_id INTEGER NOT NULL,
-  status TEXT DEFAULT 'queued', -- queued | sent | opened | clicked | failed
-  sent_at DATETIME,
-  opened_at DATETIME,
-  clicked_at DATETIME,
-  error_message TEXT,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  description TEXT,
+  conditions TEXT NOT NULL, -- JSON: {"field": "preferences.categories", "operator": "contains", "value": "tech"}
+  is_active INTEGER DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (campaign_id) REFERENCES newsletter_campaigns(id) ON DELETE CASCADE,
-  FOREIGN KEY (subscriber_id) REFERENCES subscribers(id) ON DELETE CASCADE
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_deliveries_campaign ON newsletter_deliveries(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_deliveries_subscriber ON newsletter_deliveries(subscriber_id);
-CREATE INDEX IF NOT EXISTS idx_deliveries_status ON newsletter_deliveries(status);
-CREATE INDEX IF NOT EXISTS idx_deliveries_campaign_status ON newsletter_deliveries(campaign_id, status);
-CREATE INDEX IF NOT EXISTS idx_deliveries_created_at ON newsletter_deliveries(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ns_segments_active ON newsletter_segments(is_active);
 
--- ============================================
--- UNSUBSCRIBE_FEEDBACK TABLE - Unsubscribe Reasons
--- ============================================
+-- 11. NEWSLETTER AUTOMATIONS
+CREATE TABLE IF NOT EXISTS newsletter_automations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  trigger TEXT NOT NULL, -- article_published | subscriber_created | campaign_completed | no_opens_30days
+  conditions TEXT DEFAULT '{}', -- JSON: {"category": "tech", "status": "published"}
+  actions TEXT NOT NULL, -- JSON: [{"type": "send_campaign", "campaign_id": 123}]
+  is_active INTEGER DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_na_active ON newsletter_automations(is_active);
+CREATE INDEX IF NOT EXISTS idx_na_trigger ON newsletter_automations(trigger);
+
+INSERT OR IGNORE INTO newsletter_automations (name, trigger, actions) VALUES
+('Welcome Series', 'subscriber_created', '[{"type": "send_campaign", "delay": 0, "template": "welcome"}]'),
+('New Article Alert', 'article_published', '[{"type": "send_campaign", "delay": 0, "template": "breaking-news"}]'),
+('Inactive User', 'no_opens_30days', '[{"type": "send_campaign", "delay": 0, "template": "we-miss-you"}]');
+
+-- 12. NEWSLETTER LOGS
+CREATE TABLE IF NOT EXISTS newsletter_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  level TEXT NOT NULL, -- info | warning | error
+  message TEXT NOT NULL,
+  context TEXT DEFAULT '{}', -- JSON
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_nl_level ON newsletter_logs(level);
+CREATE INDEX IF NOT EXISTS idx_nl_created_at ON newsletter_logs(created_at DESC);
+
+-- 13. NEWSLETTER SETTINGS
+CREATE TABLE IF NOT EXISTS newsletter_settings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  key TEXT UNIQUE NOT NULL,
+  value TEXT NOT NULL,
+  description TEXT,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_ns_key ON newsletter_settings(key);
+
+INSERT OR IGNORE INTO newsletter_settings (key, value, description) VALUES
+('sender_name', 'Trendlin', 'Default sender name'),
+('sender_email', 'contact@trendlin.com', 'Default sender email'),
+('reply_to', 'contact@trendlin.com', 'Default reply-to email'),
+('verification_required', 'true', 'Require email verification'),
+('double_opt_in', 'true', 'Double opt-in required'),
+('tracking_enabled', 'true', 'Enable open/click tracking'),
+('rate_limit_per_minute', '6000', 'Rate limit for sending'),
+('timezone', 'America/New_York', 'Default timezone'),
+('footer_html', '<p>&copy; 2026 Trendlin. All rights reserved.</p>', 'Default footer HTML'),
+('daily_digest_time', '09:00', 'Time for daily digest'),
+('weekly_digest_day', 'friday', 'Day for weekly digest');
+
+-- 14. UNSUBSCRIBE FEEDBACK
 CREATE TABLE IF NOT EXISTS unsubscribe_feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subscriber_id INTEGER NOT NULL,
   reason TEXT,
   feedback TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (subscriber_id) REFERENCES subscribers(id) ON DELETE CASCADE
+  FOREIGN KEY (subscriber_id) REFERENCES newsletter_subscribers(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_unsubscribe_feedback_subscriber ON unsubscribe_feedback(subscriber_id);
 CREATE INDEX IF NOT EXISTS idx_unsubscribe_feedback_created ON unsubscribe_feedback(created_at DESC);
 
 -- ============================================
--- POSTS TABLE - Blog Content
+-- BLOG CONTENT TABLES
 -- ============================================
+
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -183,13 +371,9 @@ CREATE INDEX IF NOT EXISTS idx_posts_is_published ON posts(is_published);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);
 CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category);
-CREATE INDEX IF NOT EXISTS idx_posts_is_todays_pick ON posts(is_todays_pick);
-CREATE INDEX IF NOT EXISTS idx_posts_is_recently_added ON posts(is_recently_added);
 CREATE INDEX IF NOT EXISTS idx_posts_published_at ON posts(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_pick_added ON posts(is_todays_pick, is_recently_added);
 
--- ============================================
--- CATEGORIES TABLE - Blog Categories
--- ============================================
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -202,7 +386,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_slug ON categories(slug);
 CREATE INDEX IF NOT EXISTS idx_categories_name ON categories(name);
 
 -- ============================================
--- MEDIA TABLE - Images & Videos
+-- MEDIA TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS media (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -227,7 +411,7 @@ CREATE INDEX IF NOT EXISTS idx_media_folder ON media(folder);
 CREATE INDEX IF NOT EXISTS idx_media_uploader_id ON media(uploader_id);
 
 -- ============================================
--- PRODUCTS TABLE - Product Recommendations
+-- PRODUCTS SYSTEM
 -- ============================================
 CREATE TABLE IF NOT EXISTS products (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -248,10 +432,8 @@ CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_is_top_pick ON products(is_top_pick);
 CREATE INDEX IF NOT EXISTS idx_products_is_newly_released ON products(is_newly_released);
+CREATE INDEX IF NOT EXISTS idx_products_in_stock ON products(in_stock);
 
--- ============================================
--- PRODUCT RESOURCES TABLE - 4 Platforms
--- ============================================
 CREATE TABLE IF NOT EXISTS product_resources (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   product_id INTEGER NOT NULL,
@@ -278,7 +460,7 @@ CREATE INDEX IF NOT EXISTS idx_resources_featured ON product_resources(is_featur
 CREATE INDEX IF NOT EXISTS idx_resources_active ON product_resources(is_active);
 
 -- ============================================
--- TEMPLATES TABLE - Category-based Templates
+-- TEMPLATES (Content Templates)
 -- ============================================
 CREATE TABLE IF NOT EXISTS templates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -300,10 +482,8 @@ CREATE INDEX IF NOT EXISTS idx_templates_category_name ON templates(category, na
 CREATE INDEX IF NOT EXISTS idx_templates_is_active ON templates(is_active);
 
 -- ============================================
--- RELIABLE WEBSITES - 3 Level System
+-- RELIABLE WEBSITES SYSTEM (3-Level)
 -- ============================================
-
--- LEVEL 1: Categories
 CREATE TABLE IF NOT EXISTS reliable_categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -318,8 +498,8 @@ CREATE TABLE IF NOT EXISTS reliable_categories (
 
 CREATE INDEX IF NOT EXISTS idx_reliable_categories_slug ON reliable_categories(slug);
 CREATE INDEX IF NOT EXISTS idx_reliable_categories_active ON reliable_categories(is_active);
+CREATE INDEX IF NOT EXISTS idx_reliable_categories_order ON reliable_categories(display_order);
 
--- LEVEL 2: Subcategories
 CREATE TABLE IF NOT EXISTS reliable_subcategories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category_id INTEGER NOT NULL,
@@ -337,7 +517,6 @@ CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_category ON reliable_subca
 CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_slug ON reliable_subcategories(slug);
 CREATE INDEX IF NOT EXISTS idx_reliable_subcategories_active ON reliable_subcategories(is_active);
 
--- LEVEL 3: Sub-Subcategories
 CREATE TABLE IF NOT EXISTS reliable_sub_subcategories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subcategory_id INTEGER NOT NULL,
@@ -355,7 +534,6 @@ CREATE INDEX IF NOT EXISTS idx_sub_subcategories_subcategory ON reliable_sub_sub
 CREATE INDEX IF NOT EXISTS idx_sub_subcategories_slug ON reliable_sub_subcategories(slug);
 CREATE INDEX IF NOT EXISTS idx_sub_subcategories_active ON reliable_sub_subcategories(is_active);
 
--- RELIABLE WEBSITES
 CREATE TABLE IF NOT EXISTS reliable_websites (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   subcategory_id INTEGER NOT NULL,
@@ -388,7 +566,6 @@ CREATE INDEX IF NOT EXISTS idx_reliable_websites_active ON reliable_websites(is_
 CREATE INDEX IF NOT EXISTS idx_reliable_websites_featured ON reliable_websites(is_featured);
 CREATE INDEX IF NOT EXISTS idx_reliable_websites_url ON reliable_websites(url);
 
--- RELIABLE VERIFICATION LOG
 CREATE TABLE IF NOT EXISTS reliable_verification_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   website_id INTEGER NOT NULL,
@@ -406,10 +583,8 @@ CREATE INDEX IF NOT EXISTS idx_verification_website ON reliable_verification_log
 CREATE INDEX IF NOT EXISTS idx_verification_date ON reliable_verification_log(verification_date);
 
 -- ============================================
--- CONTENT CALENDAR TABLES
+-- CONTENT CALENDAR
 -- ============================================
-
--- CONTENT TYPES
 CREATE TABLE IF NOT EXISTS content_types (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -423,8 +598,8 @@ CREATE TABLE IF NOT EXISTS content_types (
 );
 
 CREATE INDEX IF NOT EXISTS idx_content_types_slug ON content_types(slug);
+CREATE INDEX IF NOT EXISTS idx_content_types_active ON content_types(is_active);
 
--- CONTENT CATEGORIES
 CREATE TABLE IF NOT EXISTS content_categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   category_id INTEGER NOT NULL,
@@ -439,8 +614,8 @@ CREATE TABLE IF NOT EXISTS content_categories (
 
 CREATE INDEX IF NOT EXISTS idx_content_categories_category ON content_categories(category_id);
 CREATE INDEX IF NOT EXISTS idx_content_categories_slug ON content_categories(slug);
+CREATE INDEX IF NOT EXISTS idx_content_categories_active ON content_categories(is_active);
 
--- CONTENT STATUS
 CREATE TABLE IF NOT EXISTS content_status (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -452,7 +627,6 @@ CREATE TABLE IF NOT EXISTS content_status (
 
 CREATE INDEX IF NOT EXISTS idx_content_status_slug ON content_status(slug);
 
--- Insert default statuses
 INSERT OR IGNORE INTO content_status (name, slug, color, display_order) VALUES
 ('Idea', 'idea', '#94a3b8', 1),
 ('Draft', 'draft', '#f59e0b', 2),
@@ -460,7 +634,6 @@ INSERT OR IGNORE INTO content_status (name, slug, color, display_order) VALUES
 ('Scheduled', 'scheduled', '#3b82f6', 4),
 ('Published', 'published', '#22c55e', 5);
 
--- CONTENT
 CREATE TABLE IF NOT EXISTS content (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
@@ -500,8 +673,8 @@ CREATE INDEX IF NOT EXISTS idx_content_published_at ON content(published_at);
 CREATE INDEX IF NOT EXISTS idx_content_category ON content(category_id);
 CREATE INDEX IF NOT EXISTS idx_content_type ON content(content_type_id);
 CREATE INDEX IF NOT EXISTS idx_content_is_published ON content(is_published);
+CREATE INDEX IF NOT EXISTS idx_content_scheduled_status ON content(scheduled_publish_at, is_published);
 
--- CONTENT RESOURCES
 CREATE TABLE IF NOT EXISTS content_resources (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   content_id INTEGER NOT NULL,
@@ -517,8 +690,8 @@ CREATE TABLE IF NOT EXISTS content_resources (
 );
 
 CREATE INDEX IF NOT EXISTS idx_content_resources_content ON content_resources(content_id);
+CREATE INDEX IF NOT EXISTS idx_content_resources_website ON content_resources(reliable_website_id);
 
--- CONTENT HISTORY
 CREATE TABLE IF NOT EXISTS content_history (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   content_id INTEGER NOT NULL,
@@ -533,24 +706,133 @@ CREATE TABLE IF NOT EXISTS content_history (
 );
 
 CREATE INDEX IF NOT EXISTS idx_content_history_content ON content_history(content_id);
+CREATE INDEX IF NOT EXISTS idx_content_history_created ON content_history(created_at DESC);
 
 -- ============================================
--- NEWSLETTER_ACTIVITY TABLE - Legacy (Keep for backward compatibility)
+-- AUDIT LOG
 -- ============================================
-CREATE TABLE IF NOT EXISTS newsletter_activity (
+CREATE TABLE IF NOT EXISTS audit_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  subscriber_id INTEGER NOT NULL,
-  campaign_id INTEGER NOT NULL,
+  admin_id INTEGER,
   action TEXT NOT NULL,
-  url TEXT,
+  table_name TEXT NOT NULL,
+  record_id INTEGER,
+  old_data TEXT,
+  new_data TEXT,
   ip_address TEXT,
   user_agent TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (subscriber_id) REFERENCES subscribers(id) ON DELETE CASCADE,
-  FOREIGN KEY (campaign_id) REFERENCES newsletter_campaigns(id) ON DELETE CASCADE
+  FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_activity_subscriber ON newsletter_activity(subscriber_id);
-CREATE INDEX IF NOT EXISTS idx_activity_campaign ON newsletter_activity(campaign_id);
-CREATE INDEX IF NOT EXISTS idx_activity_action ON newsletter_activity(action);
-CREATE INDEX IF NOT EXISTS idx_activity_created_at ON newsletter_activity(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_admin ON audit_log(admin_id);
+CREATE INDEX IF NOT EXISTS idx_audit_table ON audit_log(table_name);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at DESC);
+
+-- ============================================
+-- RATE LIMITING
+-- ============================================
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  count INTEGER DEFAULT 1,
+  reset_at DATETIME NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(ip, endpoint)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rate_limits_ip ON rate_limits(ip);
+CREATE INDEX IF NOT EXISTS idx_rate_limits_reset ON rate_limits(reset_at);
+
+-- ============================================
+-- TRIGGERS FOR AUTO-UPDATE TIMESTAMPS
+-- ============================================
+
+-- Admin updates
+CREATE TRIGGER IF NOT EXISTS update_admins_timestamp 
+AFTER UPDATE ON admins
+BEGIN
+  UPDATE admins SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Subscriber updates
+CREATE TRIGGER IF NOT EXISTS update_subscriber_timestamp 
+AFTER UPDATE ON newsletter_subscribers
+BEGIN
+  UPDATE newsletter_subscribers SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Campaign updates
+CREATE TRIGGER IF NOT EXISTS update_campaign_timestamp 
+AFTER UPDATE ON newsletter_campaigns
+BEGIN
+  UPDATE newsletter_campaigns SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Post updates
+CREATE TRIGGER IF NOT EXISTS update_posts_timestamp 
+AFTER UPDATE ON posts
+BEGIN
+  UPDATE posts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Product updates
+CREATE TRIGGER IF NOT EXISTS update_products_timestamp 
+AFTER UPDATE ON products
+BEGIN
+  UPDATE products SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- Media updates
+CREATE TRIGGER IF NOT EXISTS update_media_timestamp 
+AFTER UPDATE ON media
+BEGIN
+  UPDATE media SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+-- ============================================
+-- INITIAL DATA
+-- ============================================
+
+INSERT OR IGNORE INTO reliable_categories (name, slug, description, icon, display_order, is_active) VALUES
+('Health & Wellness', 'health-wellness', 'Health tips, wellness advice, and self-care guides', '🧘', 1, 1),
+('Food & Dining', 'food-dining', 'Restaurant reviews, recipes, and food recommendations', '🍽️', 2, 1),
+('Entertainment', 'entertainment', 'Movies, TV shows, events, and things to do', '🎬', 3, 1),
+('Lifestyle', 'lifestyle', 'Living well, travel, and everyday inspiration', '🌟', 4, 1),
+('Technology', 'technology', 'Latest tech news, gadgets, and innovations', '💻', 5, 1),
+('Shopping', 'shopping', 'Best deals, product reviews, and shopping guides', '🛍️', 6, 1),
+('Real Estate', 'real-estate', 'Market trends, buying tips, and property insights', '🏠', 7, 1),
+('Finance', 'finance', 'Money management, investing, and financial planning', '💰', 8, 1);
+
+INSERT OR IGNORE INTO content_types (name, slug, icon, color, description) VALUES
+('Blog Post', 'blog-post', '📝', '#3b82f6', 'Standard blog post'),
+('News Article', 'news-article', '📰', '#ef4444', 'News article'),
+('Guide', 'guide', '📖', '#22c55e', 'How-to guide'),
+('Review', 'review', '⭐', '#f59e0b', 'Product or service review'),
+('Listicle', 'listicle', '📋', '#8b5cf6', 'List-based article');
+
+INSERT OR IGNORE INTO content_categories (category_id, name, slug, description) 
+SELECT id, name, slug, description FROM reliable_categories WHERE is_active = 1;
+
+-- ============================================
+-- VERIFICATION QUERIES
+-- ============================================
+
+-- Check all tables
+-- SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;
+
+-- Check newsletter subscribers
+-- SELECT COUNT(*) as total_subscribers FROM newsletter_subscribers;
+
+-- Check newsletter lists
+-- SELECT * FROM newsletter_lists;
+
+-- Check campaigns
+-- SELECT COUNT(*) as total_campaigns FROM newsletter_campaigns;
+
+-- Check automations
+-- SELECT * FROM newsletter_automations;
+
+-- Check content status
+-- SELECT * FROM content_status;
