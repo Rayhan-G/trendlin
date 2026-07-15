@@ -5,8 +5,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const db = (locals as any).runtime?.env?.DB;
     
     if (!db) {
+      console.error('❌ Database not available in locals');
       return new Response(
-        JSON.stringify({ success: false, message: 'Database not available' }),
+        JSON.stringify({ 
+          success: false, 
+          message: 'Database not available' 
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -21,7 +25,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Find subscriber
+    // ✅ Find subscriber
     const subscriber = await db.prepare(`
       SELECT * FROM subscribers WHERE email = ? AND verification_token = ?
     `).bind(email.toLowerCase().trim(), token).first();
@@ -33,7 +37,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Update categories in subscribers table
+    // ✅ Update categories in subscribers table
     await db.prepare(`
       UPDATE subscribers 
       SET categories = ?,
@@ -41,7 +45,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       WHERE id = ?
     `).bind(categories.join(','), subscriber.id).run();
 
-    // Update newsletter_preferences
+    // ✅ Update newsletter_preferences
     await db.prepare(`
       DELETE FROM newsletter_preferences WHERE subscriber_id = ?
     `).bind(subscriber.id).run();
@@ -60,13 +64,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
       JSON.stringify({
         success: true,
         message: 'Preferences updated successfully!',
+        data: { categories }
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Save preferences error:', error);
+    console.error('❌ Save preferences error:', error);
     return new Response(
-      JSON.stringify({ success: false, message: 'Something went wrong' }),
+      JSON.stringify({ 
+        success: false, 
+        message: error instanceof Error ? error.message : 'Something went wrong' 
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

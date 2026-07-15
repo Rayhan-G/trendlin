@@ -18,11 +18,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body = await request.json();
     const { email, token, reason, feedback } = body;
 
-    console.log('📝 Unsubscribe request received:');
-    console.log('  Email:', email);
-    console.log('  Reason:', reason);
-    console.log('  Feedback:', feedback || '(none)');
-
     if (!email || !token) {
       return new Response(
         JSON.stringify({ success: false, message: 'Missing required fields' }),
@@ -36,25 +31,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
     `).bind(email.toLowerCase().trim(), token).first();
 
     if (!subscriber) {
-      console.log('❌ Subscriber not found');
       return new Response(
         JSON.stringify({ success: false, message: 'Invalid unsubscribe link' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('✅ Subscriber found:', subscriber.id, subscriber.email);
-
     if (subscriber.subscribed === 0) {
-      console.log('⚠️ Already unsubscribed');
       return new Response(
         JSON.stringify({ success: false, message: 'You are already unsubscribed' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // ✅ Update subscriber - set subscribed to false
-    console.log('🔄 Updating subscriber...');
+    // ✅ Immediately unsubscribe - NO EMAIL VERIFICATION NEEDED
     await db.prepare(`
       UPDATE subscribers 
       SET subscribed = 0, 
@@ -65,7 +55,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     `).bind(subscriber.id).run();
 
     // ✅ Update preferences - set all to unsubscribed
-    console.log('🔄 Updating preferences...');
     await db.prepare(`
       UPDATE newsletter_preferences 
       SET subscribed = 0,
@@ -73,26 +62,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       WHERE subscriber_id = ?
     `).bind(subscriber.id).run();
 
-    // ✅ Store feedback in unsubscribe_feedback table
+    // ✅ Store feedback
     if (reason || feedback) {
-      console.log('💾 Storing feedback...');
       await db.prepare(`
         INSERT INTO unsubscribe_feedback (subscriber_id, reason, feedback, created_at)
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
       `).bind(subscriber.id, reason || null, feedback || null).run();
-      console.log('✅ Feedback stored successfully');
     }
-
-    console.log('✅ Unsubscribe completed for:', email);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'You have been successfully unsubscribed. We\'ll miss you! 😢',
-        data: {
-          email: subscriber.email,
-          unsubscribedAt: new Date().toISOString(),
-        },
+        message: 'You have been successfully unsubscribed.',
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

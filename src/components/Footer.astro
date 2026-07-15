@@ -237,7 +237,7 @@ UNSUBSCRIBE CONFIRM MODAL
 </div>
 
 <!-- ==========================================
-JAVASCRIPT
+JAVASCRIPT - SIMPLIFIED & FUNCTIONAL
 ========================================== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -271,6 +271,7 @@ JAVASCRIPT
     let currentEmail = '';
     let currentToken = '';
     let currentCategories = [];
+    let isSubscribed = false;
 
     // Category data with SVG icons
     const CATEGORIES = [
@@ -322,7 +323,7 @@ JAVASCRIPT
       messageEl.className = `text-xs mt-2 ${type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
       messageEl.classList.remove('hidden');
       if (msg && type === 'success') {
-        setTimeout(() => { if (messageEl) messageEl.classList.add('hidden'); }, 6000);
+        setTimeout(() => { if (messageEl) messageEl.classList.add('hidden'); }, 8000);
       }
     }
 
@@ -358,6 +359,7 @@ JAVASCRIPT
       if (!statusText || !statusBadge) return;
       
       if (data.subscribed && data.verified) {
+        isSubscribed = true;
         statusText.textContent = 'You are currently subscribed to our newsletter.';
         statusBadge.textContent = 'Active';
         statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
@@ -366,6 +368,7 @@ JAVASCRIPT
         settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
         
       } else if (data.subscribed === false || data.unsubscribed) {
+        isSubscribed = false;
         statusText.textContent = 'You are not subscribed to our newsletter.';
         statusBadge.textContent = 'Not Subscribed';
         statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
@@ -374,12 +377,14 @@ JAVASCRIPT
         settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
         
       } else if (!data.verified) {
-        statusText.textContent = 'Please verify your email. Check your inbox.';
+        isSubscribed = false;
+        statusText.textContent = 'Please verify your email. Click "Subscribe" to resend.';
         statusBadge.textContent = 'Pending Verification';
         statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
         if (settingsUnsubscribe) settingsUnsubscribe.classList.add('hidden');
-        settingsSave.textContent = 'Resend Verification';
-        settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-yellow-600 to-amber-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
+        // ✅ Clicking "Subscribe" will resend verification
+        settingsSave.textContent = 'Subscribe';
+        settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
       }
     }
 
@@ -444,7 +449,7 @@ JAVASCRIPT
       selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
     });
 
-    // Save / Subscribe
+    // Save / Subscribe - Simplified (No Resend Verification)
     settingsSave?.addEventListener('click', async () => {
       if (!categoriesGrid) return;
       const checked = categoriesGrid.querySelectorAll('input[type="checkbox"]:checked');
@@ -459,22 +464,44 @@ JAVASCRIPT
       settingsError?.classList.add('hidden');
       settingsSave.disabled = true;
       const originalText = settingsSave.textContent;
-      settingsSave.textContent = 'Saving...';
+      settingsSave.textContent = 'Processing...';
 
       try {
-        const response = await fetch('/api/newsletter/save-preferences', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: currentEmail, token: currentToken, categories }),
-        });
-        const data = await response.json();
-        if (data.success) {
-          showMessage('✅ Preferences updated successfully!', 'success');
-          settingsEmailInput.value = '';
-          closeSettingsModal();
+        let response;
+        let data;
+        
+        if (originalText === 'Save Preferences') {
+          // ✅ Update preferences for subscribed user (no email)
+          response = await fetch('/api/newsletter/save-preferences', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentEmail, token: currentToken, categories }),
+          });
+          data = await response.json();
+          if (data.success) {
+            showMessage('✅ Preferences updated successfully!', 'success');
+            settingsEmailInput.value = '';
+            closeSettingsModal();
+          } else {
+            settingsError.textContent = data.message || 'Failed to save preferences.';
+            settingsError?.classList.remove('hidden');
+          }
         } else {
-          settingsError.textContent = data.message || 'Failed to save preferences.';
-          settingsError?.classList.remove('hidden');
+          // ✅ Subscribe (new) OR Resend Verification - same endpoint handles both
+          response = await fetch('/api/newsletter/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentEmail, firstName: '', categories }),
+          });
+          data = await response.json();
+          if (data.success) {
+            showMessage('📧 Please check your email to verify your subscription!', 'success');
+            settingsEmailInput.value = '';
+            closeSettingsModal();
+          } else {
+            settingsError.textContent = data.message || 'Failed to subscribe.';
+            settingsError?.classList.remove('hidden');
+          }
         }
       } catch (error) {
         settingsError.textContent = 'Network error. Please try again.';
@@ -485,7 +512,7 @@ JAVASCRIPT
       }
     });
 
-    // Unsubscribe
+    // Unsubscribe - Immediate, no email verification
     settingsUnsubscribe?.addEventListener('click', () => {
       confirmModal?.classList.remove('hidden');
       confirmModal?.classList.add('flex');
@@ -524,6 +551,7 @@ JAVASCRIPT
       confirmBtn.textContent = 'Processing...';
 
       try {
+        // ✅ Immediate unsubscribe - no email verification
         const response = await fetch('/api/newsletter/unsubscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -535,6 +563,8 @@ JAVASCRIPT
           closeSettingsModal();
           showMessage('✅ You have been unsubscribed successfully.', 'success');
           settingsEmailInput.value = '';
+          // Update status locally
+          updateStatus({ subscribed: false, verified: false, unsubscribed: true });
         } else {
           confirmError.textContent = data.message || 'Failed to unsubscribe.';
           confirmError?.classList.remove('hidden');
