@@ -1,6 +1,6 @@
 ---
 // ============================================
-// ADMIN DASHBOARD - Trendlin (Premium Design)
+// ADMIN DASHBOARD - Trendlin (Complete)
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
@@ -183,7 +183,7 @@ try {
 }
 
 // ============================================
-// FETCH NEWSLETTER STATS
+// FETCH NEWSLETTER STATS - FIXED
 // ============================================
 let newsletterStats = {
   total: 0,
@@ -200,7 +200,16 @@ try {
   if (statsResponse.ok) {
     const data = await statsResponse.json();
     if (data && data.success) {
-      newsletterStats = data.data;
+      const d = data.data || data;
+      newsletterStats = {
+        total: d.subscribers?.total || d.total || 0,
+        active: d.subscribers?.active || d.active || 0,
+        pending: d.subscribers?.pending || d.pending || 0,
+        unsubscribed: d.subscribers?.unsubscribed || d.unsubscribed || 0,
+        campaigns: d.campaigns?.completed || d.completed || d.total_campaigns || 0,
+        openRate: d.campaigns?.avg_open_rate || d.avg_open_rate || 0,
+        clickRate: d.campaigns?.avg_click_rate || d.avg_click_rate || 0
+      };
     }
   }
 } catch (error) {
@@ -208,7 +217,7 @@ try {
 }
 
 // ============================================
-// FETCH RECENT CAMPAIGNS
+// FETCH RECENT CAMPAIGNS - FIXED
 // ============================================
 let recentCampaigns = [];
 
@@ -217,7 +226,7 @@ try {
   if (campaignsResponse.ok) {
     const data = await campaignsResponse.json();
     if (data && data.success) {
-      recentCampaigns = data.data || [];
+      recentCampaigns = data.data || data.campaigns || [];
     }
   }
 } catch (error) {
@@ -257,7 +266,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- 7 STATS CARDS (Added Newsletter) -->
+  <!-- 7 STATS CARDS -->
   <!-- ============================================ -->
   <div class="stats-grid">
     
@@ -454,7 +463,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       </div>
     </div>
 
-    <!-- 7. NEWSLETTER (NEW) -->
+    <!-- 7. NEWSLETTER -->
     <div class="stat-card stat-card-rose">
       <div class="stat-card-inner">
         <div class="stat-card-left">
@@ -485,7 +494,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       </div>
       <div class="stat-actions">
         <a href="/admin/newsletter" class="stat-action-link">View All →</a>
-        <a href="/admin/newsletter" class="stat-action-btn stat-action-btn-rose">+ New Campaign</a>
+        <a href="/admin/newsletter/new" class="stat-action-btn stat-action-btn-rose">+ New Campaign</a>
       </div>
     </div>
 
@@ -519,7 +528,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- RECENT CONTENT + RECENT CAMPAIGNS SIDEBAR -->
+  <!-- RECENT CONTENT + RECENT CAMPAIGNS -->
   <!-- ============================================ -->
   <div class="recent-content-grid">
     <!-- Recent Content Calendar Items -->
@@ -640,7 +649,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
           <p class="section-subtitle">Your latest newsletter campaigns</p>
         </div>
         <div class="section-actions">
-          <a href="/admin/newsletter" class="btn-new-post">
+          <a href="/admin/newsletter/new" class="btn-new-post">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -663,39 +672,52 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
                 </tr>
               </thead>
               <tbody>
-                {recentCampaigns.map((campaign) => (
-                  <tr key={campaign.id}>
-                    <td>
-                      <div class="post-title-cell">
-                        <span class="post-title">{campaign.subject}</span>
-                      </div>
-                    </td>
-                    <td class="status-col">
-                      <span class={`status-badge ${getStatusClass(campaign.status)}`}>
-                        <span class="status-dot"></span>
-                        {campaign.status}
-                      </span>
-                    </td>
-                    <td class="date-col">
-                      {campaign.sent_at ? new Date(campaign.sent_at).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      }) : '—'}
-                    </td>
-                    <td class="actions-col">
-                      <div class="action-buttons">
-                        <a href={`/admin/newsletter/${campaign.id}`} class="action-btn action-btn-edit">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                          </svg>
-                          View
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {recentCampaigns.map((campaign) => {
+                  const statusClass = getStatusClass(campaign.status);
+                  return (
+                    <tr key={campaign.id}>
+                      <td>
+                        <div class="post-title-cell">
+                          <span class="post-title">{campaign.subject}</span>
+                        </div>
+                      </td>
+                      <td class="status-col">
+                        <span class={`status-badge ${statusClass}`}>
+                          <span class="status-dot"></span>
+                          {campaign.status}
+                        </span>
+                      </td>
+                      <td class="date-col">
+                        {campaign.sent_at ? new Date(campaign.sent_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        }) : campaign.scheduled_at ? 'Scheduled' : '—'}
+                      </td>
+                      <td class="actions-col">
+                        <div class="action-buttons">
+                          <a href={`/admin/newsletter/${campaign.id}`} class="action-btn action-btn-edit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Edit
+                          </a>
+                          <button 
+                            class="action-btn action-btn-delete delete-campaign-btn"
+                            data-id={campaign.id}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -703,7 +725,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
           <div class="empty-state">
             <div class="empty-icon">📨</div>
             <p>No campaigns yet</p>
-            <a href="/admin/newsletter" class="empty-action">Create your first campaign →</a>
+            <a href="/admin/newsletter/new" class="empty-action">Create your first campaign →</a>
           </div>
         )}
       </div>
@@ -811,18 +833,64 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       });
     });
 
-    // Status helper function
-    function getStatusClass(status) {
-      const classes = {
-        'draft': 'status-draft',
-        'scheduled': 'status-scheduled',
-        'sending': 'status-sending',
-        'sent': 'status-published',
-        'failed': 'status-failed'
-      };
-      return classes[status] || 'status-draft';
-    }
+    // Delete Campaigns
+    const deleteCampaignButtons = document.querySelectorAll('.delete-campaign-btn');
+    
+    deleteCampaignButtons.forEach(function(button) {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const campaignId = this.getAttribute('data-id');
+        
+        if (!confirm('Are you sure you want to delete this campaign?')) {
+          return;
+        }
+        
+        const originalText = this.innerHTML;
+        this.innerHTML = 'Deleting...';
+        this.disabled = true;
+        this.classList.add('opacity-50');
+        
+        try {
+          const response = await fetch(`/api/admin/newsletter/campaigns?id=${campaignId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+          }
+          
+          alert('✅ Campaign deleted successfully!');
+          window.location.reload();
+          
+        } catch (error) {
+          console.error('Error:', error);
+          alert('❌ Failed to delete campaign');
+          this.innerHTML = originalText;
+          this.disabled = false;
+          this.classList.remove('opacity-50');
+        }
+      });
+    });
   });
+
+  // Status helper function - Global
+  function getStatusClass(status) {
+    const classes = {
+      'draft': 'status-draft',
+      'scheduled': 'status-scheduled',
+      'sending': 'status-sending',
+      'sent': 'status-published',
+      'completed': 'status-published',
+      'failed': 'status-failed',
+      'cancelled': 'status-failed',
+      'paused': 'status-draft'
+    };
+    return classes[status] || 'status-draft';
+  }
 </script>
 
 <style is:global>
