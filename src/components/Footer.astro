@@ -62,7 +62,9 @@ const currentYear = new Date().getFullYear();
           </ul>
         </div>
 
-        <!-- Newsletter Settings -->
+        <!-- ==========================================
+        NEWSLETTER SUBSCRIPTION WITH PREFERENCES
+        ========================================== -->
         <div class="lg:col-span-5">
           <div class="relative p-6 rounded-xl bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200/50 dark:border-blue-800/30">
             
@@ -73,34 +75,32 @@ const currentYear = new Date().getFullYear();
                 </svg>
               </div>
               <div>
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Newsletter Settings</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Manage your subscription preferences</p>
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Subscribe to Newsletter</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Never miss the trend or fresh content</p>
               </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row gap-2">
-              <input
-                type="email"
-                id="footer-settings-email"
-                placeholder="Enter your email"
-                required
-                class="flex-1 px-4 py-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-              />
-              <button
-                type="button"
-                id="open-settings-modal"
-                class="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg hover:shadow-lg hover:scale-[1.02] transition-all duration-300 whitespace-nowrap flex items-center gap-2"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Settings
-              </button>
-            </div>
+            <form id="footer-subscribe-form" class="space-y-3">
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="email"
+                  id="footer-subscribe-email"
+                  placeholder="Enter your email"
+                  required
+                  class="flex-1 px-4 py-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+                <button
+                  type="button"
+                  id="open-preferences-modal"
+                  class="px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg hover:shadow-lg hover:scale-[1.02] transition-all duration-300 whitespace-nowrap"
+                >
+                  Subscribe
+                </button>
+              </div>
 
-            <div id="footer-settings-message" class="text-xs hidden mt-2"></div>
-            <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-2">Enter your email to manage preferences or unsubscribe</p>
+              <div id="footer-subscribe-message" class="text-xs hidden"></div>
+              <p class="text-[10px] text-gray-400 dark:text-gray-500">No spam. Unsubscribe anytime.</p>
+            </form>
           </div>
         </div>
 
@@ -120,14 +120,20 @@ const currentYear = new Date().getFullYear();
 </footer>
 
 <!-- ==========================================
-SETTINGS MODAL
+PREFERENCES MODAL
 ========================================== -->
-<div id="settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-  <div id="settings-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+<div id="preferences-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+  <div id="preferences-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+  
   <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 animate-scale-in">
-    
-    <button id="settings-modal-close" class="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    <button
+      id="preferences-close"
+      class="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+      type="button"
+    >
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
     </button>
 
     <div class="text-center mb-6">
@@ -137,361 +143,145 @@ SETTINGS MODAL
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       </div>
-      <h2 class="text-xl font-bold text-gray-900 dark:text-white">Manage Your Subscription</h2>
-      <p id="settings-email-display" class="text-sm text-gray-600 dark:text-gray-400 mt-1"></p>
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white">Choose Your Interests</h2>
+      <p id="preferences-email" class="text-sm text-gray-600 dark:text-gray-400 mt-1"></p>
+      <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+        <span id="selected-count">0</span> categories selected
+      </p>
     </div>
 
-    <div id="settings-loading" class="text-center py-8">
-      <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p class="mt-3 text-gray-600 dark:text-gray-400 text-sm">Loading your preferences...</p>
+    <div id="preferences-error" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
+      Please select at least one category.
     </div>
 
-    <div id="settings-content" class="hidden space-y-6">
-      
-      <!-- Subscription Status -->
-      <div id="subscription-status" class="p-4 rounded-lg border">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Subscription Status</p>
-            <p id="status-text" class="text-xs text-gray-500 dark:text-gray-400 mt-1"></p>
-          </div>
-          <span id="status-badge" class="px-3 py-1 text-xs font-medium rounded-full"></span>
-        </div>
-        <!-- Resend button for pending verification -->
-        <div id="resend-container" class="hidden mt-2">
-          <button id="resend-verification-btn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">
-            Click here to resend verification email →
-          </button>
-        </div>
+    <div class="space-y-3 mb-6">
+      <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Select All Categories</span>
+        <button
+          id="select-all-preferences"
+          type="button"
+          class="px-4 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+        >
+          Select All
+        </button>
       </div>
 
-      <!-- Current Preferences (Read-only) -->
-      <div id="current-preferences" class="hidden">
-        <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Current Preferences</p>
-        <div id="selected-categories-display" class="flex flex-wrap gap-2"></div>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Update your preferences below</p>
-      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <!-- Category options with SVG icons -->
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="health-wellness" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-blue-500 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Health & Wellness</span>
+        </label>
 
-      <!-- Category Preferences -->
-      <div>
-        <div class="flex justify-between items-center mb-3">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Update Your Interests</label>
-          <button id="select-all-settings" type="button" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">Select All</button>
-        </div>
-        <div id="settings-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
-      </div>
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="food-dining" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-orange-500 dark:text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m18-8v3a2 2 0 01-2 2H7a2 2 0 01-2-2V7m18-3a2 2 0 00-2-2H5a2 2 0 00-2 2v3m18 0V7" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Food & Dining</span>
+        </label>
 
-      <div id="settings-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="technology" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-purple-500 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Technology</span>
+        </label>
 
-      <div class="flex flex-col gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-        <div class="flex gap-3">
-          <button id="settings-cancel" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium">Cancel</button>
-          <button id="settings-save" type="button" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300">Save Preferences</button>
-        </div>
-        <!-- Unsubscribe Button - Only shown for subscribed users -->
-        <button id="settings-unsubscribe" type="button" class="hidden text-sm text-red-600 dark:text-red-400 hover:underline font-medium py-1">Unsubscribe from all emails →</button>
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="shopping" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-pink-500 dark:text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Shopping</span>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="entertainment" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Entertainment</span>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="lifestyle" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-yellow-500 dark:text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Lifestyle</span>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="real-estate" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-green-500 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Real Estate</span>
+        </label>
+
+        <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
+          <input type="checkbox" name="pref-category" value="finance" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
+          <svg class="w-5 h-5 text-emerald-500 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Finance</span>
+        </label>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- ==========================================
-UNSUBSCRIBE CONFIRM MODAL
-========================================== -->
-<div id="unsubscribe-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
-  <div id="unsubscribe-confirm-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
-  <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
-    
-    <button id="unsubscribe-confirm-close" class="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-    </button>
-
-    <div class="text-center mb-6">
-      <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-        <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-        </svg>
-      </div>
-      <h2 class="text-xl font-bold text-gray-900 dark:text-white">Are You Sure?</h2>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">This will unsubscribe you from all emails</p>
-    </div>
-
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Why are you leaving?</label>
-        <div class="space-y-2">
-          <label class="flex items-center gap-3 p-2.5 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 transition-all">
-            <input type="radio" name="unsubscribe-reason" value="Too many emails" class="w-4 h-4 text-red-600" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">Too many emails</span>
-          </label>
-          <label class="flex items-center gap-3 p-2.5 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 transition-all">
-            <input type="radio" name="unsubscribe-reason" value="Content not relevant" class="w-4 h-4 text-red-600" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">Content not relevant</span>
-          </label>
-          <label class="flex items-center gap-3 p-2.5 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 transition-all">
-            <input type="radio" name="unsubscribe-reason" value="Not getting value" class="w-4 h-4 text-red-600" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">Not getting value</span>
-          </label>
-          <label class="flex items-center gap-3 p-2.5 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 transition-all">
-            <input type="radio" name="unsubscribe-reason" value="Other" class="w-4 h-4 text-red-600" />
-            <span class="text-sm text-gray-700 dark:text-gray-300">Other</span>
-          </label>
-        </div>
-      </div>
-
-      <div id="other-reason-container" class="hidden">
-        <input id="other-reason-input" type="text" placeholder="Please specify..." class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 outline-none" />
-      </div>
-
-      <div id="unsubscribe-confirm-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
-
-      <div class="flex gap-3 pt-2">
-        <button id="unsubscribe-confirm-cancel" type="button" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 transition-colors font-medium">Cancel</button>
-        <button id="unsubscribe-confirm-btn" type="button" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:shadow-lg transition-all">Yes, Unsubscribe</button>
-      </div>
+    <div class="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+      <button
+        id="preferences-cancel"
+        type="button"
+        class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+      >
+        Cancel
+      </button>
+      <button
+        id="preferences-confirm"
+        type="button"
+        class="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+      >
+        Subscribe
+      </button>
     </div>
   </div>
 </div>
 
 <!-- ==========================================
-JAVASCRIPT - COMPLETE WORKING VERSION
+JAVASCRIPT
 ========================================== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    // Elements
-    const settingsModal = document.getElementById('settings-modal');
-    const openSettingsBtn = document.getElementById('open-settings-modal');
-    const closeSettingsBtn = document.getElementById('settings-modal-close');
-    const settingsCancel = document.getElementById('settings-cancel');
-    const settingsBackdrop = document.getElementById('settings-backdrop');
-    const settingsEmailInput = document.getElementById('footer-settings-email');
-    const settingsEmailDisplay = document.getElementById('settings-email-display');
-    const settingsLoading = document.getElementById('settings-loading');
-    const settingsContent = document.getElementById('settings-content');
-    const settingsError = document.getElementById('settings-error');
-    const settingsSave = document.getElementById('settings-save');
-    const settingsUnsubscribe = document.getElementById('settings-unsubscribe');
-    const selectAllBtn = document.getElementById('select-all-settings');
-    const categoriesGrid = document.getElementById('settings-categories-grid');
-    const statusText = document.getElementById('status-text');
-    const statusBadge = document.getElementById('status-badge');
-    const messageEl = document.getElementById('footer-settings-message');
-    const resendContainer = document.getElementById('resend-container');
-    const resendBtn = document.getElementById('resend-verification-btn');
-    const currentPrefsContainer = document.getElementById('current-preferences');
-    const selectedCategoriesDisplay = document.getElementById('selected-categories-display');
-
-    const confirmModal = document.getElementById('unsubscribe-confirm-modal');
-    const confirmBackdrop = document.getElementById('unsubscribe-confirm-backdrop');
-    const confirmCancel = document.getElementById('unsubscribe-confirm-cancel');
-    const confirmBtn = document.getElementById('unsubscribe-confirm-btn');
-    const confirmError = document.getElementById('unsubscribe-confirm-error');
-    const otherReasonContainer = document.getElementById('other-reason-container');
-    const otherReasonInput = document.getElementById('other-reason-input');
+    const modal = document.getElementById('preferences-modal');
+    const openModalBtn = document.getElementById('open-preferences-modal');
+    const closeModalBtn = document.getElementById('preferences-close');
+    const cancelBtn = document.getElementById('preferences-cancel');
+    const backdrop = document.getElementById('preferences-backdrop');
+    const confirmBtn = document.getElementById('preferences-confirm');
+    const emailInput = document.getElementById('footer-subscribe-email');
+    const messageEl = document.getElementById('footer-subscribe-message');
+    const modalError = document.getElementById('preferences-error');
+    const selectedCount = document.getElementById('selected-count');
+    const preferencesEmail = document.getElementById('preferences-email');
+    const selectAllBtn = document.getElementById('select-all-preferences');
+    const checkboxes = document.querySelectorAll('input[name="pref-category"]');
 
     let currentEmail = '';
-    let currentToken = '';
-    let currentCategories = [];
+    let selectedCategories = [];
 
-    // Category data with SVG icons
-    const CATEGORIES = [
-      { 
-        id: 'health-wellness', 
-        label: 'Health & Wellness',
-        icon: `<svg class="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>`
-      },
-      { 
-        id: 'food-dining', 
-        label: 'Food & Dining',
-        icon: `<svg class="w-4 h-4 text-orange-500 dark:text-orange-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m18-8v3a2 2 0 01-2 2H7a2 2 0 01-2-2V7m18-3a2 2 0 00-2-2H5a2 2 0 00-2 2v3m18 0V7"/></svg>`
-      },
-      { 
-        id: 'technology', 
-        label: 'Technology',
-        icon: `<svg class="w-4 h-4 text-purple-500 dark:text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>`
-      },
-      { 
-        id: 'shopping', 
-        label: 'Shopping',
-        icon: `<svg class="w-4 h-4 text-pink-500 dark:text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>`
-      },
-      { 
-        id: 'entertainment', 
-        label: 'Entertainment',
-        icon: `<svg class="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-      },
-      { 
-        id: 'lifestyle', 
-        label: 'Lifestyle',
-        icon: `<svg class="w-4 h-4 text-yellow-500 dark:text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>`
-      },
-      { 
-        id: 'real-estate', 
-        label: 'Real Estate',
-        icon: `<svg class="w-4 h-4 text-green-500 dark:text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1h-2z"/></svg>`
-      },
-      { 
-        id: 'finance', 
-        label: 'Finance',
-        icon: `<svg class="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-      }
-    ];
-
-    function showMessage(msg, type) {
-      if (!messageEl) return;
-      messageEl.textContent = msg;
-      messageEl.className = `text-xs mt-2 ${type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
-      messageEl.classList.remove('hidden');
-      if (msg && type === 'success') {
-        setTimeout(() => { if (messageEl) messageEl.classList.add('hidden'); }, 8000);
-      }
-    }
-
-    function renderCategories(selected) {
-      if (!categoriesGrid) return;
-      categoriesGrid.innerHTML = '';
-      CATEGORIES.forEach(cat => {
-        const isChecked = selected.includes(cat.id);
-        const label = document.createElement('label');
-        label.className = `flex items-center gap-3 p-2.5 rounded-lg border-2 cursor-pointer transition-all ${isChecked ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600'}`;
-        label.innerHTML = `
-          <input type="checkbox" name="settings-category" value="${cat.id}" ${isChecked ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded border-gray-300" />
-          ${cat.icon}
-          <span class="text-sm text-gray-700 dark:text-gray-300">${cat.label}</span>
-        `;
-        categoriesGrid.appendChild(label);
-        const checkbox = label.querySelector('input');
-        if (checkbox) {
-          checkbox.addEventListener('change', () => {
-            if (checkbox.checked) {
-              label.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
-              label.classList.remove('border-gray-200', 'dark:border-gray-700');
-            } else {
-              label.classList.remove('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
-              label.classList.add('border-gray-200', 'dark:border-gray-700');
-            }
-          });
-        }
-      });
-    }
-
-    function displayCurrentPreferences(categories) {
-      if (!currentPrefsContainer || !selectedCategoriesDisplay) return;
+    function updateSelectedCount() {
+      const checked = document.querySelectorAll('input[name="pref-category"]:checked');
+      selectedCategories = Array.from(checked).map(cb => cb.value);
+      selectedCount.textContent = selectedCategories.length;
       
-      if (categories && categories.length > 0) {
-        currentPrefsContainer.classList.remove('hidden');
-        selectedCategoriesDisplay.innerHTML = '';
-        categories.forEach(catId => {
-          const cat = CATEGORIES.find(c => c.id === catId);
-          if (cat) {
-            const tag = document.createElement('span');
-            tag.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
-            tag.innerHTML = `${cat.icon} ${cat.label}`;
-            selectedCategoriesDisplay.appendChild(tag);
-          }
-        });
-      } else {
-        currentPrefsContainer.classList.add('hidden');
-      }
-    }
-
-    function updateStatus(data) {
-      if (!statusText || !statusBadge) return;
-      
-      // Display current preferences
-      displayCurrentPreferences(data.categories || []);
-      
-      if (data.status === 'subscribed') {
-        // ✅ SUBSCRIBED - Show Unsubscribe button
-        statusText.textContent = '✅ You are subscribed to our newsletter!';
-        statusBadge.textContent = 'Active';
-        statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
-        if (settingsUnsubscribe) settingsUnsubscribe.classList.remove('hidden');
-        if (resendContainer) resendContainer.classList.add('hidden');
-        settingsSave.textContent = 'Save Preferences';
-        settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
-        
-      } else if (data.status === 'pending') {
-        // ⏳ PENDING VERIFICATION - Show Resend button
-        statusText.textContent = '⏳ Pending verification. Please check your email to verify your subscription.';
-        statusBadge.textContent = 'Pending';
-        statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
-        if (settingsUnsubscribe) settingsUnsubscribe.classList.add('hidden');
-        if (resendContainer) resendContainer.classList.remove('hidden');
-        settingsSave.textContent = 'Subscribe';
-        settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
-        
-      } else if (data.status === 'unsubscribed') {
-        // ❌ UNSUBSCRIBED - Show Subscribe button
-        statusText.textContent = 'You are not subscribed to our newsletter.';
-        statusBadge.textContent = 'Not Subscribed';
-        statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-        if (settingsUnsubscribe) settingsUnsubscribe.classList.add('hidden');
-        if (resendContainer) resendContainer.classList.add('hidden');
-        settingsSave.textContent = 'Subscribe';
-        settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
-        
-      } else {
-        // NOT SUBSCRIBED (default)
-        statusText.textContent = 'You are not subscribed to our newsletter.';
-        statusBadge.textContent = 'Not Subscribed';
-        statusBadge.className = 'px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400';
-        if (settingsUnsubscribe) settingsUnsubscribe.classList.add('hidden');
-        if (resendContainer) resendContainer.classList.add('hidden');
-        settingsSave.textContent = 'Subscribe';
-        settingsSave.className = 'flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300';
-      }
-    }
-
-    // Open Settings
-    openSettingsBtn?.addEventListener('click', async () => {
-      const email = settingsEmailInput?.value?.trim();
-      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showMessage('Please enter a valid email address.', 'error');
-        return;
-      }
-
-      currentEmail = email;
-      settingsModal?.classList.remove('hidden');
-      settingsModal?.classList.add('flex');
-      settingsLoading?.classList.remove('hidden');
-      settingsContent?.classList.add('hidden');
-      settingsError?.classList.add('hidden');
-      document.body.style.overflow = 'hidden';
-
-      try {
-        const response = await fetch(`/api/newsletter/get-subscriber?email=${encodeURIComponent(email)}`);
-        const data = await response.json();
-
-        if (data.success) {
-          currentToken = data.data.token || '';
-          currentCategories = data.data.categories || [];
-          settingsEmailDisplay.textContent = `Managing: ${email}`;
-          renderCategories(currentCategories);
-          updateStatus(data.data);
-        } else {
-          settingsEmailDisplay.textContent = `Email: ${email}`;
-          renderCategories([]);
-          updateStatus({ status: 'not-subscribed', categories: [] });
-        }
-        settingsLoading?.classList.add('hidden');
-        settingsContent?.classList.remove('hidden');
-      } catch (error) {
-        console.error('Error:', error);
-        settingsError.textContent = 'Error loading preferences. Please try again.';
-        settingsError?.classList.remove('hidden');
-        settingsLoading?.classList.add('hidden');
-        settingsContent?.classList.remove('hidden');
-      }
-    });
-
-    // Select All
-    selectAllBtn?.addEventListener('click', () => {
-      if (!categoriesGrid) return;
-      const checkboxes = categoriesGrid.querySelectorAll('input[type="checkbox"]');
-      const allChecked = Array.from(checkboxes).every(cb => cb.checked);
       checkboxes.forEach(cb => {
-        cb.checked = !allChecked;
         const label = cb.closest('label');
         if (cb.checked) {
           label?.classList.add('border-blue-500', 'bg-blue-50', 'dark:bg-blue-900/20');
@@ -501,181 +291,128 @@ JAVASCRIPT - COMPLETE WORKING VERSION
           label?.classList.add('border-gray-200', 'dark:border-gray-700');
         }
       });
+    }
+
+    function showMessage(msg, type) {
+      messageEl.textContent = msg;
+      messageEl.className = `text-xs mt-1 ${type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
+      messageEl.classList.remove('hidden');
+      if (msg && type === 'success') {
+        setTimeout(() => { messageEl.classList.add('hidden'); }, 8000);
+      }
+    }
+
+    // Open modal
+    openModalBtn?.addEventListener('click', async () => {
+      const email = emailInput.value.trim();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showMessage('Please enter a valid email address first.', 'error');
+        return;
+      }
+
+      // Check if already subscribed
+      try {
+        const checkRes = await fetch(`/api/newsletter/check?email=${encodeURIComponent(email)}`);
+        const checkData = await checkRes.json();
+
+        if (checkData.success && checkData.status === 'active') {
+          showMessage('✅ You are already subscribed to our newsletter!', 'success');
+          emailInput.value = '';
+          return;
+        }
+        
+        if (checkData.success && checkData.status === 'pending') {
+          showMessage('⏳ Please check your email to verify your subscription. Click "Subscribe" to resend.', 'error');
+          // Resend on confirm
+        }
+      } catch (error) {
+        console.error('Check error:', error);
+      }
+
+      currentEmail = email;
+      preferencesEmail.textContent = `Email: ${email}`;
+      
+      modalError.classList.add('hidden');
+      checkboxes.forEach(cb => cb.checked = false);
+      updateSelectedCount();
+      
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    });
+
+    // Close modal
+    function closeModal() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    closeModalBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    backdrop?.addEventListener('click', closeModal);
+
+    // Select All
+    selectAllBtn?.addEventListener('click', () => {
+      const allChecked = checkboxes.length === document.querySelectorAll('input[name="pref-category"]:checked').length;
+      checkboxes.forEach(cb => cb.checked = !allChecked);
+      updateSelectedCount();
       selectAllBtn.textContent = allChecked ? 'Select All' : 'Deselect All';
     });
 
-    // Resend Verification
-    resendBtn?.addEventListener('click', async () => {
-      resendBtn.disabled = true;
-      resendBtn.textContent = 'Sending...';
-      
-      try {
-        const response = await fetch('/api/newsletter/resend-verification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: currentEmail }),
-        });
-        const data = await response.json();
-        if (data.success) {
-          showMessage('📧 Verification email resent! Please check your inbox.', 'success');
-        } else {
-          showMessage(data.message || 'Failed to resend verification.', 'error');
-        }
-      } catch (error) {
-        showMessage('Network error. Please try again.', 'error');
-      } finally {
-        resendBtn.disabled = false;
-        resendBtn.textContent = 'Click here to resend verification email →';
-      }
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', updateSelectedCount);
     });
 
-    // Save / Subscribe
-    settingsSave?.addEventListener('click', async () => {
-      if (!categoriesGrid) return;
-      const checked = categoriesGrid.querySelectorAll('input[type="checkbox"]:checked');
+    // Confirm subscription
+    confirmBtn?.addEventListener('click', async () => {
+      const checked = document.querySelectorAll('input[name="pref-category"]:checked');
       const categories = Array.from(checked).map(cb => cb.value);
 
       if (categories.length === 0) {
-        settingsError.textContent = 'Please select at least one category.';
-        settingsError?.classList.remove('hidden');
+        modalError.classList.remove('hidden');
         return;
       }
 
-      settingsError?.classList.add('hidden');
-      settingsSave.disabled = true;
-      const originalText = settingsSave.textContent;
-      settingsSave.textContent = 'Processing...';
-
-      try {
-        let response;
-        let data;
-        
-        if (originalText === 'Save Preferences') {
-          // ✅ Update preferences for subscribed user
-          response = await fetch('/api/newsletter/save-preferences', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: currentEmail, token: currentToken, categories }),
-          });
-          data = await response.json();
-          if (data.success) {
-            showMessage('✅ Preferences updated successfully!', 'success');
-            displayCurrentPreferences(categories);
-            settingsEmailInput.value = '';
-            closeSettingsModal();
-          } else {
-            settingsError.textContent = data.message || 'Failed to save preferences.';
-            settingsError?.classList.remove('hidden');
-          }
-        } else {
-          // ✅ Subscribe (new) or Resend Verification
-          response = await fetch('/api/newsletter/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: currentEmail, firstName: '', categories }),
-          });
-          data = await response.json();
-          if (data.success) {
-            showMessage('📧 Please check your email to verify your subscription!', 'success');
-            settingsEmailInput.value = '';
-            closeSettingsModal();
-          } else {
-            settingsError.textContent = data.message || 'Failed to subscribe.';
-            settingsError?.classList.remove('hidden');
-          }
-        }
-      } catch (error) {
-        settingsError.textContent = 'Network error. Please try again.';
-        settingsError?.classList.remove('hidden');
-      } finally {
-        settingsSave.disabled = false;
-        settingsSave.textContent = originalText;
-      }
-    });
-
-    // Unsubscribe - Immediate
-    settingsUnsubscribe?.addEventListener('click', () => {
-      confirmModal?.classList.remove('hidden');
-      confirmModal?.classList.add('flex');
-      document.body.style.overflow = 'hidden';
-      document.querySelectorAll('input[name="unsubscribe-reason"]').forEach(r => r.checked = false);
-      otherReasonContainer?.classList.add('hidden');
-      otherReasonInput.value = '';
-      confirmError?.classList.add('hidden');
-    });
-
-    document.querySelectorAll('input[name="unsubscribe-reason"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        if (radio.value === 'Other') {
-          otherReasonContainer?.classList.remove('hidden');
-        } else {
-          otherReasonContainer?.classList.add('hidden');
-        }
-      });
-    });
-
-    confirmBtn?.addEventListener('click', async () => {
-      const selected = document.querySelector('input[name="unsubscribe-reason"]:checked');
-      if (!selected) {
-        confirmError.textContent = 'Please select a reason.';
-        confirmError?.classList.remove('hidden');
-        return;
-      }
-
-      let reason = selected.value;
-      if (reason === 'Other' && otherReasonInput?.value?.trim()) {
-        reason = otherReasonInput.value.trim();
-      }
-
-      confirmError?.classList.add('hidden');
+      modalError.classList.add('hidden');
       confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Processing...';
+      const originalText = confirmBtn.textContent;
+      confirmBtn.textContent = 'Subscribing...';
 
       try {
-        const response = await fetch('/api/newsletter/unsubscribe', {
+        const response = await fetch('/api/newsletter/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: currentEmail, token: currentToken, reason, feedback: '' }),
+          body: JSON.stringify({ 
+            email: currentEmail, 
+            firstName: '',
+            categories 
+          }),
         });
+
         const data = await response.json();
+
         if (data.success) {
-          closeConfirmModal();
-          closeSettingsModal();
-          showMessage('✅ You have been unsubscribed successfully.', 'success');
-          settingsEmailInput.value = '';
-          updateStatus({ status: 'unsubscribed', categories: [] });
+          showMessage('📧 Please check your email to verify your subscription!', 'success');
+          emailInput.value = '';
+          closeModal();
         } else {
-          confirmError.textContent = data.message || 'Failed to unsubscribe.';
-          confirmError?.classList.remove('hidden');
+          showMessage(data.message || 'Something went wrong. Please try again.', 'error');
+          modalError.textContent = data.message || 'Something went wrong. Please try again.';
+          modalError.classList.remove('hidden');
         }
       } catch (error) {
-        confirmError.textContent = 'Network error. Please try again.';
-        confirmError?.classList.remove('hidden');
+        console.error('Subscription error:', error);
+        showMessage('Network error. Please try again.', 'error');
+        modalError.textContent = 'Network error. Please try again.';
+        modalError.classList.remove('hidden');
       } finally {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Yes, Unsubscribe';
+        confirmBtn.textContent = originalText;
       }
     });
 
-    // Close Modals
-    function closeSettingsModal() {
-      settingsModal?.classList.add('hidden');
-      settingsModal?.classList.remove('flex');
-      document.body.style.overflow = '';
-    }
-
-    function closeConfirmModal() {
-      confirmModal?.classList.add('hidden');
-      confirmModal?.classList.remove('flex');
-      document.body.style.overflow = '';
-    }
-
-    closeSettingsBtn?.addEventListener('click', closeSettingsModal);
-    settingsCancel?.addEventListener('click', closeSettingsModal);
-    settingsBackdrop?.addEventListener('click', closeSettingsModal);
-
-    confirmCancel?.addEventListener('click', closeConfirmModal);
-    confirmBackdrop?.addEventListener('click', closeConfirmModal);
+    updateSelectedCount();
   });
 </script>
 

@@ -89,7 +89,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: 'Verification email sent! Please check your inbox.',
+            message: '📧 Verification email sent! Please check your inbox to verify your subscription.',
             requiresVerification: true
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -131,7 +131,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: 'Please check your email to verify your subscription.',
+            message: '📧 Please check your email to verify your subscription. A new verification link has been sent.',
             requiresVerification: true
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -187,7 +187,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Please check your email to verify your subscription.',
+        message: '📧 Please check your email to verify your subscription.',
         requiresVerification: true
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }

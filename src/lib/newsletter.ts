@@ -1,141 +1,76 @@
-// src/lib/newsletter.ts
-
-import type { Subscriber, UnsubscribeRequest } from '@/types/newsletter';
-
-// ✅ REMOVE: declare global { var DB: D1Database; }
+import type { Subscriber, NewsletterCampaign, NewsletterDelivery } from '@/types/newsletter';
 
 // ============================================
-// SUBSCRIBER FUNCTIONS - db passed as parameter
+// SUBSCRIBER FUNCTIONS
 // ============================================
-
-export async function getSubscriberByEmailAndToken(email: string, token: string, db: any): Promise<Subscriber | null> {
-  const result = await db.prepare(
-    `SELECT * FROM subscribers WHERE email = ? AND verification_token = ?`
-  ).bind(email, token).first();
-  return result as Subscriber | null;
-}
 
 export async function getSubscriberByEmail(email: string, db: any): Promise<Subscriber | null> {
   const result = await db.prepare(
-    `SELECT * FROM subscribers WHERE email = ?`
-  ).bind(email).first();
+    'SELECT * FROM subscribers WHERE email = ?'
+  ).bind(email.toLowerCase().trim()).first();
   return result as Subscriber | null;
 }
 
-export async function getSubscriberById(id: number, db: any): Promise<Subscriber | null> {
+export async function getSubscriberByToken(token: string, db: any): Promise<Subscriber | null> {
   const result = await db.prepare(
-    `SELECT * FROM subscribers WHERE id = ?`
-  ).bind(id).first();
+    'SELECT * FROM subscribers WHERE verification_token = ?'
+  ).bind(token).first();
   return result as Subscriber | null;
 }
 
-// ============================================
-// PREFERENCES FUNCTIONS
-// ============================================
-
-export async function getSubscriberPreferences(subscriberId: number, db: any) {
-  const results = await db.prepare(`
-    SELECT category, subscribed 
-    FROM newsletter_preferences 
-    WHERE subscriber_id = ?
-  `).bind(subscriberId).all();
-  return results.results;
+export async function getSubscriberByUnsubscribeToken(token: string, db: any): Promise<Subscriber | null> {
+  const result = await db.prepare(
+    'SELECT * FROM subscribers WHERE unsubscribe_token = ?'
+  ).bind(token).first();
+  return result as Subscriber | null;
 }
 
-export async function getSubscribedCategories(subscriberId: number, db: any): Promise<string[]> {
-  const results = await db.prepare(`
-    SELECT category 
-    FROM newsletter_preferences 
-    WHERE subscriber_id = ? AND subscribed = 1
-  `).bind(subscriberId).all();
-  return results.results.map((r: any) => r.category);
-}
-
-export async function updateSubscriberPreferences(
-  subscriberId: number, 
-  categories: string[],
-  db: any
-) {
-  // Delete existing preferences
-  await db.prepare(`
-    DELETE FROM newsletter_preferences 
-    WHERE subscriber_id = ?
-  `).bind(subscriberId).run();
-
-  // Insert new preferences
-  if (categories.length > 0) {
-    const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
-    const values = categories.flatMap(cat => [subscriberId, cat]);
-    
-    await db.prepare(`
-      INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
-      VALUES ${placeholders}
-    `).bind(...values).run();
-  }
-
-  // Update subscribers table
-  await db.prepare(`
-    UPDATE subscribers 
-    SET categories = ?,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).bind(categories.join(','), subscriberId).run();
-
-  return { subscriberId, categories };
-}
-
-export async function subscriberWantsCategory(subscriberId: number, category: string, db: any): Promise<boolean> {
-  const result = await db.prepare(`
-    SELECT 1 
-    FROM newsletter_preferences 
-    WHERE subscriber_id = ? AND category = ? AND subscribed = 1
-  `).bind(subscriberId, category).first();
-  return !!result;
-}
-
-// ============================================
-// SUBSCRIBE FUNCTIONS
-// ============================================
-
-export async function createSubscriberWithPreferences(
-  email: string,
-  firstName: string,
-  selectedCategories: string[],
-  verificationToken: string,
-  db: any,
-  ipAddress?: string,
-  userAgent?: string,
-  referrer?: string
-) {
-  // Create subscriber
+export async function createSubscriber(data: {
+  email: string;
+  firstName?: string;
+  categories?: string[];
+  source?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  referrer?: string;
+}, db: any): Promise<Subscriber> {
+  const { email, firstName, categories = ['general'], source = 'website', ipAddress, userAgent, referrer } = data;
+  
+  const verificationToken = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+  const unsubscribeToken = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+  const categoriesStr = categories.join(',');
+  
   const result = await db.prepare(`
     INSERT INTO subscribers (
       email, 
       first_name, 
       categories, 
+      status,
       verification_token, 
-      verified, 
-      subscribed,
+      unsubscribe_token,
+      source,
       ip_address,
       user_agent,
       referrer
     )
-    VALUES (?, ?, ?, ?, 0, 1, ?, ?, ?)
-    RETURNING id
+    VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)
+    RETURNING *
   `).bind(
-    email, 
-    firstName || '', 
-    selectedCategories.join(','), 
+    email.toLowerCase().trim(),
+    firstName || '',
+    categoriesStr,
     verificationToken,
+    unsubscribeToken,
+    source,
     ipAddress || null,
     userAgent || null,
     referrer || null
   ).first();
 
-  // Create preferences
-  if (result && selectedCategories.length > 0) {
-    const placeholders = selectedCategories.map(() => '(?, ?, 1)').join(', ');
-    const values = selectedCategories.flatMap(cat => [result.id, cat]);
+  // Insert preferences
+  if (result && categories.length > 0 && categories[0] !== 'general') {
+    const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
+    const values = categories.flatMap(cat => [result.id, cat]);
     
     await db.prepare(`
       INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
@@ -143,58 +78,39 @@ export async function createSubscriberWithPreferences(
     `).bind(...values).run();
   }
 
-  return result;
+  return result as Subscriber;
 }
 
-export async function verifyAndUpdatePreferences(
-  email: string, 
-  token: string, 
-  selectedCategories: string[],
-  db: any
-) {
-  const subscriber = await getSubscriberByEmailAndToken(email, token, db);
-  if (!subscriber) throw new Error('Invalid verification link');
-
-  // Verify subscriber
-  await db.prepare(`
-    UPDATE subscribers 
-    SET verified = 1, 
-        verified_at = CURRENT_TIMESTAMP,
-        verification_token = NULL,
-        categories = ?,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE email = ? AND verification_token = ?
-  `).bind(selectedCategories.join(','), email, token).run();
-
-  // Update preferences
-  await updateSubscriberPreferences(subscriber.id, selectedCategories, db);
-
-  return subscriber;
-}
-
-// ============================================
-// UNSUBSCRIBE FUNCTIONS
-// ============================================
-
-export async function unsubscribeSubscriber(data: UnsubscribeRequest, db: any) {
-  const { email, token, reason, feedback } = data;
-
-  const subscriber = await getSubscriberByEmailAndToken(email, token, db);
-  if (!subscriber) throw new Error('Invalid unsubscribe link');
-  if (subscriber.subscribed === 0) throw new Error('Already unsubscribed');
-
-  // Update subscriber
+export async function verifySubscriber(token: string, db: any): Promise<Subscriber | null> {
   const result = await db.prepare(`
     UPDATE subscribers 
-    SET subscribed = 0, 
-        unsubscribed_at = CURRENT_TIMESTAMP,
+    SET status = 'active',
+        verified_at = CURRENT_TIMESTAMP,
         verification_token = NULL,
         updated_at = CURRENT_TIMESTAMP
-    WHERE email = ? AND verification_token = ?
-    RETURNING id, email, first_name, unsubscribed_at
-  `).bind(email, token).first();
+    WHERE verification_token = ?
+    RETURNING *
+  `).bind(token).first();
+  
+  return result as Subscriber | null;
+}
 
-  // Update preferences - set all to unsubscribed
+export async function unsubscribeSubscriber(token: string, reason?: string, feedback?: string, db: any): Promise<Subscriber | null> {
+  const subscriber = await db.prepare(
+    'SELECT * FROM subscribers WHERE unsubscribe_token = ?'
+  ).bind(token).first();
+
+  if (!subscriber) return null;
+
+  const result = await db.prepare(`
+    UPDATE subscribers 
+    SET status = 'unsubscribed', 
+        unsubscribed_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+    RETURNING *
+  `).bind(subscriber.id).first();
+
   await db.prepare(`
     UPDATE newsletter_preferences 
     SET subscribed = 0,
@@ -202,7 +118,6 @@ export async function unsubscribeSubscriber(data: UnsubscribeRequest, db: any) {
     WHERE subscriber_id = ?
   `).bind(subscriber.id).run();
 
-  // Store feedback
   if (reason || feedback) {
     await db.prepare(`
       INSERT INTO unsubscribe_feedback (subscriber_id, reason, feedback, created_at)
@@ -210,72 +125,154 @@ export async function unsubscribeSubscriber(data: UnsubscribeRequest, db: any) {
     `).bind(subscriber.id, reason || null, feedback || null).run();
   }
 
-  return result;
+  return result as Subscriber;
 }
 
-// ============================================
-// SENDING FUNCTIONS
-// ============================================
-
-export async function getSubscribersForCategory(category: string, db: any) {
+export async function getActiveSubscribers(db: any): Promise<Subscriber[]> {
   const results = await db.prepare(`
-    SELECT s.* 
-    FROM subscribers s
-    INNER JOIN newsletter_preferences p ON p.subscriber_id = s.id
-    WHERE s.verified = 1 
-      AND s.subscribed = 1
-      AND p.category = ?
-      AND p.subscribed = 1
-  `).bind(category).all();
-  return results.results;
-}
-
-export async function getSubscribersForCategories(categories: string[], db: any) {
-  if (categories.length === 0) return [];
-  
-  const placeholders = categories.map(() => '?').join(',');
-  const results = await db.prepare(`
-    SELECT DISTINCT s.* 
-    FROM subscribers s
-    INNER JOIN newsletter_preferences p ON p.subscriber_id = s.id
-    WHERE s.verified = 1 
-      AND s.subscribed = 1
-      AND p.category IN (${placeholders})
-      AND p.subscribed = 1
-  `).bind(...categories).all();
-  
-  return results.results;
-}
-
-export async function getAllActiveSubscribers(db: any) {
-  const results = await db.prepare(`
-    SELECT s.* 
-    FROM subscribers s
-    WHERE s.verified = 1 
-      AND s.subscribed = 1
+    SELECT * FROM subscribers WHERE status = 'active'
   `).all();
-  return results.results;
+  return results.results as Subscriber[];
+}
+
+export async function getSubscriberStats(db: any) {
+  const stats = await db.prepare(`
+    SELECT 
+      COUNT(*) as total,
+      SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+      SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+      SUM(CASE WHEN status = 'unsubscribed' THEN 1 ELSE 0 END) as unsubscribed
+    FROM subscribers
+  `).first();
+  return stats;
 }
 
 // ============================================
-// REACTIVATE FUNCTIONS
+// CAMPAIGN FUNCTIONS
 // ============================================
 
-export async function reactivateSubscriber(email: string, categories: string[], db: any) {
-  const subscriber = await getSubscriberByEmail(email, db);
-  if (!subscriber) throw new Error('Subscriber not found');
+export async function createCampaign(data: {
+  subject: string;
+  contentHtml: string;
+  category?: string;
+  scheduledAt?: string;
+  createdBy?: number;
+}, db: any): Promise<NewsletterCampaign> {
+  const result = await db.prepare(`
+    INSERT INTO newsletter_campaigns (
+      subject, 
+      content_html, 
+      category, 
+      status, 
+      scheduled_at,
+      created_by,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    RETURNING *
+  `).bind(
+    data.subject,
+    data.contentHtml,
+    data.category || 'general',
+    data.scheduledAt ? 'scheduled' : 'draft',
+    data.scheduledAt || null,
+    data.createdBy || null
+  ).first();
 
-  // Reactivate subscriber
-  await db.prepare(`
-    UPDATE subscribers 
-    SET subscribed = 1, 
-        unsubscribed_at = NULL,
+  return result as NewsletterCampaign;
+}
+
+export async function getCampaigns(db: any): Promise<NewsletterCampaign[]> {
+  const results = await db.prepare(`
+    SELECT * FROM newsletter_campaigns 
+    ORDER BY created_at DESC
+  `).all();
+  return results.results as NewsletterCampaign[];
+}
+
+export async function getCampaignById(id: number, db: any): Promise<NewsletterCampaign | null> {
+  const result = await db.prepare(
+    'SELECT * FROM newsletter_campaigns WHERE id = ?'
+  ).bind(id).first();
+  return result as NewsletterCampaign | null;
+}
+
+export async function getScheduledCampaigns(db: any): Promise<NewsletterCampaign[]> {
+  const results = await db.prepare(`
+    SELECT * FROM newsletter_campaigns 
+    WHERE status = 'scheduled' 
+      AND scheduled_at <= CURRENT_TIMESTAMP
+  `).all();
+  return results.results as NewsletterCampaign[];
+}
+
+export async function updateCampaignStatus(id: number, status: string, db: any): Promise<NewsletterCampaign> {
+  const result = await db.prepare(`
+    UPDATE newsletter_campaigns 
+    SET status = ?,
+        sent_at = CASE WHEN ? = 'sent' THEN CURRENT_TIMESTAMP ELSE sent_at END,
         updated_at = CURRENT_TIMESTAMP
-    WHERE email = ?
-  `).bind(email).run();
+    WHERE id = ?
+    RETURNING *
+  `).bind(status, status, id).first();
+  return result as NewsletterCampaign;
+}
 
-  // Update preferences
-  await updateSubscriberPreferences(subscriber.id, categories, db);
+// ============================================
+// DELIVERY FUNCTIONS
+// ============================================
 
-  return subscriber;
+export async function createDeliveries(campaignId: number, subscriberIds: number[], db: any): Promise<void> {
+  if (subscriberIds.length === 0) return;
+
+  const placeholders = subscriberIds.map(() => '(?, ?, ?)').join(', ');
+  const values = subscriberIds.flatMap(id => [campaignId, id, 'queued']);
+  
+  await db.prepare(`
+    INSERT INTO newsletter_deliveries (campaign_id, subscriber_id, status)
+    VALUES ${placeholders}
+  `).bind(...values).run();
+
+  await db.prepare(`
+    UPDATE newsletter_campaigns 
+    SET total_recipients = total_recipients + ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(subscriberIds.length, campaignId).run();
+}
+
+export async function getPendingDeliveries(batchSize: number = 100, db: any): Promise<any[]> {
+  const results = await db.prepare(`
+    SELECT d.*, s.email, s.first_name, s.unsubscribe_token 
+    FROM newsletter_deliveries d
+    JOIN subscribers s ON s.id = d.subscriber_id
+    WHERE d.status = 'queued'
+    LIMIT ?
+  `).bind(batchSize).all();
+  return results.results;
+}
+
+export async function updateDeliveryStatus(id: number, status: string, db: any): Promise<void> {
+  await db.prepare(`
+    UPDATE newsletter_deliveries 
+    SET status = ?,
+        sent_at = CASE WHEN ? = 'sent' OR ? = 'opened' OR ? = 'clicked' THEN COALESCE(sent_at, CURRENT_TIMESTAMP) ELSE sent_at END,
+        opened_at = CASE WHEN ? = 'opened' THEN CURRENT_TIMESTAMP ELSE opened_at END,
+        clicked_at = CASE WHEN ? = 'clicked' THEN CURRENT_TIMESTAMP ELSE clicked_at END
+    WHERE id = ?
+  `).bind(status, status, status, status, status, status, id).run();
+}
+
+export async function getCampaignStats(campaignId: number, db: any) {
+  const stats = await db.prepare(`
+    SELECT 
+      COUNT(*) as total_sent,
+      SUM(CASE WHEN status = 'opened' THEN 1 ELSE 0 END) as opened,
+      SUM(CASE WHEN status = 'clicked' THEN 1 ELSE 0 END) as clicked,
+      SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
+    FROM newsletter_deliveries
+    WHERE campaign_id = ?
+  `).bind(campaignId).all();
+  return stats;
 }

@@ -16,6 +16,11 @@ preview_bucket_name = "trendlin-assets"
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_HASH = "$2b$10$m.6/D1LMwG/D6V7Rzdv/FeUJQTUmfEykNcekY9nX29lLukMq9jys2"
 R2_PUBLIC_URL = "https://pub-efd12abaa5114844a7a358cc14a217de.r2.dev"
-RESEND_API_KEY = "re_hNNZwqYV_LbLE6vDNxGAeau5kiZHraApW"  # Add your Resend API key
-CONTACT_EMAIL = "contact@trendlin.com"  # Your contact email
-FROM_EMAIL = "contact@trendlin.com"  # Use the same for professional replies
+RESEND_API_KEY = "re_hNNZwqYV_LbLE6vDNxGAeau5kiZHraApW"
+CONTACT_EMAIL = "contact@trendlin.com"
+FROM_EMAIL = "contact@trendlin.com"
+SITE = "https://trendlin.com"
+
+# ✅ CRON TRIGGER - Runs every 5 minutes to send scheduled newsletters
+[triggers]
+crons = ["*/5 * * * *"]

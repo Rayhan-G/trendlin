@@ -17,7 +17,7 @@ import {
   newsletterVerificationTemplate,
   newsletterWelcomeTemplate,
   newsletterDigestTemplate,
-  unsubscribeEmailTemplate  // ✅ ADD THIS
+  unsubscribeEmailTemplate
 } from './email-templates.js';
 
 export class EmailService {
@@ -220,43 +220,14 @@ export class EmailService {
     }
   }
 
-  async sendWelcomeEmail(email: string, name: string) {
-    try {
-      const result = await this.resend.emails.send({
-        from: `Trendlin <${this.fromEmail}>`,
-        to: email,
-        subject: 'Welcome to Trendlin!',
-        html: `
-          <h1>Welcome to Trendlin, ${name}!</h1>
-          <p>Thank you for joining our community. We're excited to have you!</p>
-          <p>Here's what you can expect:</p>
-          <ul>
-            <li>📰 Latest articles and reviews</li>
-            <li>💡 Local insights and tips</li>
-            <li>🎉 Exclusive updates</li>
-          </ul>
-          <p>Start exploring: <a href="https://trendlin.com">Visit Trendlin</a></p>
-        `,
-      });
-
-      return {
-        success: true,
-        result
-      };
-    } catch (error: any) {
-      console.error('❌ Welcome email error:', error);
-      throw new Error(`Failed to send welcome email: ${error.message}`);
-    }
-  }
-
   // ============================================
   // NEWSLETTER METHODS
   // ============================================
 
-  // ✅ Send Verification Email (for subscription)
+  // ✅ Send Verification Email
   async sendNewsletterVerification(email: string, token: string, firstName?: string) {
     try {
-      const verificationUrl = `${process.env.SITE || 'https://trendlin.com'}/api/newsletter/verify?email=${encodeURIComponent(email)}&token=${token}`;
+      const verificationUrl = `${process.env.SITE || 'https://trendlin.com'}/api/newsletter/verify?token=${token}`;
       
       const result = await this.resend.emails.send({
         from: `Trendlin <${this.fromEmail}>`,
@@ -275,7 +246,7 @@ export class EmailService {
     }
   }
 
-  // ✅ Send Welcome Email (after verification)
+  // ✅ Send Welcome Email
   async sendNewsletterWelcome(email: string, firstName?: string, categories?: string[]) {
     try {
       const result = await this.resend.emails.send({
@@ -295,10 +266,10 @@ export class EmailService {
     }
   }
 
-  // ✅ Send Unsubscribe Email (exactly like verification)
+  // ✅ Send Unsubscribe Email
   async sendUnsubscribeEmail(email: string, token: string, firstName?: string) {
     try {
-      const unsubscribeUrl = `${process.env.SITE || 'https://trendlin.com'}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
+      const unsubscribeUrl = `${process.env.SITE || 'https://trendlin.com'}/unsubscribe?token=${token}`;
       
       const result = await this.resend.emails.send({
         from: `Trendlin <${this.fromEmail}>`,
@@ -324,6 +295,7 @@ export class EmailService {
     title: string;
     subtitle?: string;
     content: string;
+    unsubscribeUrl?: string;
   }) {
     try {
       const result = await this.resend.emails.send({
