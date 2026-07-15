@@ -1,6 +1,6 @@
 // /src/pages/api/admin/newsletter/campaigns.ts
 import type { APIRoute } from 'astro';
-import { createCampaign, getCampaigns, deleteCampaign, enqueueCampaign } from '../../../lib/newsletter';
+import { createCampaign, getCampaigns, deleteCampaign, enqueueCampaign } from '../../../../lib/newsletter';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {

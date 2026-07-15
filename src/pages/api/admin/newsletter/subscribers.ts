@@ -1,6 +1,6 @@
 // /src/pages/api/admin/newsletter/subscribers.ts
 import type { APIRoute } from 'astro';
-import { getSubscribers, deleteSubscriber } from '../../../lib/newsletter';
+import { getSubscribers, deleteSubscriber } from '../../../../lib/newsletter';
 
 export const GET: APIRoute = async ({ locals, url }) => {
   try {
@@ -18,17 +18,12 @@ export const GET: APIRoute = async ({ locals, url }) => {
       offset
     });
 
-    // Get total count (simplified)
-    const total = subscribers.length;
-
     return new Response(
       JSON.stringify({
         success: true,
         data: subscribers,
-        total,
         page,
-        perPage,
-        totalPages: Math.ceil(total / perPage)
+        perPage
       }),
       { status: 200 }
     );

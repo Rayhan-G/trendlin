@@ -1,12 +1,11 @@
 // /src/pages/api/newsletter/subscribe.ts
 import type { APIRoute } from 'astro';
-import { createD1Client } from '../../../lib/db';
-import { generateToken, sendVerificationEmail } from '../../../lib/newsletter';
+import { createSubscriber, getSubscriberByEmail } from '../../../lib/newsletter';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const { email } = await request.json();
-    const db = createD1Client(locals.env.DB);
+    const env = locals.env;
 
     // Validate email
     if (!email || !email.includes('@')) {
@@ -17,9 +16,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Check if subscriber exists
-    const existing = await db.prepare(
-      'SELECT id, status FROM newsletter_subscribers WHERE email = ?'
-    ).bind(email).first();
+    const existing = await getSubscriberByEmail(env, email);
 
     if (existing) {
       if (existing.status === 'active') {
@@ -33,46 +30,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
       
       if (existing.status === 'pending') {
-        // Resend verification
-        const token = await generateToken();
-        await sendVerificationEmail(email, token);
         return new Response(
           JSON.stringify({ 
-            success: true, 
-            message: 'Verification email resent! Please check your inbox.' 
+            success: false, 
+            message: 'Please verify your email first. Check your inbox!' 
           }),
           { status: 200 }
         );
       }
     }
 
-    // Generate tokens
-    const verificationToken = await generateToken();
-    const unsubscribeToken = await generateToken();
-
-    // Insert subscriber
-    await db.prepare(`
-      INSERT INTO newsletter_subscribers (
-        email, 
-        status, 
-        verification_token, 
-        unsubscribe_token,
-        source,
-        ip_address,
-        user_agent
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(
+    // Create subscriber
+    const result = await createSubscriber(env, {
       email,
-      'pending',
-      verificationToken,
-      unsubscribeToken,
-      'website',
-      request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for'),
-      request.headers.get('user-agent')
-    ).run();
+      source: 'website',
+      ip_address: request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for'),
+      user_agent: request.headers.get('user-agent')
+    });
 
-    // Send verification email
-    await sendVerificationEmail(email, verificationToken);
+    // TODO: Send verification email via Resend
+    console.log(`[NEWSLETTER] Verification token for ${email}: ${result.verificationToken}`);
 
     return new Response(
       JSON.stringify({ 

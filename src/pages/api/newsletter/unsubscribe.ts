@@ -1,49 +1,20 @@
 // /src/pages/api/newsletter/unsubscribe.ts
 import type { APIRoute } from 'astro';
-import { createD1Client } from '../../../lib/db';
+import { unsubscribeSubscriber } from '../../../lib/newsletter';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const { email, token } = await request.json();
-    const db = createD1Client(locals.env.DB);
+    const env = locals.env;
 
-    let subscriber;
+    const result = await unsubscribeSubscriber(env, token, email);
 
-    if (token) {
-      // Find by unsubscribe token
-      subscriber = await db.prepare(`
-        SELECT id, email FROM newsletter_subscribers 
-        WHERE unsubscribe_token = ?
-      `).bind(token).first();
-    } else if (email) {
-      // Find by email
-      subscriber = await db.prepare(`
-        SELECT id, email FROM newsletter_subscribers 
-        WHERE email = ?
-      `).bind(email).first();
-    }
-
-    if (!subscriber) {
+    if (!result.success) {
       return new Response(
-        JSON.stringify({ error: 'Subscriber not found' }),
+        JSON.stringify({ error: result.error }),
         { status: 404 }
       );
     }
-
-    // Update status
-    await db.prepare(`
-      UPDATE newsletter_subscribers 
-      SET status = 'unsubscribed', 
-          unsubscribed_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(subscriber.id).run();
-
-    // Log event
-    await db.prepare(`
-      INSERT INTO newsletter_events (subscriber_id, type)
-      VALUES (?, 'unsubscribe')
-    `).bind(subscriber.id).run();
 
     return new Response(
       JSON.stringify({ 
