@@ -1,7 +1,7 @@
 import type { Subscriber } from '@/types/newsletter';
 
 // ============================================
-// SUBSCRIBER FUNCTIONS - Using new schema (status only)
+// SUBSCRIBER FUNCTIONS
 // ============================================
 
 export async function getSubscriberByEmail(email: string, db: any): Promise<Subscriber | null> {
@@ -22,6 +22,13 @@ export async function getSubscriberByUnsubscribeToken(token: string, db: any): P
   const result = await db.prepare(
     'SELECT * FROM subscribers WHERE unsubscribe_token = ?'
   ).bind(token).first();
+  return result as Subscriber | null;
+}
+
+export async function getSubscriberById(id: number, db: any): Promise<Subscriber | null> {
+  const result = await db.prepare(
+    'SELECT * FROM subscribers WHERE id = ?'
+  ).bind(id).first();
   return result as Subscriber | null;
 }
 
@@ -67,7 +74,6 @@ export async function createSubscriber(data: {
     referrer || null
   ).first();
 
-  // Insert preferences
   if (result && categories.length > 0 && categories[0] !== 'general') {
     const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
     const values = categories.flatMap(cat => [result.id, cat]);
@@ -148,6 +154,48 @@ export async function getActiveSubscribers(db: any): Promise<Subscriber[]> {
 }
 
 // ============================================
+// PREFERENCES FUNCTIONS
+// ============================================
+
+export async function getSubscriberPreferences(subscriberId: number, db: any) {
+  const results = await db.prepare(`
+    SELECT category, subscribed 
+    FROM newsletter_preferences 
+    WHERE subscriber_id = ?
+  `).bind(subscriberId).all();
+  return results.results;
+}
+
+export async function updateSubscriberPreferences(
+  subscriberId: number,
+  categories: string[],
+  db: any
+) {
+  await db.prepare(`
+    UPDATE subscribers 
+    SET categories = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(categories.join(','), subscriberId).run();
+
+  await db.prepare(`
+    DELETE FROM newsletter_preferences WHERE subscriber_id = ?
+  `).bind(subscriberId).run();
+
+  if (categories.length > 0 && categories[0] !== 'general') {
+    const placeholders = categories.map(() => '(?, ?, 1)').join(', ');
+    const values = categories.flatMap(cat => [subscriberId, cat]);
+    
+    await db.prepare(`
+      INSERT INTO newsletter_preferences (subscriber_id, category, subscribed)
+      VALUES ${placeholders}
+    `).bind(...values).run();
+  }
+
+  return { subscriberId, categories };
+}
+
+// ============================================
 // CAMPAIGN FUNCTIONS
 // ============================================
 
@@ -191,6 +239,28 @@ export async function getCampaigns(db: any) {
   return results.results;
 }
 
+// ✅ ADDED: Get campaign by ID
+export async function getCampaignById(id: number, db: any) {
+  const result = await db.prepare(
+    'SELECT * FROM newsletter_campaigns WHERE id = ?'
+  ).bind(id).first();
+  return result;
+}
+
+// ✅ ADDED: Get campaign stats
+export async function getCampaignStats(campaignId: number, db: any) {
+  const stats = await db.prepare(`
+    SELECT 
+      COUNT(*) as total_sent,
+      SUM(CASE WHEN status = 'opened' THEN 1 ELSE 0 END) as opened,
+      SUM(CASE WHEN status = 'clicked' THEN 1 ELSE 0 END) as clicked,
+      SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
+    FROM newsletter_deliveries
+    WHERE campaign_id = ?
+  `).bind(campaignId).all();
+  return stats;
+}
+
 export async function getScheduledCampaigns(db: any) {
   const results = await db.prepare(`
     SELECT * FROM newsletter_campaigns 
@@ -211,6 +281,10 @@ export async function updateCampaignStatus(id: number, status: string, db: any) 
   `).bind(status, status, id).first();
   return result;
 }
+
+// ============================================
+// DELIVERY FUNCTIONS
+// ============================================
 
 export async function createDeliveries(campaignId: number, subscriberIds: number[], db: any) {
   if (subscriberIds.length === 0) return;
@@ -251,4 +325,43 @@ export async function updateDeliveryStatus(id: number, status: string, db: any) 
         clicked_at = CASE WHEN ? = 'clicked' THEN CURRENT_TIMESTAMP ELSE clicked_at END
     WHERE id = ?
   `).bind(status, status, status, status, id).run();
+}
+
+// ============================================
+// RESEND VERIFICATION
+// ============================================
+
+export async function resendVerification(email: string, db: any): Promise<Subscriber | null> {
+  const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+  
+  const result = await db.prepare(`
+    UPDATE subscribers 
+    SET verification_token = ?,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE email = ? AND status = 'pending'
+    RETURNING *
+  `).bind(token, email.toLowerCase().trim()).first();
+  
+  return result as Subscriber | null;
+}
+
+// ============================================
+// REACTIVATE SUBSCRIBER
+// ============================================
+
+export async function reactivateSubscriber(email: string, categories: string[], db: any) {
+  const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+  
+  const result = await db.prepare(`
+    UPDATE subscribers 
+    SET status = 'pending',
+        verification_token = ?,
+        categories = ?,
+        unsubscribed_at = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE email = ?
+    RETURNING *
+  `).bind(token, categories.join(','), email.toLowerCase().trim()).first();
+
+  return result as Subscriber | null;
 }

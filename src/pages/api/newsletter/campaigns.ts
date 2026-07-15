@@ -127,7 +127,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 };
 
 // ============================================
-// PUT - Update campaign (schedule, send now, cancel)
+// PUT - Update campaign
 // ============================================
 export const PUT: APIRoute = async ({ request, locals }) => {
   try {
@@ -161,7 +161,6 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
     // Handle different update scenarios
     if (status === 'scheduled' && scheduledAt) {
-      // Schedule campaign
       const updated = await updateCampaignStatus(id, 'scheduled', db);
       await db.prepare(`
         UPDATE newsletter_campaigns 
@@ -181,7 +180,6 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     }
 
     if (status === 'sending') {
-      // Send campaign now
       await sendCampaignNow(id, apiKey, db);
       return new Response(
         JSON.stringify({
@@ -193,7 +191,6 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     }
 
     if (status === 'draft') {
-      // Cancel scheduled campaign
       const updated = await updateCampaignStatus(id, 'draft', db);
       await db.prepare(`
         UPDATE newsletter_campaigns 
@@ -323,9 +320,9 @@ async function sendCampaignNow(campaignId: number, apiKey: string, db: any) {
   // Send in batches
   const batchSize = 100;
   let sent = 0;
+  let failed = 0;
 
   while (sent < subscribers.results.length) {
-    const batch = subscribers.results.slice(sent, sent + batchSize);
     const deliveries = await getPendingDeliveries(batchSize, db);
     
     for (const delivery of deliveries) {
@@ -341,6 +338,7 @@ async function sendCampaignNow(campaignId: number, apiKey: string, db: any) {
       } catch (error) {
         console.error(`Failed to send to ${delivery.email}:`, error);
         await updateDeliveryStatus(delivery.id, 'failed', db);
+        failed++;
       }
     }
 
@@ -350,4 +348,5 @@ async function sendCampaignNow(campaignId: number, apiKey: string, db: any) {
   }
 
   await updateCampaignStatus(campaignId, 'sent', db);
+  console.log(`✅ Campaign ${campaignId} completed. Sent: ${sent}, Failed: ${failed}`);
 }
