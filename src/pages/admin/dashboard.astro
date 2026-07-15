@@ -1,9 +1,10 @@
 ---
 // ============================================
-// ADMIN DASHBOARD - Trendlin (Complete)
+// ADMIN DASHBOARD - Trendlin (Premium Design)
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getSubscriberStats, getCampaigns } from '../../lib/newsletter';
 
 // ============================================
 // FETCH POSTS
@@ -183,54 +184,32 @@ try {
 }
 
 // ============================================
-// FETCH NEWSLETTER STATS - FIXED
+// FETCH NEWSLETTER STATS
 // ============================================
 let newsletterStats = {
   total: 0,
   active: 0,
   pending: 0,
   unsubscribed: 0,
-  campaigns: 0,
-  openRate: 0,
-  clickRate: 0
+  campaigns: 0
 };
 
 try {
-  const statsResponse = await fetch(`${Astro.url.origin}/api/newsletter/stats`);
-  if (statsResponse.ok) {
-    const data = await statsResponse.json();
-    if (data && data.success) {
-      const d = data.data || data;
-      newsletterStats = {
-        total: d.subscribers?.total || d.total || 0,
-        active: d.subscribers?.active || d.active || 0,
-        pending: d.subscribers?.pending || d.pending || 0,
-        unsubscribed: d.subscribers?.unsubscribed || d.unsubscribed || 0,
-        campaigns: d.campaigns?.completed || d.completed || d.total_campaigns || 0,
-        openRate: d.campaigns?.avg_open_rate || d.avg_open_rate || 0,
-        clickRate: d.campaigns?.avg_click_rate || d.avg_click_rate || 0
-      };
-    }
+  const env = Astro.locals.env;
+  const stats = await getSubscriberStats(env);
+  const campaigns = await getCampaigns(env, { limit: 100 });
+  
+  if (stats) {
+    newsletterStats = {
+      total: stats.total || 0,
+      active: stats.active || 0,
+      pending: stats.pending || 0,
+      unsubscribed: stats.unsubscribed || 0,
+      campaigns: campaigns?.length || 0
+    };
   }
 } catch (error) {
   console.error('Error fetching newsletter stats:', error);
-}
-
-// ============================================
-// FETCH RECENT CAMPAIGNS - FIXED
-// ============================================
-let recentCampaigns = [];
-
-try {
-  const campaignsResponse = await fetch(`${Astro.url.origin}/api/newsletter/campaigns?limit=5`);
-  if (campaignsResponse.ok) {
-    const data = await campaignsResponse.json();
-    if (data && data.success) {
-      recentCampaigns = data.data || data.campaigns || [];
-    }
-  }
-} catch (error) {
-  console.error('Error fetching campaigns:', error);
 }
 
 const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources + contentStats.total;
@@ -266,7 +245,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- 7 STATS CARDS -->
+  <!-- 7 STATS CARDS (Added Newsletter) -->
   <!-- ============================================ -->
   <div class="stats-grid">
     
@@ -463,7 +442,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       </div>
     </div>
 
-    <!-- 7. NEWSLETTER -->
+    <!-- 7. NEWSLETTER (NEW) -->
     <div class="stat-card stat-card-rose">
       <div class="stat-card-inner">
         <div class="stat-card-left">
@@ -474,21 +453,21 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
           </div>
           <div>
             <div class="stat-label">Newsletter</div>
-            <div class="stat-value">{newsletterStats.total || 0}</div>
+            <div class="stat-value">{newsletterStats.total}</div>
           </div>
         </div>
         <div class="stat-badges">
           <span class="stat-badge stat-badge-green">
             <span class="stat-dot stat-dot-green"></span>
-            {newsletterStats.active || 0} Active
+            {newsletterStats.active} Active
           </span>
           <span class="stat-badge stat-badge-yellow">
             <span class="stat-dot stat-dot-yellow"></span>
-            {newsletterStats.pending || 0} Pending
+            {newsletterStats.pending} Pending
           </span>
           <span class="stat-badge stat-badge-red">
             <span class="stat-dot stat-dot-red"></span>
-            {newsletterStats.unsubscribed || 0} Unsubscribed
+            {newsletterStats.unsubscribed} Unsubscribed
           </span>
         </div>
       </div>
@@ -501,34 +480,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- NEWSLETTER CAMPAIGN STATS ROW -->
-  <!-- ============================================ -->
-  <div class="newsletter-stats-grid">
-    <div class="newsletter-stat-card">
-      <div class="newsletter-stat-icon">📧</div>
-      <div>
-        <div class="newsletter-stat-label">Campaigns Sent</div>
-        <div class="newsletter-stat-value">{newsletterStats.campaigns || 0}</div>
-      </div>
-    </div>
-    <div class="newsletter-stat-card">
-      <div class="newsletter-stat-icon">📊</div>
-      <div>
-        <div class="newsletter-stat-label">Open Rate</div>
-        <div class="newsletter-stat-value">{newsletterStats.openRate || 0}%</div>
-      </div>
-    </div>
-    <div class="newsletter-stat-card">
-      <div class="newsletter-stat-icon">👆</div>
-      <div>
-        <div class="newsletter-stat-label">Click Rate</div>
-        <div class="newsletter-stat-value">{newsletterStats.clickRate || 0}%</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================ -->
-  <!-- RECENT CONTENT + RECENT CAMPAIGNS -->
+  <!-- RECENT CONTENT + RECENT POSTS SIDEBAR -->
   <!-- ============================================ -->
   <div class="recent-content-grid">
     <!-- Recent Content Calendar Items -->
@@ -640,104 +592,115 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
         </div>
       )}
     </div>
+  </div>
 
-    <!-- Recent Campaigns -->
-    <div class="recent-posts-section">
-      <div class="section-header">
-        <div>
-          <h2 class="section-title">📨 Recent Campaigns</h2>
-          <p class="section-subtitle">Your latest newsletter campaigns</p>
-        </div>
-        <div class="section-actions">
-          <a href="/admin/newsletter/new" class="btn-new-post">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            New Campaign
-          </a>
-        </div>
+  <!-- ============================================ -->
+  <!-- RECENT POSTS SECTION (Existing) -->
+  <!-- ============================================ -->
+  <div class="recent-posts-section" style="margin-top: 1.5rem;">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">📄 Recent Posts</h2>
+        <p class="section-subtitle">Your latest published and draft articles</p>
       </div>
+      <div class="section-actions">
+        <div class="search-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input 
+            type="text" 
+            id="searchInput"
+            placeholder="Search posts..." 
+            class="search-input"
+          />
+        </div>
+        <a href="/admin/new" class="btn-new-post">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Post
+        </a>
+      </div>
+    </div>
 
-      <div class="table-container">
-        {recentCampaigns.length > 0 ? (
-          <div class="table-scroll">
-            <table class="posts-table">
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th class="status-col">Status</th>
-                  <th class="date-col">Sent</th>
-                  <th class="actions-col">Actions</th>
+    <div class="table-container">
+      {posts.length > 0 ? (
+        <div class="table-scroll">
+          <table class="posts-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th class="status-col">Status</th>
+                <th class="date-col">Published</th>
+                <th class="actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {posts.slice(0, 5).map((post) => (
+                <tr key={post.id}>
+                  <td>
+                    <div class="post-title-cell">
+                      <span class="post-title">{post.title}</span>
+                    </div>
+                  </td>
+                  <td class="status-col">
+                    <span class={`status-badge ${post.is_draft ? 'status-draft' : 'status-published'}`}>
+                      <span class="status-dot"></span>
+                      {post.is_draft ? 'Draft' : 'Published'}
+                    </span>
+                  </td>
+                  <td class="date-col">
+                    {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { 
+                      month: 'short', 
+                      day: 'numeric', 
+                      year: 'numeric' 
+                    }) : '—'}
+                  </td>
+                  <td class="actions-col">
+                    <div class="action-buttons">
+                      <a href={`/admin/edit/${post.id}`} class="action-btn action-btn-edit">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Edit
+                      </a>
+                      <button 
+                        class="action-btn action-btn-delete delete-btn"
+                        data-id={post.id}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {recentCampaigns.map((campaign) => {
-                  const statusClass = getStatusClass(campaign.status);
-                  return (
-                    <tr key={campaign.id}>
-                      <td>
-                        <div class="post-title-cell">
-                          <span class="post-title">{campaign.subject}</span>
-                        </div>
-                      </td>
-                      <td class="status-col">
-                        <span class={`status-badge ${statusClass}`}>
-                          <span class="status-dot"></span>
-                          {campaign.status}
-                        </span>
-                      </td>
-                      <td class="date-col">
-                        {campaign.sent_at ? new Date(campaign.sent_at).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        }) : campaign.scheduled_at ? 'Scheduled' : '—'}
-                      </td>
-                      <td class="actions-col">
-                        <div class="action-buttons">
-                          <a href={`/admin/newsletter/${campaign.id}`} class="action-btn action-btn-edit">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                            Edit
-                          </a>
-                          <button 
-                            class="action-btn action-btn-delete delete-campaign-btn"
-                            data-id={campaign.id}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <polyline points="3 6 5 6 21 6"/>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            </svg>
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div class="empty-state">
-            <div class="empty-icon">📨</div>
-            <p>No campaigns yet</p>
-            <a href="/admin/newsletter/new" class="empty-action">Create your first campaign →</a>
-          </div>
-        )}
-      </div>
-
-      {recentCampaigns.length > 0 && (
-        <div class="view-all-container">
-          <a href="/admin/newsletter" class="view-all-link">
-            View all campaigns →
-          </a>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div class="empty-state">
+          <div class="empty-icon">📝</div>
+          <p>No posts yet</p>
+          <a href="/admin/new" class="empty-action">Create your first post →</a>
         </div>
       )}
     </div>
+
+    {posts.length > 5 && (
+      <div class="view-all-container">
+        <a href="/admin/posts" class="view-all-link">
+          View all {posts.length} posts →
+        </a>
+      </div>
+    )}
   </div>
 
 </AdminLayout>
@@ -833,64 +796,20 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       });
     });
 
-    // Delete Campaigns
-    const deleteCampaignButtons = document.querySelectorAll('.delete-campaign-btn');
-    
-    deleteCampaignButtons.forEach(function(button) {
-      button.addEventListener('click', async function(e) {
-        e.preventDefault();
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.posts-table tbody tr');
         
-        const campaignId = this.getAttribute('data-id');
-        
-        if (!confirm('Are you sure you want to delete this campaign?')) {
-          return;
-        }
-        
-        const originalText = this.innerHTML;
-        this.innerHTML = 'Deleting...';
-        this.disabled = true;
-        this.classList.add('opacity-50');
-        
-        try {
-          const response = await fetch(`/api/admin/newsletter/campaigns?id=${campaignId}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-          });
-          
-          const result = await response.json();
-          
-          if (!response.ok) {
-            throw new Error(result.error || 'Delete failed');
-          }
-          
-          alert('✅ Campaign deleted successfully!');
-          window.location.reload();
-          
-        } catch (error) {
-          console.error('Error:', error);
-          alert('❌ Failed to delete campaign');
-          this.innerHTML = originalText;
-          this.disabled = false;
-          this.classList.remove('opacity-50');
-        }
+        rows.forEach(row => {
+          const title = row.querySelector('.post-title')?.textContent?.toLowerCase() || '';
+          row.style.display = title.includes(searchTerm) ? '' : 'none';
+        });
       });
-    });
+    }
   });
-
-  // Status helper function - Global
-  function getStatusClass(status) {
-    const classes = {
-      'draft': 'status-draft',
-      'scheduled': 'status-scheduled',
-      'sending': 'status-sending',
-      'sent': 'status-published',
-      'completed': 'status-published',
-      'failed': 'status-failed',
-      'cancelled': 'status-failed',
-      'paused': 'status-draft'
-    };
-    return classes[status] || 'status-draft';
-  }
 </script>
 
 <style is:global>
@@ -958,13 +877,13 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   }
 
   /* ============================================
-     STATS GRID
+     STATS GRID - 7 Cards
      ============================================ */
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
   }
 
   .stat-card {
@@ -1144,55 +1063,12 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   }
 
   /* ============================================
-     NEWSLETTER STATS ROW
-     ============================================ */
-  .newsletter-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
-
-  .newsletter-stat-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    padding: 1rem 1.25rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    transition: all 0.2s ease;
-  }
-
-  .newsletter-stat-card:hover {
-    border-color: #cbd5e1;
-  }
-
-  .newsletter-stat-icon {
-    font-size: 1.5rem;
-  }
-
-  .newsletter-stat-label {
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .newsletter-stat-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #0f172a;
-  }
-
-  /* ============================================
      RECENT CONTENT GRID
      ============================================ */
   .recent-content-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
   /* ============================================
@@ -1232,6 +1108,36 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     display: flex;
     align-items: center;
     gap: 0.75rem;
+  }
+
+  .search-wrapper {
+    position: relative;
+  }
+
+  .search-wrapper .search-icon {
+    position: absolute;
+    left: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+  }
+
+  .search-input {
+    padding: 0.375rem 0.75rem 0.375rem 2rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    outline: none;
+    transition: all 0.2s;
+    width: 160px;
+    background: #fafbfc;
+  }
+
+  .search-input:focus {
+    border-color: #3b82f6;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    width: 200px;
   }
 
   .btn-new-post {
@@ -1351,21 +1257,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     color: #92400e;
   }
 
-  .status-scheduled {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .status-sending {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  .status-failed {
-    background: #fecaca;
-    color: #991b1b;
-  }
-
   .status-dot {
     width: 5px;
     height: 5px;
@@ -1375,9 +1266,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
   .status-published .status-dot { background: #22c55e; }
   .status-draft .status-dot { background: #eab308; }
-  .status-scheduled .status-dot { background: #3b82f6; }
-  .status-sending .status-dot { background: #eab308; }
-  .status-failed .status-dot { background: #ef4444; }
 
   .type-badge {
     display: inline-flex;
@@ -1489,8 +1377,8 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
      RESPONSIVE
      ============================================ */
   @media (max-width: 1200px) {
-    .recent-content-grid {
-      grid-template-columns: 1fr;
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     }
   }
 
@@ -1518,10 +1406,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       grid-template-columns: 1fr 1fr;
     }
 
-    .newsletter-stats-grid {
-      grid-template-columns: 1fr 1fr;
-    }
-
     .section-header {
       flex-direction: column;
       align-items: stretch;
@@ -1529,6 +1413,14 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
     .section-actions {
       flex-wrap: wrap;
+    }
+
+    .search-input {
+      width: 100%;
+    }
+
+    .search-input:focus {
+      width: 100%;
     }
 
     .posts-table {
@@ -1564,10 +1456,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
   @media (max-width: 480px) {
     .stats-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .newsletter-stats-grid {
       grid-template-columns: 1fr;
     }
 
