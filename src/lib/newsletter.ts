@@ -1,7 +1,7 @@
-import type { Subscriber, NewsletterCampaign, NewsletterDelivery } from '@/types/newsletter';
+import type { Subscriber } from '@/types/newsletter';
 
 // ============================================
-// SUBSCRIBER FUNCTIONS
+// SUBSCRIBER FUNCTIONS - Using new schema (status only)
 // ============================================
 
 export async function getSubscriberByEmail(email: string, db: any): Promise<Subscriber | null> {
@@ -128,13 +128,6 @@ export async function unsubscribeSubscriber(token: string, reason?: string, feed
   return result as Subscriber;
 }
 
-export async function getActiveSubscribers(db: any): Promise<Subscriber[]> {
-  const results = await db.prepare(`
-    SELECT * FROM subscribers WHERE status = 'active'
-  `).all();
-  return results.results as Subscriber[];
-}
-
 export async function getSubscriberStats(db: any) {
   const stats = await db.prepare(`
     SELECT 
@@ -147,6 +140,13 @@ export async function getSubscriberStats(db: any) {
   return stats;
 }
 
+export async function getActiveSubscribers(db: any): Promise<Subscriber[]> {
+  const results = await db.prepare(`
+    SELECT * FROM subscribers WHERE status = 'active'
+  `).all();
+  return results.results as Subscriber[];
+}
+
 // ============================================
 // CAMPAIGN FUNCTIONS
 // ============================================
@@ -157,7 +157,7 @@ export async function createCampaign(data: {
   category?: string;
   scheduledAt?: string;
   createdBy?: number;
-}, db: any): Promise<NewsletterCampaign> {
+}, db: any) {
   const result = await db.prepare(`
     INSERT INTO newsletter_campaigns (
       subject, 
@@ -180,34 +180,27 @@ export async function createCampaign(data: {
     data.createdBy || null
   ).first();
 
-  return result as NewsletterCampaign;
+  return result;
 }
 
-export async function getCampaigns(db: any): Promise<NewsletterCampaign[]> {
+export async function getCampaigns(db: any) {
   const results = await db.prepare(`
     SELECT * FROM newsletter_campaigns 
     ORDER BY created_at DESC
   `).all();
-  return results.results as NewsletterCampaign[];
+  return results.results;
 }
 
-export async function getCampaignById(id: number, db: any): Promise<NewsletterCampaign | null> {
-  const result = await db.prepare(
-    'SELECT * FROM newsletter_campaigns WHERE id = ?'
-  ).bind(id).first();
-  return result as NewsletterCampaign | null;
-}
-
-export async function getScheduledCampaigns(db: any): Promise<NewsletterCampaign[]> {
+export async function getScheduledCampaigns(db: any) {
   const results = await db.prepare(`
     SELECT * FROM newsletter_campaigns 
     WHERE status = 'scheduled' 
       AND scheduled_at <= CURRENT_TIMESTAMP
   `).all();
-  return results.results as NewsletterCampaign[];
+  return results.results;
 }
 
-export async function updateCampaignStatus(id: number, status: string, db: any): Promise<NewsletterCampaign> {
+export async function updateCampaignStatus(id: number, status: string, db: any) {
   const result = await db.prepare(`
     UPDATE newsletter_campaigns 
     SET status = ?,
@@ -216,14 +209,10 @@ export async function updateCampaignStatus(id: number, status: string, db: any):
     WHERE id = ?
     RETURNING *
   `).bind(status, status, id).first();
-  return result as NewsletterCampaign;
+  return result;
 }
 
-// ============================================
-// DELIVERY FUNCTIONS
-// ============================================
-
-export async function createDeliveries(campaignId: number, subscriberIds: number[], db: any): Promise<void> {
+export async function createDeliveries(campaignId: number, subscriberIds: number[], db: any) {
   if (subscriberIds.length === 0) return;
 
   const placeholders = subscriberIds.map(() => '(?, ?, ?)').join(', ');
@@ -242,7 +231,7 @@ export async function createDeliveries(campaignId: number, subscriberIds: number
   `).bind(subscriberIds.length, campaignId).run();
 }
 
-export async function getPendingDeliveries(batchSize: number = 100, db: any): Promise<any[]> {
+export async function getPendingDeliveries(batchSize: number = 100, db: any) {
   const results = await db.prepare(`
     SELECT d.*, s.email, s.first_name, s.unsubscribe_token 
     FROM newsletter_deliveries d
@@ -253,26 +242,13 @@ export async function getPendingDeliveries(batchSize: number = 100, db: any): Pr
   return results.results;
 }
 
-export async function updateDeliveryStatus(id: number, status: string, db: any): Promise<void> {
+export async function updateDeliveryStatus(id: number, status: string, db: any) {
   await db.prepare(`
     UPDATE newsletter_deliveries 
     SET status = ?,
-        sent_at = CASE WHEN ? = 'sent' OR ? = 'opened' OR ? = 'clicked' THEN COALESCE(sent_at, CURRENT_TIMESTAMP) ELSE sent_at END,
+        sent_at = CASE WHEN ? IN ('sent', 'opened', 'clicked') THEN COALESCE(sent_at, CURRENT_TIMESTAMP) ELSE sent_at END,
         opened_at = CASE WHEN ? = 'opened' THEN CURRENT_TIMESTAMP ELSE opened_at END,
         clicked_at = CASE WHEN ? = 'clicked' THEN CURRENT_TIMESTAMP ELSE clicked_at END
     WHERE id = ?
-  `).bind(status, status, status, status, status, status, id).run();
-}
-
-export async function getCampaignStats(campaignId: number, db: any) {
-  const stats = await db.prepare(`
-    SELECT 
-      COUNT(*) as total_sent,
-      SUM(CASE WHEN status = 'opened' THEN 1 ELSE 0 END) as opened,
-      SUM(CASE WHEN status = 'clicked' THEN 1 ELSE 0 END) as clicked,
-      SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
-    FROM newsletter_deliveries
-    WHERE campaign_id = ?
-  `).bind(campaignId).all();
-  return stats;
+  `).bind(status, status, status, status, id).run();
 }

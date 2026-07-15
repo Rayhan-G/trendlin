@@ -1,16 +1,13 @@
 import type { APIRoute } from 'astro';
+import { getSubscriberByEmail } from '@/lib/newsletter';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   try {
     const db = (locals as any).runtime?.env?.DB;
-    
+
     if (!db) {
-      console.error('❌ Database not available in locals');
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          message: 'Database not available' 
-        }),
+        JSON.stringify({ success: false, message: 'Database not available' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -24,97 +21,54 @@ export const GET: APIRoute = async ({ url, locals }) => {
       );
     }
 
-    // ✅ Get subscriber from database
-    const subscriber = await db.prepare(`
-      SELECT * FROM subscribers WHERE email = ?
-    `).bind(email.toLowerCase().trim()).first();
+    const subscriber = await getSubscriberByEmail(email, db);
 
-    // ✅ Case 1: No subscriber found - NOT SUBSCRIBED
     if (!subscriber) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          data: { 
+        JSON.stringify({
+          success: true,
+          data: {
             status: 'not-subscribed',
-            subscribed: false, 
             verified: false,
+            subscribed: false,
             categories: [],
             token: '',
-            firstName: ''
-          } 
+            firstName: '',
+            email: email,
+          }
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // ✅ Case 2: Subscriber exists but unsubscribed
-    if (subscriber.subscribed === 0) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          data: { 
-            status: 'unsubscribed',
-            subscribed: false, 
-            verified: subscriber.verified === 1,
-            categories: [],
-            token: subscriber.verification_token || '',
-            firstName: subscriber.first_name || '',
-            email: subscriber.email,
-            unsubscribedAt: subscriber.unsubscribed_at
-          } 
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // ✅ Case 3: Subscriber exists and is subscribed
-    // Get preferences from newsletter_preferences table
+    // ✅ Get preferences
     const preferences = await db.prepare(`
       SELECT category FROM newsletter_preferences 
       WHERE subscriber_id = ? AND subscribed = 1
     `).bind(subscriber.id).all();
 
-    // ✅ If no preferences found, fall back to categories column
-    let categories = preferences.results.map((r: any) => r.category);
-    
-    if (categories.length === 0 && subscriber.categories) {
-      // Fallback: parse from subscribers table
-      categories = subscriber.categories.split(',').filter((c: string) => c.trim() !== '');
-    }
+    const categories = preferences.results.map((r: any) => r.category);
 
-    // Generate token if none exists
-    let token = subscriber.verification_token;
-    if (!token) {
-      token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
-      await db.prepare(`
-        UPDATE subscribers SET verification_token = ? WHERE id = ?
-      `).bind(token, subscriber.id).run();
-    }
-
-    // ✅ Determine status
-    let status = 'subscribed';
-    if (subscriber.verified === 0) {
-      status = 'pending';
-    }
+    // ✅ Determine status (already have it)
+    let status = subscriber.status;
 
     return new Response(
       JSON.stringify({
         success: true,
         data: {
           status: status,
-          subscribed: subscriber.subscribed === 1,
-          verified: subscriber.verified === 1,
-          categories: categories,
-          token: token,
+          verified: status === 'active',
+          subscribed: status === 'active',
+          categories: categories.length > 0 ? categories : (subscriber.categories ? subscriber.categories.split(',') : []),
+          token: subscriber.verification_token || '',
           firstName: subscriber.first_name || '',
           email: subscriber.email,
-          unsubscribedAt: subscriber.unsubscribed_at
-        },
+        }
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('❌ Get subscriber error:', error);
+    console.error('Get subscriber error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
