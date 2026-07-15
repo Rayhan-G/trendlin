@@ -1,59 +1,119 @@
 ---
 // /src/pages/admin/newsletter/new.astro
 import AdminLayout from '../../../layouts/AdminLayout.astro';
+import { getLists } from '../../../lib/newsletter';
 import { getDB } from '../../../lib/db';
+
+const env = Astro.locals.env;
+const lists = await getLists(env, true);
 ---
 
 <AdminLayout title="New Campaign">
   <div class="campaign-editor">
-    <h1>Create New Campaign</h1>
-    
-    <form id="campaign-form">
-      <div class="form-group">
-        <label for="subject">Subject Line</label>
-        <input type="text" id="subject" required placeholder="Your newsletter subject" />
-      </div>
+    <div class="page-header">
+      <h1>📧 Create New Campaign</h1>
+      <p>Create and send a newsletter campaign to your subscribers.</p>
+    </div>
 
-      <div class="form-group">
-        <label for="preview">Preview Text</label>
-        <input type="text" id="preview" placeholder="Preview text for email clients" />
-      </div>
+    <div class="card">
+      <form id="campaign-form">
+        <div class="form-group">
+          <label for="subject">Subject Line</label>
+          <input 
+            type="text" 
+            id="subject" 
+            required 
+            placeholder="Your newsletter subject"
+            class="form-input"
+          />
+          <p class="form-hint">Keep it short and engaging. Emojis work great!</p>
+        </div>
 
-      <div class="form-group">
-        <label for="list">Audience</label>
-        <select id="list">
-          <option value="">All Subscribers</option>
-          <option value="1">Technology</option>
-          <option value="2">Finance</option>
-          <option value="3">Health</option>
-        </select>
-      </div>
+        <div class="form-group">
+          <label for="preview">Preview Text</label>
+          <input 
+            type="text" 
+            id="preview" 
+            placeholder="Preview text for email clients"
+            class="form-input"
+          />
+          <p class="form-hint">Appears next to the subject line in inboxes.</p>
+        </div>
 
-      <div class="form-group">
-        <label for="content">Content</label>
-        <textarea id="content" rows="10" placeholder="Write your newsletter content here..."></textarea>
-      </div>
+        <div class="form-group">
+          <label for="list">Audience</label>
+          <select id="list" class="form-select">
+            <option value="">All Subscribers</option>
+            {lists.map(list => (
+              <option value={list.id}>{list.name}</option>
+            ))}
+          </select>
+        </div>
 
-      <div class="form-group">
-        <label for="schedule">Schedule</label>
-        <input type="datetime-local" id="schedule" />
-      </div>
+        <div class="form-group">
+          <label for="content">Email Content</label>
+          <textarea 
+            id="content" 
+            rows="12" 
+            placeholder="Write your newsletter content here... Use HTML for formatting."
+            class="form-textarea"
+          ></textarea>
+          <p class="form-hint">You can use HTML tags for formatting: &lt;h1&gt;, &lt;p&gt;, &lt;strong&gt;, etc.</p>
+        </div>
 
-      <div class="actions">
-        <button type="button" id="save-draft" class="btn-secondary">Save Draft</button>
-        <button type="button" id="schedule-btn" class="btn-primary">Schedule</button>
-        <button type="button" id="send-now" class="btn-success">Send Now</button>
-      </div>
-    </form>
+        <div class="form-group">
+          <label for="schedule">Schedule</label>
+          <input 
+            type="datetime-local" 
+            id="schedule" 
+            class="form-input"
+          />
+          <p class="form-hint">Leave blank to send immediately.</p>
+        </div>
 
-    <div id="message" class="message"></div>
+        <div class="form-actions">
+          <button type="button" id="save-draft" class="btn-secondary">
+            💾 Save Draft
+          </button>
+          <button type="button" id="schedule-btn" class="btn-primary">
+            📅 Schedule
+          </button>
+          <button type="button" id="send-now" class="btn-success">
+            🚀 Send Now
+          </button>
+        </div>
+      </form>
+
+      <div id="message" class="message hidden"></div>
+    </div>
   </div>
 </AdminLayout>
 
 <style>
   .campaign-editor {
-    max-width: 800px;
+    max-width: 900px;
     margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .page-header p {
+    color: #64748b;
+    margin-top: 0.25rem;
+  }
+
+  .card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
     padding: 2rem;
   }
 
@@ -64,38 +124,74 @@ import { getDB } from '../../../lib/db';
   .form-group label {
     display: block;
     font-weight: 600;
+    font-size: 0.875rem;
     margin-bottom: 0.5rem;
     color: #1e293b;
   }
 
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
+  .form-input,
+  .form-select,
+  .form-textarea {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    font-size: 1rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: white;
   }
 
-  .form-group textarea {
-    min-height: 300px;
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
-  .actions {
+  .form-textarea {
+    min-height: 200px;
+    resize: vertical;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+  }
+
+  .form-hint {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.375rem;
+  }
+
+  .form-actions {
     display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    flex-wrap: wrap;
   }
 
-  .btn-primary,
   .btn-secondary,
+  .btn-primary,
   .btn-success {
-    padding: 0.75rem 1.5rem;
+    padding: 0.625rem 1.5rem;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     font-weight: 600;
+    font-size: 0.875rem;
     cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .btn-secondary {
+    background: #f1f5f9;
+    color: #1e293b;
+  }
+
+  .btn-secondary:hover {
+    background: #e2e8f0;
   }
 
   .btn-primary {
@@ -103,9 +199,10 @@ import { getDB } from '../../../lib/db';
     color: white;
   }
 
-  .btn-secondary {
-    background: #e2e8f0;
-    color: #1e293b;
+  .btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
   }
 
   .btn-success {
@@ -113,82 +210,199 @@ import { getDB } from '../../../lib/db';
     color: white;
   }
 
+  .btn-success:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  }
+
+  .btn-secondary:disabled,
+  .btn-primary:disabled,
+  .btn-success:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
   .message {
     margin-top: 1rem;
-    padding: 1rem;
-    border-radius: 4px;
-    display: none;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
   }
 
   .message.success {
-    display: block;
     background: #dcfce7;
     color: #166534;
+    border: 1px solid #bbf7d0;
   }
 
   .message.error {
-    display: block;
     background: #fee2e2;
     color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .message.hidden {
+    display: none;
+  }
+
+  @media (max-width: 640px) {
+    .card {
+      padding: 1rem;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .form-actions button {
+      width: 100%;
+    }
   }
 </style>
 
 <script>
-  import { createCampaign } from '../../../lib/api';
-
   const showMessage = (text, type) => {
     const el = document.getElementById('message');
     el.textContent = text;
     el.className = `message ${type}`;
-    setTimeout(() => { el.className = 'message'; }, 5000);
+    el.classList.remove('hidden');
+    setTimeout(() => {
+      el.classList.add('hidden');
+    }, 5000);
   };
 
   const getFormData = () => ({
-    subject: document.getElementById('subject').value,
-    previewText: document.getElementById('preview').value,
-    contentHtml: document.getElementById('content').value,
-    listId: document.getElementById('list').value || null,
+    subject: document.getElementById('subject').value.trim(),
+    preview_text: document.getElementById('preview').value.trim(),
+    content_html: document.getElementById('content').value.trim(),
+    list_id: document.getElementById('list').value || null,
   });
 
+  const validateForm = () => {
+    const data = getFormData();
+    if (!data.subject) {
+      showMessage('Please enter a subject line.', 'error');
+      return null;
+    }
+    if (!data.content_html) {
+      showMessage('Please enter the email content.', 'error');
+      return null;
+    }
+    return data;
+  };
+
+  const createCampaign = async (data, status, scheduledAt = null) => {
+    const payload = {
+      ...data,
+      status,
+      scheduled_at: scheduledAt
+    };
+
+    const response = await fetch('/api/admin/newsletter/campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to create campaign');
+    }
+    return result;
+  };
+
+  // Save Draft
   document.getElementById('save-draft')?.addEventListener('click', async () => {
+    const data = validateForm();
+    if (!data) return;
+
+    const button = document.getElementById('save-draft');
+    const originalText = button.textContent;
+    button.textContent = 'Saving...';
+    button.disabled = true;
+
     try {
-      const data = getFormData();
-      data.status = 'draft';
-      const result = await createCampaign(data);
-      showMessage('Campaign saved as draft!', 'success');
+      const result = await createCampaign(data, 'draft');
+      showMessage(`✅ Campaign saved as draft! (ID: ${result.id})`, 'success');
     } catch (error) {
-      showMessage('Failed to save draft: ' + error.message, 'error');
+      showMessage('❌ Failed to save draft: ' + error.message, 'error');
+    } finally {
+      button.textContent = originalText;
+      button.disabled = false;
     }
   });
 
+  // Schedule
   document.getElementById('schedule-btn')?.addEventListener('click', async () => {
+    const data = validateForm();
+    if (!data) return;
+
     const scheduleInput = document.getElementById('schedule');
-    if (!scheduleInput.value) {
-      showMessage('Please select a schedule time', 'error');
+    const scheduledAt = scheduleInput.value;
+
+    if (!scheduledAt) {
+      showMessage('Please select a schedule time.', 'error');
       return;
     }
 
+    // Validate that scheduled time is in the future
+    const scheduleTime = new Date(scheduledAt);
+    if (scheduleTime <= new Date()) {
+      showMessage('Please select a future date and time.', 'error');
+      return;
+    }
+
+    const button = document.getElementById('schedule-btn');
+    const originalText = button.textContent;
+    button.textContent = 'Scheduling...';
+    button.disabled = true;
+
     try {
-      const data = getFormData();
-      data.status = 'scheduled';
-      data.scheduledAt = scheduleInput.value;
-      const result = await createCampaign(data);
-      showMessage(`Campaign scheduled for ${new Date(scheduleInput.value).toLocaleString()}`, 'success');
+      const result = await createCampaign(data, 'scheduled', scheduledAt);
+      showMessage(
+        `✅ Campaign scheduled for ${new Date(scheduledAt).toLocaleString()}`,
+        'success'
+      );
     } catch (error) {
-      showMessage('Failed to schedule campaign: ' + error.message, 'error');
+      showMessage('❌ Failed to schedule: ' + error.message, 'error');
+    } finally {
+      button.textContent = originalText;
+      button.disabled = false;
     }
   });
 
+  // Send Now
   document.getElementById('send-now')?.addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to send this campaign now?')) return;
+    if (!confirm('Are you sure you want to send this campaign now? This cannot be undone.')) {
+      return;
+    }
+
+    const data = validateForm();
+    if (!data) return;
+
+    const button = document.getElementById('send-now');
+    const originalText = button.textContent;
+    button.textContent = 'Sending...';
+    button.disabled = true;
 
     try {
-      const data = getFormData();
-      data.status = 'sending';
-      const result = await createCampaign(data);
-      showMessage('Campaign is being sent!', 'success');
+      const result = await createCampaign(data, 'sending');
+      showMessage('🚀 Campaign is being sent to your subscribers!', 'success');
     } catch (error) {
-      showMessage('Failed to send campaign: ' + error.message, 'error');
+      showMessage('❌ Failed to send: ' + error.message, 'error');
+    } finally {
+      button.textContent = originalText;
+      button.disabled = false;
+    }
+  });
+
+  // Enter key shortcut for subject field
+  document.getElementById('subject')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('preview')?.focus();
     }
   });
 </script>
