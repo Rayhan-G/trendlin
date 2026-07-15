@@ -1,0 +1,180 @@
+---
+// ============================================
+// BASE LAYOUT COMPONENT - Trendlin
+// ============================================
+
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Trendlin - Modern Content Platform' } = Astro.props;
+---
+
+<!-- ============================================
+SECTION 1: HTML Document
+============================================ -->
+<!DOCTYPE html>
+<html lang="en">
+  
+  <!-- ============================================
+  SECTION 2: Head
+  ============================================ -->
+  <head>
+    <!-- Meta Tags -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&display=swap" rel="stylesheet" />
+    
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-65N96ZRWYM"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-65N96ZRWYM');
+    </script>
+    
+    <!-- ============================================
+    SECTION 3: Global Styles
+    ============================================ -->
+    <style is:global>
+      /* ---- Reset ---- */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      /* ---- Body ---- */
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #fafafa;
+        color: #0f172a;
+        overflow-x: hidden;
+        width: 100%;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      /* ---- Fix: Navbar spacing ---- */
+      /* This ensures content starts below the fixed navbar */
+      .page-wrapper {
+        padding-top: 64px; /* Mobile: navbar height */
+      }
+      
+      @media (min-width: 768px) {
+        .page-wrapper {
+          padding-top: 80px; /* Desktop: navbar height */
+        }
+      }
+      
+      /* ---- Links ---- */
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      
+      /* ---- Images ---- */
+      img {
+        max-width: 100%;
+        display: block;
+      }
+      
+      /* ---- Smooth Scroll ---- */
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      /* ---- Container Utilities ---- */
+      .content-width {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1rem;
+      }
+      
+      @media (min-width: 640px) {
+        .content-width {
+          padding: 0 1.5rem;
+        }
+      }
+      
+      @media (min-width: 1024px) {
+        .content-width {
+          padding: 0 2rem;
+        }
+      }
+      
+      /* ---- Full Width Utility ---- */
+      .full-width {
+        width: 100vw;
+        max-width: 100%;
+        position: relative;
+        left: 50%;
+        right: 50%;
+        margin-left: -50vw;
+        margin-right: -50vw;
+      }
+      
+      /* ---- Selection Color ---- */
+      ::selection {
+        background: #2563eb;
+        color: #ffffff;
+      }
+      
+      /* ---- Scrollbar Styling ---- */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 9999px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  
+  <!-- ============================================
+  SECTION 4: Body
+  ============================================ -->
+  <body>
+    
+    <!-- ---- Navbar ---- -->
+    <Navbar />
+
+    <!-- ---- Main Content with padding for fixed navbar ---- -->
+    <main class="page-wrapper">
+      <slot />
+    </main>
+
+    <!-- ---- Footer ---- -->
+    <Footer />
+    
+  </body>
+</html>

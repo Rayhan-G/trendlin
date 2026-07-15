@@ -1,0 +1,1519 @@
+---
+// ============================================
+// ADMIN DASHBOARD - Trendlin (Premium Design)
+// ============================================
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+// ============================================
+// FETCH POSTS
+// ============================================
+let posts = [];
+try {
+  const response = await fetch(`${Astro.url.origin}/api/admin/posts`);
+  if (response.ok) {
+    const data = await response.json();
+    if (data && data.posts && Array.isArray(data.posts)) {
+      posts = data.posts;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching posts:', error);
+}
+
+const totalPosts = posts.length;
+const publishedPosts = posts.filter(p => !p.is_draft).length;
+const draftPosts = posts.filter(p => p.is_draft).length;
+
+// ============================================
+// FETCH PRODUCTS
+// ============================================
+let products = [];
+let totalProducts = 0;
+let productsInStock = 0;
+let totalResources = 0;
+
+try {
+  const productsResponse = await fetch(`${Astro.url.origin}/api/admin/products`);
+  if (productsResponse.ok) {
+    const data = await productsResponse.json();
+    if (data && data.products && Array.isArray(data.products)) {
+      products = data.products;
+      totalProducts = products.length;
+      productsInStock = products.filter(p => p.in_stock === 1).length;
+      totalResources = products.reduce((sum, p) => sum + (p.resource_count || 0), 0);
+    }
+  }
+} catch (error) {
+  console.error('Error fetching products:', error);
+}
+
+// ============================================
+// FETCH MEDIA
+// ============================================
+let totalMedia = 0;
+let totalFolders = 0;
+
+try {
+  const mediaResponse = await fetch(`${Astro.url.origin}/api/admin/media`);
+  if (mediaResponse.ok) {
+    const data = await mediaResponse.json();
+    if (data && data.success) {
+      totalMedia = (data.media || []).length;
+      totalFolders = (data.folders || []).length;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching media:', error);
+}
+
+// ============================================
+// FETCH TEMPLATES
+// ============================================
+let templates = [];
+let totalTemplates = 0;
+let activeTemplates = 0;
+let templateUsage = 0;
+
+try {
+  const templatesResponse = await fetch(`${Astro.url.origin}/api/admin/templates`);
+  if (templatesResponse.ok) {
+    const data = await templatesResponse.json();
+    if (data && data.templates && Array.isArray(data.templates)) {
+      templates = data.templates;
+      totalTemplates = templates.length;
+      activeTemplates = templates.filter(t => t.is_active === 1).length;
+      templateUsage = templates.reduce((sum, t) => sum + (t.usage_count || 0), 0);
+    }
+  }
+} catch (error) {
+  console.error('Error fetching templates:', error);
+}
+
+// ============================================
+// FETCH SOURCES
+// ============================================
+let masterSources = [];
+let stateSources = [];
+let totalSources = 0;
+let totalMasterSources = 0;
+let totalStateSources = 0;
+
+try {
+  const sourcesResponse = await fetch(`${Astro.url.origin}/api/admin/sources`);
+  if (sourcesResponse.ok) {
+    const data = await sourcesResponse.json();
+    if (data && data.success) {
+      masterSources = data.master || [];
+      stateSources = data.state || [];
+      totalMasterSources = masterSources.length;
+      totalStateSources = stateSources.length;
+      totalSources = totalMasterSources + totalStateSources;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching sources:', error);
+}
+
+// ============================================
+// FETCH CONTENT CALENDAR STATS
+// ============================================
+let contentStats = {
+  total: 0,
+  published: 0,
+  scheduled: 0,
+  drafts: 0,
+  thisMonth: 0,
+  byStatus: [],
+  byType: []
+};
+
+try {
+  const contentStatsResponse = await fetch(`${Astro.url.origin}/api/admin/content/stats`);
+  if (contentStatsResponse.ok) {
+    const data = await contentStatsResponse.json();
+    if (data && data.success) {
+      contentStats = data.data;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching content stats:', error);
+}
+
+// ============================================
+// FETCH RECENT CONTENT
+// ============================================
+let recentContent = [];
+
+try {
+  const recentContentResponse = await fetch(`${Astro.url.origin}/api/admin/content?limit=5`);
+  if (recentContentResponse.ok) {
+    const data = await recentContentResponse.json();
+    if (data && data.success) {
+      recentContent = data.data || [];
+    }
+  }
+} catch (error) {
+  console.error('Error fetching recent content:', error);
+}
+
+// ============================================
+// FETCH CONTENT STATUSES AND TYPES FOR DISPLAY
+// ============================================
+let contentStatuses = [];
+let contentTypes = [];
+
+try {
+  const [statusRes, typeRes] = await Promise.all([
+    fetch(`${Astro.url.origin}/api/admin/content/status`),
+    fetch(`${Astro.url.origin}/api/admin/content/types`)
+  ]);
+
+  if (statusRes.ok) {
+    const data = await statusRes.json();
+    if (data && data.success) contentStatuses = data.data || [];
+  }
+
+  if (typeRes.ok) {
+    const data = await typeRes.json();
+    if (data && data.success) contentTypes = data.data || [];
+  }
+} catch (error) {
+  console.error('Error fetching content metadata:', error);
+}
+
+// ============================================
+// FETCH NEWSLETTER STATS
+// ============================================
+let newsletterStats = {
+  total: 0,
+  active: 0,
+  pending: 0,
+  unsubscribed: 0,
+  campaigns: 0,
+  openRate: 0,
+  clickRate: 0
+};
+
+try {
+  const statsResponse = await fetch(`${Astro.url.origin}/api/newsletter/stats`);
+  if (statsResponse.ok) {
+    const data = await statsResponse.json();
+    if (data && data.success) {
+      newsletterStats = data.data;
+    }
+  }
+} catch (error) {
+  console.error('Error fetching newsletter stats:', error);
+}
+
+// ============================================
+// FETCH RECENT CAMPAIGNS
+// ============================================
+let recentCampaigns = [];
+
+try {
+  const campaignsResponse = await fetch(`${Astro.url.origin}/api/newsletter/campaigns?limit=5`);
+  if (campaignsResponse.ok) {
+    const data = await campaignsResponse.json();
+    if (data && data.success) {
+      recentCampaigns = data.data || [];
+    }
+  }
+} catch (error) {
+  console.error('Error fetching campaigns:', error);
+}
+
+const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources + contentStats.total;
+---
+
+<AdminLayout title="Dashboard - Trendlin">
+  
+  <!-- ============================================ -->
+  <!-- WELCOME SECTION -->
+  <!-- ============================================ -->
+  <div class="dashboard-hero">
+    <div class="dashboard-hero-content">
+      <div>
+        <div class="dashboard-greeting">
+          <span class="greeting-emoji">👋</span>
+          <span>Welcome back!</span>
+        </div>
+        <h1 class="dashboard-title">
+          Your Content Dashboard
+        </h1>
+        <p class="dashboard-subtitle">
+          You have <strong>{totalContent}</strong> items across your content ecosystem
+        </p>
+      </div>
+      <div class="dashboard-time">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>{new Date().toLocaleString()}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- 7 STATS CARDS (Added Newsletter) -->
+  <!-- ============================================ -->
+  <div class="stats-grid">
+    
+    <!-- 1. POSTS -->
+    <div class="stat-card stat-card-blue">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Total Posts</div>
+            <div class="stat-value">{totalPosts}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {publishedPosts} Published
+          </span>
+          <span class="stat-badge stat-badge-yellow">
+            <span class="stat-dot stat-dot-yellow"></span>
+            {draftPosts} Drafts
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/posts" class="stat-action-link">View All →</a>
+        <a href="/admin/new" class="stat-action-btn stat-action-btn-blue">+ New Post</a>
+      </div>
+    </div>
+
+    <!-- 2. PRODUCTS -->
+    <div class="stat-card stat-card-orange">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value">{totalProducts}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {productsInStock} In Stock
+          </span>
+          <span class="stat-badge stat-badge-purple">
+            <span class="stat-dot stat-dot-purple"></span>
+            {totalResources} Resources
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/products" class="stat-action-link">View All →</a>
+        <a href="/admin/products/new" class="stat-action-btn stat-action-btn-orange">+ New Product</a>
+      </div>
+    </div>
+
+    <!-- 3. MEDIA -->
+    <div class="stat-card stat-card-green">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Media Files</div>
+            <div class="stat-value">{totalMedia}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-blue">
+            <span class="stat-dot stat-dot-blue"></span>
+            {totalFolders} Folders
+          </span>
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {totalMedia} Files
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/media" class="stat-action-link">View All →</a>
+        <a href="/admin/media" class="stat-action-btn stat-action-btn-green">+ Upload</a>
+      </div>
+    </div>
+
+    <!-- 4. TEMPLATES -->
+    <div class="stat-card stat-card-indigo">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Templates</div>
+            <div class="stat-value">{totalTemplates}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {activeTemplates} Active
+          </span>
+          <span class="stat-badge stat-badge-orange">
+            <span class="stat-dot stat-dot-orange"></span>
+            {templateUsage} Uses
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/templates" class="stat-action-link">View All →</a>
+        <a href="/admin/templates/new" class="stat-action-btn stat-action-btn-indigo">+ New Template</a>
+      </div>
+    </div>
+
+    <!-- 5. SOURCES -->
+    <div class="stat-card stat-card-cyan">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Sources</div>
+            <div class="stat-value">{totalSources}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-blue">
+            <span class="stat-dot stat-dot-blue"></span>
+            {totalMasterSources} Universal
+          </span>
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {totalStateSources} State
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/sources" class="stat-action-link">View All →</a>
+        <a href="/admin/sources/new" class="stat-action-btn stat-action-btn-cyan">+ New Source</a>
+      </div>
+    </div>
+
+    <!-- 6. CONTENT CALENDAR -->
+    <div class="stat-card stat-card-pink">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Content Calendar</div>
+            <div class="stat-value">{contentStats.total}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {contentStats.published} Published
+          </span>
+          <span class="stat-badge stat-badge-blue">
+            <span class="stat-dot stat-dot-blue"></span>
+            {contentStats.scheduled} Scheduled
+          </span>
+          <span class="stat-badge stat-badge-yellow">
+            <span class="stat-dot stat-dot-yellow"></span>
+            {contentStats.drafts} Drafts
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/content" class="stat-action-link">View Calendar →</a>
+        <a href="/admin/content" class="stat-action-btn stat-action-btn-pink">+ New Content</a>
+      </div>
+    </div>
+
+    <!-- 7. NEWSLETTER (NEW) -->
+    <div class="stat-card stat-card-rose">
+      <div class="stat-card-inner">
+        <div class="stat-card-left">
+          <div class="stat-icon-wrapper">
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-label">Newsletter</div>
+            <div class="stat-value">{newsletterStats.total || 0}</div>
+          </div>
+        </div>
+        <div class="stat-badges">
+          <span class="stat-badge stat-badge-green">
+            <span class="stat-dot stat-dot-green"></span>
+            {newsletterStats.active || 0} Active
+          </span>
+          <span class="stat-badge stat-badge-yellow">
+            <span class="stat-dot stat-dot-yellow"></span>
+            {newsletterStats.pending || 0} Pending
+          </span>
+          <span class="stat-badge stat-badge-red">
+            <span class="stat-dot stat-dot-red"></span>
+            {newsletterStats.unsubscribed || 0} Unsubscribed
+          </span>
+        </div>
+      </div>
+      <div class="stat-actions">
+        <a href="/admin/newsletter" class="stat-action-link">View All →</a>
+        <a href="/admin/newsletter" class="stat-action-btn stat-action-btn-rose">+ New Campaign</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================ -->
+  <!-- NEWSLETTER CAMPAIGN STATS ROW -->
+  <!-- ============================================ -->
+  <div class="newsletter-stats-grid">
+    <div class="newsletter-stat-card">
+      <div class="newsletter-stat-icon">📧</div>
+      <div>
+        <div class="newsletter-stat-label">Campaigns Sent</div>
+        <div class="newsletter-stat-value">{newsletterStats.campaigns || 0}</div>
+      </div>
+    </div>
+    <div class="newsletter-stat-card">
+      <div class="newsletter-stat-icon">📊</div>
+      <div>
+        <div class="newsletter-stat-label">Open Rate</div>
+        <div class="newsletter-stat-value">{newsletterStats.openRate || 0}%</div>
+      </div>
+    </div>
+    <div class="newsletter-stat-card">
+      <div class="newsletter-stat-icon">👆</div>
+      <div>
+        <div class="newsletter-stat-label">Click Rate</div>
+        <div class="newsletter-stat-value">{newsletterStats.clickRate || 0}%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- RECENT CONTENT + RECENT CAMPAIGNS SIDEBAR -->
+  <!-- ============================================ -->
+  <div class="recent-content-grid">
+    <!-- Recent Content Calendar Items -->
+    <div class="recent-posts-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">📅 Recent Content</h2>
+          <p class="section-subtitle">Your latest scheduled and published content</p>
+        </div>
+        <div class="section-actions">
+          <a href="/admin/content" class="btn-new-post">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Content
+          </a>
+        </div>
+      </div>
+
+      <div class="table-container">
+        {recentContent.length > 0 ? (
+          <div class="table-scroll">
+            <table class="posts-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th class="type-col">Type</th>
+                  <th class="status-col">Status</th>
+                  <th class="date-col">Scheduled</th>
+                  <th class="actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentContent.map((item) => {
+                  const status = contentStatuses.find(s => s.id === item.status_id);
+                  const type = contentTypes.find(t => t.id === item.content_type_id);
+                  const statusColor = status ? status.color : '#94a3b8';
+                  const statusName = status ? status.name : 'Unknown';
+                  const typeIcon = type ? type.icon : '📄';
+                  const typeName = type ? type.name : 'Unknown';
+
+                  return (
+                    <tr key={item.id}>
+                      <td>
+                        <div class="post-title-cell">
+                          <span class="post-title">{item.title}</span>
+                        </div>
+                      </td>
+                      <td class="type-col">
+                        <span class="type-badge" style="background: {type ? type.color + '20' : '#94a3b820'}; color: {type ? type.color : '#94a3b8'}">
+                          {typeIcon} {typeName}
+                        </span>
+                      </td>
+                      <td class="status-col">
+                        <span class="status-badge" style="background: {statusColor}20; color: {statusColor}">
+                          <span class="status-dot" style="background: {statusColor}"></span>
+                          {statusName}
+                        </span>
+                      </td>
+                      <td class="date-col">
+                        {item.scheduled_publish_at ? new Date(item.scheduled_publish_at).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        }) : '—'}
+                      </td>
+                      <td class="actions-col">
+                        <div class="action-buttons">
+                          <a href={`/admin/content/edit/${item.id}`} class="action-btn action-btn-edit">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                            Edit
+                          </a>
+                          <button 
+                            class="action-btn action-btn-delete delete-content-btn"
+                            data-id={item.id}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div class="empty-state">
+            <div class="empty-icon">📅</div>
+            <p>No content yet</p>
+            <a href="/admin/content" class="empty-action">Create your first content →</a>
+          </div>
+        )}
+      </div>
+
+      {recentContent.length > 0 && (
+        <div class="view-all-container">
+          <a href="/admin/content" class="view-all-link">
+            View all {contentStats.total} content items →
+          </a>
+        </div>
+      )}
+    </div>
+
+    <!-- Recent Campaigns -->
+    <div class="recent-posts-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">📨 Recent Campaigns</h2>
+          <p class="section-subtitle">Your latest newsletter campaigns</p>
+        </div>
+        <div class="section-actions">
+          <a href="/admin/newsletter" class="btn-new-post">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Campaign
+          </a>
+        </div>
+      </div>
+
+      <div class="table-container">
+        {recentCampaigns.length > 0 ? (
+          <div class="table-scroll">
+            <table class="posts-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th class="status-col">Status</th>
+                  <th class="date-col">Sent</th>
+                  <th class="actions-col">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentCampaigns.map((campaign) => (
+                  <tr key={campaign.id}>
+                    <td>
+                      <div class="post-title-cell">
+                        <span class="post-title">{campaign.subject}</span>
+                      </div>
+                    </td>
+                    <td class="status-col">
+                      <span class={`status-badge ${getStatusClass(campaign.status)}`}>
+                        <span class="status-dot"></span>
+                        {campaign.status}
+                      </span>
+                    </td>
+                    <td class="date-col">
+                      {campaign.sent_at ? new Date(campaign.sent_at).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      }) : '—'}
+                    </td>
+                    <td class="actions-col">
+                      <div class="action-buttons">
+                        <a href={`/admin/newsletter/${campaign.id}`} class="action-btn action-btn-edit">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                          View
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div class="empty-state">
+            <div class="empty-icon">📨</div>
+            <p>No campaigns yet</p>
+            <a href="/admin/newsletter" class="empty-action">Create your first campaign →</a>
+          </div>
+        )}
+      </div>
+
+      {recentCampaigns.length > 0 && (
+        <div class="view-all-container">
+          <a href="/admin/newsletter" class="view-all-link">
+            View all campaigns →
+          </a>
+        </div>
+      )}
+    </div>
+  </div>
+
+</AdminLayout>
+
+<!-- ============================================ -->
+<!-- DELETE FUNCTIONALITY -->
+<!-- ============================================ -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Delete Posts
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    
+    deleteButtons.forEach(function(button) {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const postId = this.getAttribute('data-id');
+        
+        if (!confirm('Are you sure you want to delete this post?')) {
+          return;
+        }
+        
+        const originalText = this.innerHTML;
+        this.innerHTML = 'Deleting...';
+        this.disabled = true;
+        this.classList.add('opacity-50');
+        
+        try {
+          const response = await fetch(`/api/admin/posts/${postId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+          }
+          
+          alert('✅ Post deleted successfully!');
+          window.location.reload();
+          
+        } catch (error) {
+          console.error('Error:', error);
+          alert('❌ Failed to delete post');
+          this.innerHTML = originalText;
+          this.disabled = false;
+          this.classList.remove('opacity-50');
+        }
+      });
+    });
+
+    // Delete Content Calendar Items
+    const deleteContentButtons = document.querySelectorAll('.delete-content-btn');
+    
+    deleteContentButtons.forEach(function(button) {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const contentId = this.getAttribute('data-id');
+        
+        if (!confirm('Are you sure you want to delete this content?')) {
+          return;
+        }
+        
+        const originalText = this.innerHTML;
+        this.innerHTML = 'Deleting...';
+        this.disabled = true;
+        this.classList.add('opacity-50');
+        
+        try {
+          const response = await fetch(`/api/admin/content/${contentId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+          }
+          
+          alert('✅ Content deleted successfully!');
+          window.location.reload();
+          
+        } catch (error) {
+          console.error('Error:', error);
+          alert('❌ Failed to delete content');
+          this.innerHTML = originalText;
+          this.disabled = false;
+          this.classList.remove('opacity-50');
+        }
+      });
+    });
+
+    // Status helper function
+    function getStatusClass(status) {
+      const classes = {
+        'draft': 'status-draft',
+        'scheduled': 'status-scheduled',
+        'sending': 'status-sending',
+        'sent': 'status-published',
+        'failed': 'status-failed'
+      };
+      return classes[status] || 'status-draft';
+    }
+  });
+</script>
+
+<style is:global>
+  /* ============================================
+     DASHBOARD HERO
+     ============================================ */
+  .dashboard-hero {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 16px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .dashboard-hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .dashboard-greeting {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
+  }
+
+  .greeting-emoji {
+    font-size: 1.25rem;
+  }
+
+  .dashboard-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0.25rem 0 0.125rem;
+  }
+
+  .dashboard-subtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+  }
+
+  .dashboard-subtitle strong {
+    color: #0f172a;
+    font-weight: 600;
+  }
+
+  .dashboard-time {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    background: white;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+
+  /* ============================================
+     STATS GRID
+     ============================================ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+  }
+
+  .stat-card-inner {
+    padding: 1.25rem 1.25rem 0.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .stat-card-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-card-blue .stat-icon-wrapper { background: #dbeafe; }
+  .stat-card-orange .stat-icon-wrapper { background: #ffedd5; }
+  .stat-card-green .stat-icon-wrapper { background: #d1fae5; }
+  .stat-card-indigo .stat-icon-wrapper { background: #e0e7ff; }
+  .stat-card-cyan .stat-icon-wrapper { background: #cffafe; }
+  .stat-card-pink .stat-icon-wrapper { background: #fce7f3; }
+  .stat-card-rose .stat-icon-wrapper { background: #ffe4e6; }
+
+  .stat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .stat-card-blue .stat-icon { color: #2563eb; }
+  .stat-card-orange .stat-icon { color: #ea580c; }
+  .stat-card-green .stat-icon { color: #16a34a; }
+  .stat-card-indigo .stat-icon { color: #4f46e5; }
+  .stat-card-cyan .stat-icon { color: #0891b2; }
+  .stat-card-pink .stat-icon { color: #db2777; }
+  .stat-card-rose .stat-icon { color: #e11d48; }
+
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+  }
+
+  .stat-card-blue .stat-value { color: #2563eb; }
+  .stat-card-orange .stat-value { color: #ea580c; }
+  .stat-card-green .stat-value { color: #16a34a; }
+  .stat-card-indigo .stat-value { color: #4f46e5; }
+  .stat-card-cyan .stat-value { color: #0891b2; }
+  .stat-card-pink .stat-value { color: #db2777; }
+  .stat-card-rose .stat-value { color: #e11d48; }
+
+  .stat-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .stat-badge-green { background: #dcfce7; color: #166534; }
+  .stat-badge-yellow { background: #fef3c7; color: #92400e; }
+  .stat-badge-blue { background: #dbeafe; color: #1e40af; }
+  .stat-badge-purple { background: #ede9fe; color: #5b21b6; }
+  .stat-badge-orange { background: #ffedd5; color: #9a3412; }
+  .stat-badge-red { background: #fecaca; color: #991b1b; }
+
+  .stat-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .stat-dot-green { background: #22c55e; }
+  .stat-dot-yellow { background: #eab308; }
+  .stat-dot-blue { background: #3b82f6; }
+  .stat-dot-purple { background: #8b5cf6; }
+  .stat-dot-orange { background: #f97316; }
+  .stat-dot-red { background: #ef4444; }
+
+  .stat-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+    gap: 0.5rem;
+  }
+
+  .stat-action-link {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .stat-action-link:hover {
+    color: #0f172a;
+  }
+
+  .stat-action-btn {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    color: white;
+  }
+
+  .stat-action-btn-blue { background: #2563eb; }
+  .stat-action-btn-blue:hover { background: #1d4ed8; }
+  .stat-action-btn-orange { background: #ea580c; }
+  .stat-action-btn-orange:hover { background: #c2410c; }
+  .stat-action-btn-green { background: #16a34a; }
+  .stat-action-btn-green:hover { background: #15803d; }
+  .stat-action-btn-indigo { background: #4f46e5; }
+  .stat-action-btn-indigo:hover { background: #4338ca; }
+  .stat-action-btn-cyan { background: #0891b2; }
+  .stat-action-btn-cyan:hover { background: #0e7490; }
+  .stat-action-btn-pink { background: #db2777; }
+  .stat-action-btn-pink:hover { background: #be185d; }
+  .stat-action-btn-rose { background: #e11d48; }
+  .stat-action-btn-rose:hover { background: #be123c; }
+
+  .stat-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  /* ============================================
+     NEWSLETTER STATS ROW
+     ============================================ */
+  .newsletter-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .newsletter-stat-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .newsletter-stat-card:hover {
+    border-color: #cbd5e1;
+  }
+
+  .newsletter-stat-icon {
+    font-size: 1.5rem;
+  }
+
+  .newsletter-stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .newsletter-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  /* ============================================
+     RECENT CONTENT GRID
+     ============================================ */
+  .recent-content-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  /* ============================================
+     RECENT POSTS
+     ============================================ */
+  .recent-posts-section {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .section-subtitle {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0.125rem 0 0;
+  }
+
+  .section-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .btn-new-post {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 1rem;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-new-post:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .posts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .posts-table thead {
+    background: #f8fafc;
+  }
+
+  .posts-table th {
+    padding: 0.625rem 1.25rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .posts-table td {
+    padding: 0.625rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .posts-table tbody tr {
+    transition: background 0.15s;
+  }
+
+  .posts-table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  .status-col {
+    width: 110px;
+  }
+
+  .type-col {
+    width: 130px;
+  }
+
+  .date-col {
+    width: 120px;
+  }
+
+  .actions-col {
+    width: 150px;
+    text-align: right;
+  }
+
+  .post-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .post-title {
+    font-weight: 500;
+    color: #0f172a;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .status-published {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-draft {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-scheduled {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  .status-sending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-failed {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-published .status-dot { background: #22c55e; }
+  .status-draft .status-dot { background: #eab308; }
+  .status-scheduled .status-dot { background: #3b82f6; }
+  .status-sending .status-dot { background: #eab308; }
+  .status-failed .status-dot { background: #ef4444; }
+
+  .type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.375rem;
+  }
+
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+
+  .action-btn-edit {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .action-btn-edit:hover {
+    background: #c7d2fe;
+  }
+
+  .action-btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .action-btn-delete:hover {
+    background: #fecaca;
+  }
+
+  /* ============================================
+     EMPTY STATE
+     ============================================ */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  .empty-state p {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    margin: 0 0 0.75rem;
+  }
+
+  .empty-action {
+    color: #3b82f6;
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.875rem;
+  }
+
+  .empty-action:hover {
+    text-decoration: underline;
+  }
+
+  /* ============================================
+     VIEW ALL
+     ============================================ */
+  .view-all-container {
+    text-align: center;
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid #f1f5f9;
+    background: #fafbfc;
+  }
+
+  .view-all-link {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #3b82f6;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .view-all-link:hover {
+    color: #1d4ed8;
+  }
+
+  .opacity-50 {
+    opacity: 0.5;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1200px) {
+    .recent-content-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-hero {
+      padding: 1.25rem;
+    }
+
+    .dashboard-hero-content {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .dashboard-title {
+      font-size: 1.25rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .newsletter-stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .section-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .section-actions {
+      flex-wrap: wrap;
+    }
+
+    .posts-table {
+      font-size: 0.75rem;
+    }
+
+    .posts-table th,
+    .posts-table td {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .status-col {
+      width: 80px;
+    }
+
+    .type-col {
+      width: 100px;
+    }
+
+    .date-col {
+      width: 90px;
+    }
+
+    .actions-col {
+      width: 120px;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .newsletter-stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-card-inner {
+      padding: 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+    }
+
+    .dashboard-time {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.625rem;
+    }
+  }
+</style>

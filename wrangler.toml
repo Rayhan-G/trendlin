@@ -1,0 +1,22 @@
+name = "trendlin"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "trendlin-db"
+database_id = "4c7e58ee-38af-49ed-ab76-62a07050a2f9"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "trendlin-assets"
+preview_bucket_name = "trendlin-assets"
+
+[vars]
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD_HASH = "$2b$10$m.6/D1LMwG/D6V7Rzdv/FeUJQTUmfEykNcekY9nX29lLukMq9jys2"
+R2_PUBLIC_URL = "https://pub-efd12abaa5114844a7a358cc14a217de.r2.dev"
+
+CONTACT_EMAIL = "contact@trendlin.com"
+FROM_EMAIL = "contact@trendlin.com"
+SITE = "https://trendlin.com"

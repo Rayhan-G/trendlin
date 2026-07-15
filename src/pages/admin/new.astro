@@ -1,0 +1,594 @@
+---
+// ============================================
+// NEW POST - Trendlin (Auto Slug + Cover Image + Media Library with Folders)
+// ============================================
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="New Post - Trendlin">
+  
+  <div class="max-w-6xl mx-auto">
+    
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Create New Post</h1>
+        <p class="text-sm text-gray-500 mt-1">Write your content in HTML format</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-gray-400">Status: Draft</span>
+        <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="postForm" class="space-y-6">
+      
+      <!-- Title & Slug -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Title *</label>
+          <input 
+            type="text" 
+            id="title" 
+            name="title" 
+            required
+            placeholder="Enter post title..."
+            class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            oninput="autoGenerateSlug()"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Slug *</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">/post/</span>
+            <input 
+              type="text" 
+              id="slug" 
+              name="slug" 
+              required
+              placeholder="auto-generated"
+              class="w-full pl-14 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+              readonly
+            />
+          </div>
+          <p class="mt-1 text-xs text-gray-400">Auto-generated from title</p>
+        </div>
+      </div>
+
+      <!-- Cover Image -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Cover Image</label>
+        <div class="flex gap-3">
+          <input 
+            type="url" 
+            id="cover_image" 
+            name="cover_image" 
+            placeholder="Upload an image or paste URL..."
+            class="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            oninput="updateCoverPreview()"
+          />
+          <button 
+            type="button" 
+            id="uploadBtn" 
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors"
+          >
+            📤 Upload
+          </button>
+        </div>
+        <p class="mt-1 text-xs text-gray-400">Upload to blog-assets (JPEG, PNG, WebP, GIF, SVG) • Max 5MB</p>
+        
+        <!-- Cover Image Preview -->
+        <div id="coverPreview" class="mt-3 hidden">
+          <div class="relative inline-block">
+            <img id="coverPreviewImg" src="" alt="Cover preview" class="max-h-48 rounded-lg border border-gray-200 object-cover" />
+            <button 
+              type="button" 
+              id="removeCoverBtn" 
+              class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-sm flex items-center justify-center shadow-md"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HTML Editor with Media Library Button -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-sm font-medium text-gray-700">HTML Content *</label>
+          <button 
+            type="button" 
+            id="mediaLibraryBtn" 
+            class="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1.5"
+          >
+            🖼️ Insert from Media Library
+          </button>
+        </div>
+        <textarea 
+          id="content" 
+          name="content" 
+          rows="16"
+          required
+          placeholder="<h1>Your heading</h1><p>Your content...</p>"
+          class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm resize-none"
+          oninput="updatePreview()"
+        ><h1>Welcome to Trendlin</h1>
+<p>Your trusted source for honest reviews and local insights in Los Angeles.</p></textarea>
+        <div class="mt-2 text-right text-xs text-gray-400">
+          <span id="charCount">0</span> characters
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="block text-sm font-medium text-gray-700">Live Preview</label>
+          <button type="button" id="togglePreview" class="text-xs text-blue-600 hover:text-blue-800">
+            Hide Preview
+          </button>
+        </div>
+        <div id="preview" class="w-full min-h-[200px] overflow-y-auto px-4 py-3 border border-gray-200 rounded-xl bg-gray-50"></div>
+      </div>
+
+      <!-- Category & Tags -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+          <select id="category" name="category" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">Select a category</option>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Lifestyle">Lifestyle</option>
+            <option value="Technology">Technology</option>
+            <option value="Travel">Travel</option>
+            <option value="Health & Wellness">Health & Wellness</option>
+            <option value="Real Estate">Real Estate</option>
+            <option value="Finance">Finance</option>
+            <option value="Fashion">Fashion</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Tags</label>
+          <input type="text" id="tags" name="tags" placeholder="la, lifestyle, tips" class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        </div>
+      </div>
+
+      <!-- Publish Options -->
+      <div class="flex flex-wrap items-center gap-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="is_draft" name="is_draft" value="1" checked class="w-4 h-4 rounded border-gray-300 text-blue-600" />
+          <span class="text-sm font-medium text-gray-700">Save as draft</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="is_published" name="is_published" value="1" class="w-4 h-4 rounded border-gray-300 text-blue-600" />
+          <span class="text-sm font-medium text-gray-700">Publish immediately</span>
+        </label>
+        <div class="flex-1"></div>
+        <div class="flex gap-3">
+          <a href="/admin/dashboard" class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-100">Cancel</a>
+          <button type="submit" id="submitBtn" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg shadow-blue-500/25">
+            Publish Post
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Message -->
+      <div id="statusMessage" class="hidden p-4 rounded-xl"></div>
+
+    </form>
+
+  </div>
+
+</AdminLayout>
+
+<!-- ============================================
+JAVASCRIPT - Auto Slug + Preview + R2 Upload + Media Library with Folders + Submit
+============================================ -->
+<script>
+  // ============================================
+  // AUTO GENERATE SLUG
+  // ============================================
+  function autoGenerateSlug() {
+    const title = document.getElementById('title').value;
+    const slugField = document.getElementById('slug');
+    
+    if (title) {
+      const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
+      slugField.value = slug;
+    } else {
+      slugField.value = '';
+    }
+  }
+
+  // ============================================
+  // COVER IMAGE - R2 UPLOAD
+  // ============================================
+  const coverImageInput = document.getElementById('cover_image');
+  const coverPreview = document.getElementById('coverPreview');
+  const coverPreviewImg = document.getElementById('coverPreviewImg');
+  const removeCoverBtn = document.getElementById('removeCoverBtn');
+  const uploadBtn = document.getElementById('uploadBtn');
+
+  function updateCoverPreview() {
+    const url = coverImageInput.value.trim();
+    if (url) {
+      coverPreviewImg.src = url;
+      coverPreview.classList.remove('hidden');
+    } else {
+      coverPreview.classList.add('hidden');
+    }
+  }
+
+  // Remove cover image
+  removeCoverBtn.addEventListener('click', () => {
+    coverImageInput.value = '';
+    coverPreview.classList.add('hidden');
+  });
+
+  // Upload to R2
+  uploadBtn.addEventListener('click', () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/jpeg,image/png,image/webp,image/gif,image/svg+xml';
+    
+    fileInput.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = '⏳ Uploading...';
+      
+      const statusMsg = document.getElementById('statusMessage');
+      statusMsg.className = 'p-4 rounded-xl bg-blue-50 text-blue-700';
+      statusMsg.textContent = `⏳ Uploading ${file.name}...`;
+      statusMsg.classList.remove('hidden');
+      
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Upload failed');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          coverImageInput.value = result.url;
+          updateCoverPreview();
+          
+          statusMsg.className = 'p-4 rounded-xl bg-green-50 text-green-700';
+          statusMsg.textContent = `✅ Image uploaded successfully!`;
+          
+          setTimeout(() => {
+            statusMsg.classList.add('hidden');
+          }, 3000);
+        } else {
+          throw new Error(result.error || 'Upload failed');
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        statusMsg.className = 'p-4 rounded-xl bg-red-50 text-red-700';
+        statusMsg.textContent = `❌ Upload failed: ${error.message}`;
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = '📤 Upload';
+      }
+    };
+    
+    fileInput.click();
+  });
+
+  // ============================================
+  // MEDIA LIBRARY - INSERT INTO CONTENT (WITH FOLDERS)
+  // ============================================
+  document.getElementById('mediaLibraryBtn').addEventListener('click', async function() {
+    try {
+      const response = await fetch('/api/admin/media');
+      const result = await response.json();
+      
+      if (!result.success) {
+        alert('Failed to load media library');
+        return;
+      }
+      
+      const mediaItems = result.media || [];
+      const folders = result.folders || [];
+      
+      if (mediaItems.length === 0 && folders.length === 0) {
+        alert('No media found. Please upload some images first.');
+        return;
+      }
+      
+      // Create modal with folder navigation
+      const modal = document.createElement('div');
+      modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Media Library</h2>
+            <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl">&times;</button>
+          </div>
+          <div class="p-4 overflow-y-auto flex-1" id="mediaModalContent">
+            <div id="modalFolderNav" class="flex items-center gap-2 mb-4 text-sm">
+              <button onclick="renderModalFolder('')" class="text-blue-600 hover:text-blue-800 font-medium">📁 Root</button>
+              <span id="modalFolderPath" class="text-gray-400"></span>
+            </div>
+            <div id="modalMediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              ${renderModalItems(mediaItems, folders, '')}
+            </div>
+          </div>
+          <div class="p-3 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-500">
+            Click on any image to insert it into your content
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Store data for modal navigation
+      window.modalData = { mediaItems, folders, currentFolder: '' };
+      
+    } catch (error) {
+      console.error('Error opening media library:', error);
+      alert('Failed to open media library: ' + error.message);
+    }
+  });
+
+  // Render modal items
+  function renderModalItems(mediaItems, folders, currentFolder) {
+    // Get subfolders
+    const subFolders = folders.filter(f => {
+      if (!currentFolder) {
+        return !f.includes('/');
+      }
+      return f.startsWith(currentFolder + '/') && 
+             f.split('/').length === currentFolder.split('/').length + 1;
+    });
+    
+    // Get files in current folder
+    const files = mediaItems.filter(item => {
+      if (!currentFolder) {
+        return !item.folder || item.folder === '';
+      }
+      return item.folder === currentFolder;
+    });
+    
+    let html = '';
+    
+    // Render folders first
+    subFolders.forEach(folder => {
+      const folderName = folder.split('/').pop();
+      html += `
+        <div class="cursor-pointer hover:ring-2 hover:ring-blue-500 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-dashed border-blue-200" onclick="renderModalFolder('${folder}')">
+          <div class="aspect-square flex flex-col items-center justify-center p-4">
+            <div class="text-5xl mb-2">📁</div>
+            <p class="text-sm font-semibold text-gray-700 text-center truncate w-full">${folderName}</p>
+          </div>
+        </div>
+      `;
+    });
+    
+    // Render files
+    files.forEach(item => {
+      const isVideo = item.mime_type && item.mime_type.startsWith('video/');
+      const imageUrl = item.url || '';
+      const altText = item.alt_text || item.original_name || 'Image';
+      const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
+      
+      html += `
+        <div class="cursor-pointer hover:ring-2 hover:ring-blue-500 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-700" onclick="insertMedia('${imageUrl}', '${altText}')">
+          <div class="aspect-square bg-gray-100 dark:bg-gray-600 relative">
+            ${isVideo ? `
+              <div class="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-700">
+                <span class="text-4xl">🎬</span>
+              </div>
+            ` : `
+              <img src="${imageUrl}" alt="${altText}" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f3f4f6%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239ca3af%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'" />
+            `}
+            <div class="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-1 truncate">
+              ${displayName}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    if (html === '') {
+      html = `
+        <div class="col-span-full text-center py-8 text-gray-500">
+          <p>📂 This folder is empty</p>
+        </div>
+      `;
+    }
+    
+    return html;
+  }
+
+  // Navigate modal folder
+  window.renderModalFolder = function(folder) {
+    const { mediaItems, folders } = window.modalData;
+    const grid = document.getElementById('modalMediaGrid');
+    const pathElement = document.getElementById('modalFolderPath');
+    
+    // Update current folder
+    window.modalData.currentFolder = folder;
+    
+    // Render items
+    grid.innerHTML = renderModalItems(mediaItems, folders, folder);
+    
+    // Update breadcrumb
+    if (folder) {
+      const parts = folder.split('/');
+      let html = ' <span class="text-gray-400 mx-1">/</span> ';
+      let path = '';
+      parts.forEach((part, index) => {
+        path += (index > 0 ? '/' : '') + part;
+        html += `<button onclick="renderModalFolder('${path}')" class="text-blue-600 hover:text-blue-800 font-medium">${part}</button>`;
+        if (index < parts.length - 1) {
+          html += ' <span class="text-gray-400 mx-1">/</span> ';
+        }
+      });
+      pathElement.innerHTML = html;
+    } else {
+      pathElement.innerHTML = '';
+    }
+  };
+
+  // Insert media into content
+  window.insertMedia = function(url, alt) {
+    const contentTextarea = document.getElementById('content');
+    const markdown = `<img src="${url}" alt="${alt || 'Image'}" />`;
+    
+    // Insert at cursor position or at the end
+    const start = contentTextarea.selectionStart;
+    const end = contentTextarea.selectionEnd;
+    const text = contentTextarea.value;
+    
+    contentTextarea.value = text.substring(0, start) + markdown + text.substring(end);
+    contentTextarea.dispatchEvent(new Event('input'));
+    contentTextarea.focus();
+    
+    // Update preview
+    updatePreview();
+    
+    // Close modal
+    const modal = document.querySelector('.fixed.bg-black\\/50');
+    if (modal) modal.remove();
+    
+    // Show success message
+    const statusMsg = document.getElementById('statusMessage');
+    statusMsg.className = 'p-4 rounded-xl bg-green-50 text-green-700';
+    statusMsg.textContent = '✅ Image inserted into content!';
+    statusMsg.classList.remove('hidden');
+    
+    setTimeout(() => {
+      statusMsg.classList.add('hidden');
+    }, 2000);
+  };
+
+  // ============================================
+  // PREVIEW
+  // ============================================
+  const content = document.getElementById('content');
+  const preview = document.getElementById('preview');
+  const charCount = document.getElementById('charCount');
+  const toggleBtn = document.getElementById('togglePreview');
+  let previewVisible = true;
+
+  function updatePreview() {
+    const val = content.value;
+    preview.innerHTML = val || '<p class="text-gray-400 italic">Start writing HTML to see the preview...</p>';
+    charCount.textContent = val.length;
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    previewVisible = !previewVisible;
+    preview.style.display = previewVisible ? 'block' : 'none';
+    toggleBtn.textContent = previewVisible ? 'Hide Preview' : 'Show Preview';
+  });
+
+  content.addEventListener('input', updatePreview);
+  updatePreview();
+
+  // ============================================
+  // FORM SUBMISSION
+  // ============================================
+  document.getElementById('postForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submitBtn');
+    const statusMsg = document.getElementById('statusMessage');
+    
+    submitBtn.textContent = 'Publishing...';
+    submitBtn.disabled = true;
+    statusMsg.className = 'p-4 rounded-xl bg-blue-50 text-blue-700';
+    statusMsg.textContent = '⏳ Publishing post...';
+    statusMsg.classList.remove('hidden');
+    
+    try {
+      let slug = document.getElementById('slug').value.trim();
+      const title = document.getElementById('title').value.trim();
+      
+      if (!slug && title) {
+        slug = title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+      
+      const data = {
+        title: title,
+        slug: slug,
+        content: document.getElementById('content').value,
+        category: document.getElementById('category').value,
+        tags: document.getElementById('tags').value,
+        cover_image: document.getElementById('cover_image').value.trim(),
+        is_draft: document.getElementById('is_draft').checked ? '1' : '0',
+        is_published: document.getElementById('is_published').checked ? '1' : '0'
+      };
+      
+      console.log('📤 Sending:', data);
+      
+      const response = await fetch('/api/admin/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      const result = await response.json();
+      console.log('📥 Response:', result);
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create post');
+      }
+      
+      statusMsg.className = 'p-4 rounded-xl bg-green-50 text-green-700';
+      statusMsg.textContent = '✅ Post published successfully! Redirecting...';
+      submitBtn.textContent = 'Published!';
+      
+      setTimeout(() => {
+        window.location.href = result.redirect || '/admin/dashboard?success=post-created';
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Error:', error);
+      statusMsg.className = 'p-4 rounded-xl bg-red-50 text-red-700';
+      statusMsg.textContent = '❌ ' + error.message;
+      submitBtn.textContent = 'Publish Post';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+<style is:global>
+  #preview {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  #preview h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.75rem; color: #0f172a; }
+  #preview h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #0f172a; }
+  #preview p { margin-bottom: 0.75rem; line-height: 1.7; color: #334155; }
+  #preview ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+  #preview li { margin-bottom: 0.25rem; color: #334155; }
+  
+  /* Cover image preview */
+  #coverPreview img {
+    max-height: 200px;
+    width: auto;
+  }
+</style>

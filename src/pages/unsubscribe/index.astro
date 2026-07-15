@@ -1,0 +1,309 @@
+---
+import Layout from '@/layouts/BaseLayout.astro';
+---
+
+<Layout title="Unsubscribe | Trendlin">
+  <div id="unsubscribe-app" class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    
+    <!-- Loading State -->
+    <div id="loading-state" class="text-center">
+      <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p class="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+    </div>
+
+    <!-- Success State -->
+    <div id="success-state" class="hidden max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+      <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Unsubscribed Successfully</h2>
+      <p id="success-message" class="text-gray-600 dark:text-gray-400">You have been unsubscribed from our newsletter.</p>
+      <p class="text-sm text-gray-500 dark:text-gray-500 mt-4">
+        You won't receive any more emails from us. If this was a mistake, you can{' '}
+        <a href="/" class="text-blue-600 dark:text-blue-400 hover:underline">resubscribe</a>.
+      </p>
+    </div>
+
+    <!-- ==========================================
+    "ARE YOU SURE?" MODAL - Confirmation
+    ========================================== -->
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center px-4">
+      <div id="confirm-backdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+      
+      <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 animate-scale-in">
+        <!-- Close button -->
+        <button
+          id="confirm-close"
+          class="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          aria-label="Close modal"
+          type="button"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg class="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+            Are You Sure? 😢
+          </h2>
+          <p id="confirm-email" class="text-sm text-gray-600 dark:text-gray-400 mt-1"></p>
+          <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">We'd love to know why you're leaving</p>
+        </div>
+
+        <form id="unsubscribe-form" class="space-y-4">
+          <!-- Reason -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Why are you unsubscribing?
+            </label>
+            <div class="space-y-2">
+              <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <input type="radio" name="reason" value="Too many emails" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Too many emails</span>
+              </label>
+              <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <input type="radio" name="reason" value="Content not relevant" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Content not relevant</span>
+              </label>
+              <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <input type="radio" name="reason" value="Not getting value" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Not getting value</span>
+              </label>
+              <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <input type="radio" name="reason" value="Marked as spam" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Marked as spam</span>
+              </label>
+              <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <input type="radio" name="reason" value="Temporary (will resubscribe later)" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Temporary (will resubscribe later)</span>
+              </label>
+              <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 cursor-pointer hover:border-gray-300 dark:hover:border-gray-600 transition-all">
+                <input type="radio" name="reason" value="Other" class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500" />
+                <span class="text-sm text-gray-700 dark:text-gray-300">Other</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Other reason input -->
+          <div id="other-reason-container" class="hidden">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Please specify
+            </label>
+            <input
+              id="other-reason-input"
+              type="text"
+              placeholder="Tell us why you're leaving..."
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all"
+            />
+          </div>
+
+          <!-- Feedback -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Any additional feedback? <span class="text-gray-400 text-xs">(optional)</span>
+            </label>
+            <textarea
+              id="feedback-input"
+              rows="3"
+              placeholder="We'd love to hear how we can improve..."
+              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all resize-none"
+            ></textarea>
+          </div>
+
+          <div id="form-error" class="hidden text-sm text-red-600 dark:text-red-400"></div>
+
+          <div class="flex gap-3 pt-2">
+            <button
+              id="confirm-cancel"
+              type="button"
+              class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+            >
+              No, Keep Me Subscribed
+            </button>
+            <button
+              id="confirm-unsubscribe"
+              type="submit"
+              class="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg font-medium hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
+            >
+              Yes, Unsubscribe
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('email');
+    const token = params.get('token');
+
+    const loadingState = document.getElementById('loading-state');
+    const successState = document.getElementById('success-state');
+    const successMessage = document.getElementById('success-message');
+    
+    // Confirm Modal Elements
+    const confirmModal = document.getElementById('confirm-modal');
+    const confirmBackdrop = document.getElementById('confirm-backdrop');
+    const confirmClose = document.getElementById('confirm-close');
+    const confirmCancel = document.getElementById('confirm-cancel');
+    const confirmEmail = document.getElementById('confirm-email');
+    const unsubscribeForm = document.getElementById('unsubscribe-form');
+    const confirmBtn = document.getElementById('confirm-unsubscribe');
+    const formError = document.getElementById('form-error');
+    const otherReasonContainer = document.getElementById('other-reason-container');
+    const otherReasonInput = document.getElementById('other-reason-input');
+    const feedbackInput = document.getElementById('feedback-input');
+
+    let subscriberData = null;
+
+    // Show other reason input
+    document.querySelectorAll('input[name="reason"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.value === 'Other') {
+          otherReasonContainer.classList.remove('hidden');
+        } else {
+          otherReasonContainer.classList.add('hidden');
+        }
+      });
+    });
+
+    async function verifySubscriber() {
+      if (!email || !token) {
+        showSuccess('Invalid unsubscribe link. Please try again.');
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/newsletter/verify-unsubscribe?email=${encodeURIComponent(email)}&token=${encodeURIComponent(token)}`
+        );
+        const data = await response.json();
+
+        if (data.success) {
+          subscriberData = data.data;
+          confirmEmail.textContent = `We're sorry to see you go, ${subscriberData.email}`;
+          showConfirmModal();
+        } else {
+          showSuccess(data.message || 'Invalid unsubscribe link.');
+        }
+      } catch (error) {
+        showSuccess('An error occurred. Please try again.');
+      } finally {
+        loadingState.classList.add('hidden');
+      }
+    }
+
+    function showConfirmModal() {
+      confirmModal.classList.remove('hidden');
+      confirmModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeConfirmModal() {
+      confirmModal.classList.add('hidden');
+      confirmModal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    function showSuccess(message) {
+      loadingState.classList.add('hidden');
+      successState.classList.remove('hidden');
+      successMessage.textContent = message || 'You have been unsubscribed from our newsletter.';
+    }
+
+    confirmClose?.addEventListener('click', closeConfirmModal);
+    confirmCancel?.addEventListener('click', closeConfirmModal);
+    confirmBackdrop?.addEventListener('click', closeConfirmModal);
+
+    // Handle form submission
+    unsubscribeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const selectedReason = document.querySelector('input[name="reason"]:checked');
+      if (!selectedReason) {
+        formError.textContent = 'Please select a reason for unsubscribing.';
+        formError.classList.remove('hidden');
+        return;
+      }
+
+      let reason = selectedReason.value;
+      if (reason === 'Other' && otherReasonInput.value.trim()) {
+        reason = otherReasonInput.value.trim();
+      }
+
+      const feedback = feedbackInput.value.trim();
+
+      // Disable button
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Processing...';
+      formError.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/newsletter/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email, 
+            token, 
+            reason, 
+            feedback 
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          closeConfirmModal();
+          showSuccess(data.message);
+        } else {
+          formError.textContent = data.message || 'Failed to unsubscribe. Please try again.';
+          formError.classList.remove('hidden');
+        }
+      } catch (error) {
+        formError.textContent = 'Network error. Please try again.';
+        formError.classList.remove('hidden');
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Yes, Unsubscribe';
+      }
+    });
+
+    // Initialize
+    verifySubscriber();
+  });
+</script>
+
+<style is:global>
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  .animate-scale-in {
+    animation: scale-in 0.25s ease-out;
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+</style>

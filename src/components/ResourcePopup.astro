@@ -1,0 +1,457 @@
+---
+// ============================================================
+// RESOURCE POPUP - FINAL WORKING VERSION (NO shop_name)
+// ============================================================
+---
+
+<div id="resource-popup" class="resource-popup">
+  <div class="resource-popup-overlay" id="popup-overlay"></div>
+  <div class="resource-popup-content">
+    <button class="resource-popup-close" id="popup-close" aria-label="Close popup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div id="popup-body"></div>
+  </div>
+</div>
+
+<style is:global>
+  .resource-popup {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    display: none !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+  }
+  .resource-popup.active {
+    display: flex !important;
+  }
+  .resource-popup-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    cursor: pointer !important;
+    animation: overlayIn 0.4s ease !important;
+  }
+  @keyframes overlayIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .resource-popup-content {
+    position: relative !important;
+    background: #ffffff !important;
+    border-radius: 24px !important;
+    padding: 36px 36px 28px !important;
+    max-width: 480px !important;
+    width: 100% !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3) !important;
+    z-index: 10 !important;
+    animation: modalIn 0.4s ease !important;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .resource-popup-content::-webkit-scrollbar {
+    width: 4px !important;
+  }
+  .resource-popup-content::-webkit-scrollbar-thumb {
+    background: #e2e8f0 !important;
+    border-radius: 100px !important;
+  }
+
+  .resource-popup-close {
+    position: absolute !important;
+    top: 16px !important;
+    right: 18px !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    cursor: pointer !important;
+    padding: 6px !important;
+    border-radius: 10px !important;
+    transition: all 0.3s ease !important;
+    z-index: 10 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 38px !important;
+  }
+  .resource-popup-close svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .resource-popup-close:hover {
+    background: rgba(0, 0, 0, 0.08) !important;
+    color: #0f172a !important;
+    transform: rotate(90deg) !important;
+  }
+
+  .popup-header {
+    display: flex !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    margin-bottom: 24px !important;
+    padding-bottom: 18px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding-right: 36px !important;
+  }
+  .popup-header .popup-title-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+  .popup-header .popup-icon-big {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+  .popup-header .popup-icon-big svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .popup-header .popup-icon-big.reddit {
+    background: #fee2e2 !important;
+    color: #FF4500 !important;
+  }
+  .popup-header .popup-icon-big.youtube {
+    background: #fecaca !important;
+    color: #FF0000 !important;
+  }
+  .popup-header .popup-icon-big.tiktok {
+    background: #f1f5f9 !important;
+    color: #000000 !important;
+  }
+  .popup-header .popup-icon-big.shop {
+    background: #fef3c7 !important;
+    color: #FF9900 !important;
+  }
+  .popup-header .popup-title-group {
+    flex: 1 !important;
+  }
+  .popup-header .popup-title {
+    color: #0f172a !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+  }
+  .popup-header .popup-platform {
+    display: block !important;
+    margin-top: 2px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #94a3b8 !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+  .popup-header .popup-count {
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+    padding: 3px 14px !important;
+    border-radius: 100px !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    flex-shrink: 0 !important;
+    margin-top: 4px !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+  }
+
+  /* ===== UNIFIED RESOURCE LIST ===== */
+  .resource-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  .resource-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 14px 18px !important;
+    border-radius: 14px !important;
+    color: #0f172a !important;
+    text-decoration: none !important;
+    transition: all 0.3s ease !important;
+    border: 1px solid #f1f5f9 !important;
+    background: #ffffff !important;
+    cursor: pointer !important;
+  }
+  .resource-item:hover {
+    transform: translateX(6px) !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .resource-item .resource-icon {
+    width: 28px !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    margin-right: 12px !important;
+  }
+  .resource-item .resource-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  .resource-item .resource-icon.reddit svg { color: #FF4500 !important; fill: #FF4500 !important; }
+  .resource-item .resource-icon.youtube svg { color: #FF0000 !important; fill: #FF0000 !important; }
+  .resource-item .resource-icon.tiktok svg { color: #000000 !important; fill: #000000 !important; }
+  .resource-item .resource-icon.shop svg { color: #FF9900 !important; fill: #FF9900 !important; }
+
+  .resource-item .resource-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  .resource-item .resource-title {
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: #0f172a !important;
+    display: block !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+  }
+  .resource-item .resource-author {
+    font-size: 11px !important;
+    color: #94a3b8 !important;
+    display: block !important;
+    margin-top: 2px !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+  }
+  .resource-item .resource-arrow {
+    color: #cbd5e1 !important;
+    font-size: 16px !important;
+    flex-shrink: 0 !important;
+    margin-left: 12px !important;
+    transition: all 0.3s ease !important;
+  }
+  .resource-item:hover .resource-arrow {
+    transform: translateX(4px) !important;
+    color: #3b82f6 !important;
+  }
+
+  .empty-state {
+    text-align: center !important;
+    padding: 40px 16px 20px !important;
+  }
+  .empty-state .empty-icon {
+    font-size: 56px !important;
+    display: block !important;
+    margin-bottom: 12px !important;
+  }
+  .empty-state .empty-title {
+    color: #334155 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+  }
+  .empty-state .empty-description {
+    color: #94a3b8 !important;
+    font-size: 13px !important;
+    margin-top: 4px !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    line-height: 1.5 !important;
+  }
+
+  @media (max-width: 480px) {
+    .resource-popup-content {
+      padding: 20px 18px 18px !important;
+      max-width: 340px !important;
+      border-radius: 20px !important;
+      max-height: 80vh !important;
+    }
+    .popup-header .popup-title {
+      font-size: 17px !important;
+    }
+    .popup-header .popup-icon-big {
+      width: 34px !important;
+      height: 34px !important;
+    }
+    .popup-header .popup-icon-big svg {
+      width: 17px !important;
+      height: 17px !important;
+    }
+    .resource-item {
+      padding: 12px 14px !important;
+    }
+    .empty-state .empty-icon {
+      font-size: 44px !important;
+    }
+  }
+</style>
+
+<script>
+  // ============================================================
+  // POPUP CONTROLLER - NO shop_name
+  // ============================================================
+  
+  console.log('🔥 Resource Popup loaded');
+
+  var ICONS = {
+    reddit: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 15.5c-.7.7-2 .8-2.5.8s-1.8-.1-2.5-.8a.5.5 0 1 1 .7-.7c.4.4 1.3.6 1.8.6s1.4-.2 1.8-.6a.5.5 0 1 1 .7.7zM9.5 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm5 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm7-1.2a2.2 2.2 0 0 0-3.7-1.6c-1.3-.9-3-1.5-4.8-1.6l.8-3 2.1.5a1.8 1.8 0 1 0 .3-1l-2.6-.6a.5.5 0 0 0-.6.4l-.9 3.5c-1.9.1-3.6.7-4.9 1.6A2.2 2.2 0 0 0 2.5 10.8c0 .9.5 1.7 1.2 2-.1.3-.2.7-.2 1 0 3.2 3.7 5.8 8.5 5.8s8.5-2.6 8.5-5.8c0-.3-.1-.7-.2-1 .7-.3 1.2-1.1 1.2-2z"/></svg>`,
+    youtube: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2c-.3-1.2-1.2-2.1-2.4-2.4C19.1 3.3 12 3.3 12 3.3s-7.1 0-9.1.5C1.7 4.1.8 5 .5 6.2 0 8.2 0 12 0 12s0 3.8.5 5.8c.3 1.2 1.2 2.1 2.4 2.4 2 .5 9.1.5 9.1.5s7.1 0 9.1-.5c1.2-.3 2.1-1.2 2.4-2.4.5-2 .5-5.8.5-5.8s0-3.8-.5-5.8zM9.5 15.5v-7l6 3.5-6 3.5z"/></svg>`,
+    tiktok: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 2h-3.1v13.2a2.8 2.8 0 1 1-2.8-2.8c.3 0 .6 0 .9.1V9.3a6 6 0 1 0 5.9 6V8.9c1.2.9 2.7 1.5 4.3 1.6V7.4c-2-.1-3.8-1.7-4.2-3.9V2z"/></svg>`
+  };
+
+  // SHOP ICON - Shopping Cart (no shop_name used)
+  var SHOP_ICON = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.2 14h9.9c.8 0 1.5-.5 1.8-1.2l3-6.8A1 1 0 0 0 21 4H6.2L5.3 2H2v2h2l3.6 7.6-1.3 2.4A2 2 0 0 0 8 17h12v-2H8l1.2-2z"/></svg>`;
+
+  var CONFIGS = {
+    reddit: { 
+      label: 'Reddit Discussions', 
+      platform: 'Reddit', 
+      emptyTitle: 'No Reddit discussions yet', 
+      emptyDesc: 'Be the first to start a conversation.',
+      emptyIcon: '🤔',
+      iconClass: 'reddit'
+    },
+    youtube: { 
+      label: 'YouTube Reviews', 
+      platform: 'YouTube', 
+      emptyTitle: 'No YouTube reviews yet', 
+      emptyDesc: 'Check back later for video content.',
+      emptyIcon: '🎬',
+      iconClass: 'youtube'
+    },
+    tiktok: { 
+      label: 'TikTok Videos', 
+      platform: 'TikTok', 
+      emptyTitle: 'No TikTok videos yet', 
+      emptyDesc: 'Check back later for short-form content.',
+      emptyIcon: '🎵',
+      iconClass: 'tiktok'
+    },
+    shop: { 
+      label: 'Shop Listings', 
+      platform: 'Shop', 
+      emptyTitle: 'No shop listings available', 
+      emptyDesc: 'Check back later for affiliate links.',
+      emptyIcon: '🛍️',
+      iconClass: 'shop'
+    }
+  };
+
+  window.openResourcePopup = function(event, platform, elementRef) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    var popup = document.getElementById('resource-popup');
+    var body = document.getElementById('popup-body');
+
+    if (!popup || !body) {
+      console.warn('Popup not found');
+      return;
+    }
+
+    var resources = [];
+    try {
+      var json = elementRef?.dataset?.resources || '[]';
+      resources = JSON.parse(json) || [];
+    } catch(e) {
+      console.warn('Failed to parse resources:', e);
+      resources = [];
+    }
+
+    var config = CONFIGS[platform];
+    if (!config) return;
+
+    var icon = ICONS[platform] || ICONS.shop;
+    var iconClass = config.iconClass || platform;
+
+    var html = '';
+
+    // Header
+    html += '<div class="popup-header">';
+    html += '  <div class="popup-title-wrap">';
+    html += '    <span class="popup-icon-big ' + iconClass + '">' + icon + '</span>';
+    html += '    <div class="popup-title-group">';
+    html += '      <span class="popup-title">' + config.label + '</span>';
+    html += '      <span class="popup-platform">' + config.platform + '</span>';
+    html += '    </div>';
+    html += '  </div>';
+    if (resources.length > 0) {
+      html += '  <span class="popup-count">' + resources.length + '</span>';
+    }
+    html += '</div>';
+
+    // Body - Unified resource list for ALL platforms
+    if (resources.length > 0) {
+      html += '<div class="resource-list">';
+      for (var i = 0; i < resources.length; i++) {
+        var r = resources[i];
+        // Use shop icon for shop platform
+        var itemIcon = platform === 'shop' ? SHOP_ICON : icon;
+        var itemClass = platform === 'shop' ? 'shop' : iconClass;
+        
+        html += '<a href="' + (r.url || '#') + '" target="_blank" rel="noopener" class="resource-item">';
+        html += '  <span class="resource-icon ' + itemClass + '">' + itemIcon + '</span>';
+        html += '  <span class="resource-info">';
+        html += '    <span class="resource-title">' + (r.title || 'Untitled') + '</span>';
+        // Only show author for non-shop items
+        if (r.author && platform !== 'shop') {
+          html += '    <span class="resource-author">' + r.author + '</span>';
+        }
+        html += '  </span>';
+        html += '  <span class="resource-arrow">→</span>';
+        html += '</a>';
+      }
+      html += '</div>';
+    } else {
+      html += '<div class="empty-state">';
+      html += '  <span class="empty-icon">' + config.emptyIcon + '</span>';
+      html += '  <div class="empty-title">' + config.emptyTitle + '</div>';
+      html += '  <div class="empty-description">' + config.emptyDesc + '</div>';
+      html += '</div>';
+    }
+
+    body.innerHTML = html;
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeResourcePopup = function() {
+    var popup = document.getElementById('resource-popup');
+    if (popup) {
+      popup.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  };
+
+  function setup() {
+    document.getElementById('popup-overlay')?.addEventListener('click', window.closeResourcePopup);
+    document.getElementById('popup-close')?.addEventListener('click', window.closeResourcePopup);
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') window.closeResourcePopup();
+    });
+    console.log('✅ Resource Popup ready!');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup);
+  } else {
+    setup();
+  }
+</script>

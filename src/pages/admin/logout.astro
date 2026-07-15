@@ -1,0 +1,14 @@
+---
+// Just redirect to the admin login page
+return Astro.redirect('/admin');
+---
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="refresh" content="0; url=/admin" />
+  </head>
+  <body>
+    <p>Logging out... <a href="/admin">Click here if you're not redirected</a></p>
+  </body>
+</html>

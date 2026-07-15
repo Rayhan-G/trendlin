@@ -1,0 +1,480 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="Newsletter | Admin">
+  <div class="page-header">
+    <h1>📧 Newsletter Management</h1>
+    <p>Manage subscribers, create campaigns, and track performance</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" id="newsletter-stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Subscribers</div>
+      <div class="stat-value" id="total-subscribers">—</div>
+    </div>
+    <div class="stat-card stat-active">
+      <div class="stat-label">Active</div>
+      <div class="stat-value" id="active-subscribers">—</div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-label">Pending</div>
+      <div class="stat-value" id="pending-subscribers">—</div>
+    </div>
+    <div class="stat-card stat-unsubscribed">
+      <div class="stat-label">Unsubscribed</div>
+      <div class="stat-value" id="unsubscribed-subscribers">—</div>
+    </div>
+  </div>
+
+  <!-- Campaign Stats -->
+  <div class="campaign-stats">
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">📨</div>
+      <div>
+        <div class="campaign-stat-label">Total Campaigns</div>
+        <div class="campaign-stat-value" id="total-campaigns">—</div>
+      </div>
+    </div>
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">📊</div>
+      <div>
+        <div class="campaign-stat-label">Open Rate</div>
+        <div class="campaign-stat-value" id="open-rate">—</div>
+      </div>
+    </div>
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">👆</div>
+      <div>
+        <div class="campaign-stat-label">Click Rate</div>
+        <div class="campaign-stat-value" id="click-rate">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Campaign -->
+  <div class="card create-campaign-card">
+    <h2 class="card-header">Create New Campaign</h2>
+    <form id="create-campaign-form" class="campaign-form">
+      <div class="form-group">
+        <label for="campaign-subject">Subject</label>
+        <input type="text" id="campaign-subject" placeholder="Enter email subject" required />
+      </div>
+      <div class="form-group">
+        <label for="campaign-content">Content (HTML)</label>
+        <textarea id="campaign-content" rows="8" placeholder="Write your email content in HTML..." required></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="campaign-category">Category</label>
+          <select id="campaign-category">
+            <option value="general">All Subscribers</option>
+            <option value="technology">💻 Technology</option>
+            <option value="health-wellness">🧘 Health & Wellness</option>
+            <option value="shopping">🛍️ Shopping</option>
+            <option value="food-dining">🍽️ Food & Dining</option>
+            <option value="entertainment">🎬 Entertainment</option>
+            <option value="lifestyle">🌟 Lifestyle</option>
+            <option value="real-estate">🏠 Real Estate</option>
+            <option value="finance">💰 Finance</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="campaign-schedule">Schedule (optional)</label>
+          <input type="datetime-local" id="campaign-schedule" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Draft</button>
+        <button type="button" id="schedule-btn" class="btn btn-secondary">Schedule</button>
+        <button type="button" id="send-now-btn" class="btn btn-success">Send Now</button>
+      </div>
+      <div id="campaign-message" class="form-message hidden"></div>
+    </form>
+  </div>
+
+  <!-- Campaign List -->
+  <div class="card">
+    <h2 class="card-header">Recent Campaigns</h2>
+    <div id="campaign-list">
+      <p class="text-muted">Loading campaigns...</p>
+    </div>
+  </div>
+</AdminLayout>
+
+<style is:global>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: white;
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-top: 0.25rem;
+  }
+
+  .stat-active .stat-value { color: #22c55e; }
+  .stat-pending .stat-value { color: #eab308; }
+  .stat-unsubscribed .stat-value { color: #ef4444; }
+
+  .campaign-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .campaign-stat-card {
+    background: white;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .campaign-stat-icon {
+    font-size: 1.5rem;
+  }
+
+  .campaign-stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .campaign-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .create-campaign-card {
+    margin-bottom: 1.5rem;
+  }
+
+  .campaign-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background: white;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 0.625rem 1.25rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  .btn-secondary {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #7c3aed;
+  }
+
+  .btn-success {
+    background: #22c55e;
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: #16a34a;
+  }
+
+  .form-message {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .form-message.success {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .form-message.error {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .form-message.hidden {
+    display: none;
+  }
+
+  .text-muted {
+    color: #94a3b8;
+  }
+
+  .campaign-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .campaign-item:last-child {
+    border-bottom: none;
+  }
+
+  .campaign-info h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .campaign-info p {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin: 0.125rem 0 0;
+  }
+
+  .campaign-status {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+  }
+
+  .campaign-status.draft { background: #f1f5f9; color: #475569; }
+  .campaign-status.scheduled { background: #dbeafe; color: #1e40af; }
+  .campaign-status.sending { background: #fef3c7; color: #92400e; }
+  .campaign-status.sent { background: #dcfce7; color: #166534; }
+  .campaign-status.failed { background: #fecaca; color: #991b1b; }
+
+  @media (max-width: 640px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .form-actions .btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Load stats
+    await loadStats();
+    
+    // Load campaigns
+    await loadCampaigns();
+
+    // Create campaign
+    const form = document.getElementById('create-campaign-form');
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await createCampaign('draft');
+    });
+
+    document.getElementById('schedule-btn').addEventListener('click', async () => {
+      await createCampaign('scheduled');
+    });
+
+    document.getElementById('send-now-btn').addEventListener('click', async () => {
+      await createCampaign('sending');
+    });
+
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/newsletter/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+          document.getElementById('total-subscribers').textContent = data.data.total || 0;
+          document.getElementById('active-subscribers').textContent = data.data.active || 0;
+          document.getElementById('pending-subscribers').textContent = data.data.pending || 0;
+          document.getElementById('unsubscribed-subscribers').textContent = data.data.unsubscribed || 0;
+          document.getElementById('total-campaigns').textContent = data.data.campaigns || 0;
+          document.getElementById('open-rate').textContent = (data.data.openRate || 0) + '%';
+          document.getElementById('click-rate').textContent = (data.data.clickRate || 0) + '%';
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    async function loadCampaigns() {
+      try {
+        const response = await fetch('/api/newsletter/campaigns');
+        const data = await response.json();
+        const list = document.getElementById('campaign-list');
+        
+        if (data.success && data.data.length > 0) {
+          list.innerHTML = data.data.map(c => `
+            <div class="campaign-item">
+              <div class="campaign-info">
+                <h4>${c.subject}</h4>
+                <p>${c.total_recipients || 0} recipients · ${new Date(c.created_at).toLocaleDateString()}</p>
+              </div>
+              <span class="campaign-status ${c.status}">${c.status}</span>
+            </div>
+          `).join('');
+        } else {
+          list.innerHTML = '<p class="text-muted">No campaigns yet. Create your first one above!</p>';
+        }
+      } catch (error) {
+        console.error('Error loading campaigns:', error);
+        document.getElementById('campaign-list').innerHTML = '<p class="text-muted">Error loading campaigns.</p>';
+      }
+    }
+
+    async function createCampaign(status) {
+      const subject = document.getElementById('campaign-subject').value.trim();
+      const content = document.getElementById('campaign-content').value.trim();
+      const category = document.getElementById('campaign-category').value;
+      const scheduledAt = document.getElementById('campaign-schedule').value;
+      const messageEl = document.getElementById('campaign-message');
+
+      if (!subject || !content) {
+        showMessage('Please fill in both subject and content.', 'error');
+        return;
+      }
+
+      const isSending = status === 'sending';
+      const isScheduled = status === 'scheduled';
+
+      // Validate schedule
+      if (isScheduled && !scheduledAt) {
+        showMessage('Please select a schedule date and time.', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/newsletter/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            subject,
+            contentHtml: content,
+            category,
+            scheduledAt: isScheduled ? scheduledAt : null,
+            sendNow: isSending,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showMessage(data.message || 'Campaign created successfully!', 'success');
+          // Clear form
+          document.getElementById('campaign-subject').value = '';
+          document.getElementById('campaign-content').value = '';
+          document.getElementById('campaign-schedule').value = '';
+          // Reload campaigns
+          await loadCampaigns();
+          await loadStats();
+        } else {
+          showMessage(data.message || 'Failed to create campaign.', 'error');
+        }
+      } catch (error) {
+        console.error('Error creating campaign:', error);
+        showMessage('Network error. Please try again.', 'error');
+      }
+    }
+
+    function showMessage(msg, type) {
+      const el = document.getElementById('campaign-message');
+      el.textContent = msg;
+      el.className = `form-message ${type}`;
+      el.classList.remove('hidden');
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          el.classList.add('hidden');
+        }, 5000);
+      }
+    }
+  });
+</script>

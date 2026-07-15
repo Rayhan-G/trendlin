@@ -1,0 +1,556 @@
+---
+// ============================================
+// ADMIN LAYOUT - Trendlin (Complete)
+// ============================================
+
+export interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Manage your content' } = Astro.props;
+
+// User is already set by middleware
+const user = Astro.locals?.user;
+
+// If no user (shouldn't happen if middleware works)
+if (!user) {
+  return Astro.redirect('/admin/login');
+}
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} - Trendlin Admin</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
+    
+    <style>
+      /* ==========================================
+      RESET & BASE
+      ========================================== */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      :root {
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #94a3b8;
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --radius: 12px;
+        --radius-lg: 16px;
+        --nav-height: 64px;
+        --sidebar-width: 240px;
+      }
+      
+      @media (min-width: 768px) {
+        :root {
+          --nav-height: 72px;
+        }
+      }
+      
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        min-height: 100vh;
+      }
+      
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 8px;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 8px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+      
+      /* ==========================================
+      ADMIN LAYOUT
+      ========================================== */
+      .admin-wrapper {
+        display: flex;
+        min-height: 100vh;
+        padding-top: var(--nav-height);
+      }
+      
+      /* ==========================================
+      SIDEBAR
+      ========================================== */
+      .sidebar {
+        position: fixed;
+        top: var(--nav-height);
+        left: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border-color);
+        overflow-y: auto;
+        padding: 1.5rem 0.75rem;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 40;
+      }
+      
+      .sidebar.open {
+        transform: translateX(0);
+      }
+      
+      @media (min-width: 1024px) {
+        .sidebar {
+          transform: translateX(0);
+        }
+      }
+      
+      .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      
+      .sidebar-nav .nav-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        padding: 0.75rem 0.75rem 0.25rem;
+        font-weight: 600;
+      }
+      
+      .sidebar-nav a {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        transition: all 0.2s ease;
+      }
+      
+      .sidebar-nav a:hover {
+        background: #f1f5f9;
+        color: var(--text-primary);
+      }
+      
+      .sidebar-nav a.active {
+        background: #eef2ff;
+        color: #2563eb;
+      }
+      
+      .sidebar-nav a .icon {
+        font-size: 1.125rem;
+        width: 1.5rem;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      
+      /* ==========================================
+      MAIN CONTENT
+      ========================================== */
+      .main-content {
+        flex: 1;
+        margin-left: 0;
+        padding: 1.5rem;
+        min-height: calc(100vh - var(--nav-height));
+        transition: margin-left 0.3s ease;
+      }
+      
+      @media (min-width: 1024px) {
+        .main-content {
+          margin-left: var(--sidebar-width);
+          padding: 2rem;
+        }
+      }
+      
+      /* ==========================================
+      NAVBAR
+      ========================================== */
+      .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        height: var(--nav-height);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-color);
+        padding: 0 1.5rem;
+      }
+      
+      @media (min-width: 768px) {
+        .navbar {
+          padding: 0 2rem;
+        }
+      }
+      
+      .navbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+      }
+      
+      .navbar-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border: none;
+        background: transparent;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        color: var(--text-secondary);
+        font-size: 1.25rem;
+        transition: background 0.2s;
+      }
+      
+      .sidebar-toggle:hover {
+        background: #f1f5f9;
+      }
+      
+      @media (min-width: 1024px) {
+        .sidebar-toggle {
+          display: none;
+        }
+      }
+      
+      .navbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+      }
+      
+      .navbar-logo-icon {
+        width: 2rem;
+        height: 2rem;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        border-radius: 0.625rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.875rem;
+        flex-shrink: 0;
+      }
+      
+      .navbar-logo-text {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      
+      @media (min-width: 768px) {
+        .navbar-logo-text {
+          font-size: 1.125rem;
+        }
+      }
+      
+      .navbar-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .user-info {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+      }
+      
+      @media (min-width: 640px) {
+        .user-info {
+          display: flex;
+        }
+      }
+      
+      .user-avatar {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+      }
+      
+      .logout-btn {
+        padding: 0.375rem 0.875rem;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: #dc2626;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-family: inherit;
+      }
+      
+      .logout-btn:hover {
+        background: #fee2e2;
+        border-color: #fca5a5;
+      }
+      
+      /* ==========================================
+      MOBILE OVERLAY
+      ========================================== */
+      .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: 39;
+        display: none;
+        backdrop-filter: blur(2px);
+      }
+      
+      .sidebar-overlay.visible {
+        display: block;
+      }
+      
+      @media (min-width: 1024px) {
+        .sidebar-overlay {
+          display: none !important;
+        }
+      }
+      
+      /* ==========================================
+      UTILITY CLASSES
+      ========================================== */
+      .page-header {
+        margin-bottom: 1.5rem;
+      }
+      
+      .page-header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      
+      .page-header p {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+      }
+      
+      @media (min-width: 768px) {
+        .page-header h1 {
+          font-size: 1.75rem;
+        }
+      }
+      
+      .card {
+        background: var(--bg-secondary);
+        border-radius: var(--radius);
+        border: 1px solid var(--border-color);
+        padding: 1.25rem;
+        box-shadow: var(--shadow-sm);
+      }
+      
+      .card-header {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-primary);
+      }
+    </style>
+  </head>
+  
+  <body>
+    <!-- ==========================================
+    SIDEBAR OVERLAY (mobile)
+    ========================================== -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- ==========================================
+    NAVBAR
+    ========================================== -->
+    <header class="navbar">
+      <div class="navbar-inner">
+        <div class="navbar-left">
+          <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          
+          <a href="/admin/dashboard" class="navbar-logo">
+            <div class="navbar-logo-icon">T</div>
+            <span class="navbar-logo-text">Admin</span>
+          </a>
+        </div>
+        
+        <div class="navbar-right">
+          <div class="user-info">
+            <span>{user?.username || 'Admin'}</span>
+            <div class="user-avatar">{user?.username?.charAt(0).toUpperCase() || 'A'}</div>
+          </div>
+          
+          <form method="POST" action="/api/auth/logout" style="display:inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+          </form>
+        </div>
+      </div>
+    </header>
+
+    <!-- ==========================================
+    SIDEBAR - 6 FEATURES + Newsletter + Dashboard
+    ========================================== -->
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav">
+        <!-- MAIN SECTION -->
+        <div class="nav-label">Main</div>
+        <a href="/admin/dashboard" class={Astro.url.pathname === '/admin/dashboard' ? 'active' : ''}>
+          <span class="icon">📊</span> Dashboard
+        </a>
+        
+        <!-- CONTENT SECTION -->
+        <div class="nav-label" style="margin-top: 0.5rem;">Content</div>
+        
+        <!-- 1. POSTS -->
+        <a href="/admin/posts" class={Astro.url.pathname === '/admin/posts' ? 'active' : ''}>
+          <span class="icon">📄</span> Posts
+        </a>
+        
+        <!-- 2. PRODUCTS -->
+        <a href="/admin/products" class={Astro.url.pathname.startsWith('/admin/products') ? 'active' : ''}>
+          <span class="icon">📦</span> Products
+        </a>
+        
+        <!-- 3. MEDIA -->
+        <a href="/admin/media" class={Astro.url.pathname.startsWith('/admin/media') ? 'active' : ''}>
+          <span class="icon">🖼️</span> Media Library
+        </a>
+        
+        <!-- 4. TEMPLATES -->
+        <a href="/admin/templates" class={Astro.url.pathname === '/admin/templates' ? 'active' : ''}>
+          <span class="icon">📋</span> Templates
+        </a>
+        
+        <!-- 5. SOURCES -->
+        <a href="/admin/sources" class={Astro.url.pathname === '/admin/sources' ? 'active' : ''}>
+          <span class="icon">📚</span> Sources
+        </a>
+        
+        <!-- 🆕 6. NEWSLETTER -->
+        <a href="/admin/newsletter" class={Astro.url.pathname.startsWith('/admin/newsletter') ? 'active' : ''}>
+          <span class="icon">📧</span> Newsletter
+        </a>
+        
+        <!-- SYSTEM SECTION -->
+        <div class="nav-label" style="margin-top: 0.5rem;">System</div>
+        <a href="/" target="_blank">
+          <span class="icon">🌐</span> View Site
+        </a>
+        
+        <!-- LOGOUT -->
+        <div style="border-top: 1px solid var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
+          <form method="POST" action="/api/auth/logout">
+            <button type="submit" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.625rem 0.75rem;border:none;background:transparent;border-radius:0.5rem;font-size:0.875rem;font-weight:500;color:#dc2626;cursor:pointer;transition:background 0.2s;font-family:inherit;">
+              <span class="icon">🚪</span> Logout
+            </button>
+          </form>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- ==========================================
+    MAIN CONTENT
+    ========================================== -->
+    <div class="admin-wrapper">
+      <div class="main-content">
+        <!-- Slot content -->
+        <slot />
+      </div>
+    </div>
+
+    <!-- ==========================================
+    JAVASCRIPT
+    ========================================== -->
+    <script>
+      // Toggle sidebar on mobile
+      function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('visible');
+      }
+      
+      // Close sidebar on escape key
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          const sidebar = document.getElementById('sidebar');
+          const overlay = document.getElementById('sidebarOverlay');
+          if (sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('visible');
+          }
+        }
+      });
+      
+      // Close sidebar when clicking a link on mobile
+      document.querySelectorAll('.sidebar-nav a').forEach(link => {
+        link.addEventListener('click', function() {
+          if (window.innerWidth < 1024) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('visible');
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

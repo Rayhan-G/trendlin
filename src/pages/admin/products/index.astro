@@ -1,0 +1,381 @@
+---
+// ============================================
+// ADMIN - PRODUCTS LIST
+// ============================================
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+let products = [];
+
+try {
+  const { DB } = Astro.locals.runtime.env;
+  
+  const result = await DB.prepare(`
+    SELECT 
+      p.id,
+      p.name,
+      p.slug,
+      p.category,
+      p.brand,
+      p.cover_image,
+      p.in_stock,
+      p.is_top_pick,
+      p.is_newly_released,
+      p.created_at,
+      COUNT(r.id) as resource_count
+    FROM products p
+    LEFT JOIN product_resources r ON r.product_id = p.id
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
+  `).all();
+  
+  products = result.results || [];
+  
+} catch (error) {
+  console.error('Error fetching products:', error);
+}
+---
+
+<AdminLayout title="Products" description="Manage your product catalog">
+  
+  <div class="products-header">
+    <div>
+      <h1 class="page-title">📦 Products</h1>
+      <p class="page-subtitle">{products.length} products in your catalog</p>
+    </div>
+    <a href="/admin/products/new" class="btn-primary">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      Add New Product
+    </a>
+  </div>
+  
+  {products.length === 0 ? (
+    <div class="empty-state">
+      <div class="empty-icon">📦</div>
+      <h3>No products yet</h3>
+      <p>Create your first product to get started.</p>
+      <a href="/admin/products/new" class="btn-primary">Add Product</a>
+    </div>
+  ) : (
+    <div class="table-wrapper">
+      <table class="products-table">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Brand</th>
+            <th>Resources</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map((product) => (
+            <tr key={product.id}>
+              <td>
+                {product.cover_image ? (
+                  <img src={product.cover_image} alt={product.name} class="product-thumb" />
+                ) : (
+                  <div class="product-thumb-placeholder">📷</div>
+                )}
+              </td>
+              <td>
+                <strong>{product.name}</strong>
+                <div class="product-slug">/products/{product.slug}</div>
+                <div class="product-badges">
+                  {product.is_top_pick === 1 && <span class="badge badge-top">⭐ Top Pick</span>}
+                  {product.is_newly_released === 1 && <span class="badge badge-new">✨ New</span>}
+                </div>
+              </td>
+              <td>{product.category || '—'}</td>
+              <td>{product.brand || '—'}</td>
+              <td>
+                <span class="resource-badge">{product.resource_count || 0}</span>
+                <a href={`/admin/products/${product.id}/resources`} class="resource-link">Manage</a>
+              </td>
+              <td>
+                <span class={`status-badge ${product.in_stock ? 'in-stock' : 'out-of-stock'}`}>
+                  {product.in_stock ? '✅ In Stock' : '❌ Out of Stock'}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <a href={`/admin/products/${product.id}/resources`} class="btn-sm btn-resources">🔗 Resources</a>
+                  <button class="btn-sm btn-delete" onclick="if(confirm('Delete this product?')) deleteProduct({product.id})">🗑️ Delete</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+  
+</AdminLayout>
+
+<style>
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+  }
+  
+  .page-subtitle {
+    font-size: 0.875rem;
+    color: #94a3b8;
+  }
+  
+  .products-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  
+  .btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #fff;
+    border-radius: 12px;
+    border: 2px dashed #e2e8f0;
+  }
+  
+  .empty-state .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+  
+  .empty-state h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  
+  .empty-state p {
+    color: #94a3b8;
+    margin-bottom: 1.5rem;
+  }
+  
+  .table-wrapper {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    overflow-x: auto;
+  }
+  
+  .products-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+  
+  .products-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .products-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  
+  .products-table tr:hover td {
+    background: #f8fafc;
+  }
+  
+  .product-thumb {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .product-thumb-placeholder {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .product-slug {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.125rem;
+  }
+  
+  .product-badges {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+  
+  .badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    padding: 0.0625rem 0.5rem;
+    border-radius: 4px;
+  }
+  
+  .badge-top {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  .badge-new {
+    background: #ecfdf5;
+    color: #059669;
+  }
+  
+  .resource-badge {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    background: #eef2ff;
+    color: #2563eb;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+  
+  .resource-link {
+    font-size: 0.7rem;
+    color: #2563eb;
+    text-decoration: none;
+    margin-left: 0.25rem;
+  }
+  
+  .resource-link:hover {
+    text-decoration: underline;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 0.125rem 0.625rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .status-badge.in-stock {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  
+  .status-badge.out-of-stock {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+  }
+  
+  .btn-sm {
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+  }
+  
+  .btn-resources {
+    background: #fef3c7;
+    color: #d97706;
+  }
+  
+  .btn-resources:hover {
+    background: #fde68a;
+  }
+  
+  .btn-delete {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+  
+  .btn-delete:hover {
+    background: #fee2e2;
+  }
+  
+  @media (max-width: 768px) {
+    .products-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    
+    .btn-sm {
+      text-align: center;
+    }
+  }
+</style>
+
+<script>
+  async function deleteProduct(id) {
+    try {
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: 'DELETE',
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        window.location.reload();
+      } else {
+        alert('Failed to delete product: ' + result.error);
+      }
+    } catch (error) {
+      alert('Error deleting product: ' + error.message);
+    }
+  }
+</script>

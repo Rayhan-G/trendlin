@@ -1,0 +1,1100 @@
+---
+// ============================================
+// ADMIN - ADD NEW PRODUCT WITH 4 RESOURCES
+// ============================================
+
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+
+let error = null;
+let success = false;
+let productId = null;
+let productName = '';
+
+if (Astro.request.method === 'POST') {
+  try {
+    const { DB } = Astro.locals.runtime.env;
+    const formData = await Astro.request.formData();
+    
+    // Get product data
+    const name = formData.get('name');
+    const slug = formData.get('slug') || name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const description = formData.get('description');
+    const category = formData.get('category');
+    const brand = formData.get('brand');
+    const cover_image = formData.get('cover_image');
+    const in_stock = formData.get('in_stock') ? 1 : 0;
+    const is_top_pick = formData.get('is_top_pick') ? 1 : 0;
+    const is_newly_released = formData.get('is_newly_released') ? 1 : 0;
+    
+    productName = name;
+    
+    // Insert product
+    const result = await DB.prepare(`
+      INSERT INTO products (
+        name, slug, description, category, brand, 
+        cover_image, in_stock, is_top_pick, is_newly_released
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      RETURNING id
+    `).bind(
+      name, slug, description, category, brand, 
+      cover_image, in_stock, is_top_pick, is_newly_released
+    ).run();
+    
+    productId = result.meta?.last_row_id || result.lastRowId;
+    
+    if (productId) {
+      // Process resources (up to 4)
+      const resources = [];
+      for (let i = 0; i < 4; i++) {
+        const platform = formData.get(`resource_platform_${i}`);
+        const url = formData.get(`resource_url_${i}`);
+        const title = formData.get(`resource_title_${i}`);
+        const description = formData.get(`resource_description_${i}`);
+        const author = formData.get(`resource_author_${i}`);
+        const shop_name = formData.get(`resource_shop_name_${i}`);
+        const is_featured = formData.get(`resource_featured_${i}`) ? 1 : 0;
+        
+        // Only add if platform, url, and title are provided
+        if (platform && url && title) {
+          resources.push({
+            platform,
+            url,
+            title,
+            description: description || '',
+            author: author || '',
+            shop_name: shop_name || '',
+            is_featured
+          });
+        }
+      }
+      
+      // Insert resources
+      if (resources.length > 0) {
+        for (let i = 0; i < resources.length; i++) {
+          const r = resources[i];
+          await DB.prepare(`
+            INSERT INTO product_resources (
+              product_id, platform, url, title, description, 
+              author, shop_name, is_featured, display_order
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            productId, r.platform, r.url, r.title, r.description,
+            r.author, r.shop_name, r.is_featured, i + 1
+          ).run();
+        }
+      }
+      
+      success = true;
+      // Redirect to product resources page
+      return Astro.redirect(`/admin/products/${productId}/resources`);
+    }
+    
+  } catch (e) {
+    error = e.message;
+    console.error('Error creating product:', e);
+  }
+}
+---
+
+<AdminLayout title="Add New Product" description="Create a new product with up to 4 resources">
+  
+  <!-- Error Alert -->
+  {error && (
+    <div class="alert alert-error">
+      <strong>Error:</strong> {error}
+    </div>
+  )}
+  
+  <!-- Success Alert -->
+  {success && (
+    <div class="alert alert-success">
+      <strong>Success!</strong> Product "{productName}" created successfully.
+    </div>
+  )}
+  
+  <form method="POST" class="product-form" id="productForm">
+    
+    <!-- ============================================ -->
+    <!-- SECTION 1: Product Details -->
+    <!-- ============================================ -->
+    <div class="form-section">
+      <h3 class="section-title">📦 Product Details</h3>
+      
+      <div class="form-grid">
+        <!-- Product Name -->
+        <div class="form-group">
+          <label for="name">Product Name *</label>
+          <input 
+            type="text" 
+            id="name" 
+            name="name" 
+            required 
+            placeholder="e.g. Apple AirPods Pro 2"
+            class="form-input"
+          />
+        </div>
+        
+        <!-- Slug -->
+        <div class="form-group">
+          <label for="slug">Slug (URL)</label>
+          <input 
+            type="text" 
+            id="slug" 
+            name="slug" 
+            placeholder="apple-airpods-pro-2"
+            class="form-input"
+          />
+          <span class="form-hint">Leave blank to auto-generate from name</span>
+        </div>
+        
+        <!-- Description -->
+        <div class="form-group full-width">
+          <label for="description">Description</label>
+          <textarea 
+            id="description" 
+            name="description" 
+            rows="4" 
+            placeholder="Product description..."
+            class="form-textarea"
+          ></textarea>
+        </div>
+        
+        <!-- Category -->
+        <div class="form-group">
+          <label for="category">Category *</label>
+          <select id="category" name="category" required class="form-select">
+            <option value="">Select Category</option>
+            <option value="Electronics">Electronics</option>
+            <option value="Health & Wellness">Health & Wellness</option>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Lifestyle">Lifestyle</option>
+            <option value="Technology">Technology</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Real Estate">Real Estate</option>
+            <option value="Finance">Finance</option>
+            <option value="Travel">Travel</option>
+            <option value="Fashion">Fashion</option>
+          </select>
+        </div>
+        
+        <!-- Brand -->
+        <div class="form-group">
+          <label for="brand">Brand</label>
+          <input 
+            type="text" 
+            id="brand" 
+            name="brand" 
+            placeholder="e.g. Apple"
+            class="form-input"
+          />
+        </div>
+        
+        <!-- Cover Image -->
+        <div class="form-group full-width">
+          <label for="cover_image">Cover Image</label>
+          <div class="image-upload-wrapper">
+            <input 
+              type="url" 
+              id="cover_image" 
+              name="cover_image" 
+              placeholder="https://images.unsplash.com/..."
+              class="form-input"
+            />
+            <button type="button" id="uploadBtn" class="btn-upload">
+              📤 Upload
+            </button>
+          </div>
+          
+          <!-- Cover Preview -->
+          <div id="coverPreview" class="cover-preview hidden">
+            <div class="cover-preview-inner">
+              <img id="coverPreviewImg" src="" alt="Cover preview" />
+              <button type="button" id="removeCoverBtn" class="remove-btn">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ============================================ -->
+    <!-- SECTION 2: Product Status -->
+    <!-- ============================================ -->
+    <div class="form-section">
+      <h3 class="section-title">⚙️ Product Status</h3>
+      
+      <div class="checkbox-grid">
+        <label class="checkbox-label">
+          <input type="checkbox" id="in_stock" name="in_stock" checked />
+          <span>✅ In Stock</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="is_top_pick" name="is_top_pick" />
+          <span>⭐ Top Pick</span>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" id="is_newly_released" name="is_newly_released" />
+          <span>✨ Newly Released</span>
+        </label>
+      </div>
+    </div>
+    
+    <!-- ============================================ -->
+    <!-- SECTION 3: Resources (Up to 4) -->
+    <!-- ============================================ -->
+    <div class="form-section">
+      <h3 class="section-title">
+        🔗 Product Resources 
+        <span class="optional">(Optional - Up to 4)</span>
+      </h3>
+      <p class="section-desc">
+        Add resources for <strong>Reddit</strong>, <strong>YouTube</strong>, <strong>TikTok</strong>, or <strong>Shop</strong>.
+        You can add more later from the product's resources page.
+      </p>
+      
+      <div id="resourcesContainer">
+        <!-- Resource 1 -->
+        <div class="resource-row">
+          <div class="resource-header">
+            <span class="resource-number">#1</span>
+            <button type="button" class="remove-resource-btn" style="display:none;">✕</button>
+          </div>
+          <div class="resource-fields">
+            <div class="form-group">
+              <label>Platform *</label>
+              <select name="resource_platform_0" class="resource-platform form-select" required>
+                <option value="">Select</option>
+                <option value="reddit">Reddit</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+                <option value="shop">Shop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>URL *</label>
+              <input type="url" name="resource_url_0" placeholder="https://..." class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Title *</label>
+              <input type="text" name="resource_title_0" placeholder="Resource title" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" name="resource_description_0" placeholder="Optional description" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="resource_author_0" placeholder="u/username or @username" class="form-input" />
+            </div>
+            <div class="form-group shop-name-group" style="display:none;">
+              <label>Shop Name</label>
+              <input type="text" name="resource_shop_name_0" placeholder="e.g. Amazon" class="form-input" />
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="resource_featured_0" />
+                <span>⭐ Featured</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Resource 2 -->
+        <div class="resource-row">
+          <div class="resource-header">
+            <span class="resource-number">#2</span>
+            <button type="button" class="remove-resource-btn" style="display:none;">✕</button>
+          </div>
+          <div class="resource-fields">
+            <div class="form-group">
+              <label>Platform *</label>
+              <select name="resource_platform_1" class="resource-platform form-select">
+                <option value="">Select</option>
+                <option value="reddit">Reddit</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+                <option value="shop">Shop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>URL *</label>
+              <input type="url" name="resource_url_1" placeholder="https://..." class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Title *</label>
+              <input type="text" name="resource_title_1" placeholder="Resource title" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" name="resource_description_1" placeholder="Optional description" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="resource_author_1" placeholder="u/username or @username" class="form-input" />
+            </div>
+            <div class="form-group shop-name-group" style="display:none;">
+              <label>Shop Name</label>
+              <input type="text" name="resource_shop_name_1" placeholder="e.g. Amazon" class="form-input" />
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="resource_featured_1" />
+                <span>⭐ Featured</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Resource 3 -->
+        <div class="resource-row">
+          <div class="resource-header">
+            <span class="resource-number">#3</span>
+            <button type="button" class="remove-resource-btn" style="display:none;">✕</button>
+          </div>
+          <div class="resource-fields">
+            <div class="form-group">
+              <label>Platform *</label>
+              <select name="resource_platform_2" class="resource-platform form-select">
+                <option value="">Select</option>
+                <option value="reddit">Reddit</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+                <option value="shop">Shop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>URL *</label>
+              <input type="url" name="resource_url_2" placeholder="https://..." class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Title *</label>
+              <input type="text" name="resource_title_2" placeholder="Resource title" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" name="resource_description_2" placeholder="Optional description" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="resource_author_2" placeholder="u/username or @username" class="form-input" />
+            </div>
+            <div class="form-group shop-name-group" style="display:none;">
+              <label>Shop Name</label>
+              <input type="text" name="resource_shop_name_2" placeholder="e.g. Amazon" class="form-input" />
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="resource_featured_2" />
+                <span>⭐ Featured</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Resource 4 -->
+        <div class="resource-row">
+          <div class="resource-header">
+            <span class="resource-number">#4</span>
+            <button type="button" class="remove-resource-btn" style="display:none;">✕</button>
+          </div>
+          <div class="resource-fields">
+            <div class="form-group">
+              <label>Platform *</label>
+              <select name="resource_platform_3" class="resource-platform form-select">
+                <option value="">Select</option>
+                <option value="reddit">Reddit</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+                <option value="shop">Shop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>URL *</label>
+              <input type="url" name="resource_url_3" placeholder="https://..." class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Title *</label>
+              <input type="text" name="resource_title_3" placeholder="Resource title" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" name="resource_description_3" placeholder="Optional description" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="resource_author_3" placeholder="u/username or @username" class="form-input" />
+            </div>
+            <div class="form-group shop-name-group" style="display:none;">
+              <label>Shop Name</label>
+              <input type="text" name="resource_shop_name_3" placeholder="e.g. Amazon" class="form-input" />
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="resource_featured_3" />
+                <span>⭐ Featured</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <button type="button" id="addResourceRow" class="btn-add-row">
+        + Add Resource
+      </button>
+    </div>
+    
+    <!-- ============================================ -->
+    <!-- SECTION 4: Form Actions -->
+    <!-- ============================================ -->
+    <div class="form-actions">
+      <a href="/admin/products" class="btn-secondary">← Cancel</a>
+      <button type="submit" class="btn-primary">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
+        Create Product
+      </button>
+    </div>
+    
+  </form>
+  
+</AdminLayout>
+
+<!-- ============================================ -->
+<!-- STYLES -->
+<!-- ============================================ -->
+<style>
+  .alert {
+    padding: 1rem 1.25rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+  }
+  
+  .alert-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+  }
+  
+  .alert-success {
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+    color: #16a34a;
+  }
+  
+  .product-form {
+    background: #fff;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .form-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin-bottom: 1rem;
+  }
+  
+  .section-title .optional {
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+  
+  .section-desc {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 1.25rem;
+  }
+  
+  .section-desc strong {
+    color: #0f172a;
+  }
+  
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+  
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.375rem;
+    color: #0f172a;
+  }
+  
+  .form-input,
+  .form-textarea,
+  .form-select {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    background: #fff;
+  }
+  
+  .form-input:focus,
+  .form-textarea:focus,
+  .form-select:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+  
+  .form-textarea {
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  .form-hint {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+    display: block;
+  }
+  
+  /* Checkbox Grid */
+  .checkbox-grid {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #0f172a;
+  }
+  
+  .checkbox-label input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+    accent-color: #2563eb;
+  }
+  
+  /* Image Upload */
+  .image-upload-wrapper {
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  .image-upload-wrapper .form-input {
+    flex: 1;
+  }
+  
+  .btn-upload {
+    padding: 0.625rem 1.25rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  
+  .btn-upload:hover {
+    background: #e2e8f0;
+  }
+  
+  .cover-preview {
+    margin-top: 1rem;
+  }
+  
+  .cover-preview-inner {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .cover-preview-inner img {
+    max-height: 150px;
+    border-radius: 0.5rem;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .remove-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 28px;
+    height: 28px;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    transition: all 0.2s ease;
+  }
+  
+  .remove-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+  }
+  
+  /* Resources */
+  .resource-row {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+  }
+  
+  .resource-row:hover {
+    border-color: #e2e8f0;
+    background: #f1f5f9;
+  }
+  
+  .resource-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  
+  .resource-number {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    background: #e2e8f0;
+    padding: 0.125rem 0.625rem;
+    border-radius: 20px;
+  }
+  
+  .remove-resource-btn {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+  }
+  
+  .remove-resource-btn:hover {
+    background: #fef2f2;
+  }
+  
+  .resource-fields {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1.5fr 1.5fr 1fr 1fr 0.8fr;
+    gap: 0.75rem;
+    align-items: start;
+  }
+  
+  .resource-fields .form-group {
+    margin-bottom: 0;
+  }
+  
+  .resource-fields label {
+    font-size: 0.7rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+  
+  .resource-fields .form-input,
+  .resource-fields .form-select {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .resource-fields .checkbox-group {
+    display: flex;
+    align-items: center;
+    padding-top: 1.2rem;
+  }
+  
+  .resource-fields .checkbox-group .checkbox-label {
+    font-size: 0.75rem;
+  }
+  
+  .btn-add-row {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    color: #2563eb;
+    border: 1px dashed #93c5fd;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  
+  .btn-add-row:hover {
+    background: #eff6ff;
+    border-color: #2563eb;
+  }
+  
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #f1f5f9;
+  }
+  
+  .btn-secondary {
+    padding: 0.625rem 1.25rem;
+    background: #f1f5f9;
+    color: #475569;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  
+  .btn-secondary:hover {
+    background: #e2e8f0;
+  }
+  
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.5rem;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+  
+  .btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+  }
+  
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .resource-fields {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .product-form {
+      padding: 1rem;
+    }
+    
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .resource-fields {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+    
+    .image-upload-wrapper {
+      flex-direction: column;
+    }
+    
+    .checkbox-grid {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .form-actions {
+      flex-direction: column;
+    }
+    
+    .form-actions a,
+    .form-actions button {
+      text-align: center;
+      justify-content: center;
+    }
+    
+    .resource-fields .checkbox-group {
+      padding-top: 0;
+    }
+  }
+</style>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    
+    // ============================================
+    // AUTO-GENERATE SLUG FROM NAME
+    // ============================================
+    const nameInput = document.getElementById('name');
+    const slugInput = document.getElementById('slug');
+    
+    if (nameInput && slugInput) {
+      nameInput.addEventListener('input', function() {
+        if (!slugInput.value) {
+          const slug = this.value
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          slugInput.value = slug;
+        }
+      });
+    }
+    
+    // ============================================
+    // COVER IMAGE UPLOAD
+    // ============================================
+    const uploadBtn = document.getElementById('uploadBtn');
+    const coverImageInput = document.getElementById('cover_image');
+    const coverPreview = document.getElementById('coverPreview');
+    const coverPreviewImg = document.getElementById('coverPreviewImg');
+    const removeCoverBtn = document.getElementById('removeCoverBtn');
+    
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', function() {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        
+        fileInput.onchange = async function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const originalText = uploadBtn.textContent;
+          uploadBtn.textContent = '⏳ Uploading...';
+          uploadBtn.disabled = true;
+          
+          try {
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            const response = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+              coverImageInput.value = result.url;
+              coverPreviewImg.src = result.url;
+              coverPreview.classList.remove('hidden');
+            } else {
+              alert('Upload failed: ' + (result.error || 'Unknown error'));
+            }
+          } catch (error) {
+            console.error('Upload error:', error);
+            alert('Upload failed: ' + error.message);
+          } finally {
+            uploadBtn.textContent = originalText;
+            uploadBtn.disabled = false;
+          }
+        };
+        
+        fileInput.click();
+      });
+    }
+    
+    // Remove cover image
+    if (removeCoverBtn) {
+      removeCoverBtn.addEventListener('click', function() {
+        coverImageInput.value = '';
+        coverPreview.classList.add('hidden');
+      });
+    }
+    
+    // Show preview if URL is pasted
+    if (coverImageInput) {
+      coverImageInput.addEventListener('input', function() {
+        const url = this.value.trim();
+        if (url) {
+          coverPreviewImg.src = url;
+          coverPreview.classList.remove('hidden');
+        } else {
+          coverPreview.classList.add('hidden');
+        }
+      });
+    }
+    
+    // ============================================
+    // SHOW/HIDE SHOP NAME FIELD
+    // ============================================
+    document.querySelectorAll('.resource-platform').forEach(function(select) {
+      select.addEventListener('change', function() {
+        const row = this.closest('.resource-row');
+        const shopGroup = row.querySelector('.shop-name-group');
+        if (this.value === 'shop') {
+          shopGroup.style.display = 'block';
+        } else {
+          shopGroup.style.display = 'none';
+        }
+      });
+    });
+    
+    // ============================================
+    // ADD RESOURCE ROW
+    // ============================================
+    let resourceCount = 4;
+    const addBtn = document.getElementById('addResourceRow');
+    const container = document.getElementById('resourcesContainer');
+    
+    if (addBtn && container) {
+      addBtn.addEventListener('click', function() {
+        const row = document.createElement('div');
+        row.className = 'resource-row';
+        row.innerHTML = `
+          <div class="resource-header">
+            <span class="resource-number">#${resourceCount + 1}</span>
+            <button type="button" class="remove-resource-btn">✕</button>
+          </div>
+          <div class="resource-fields">
+            <div class="form-group">
+              <label>Platform *</label>
+              <select name="resource_platform_${resourceCount}" class="resource-platform form-select">
+                <option value="">Select</option>
+                <option value="reddit">Reddit</option>
+                <option value="youtube">YouTube</option>
+                <option value="tiktok">TikTok</option>
+                <option value="shop">Shop</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>URL *</label>
+              <input type="url" name="resource_url_${resourceCount}" placeholder="https://..." class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Title *</label>
+              <input type="text" name="resource_title_${resourceCount}" placeholder="Resource title" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <input type="text" name="resource_description_${resourceCount}" placeholder="Optional description" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" name="resource_author_${resourceCount}" placeholder="u/username" class="form-input" />
+            </div>
+            <div class="form-group shop-name-group" style="display:none;">
+              <label>Shop Name</label>
+              <input type="text" name="resource_shop_name_${resourceCount}" placeholder="e.g. Amazon" class="form-input" />
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="resource_featured_${resourceCount}" />
+                <span>⭐ Featured</span>
+              </label>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(row);
+        resourceCount++;
+        
+        // Show remove button on all rows except the first 4
+        const allRows = container.querySelectorAll('.resource-row');
+        allRows.forEach(function(r, index) {
+          const removeBtn = r.querySelector('.remove-resource-btn');
+          if (removeBtn) {
+            if (index >= 4) {
+              removeBtn.style.display = 'block';
+            } else {
+              removeBtn.style.display = 'none';
+            }
+          }
+        });
+        
+        // Add event listeners to new elements
+        const newSelect = row.querySelector('.resource-platform');
+        if (newSelect) {
+          newSelect.addEventListener('change', function() {
+            const parentRow = this.closest('.resource-row');
+            const shopGroup = parentRow.querySelector('.shop-name-group');
+            if (this.value === 'shop') {
+              shopGroup.style.display = 'block';
+            } else {
+              shopGroup.style.display = 'none';
+            }
+          });
+        }
+        
+        const removeBtn = row.querySelector('.remove-resource-btn');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', function() {
+            if (confirm('Remove this resource?')) {
+              row.remove();
+              // Update numbering
+              const allRows = container.querySelectorAll('.resource-row');
+              allRows.forEach(function(r, idx) {
+                const num = r.querySelector('.resource-number');
+                if (num) num.textContent = '#' + (idx + 1);
+              });
+            }
+          });
+        }
+      });
+    }
+    
+    // ============================================
+    // REMOVE RESOURCE (for initial rows > 4)
+    // ============================================
+    document.querySelectorAll('.remove-resource-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        const row = this.closest('.resource-row');
+        if (confirm('Remove this resource?')) {
+          row.remove();
+          // Update numbering
+          const allRows = container.querySelectorAll('.resource-row');
+          allRows.forEach(function(r, idx) {
+            const num = r.querySelector('.resource-number');
+            if (num) num.textContent = '#' + (idx + 1);
+          });
+        }
+      });
+    });
+    
+  });
+</script>

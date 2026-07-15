@@ -1,0 +1,245 @@
+---
+// ============================================================
+// PRODUCT CARD - Complete Working Version
+// ============================================================
+
+const { product } = Astro.props;
+
+const resources = product.social_resources || [];
+const redditResources = resources.filter(r => r.platform === 'reddit');
+const youtubeResources = resources.filter(r => r.platform === 'youtube');
+const tiktokResources = resources.filter(r => r.platform === 'tiktok');
+// Only filter for 'shop' platform (no shop_name needed)
+const shopResources = resources.filter(r => r.platform === 'shop');
+
+const redditJson = JSON.stringify(redditResources);
+const youtubeJson = JSON.stringify(youtubeResources);
+const tiktokJson = JSON.stringify(tiktokResources);
+const shopJson = JSON.stringify(shopResources);
+---
+
+<div class="product-wrapper" data-product-id={product.id}>
+  <div class="product-card">
+    <a href={`/products/${product.slug}`} class="product-link">
+      <div class="product-image">
+        {product.cover_image ? (
+          <img src={product.cover_image} alt={product.title} loading="lazy" width="400" height="300" />
+        ) : (
+          <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop&q=80" alt={product.title} loading="lazy" width="400" height="300" />
+        )}
+      </div>
+      <div class="product-gradient"></div>
+      {product.category && <span class="product-badge">{product.category}</span>}
+      {product.brand && <span class="product-brand">{product.brand}</span>}
+      <div class="product-title">{product.title}</div>
+    </a>
+    
+    <div class="social-buttons">
+      <!-- Reddit -->
+      <button 
+        class="social-btn reddit" 
+        data-platform="reddit" 
+        data-resources={redditJson} 
+        onclick="window.openResourcePopup(event, 'reddit', this)"
+        aria-label="View Reddit discussions"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M14.5 15.5c-.7.7-2 .8-2.5.8s-1.8-.1-2.5-.8a.5.5 0 1 1 .7-.7c.4.4 1.3.6 1.8.6s1.4-.2 1.8-.6a.5.5 0 1 1 .7.7zM9.5 12a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm5 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm7-1.2a2.2 2.2 0 0 0-3.7-1.6c-1.3-.9-3-1.5-4.8-1.6l.8-3 2.1.5a1.8 1.8 0 1 0 .3-1l-2.6-.6a.5.5 0 0 0-.6.4l-.9 3.5c-1.9.1-3.6.7-4.9 1.6A2.2 2.2 0 0 0 2.5 10.8c0 .9.5 1.7 1.2 2-.1.3-.2.7-.2 1 0 3.2 3.7 5.8 8.5 5.8s8.5-2.6 8.5-5.8c0-.3-.1-.7-.2-1 .7-.3 1.2-1.1 1.2-2z"/>
+        </svg>
+        <span class="tooltip">Reddit</span>
+      </button>
+      
+      <!-- YouTube -->
+      <button 
+        class="social-btn youtube" 
+        data-platform="youtube" 
+        data-resources={youtubeJson} 
+        onclick="window.openResourcePopup(event, 'youtube', this)"
+        aria-label="View YouTube reviews"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M23.5 6.2c-.3-1.2-1.2-2.1-2.4-2.4C19.1 3.3 12 3.3 12 3.3s-7.1 0-9.1.5C1.7 4.1.8 5 .5 6.2 0 8.2 0 12 0 12s0 3.8.5 5.8c.3 1.2 1.2 2.1 2.4 2.4 2 .5 9.1.5 9.1.5s7.1 0 9.1-.5c1.2-.3 2.1-1.2 2.4-2.4.5-2 .5-5.8.5-5.8s0-3.8-.5-5.8zM9.5 15.5v-7l6 3.5-6 3.5z"/>
+        </svg>
+        <span class="tooltip">YouTube</span>
+      </button>
+      
+      <!-- TikTok -->
+      <button 
+        class="social-btn tiktok" 
+        data-platform="tiktok" 
+        data-resources={tiktokJson} 
+        onclick="window.openResourcePopup(event, 'tiktok', this)"
+        aria-label="View TikTok videos"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16.6 2h-3.1v13.2a2.8 2.8 0 1 1-2.8-2.8c.3 0 .6 0 .9.1V9.3a6 6 0 1 0 5.9 6V8.9c1.2.9 2.7 1.5 4.3 1.6V7.4c-2-.1-3.8-1.7-4.2-3.9V2z"/>
+        </svg>
+        <span class="tooltip">TikTok</span>
+      </button>
+      
+      <!-- Shop -->
+      <button 
+        class="social-btn shop" 
+        data-platform="shop" 
+        data-resources={shopJson} 
+        onclick="window.openResourcePopup(event, 'shop', this)"
+        aria-label="View shop listings"
+      >
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.2 14h9.9c.8 0 1.5-.5 1.8-1.2l3-6.8A1 1 0 0 0 21 4H6.2L5.3 2H2v2h2l3.6 7.6-1.3 2.4A2 2 0 0 0 8 17h12v-2H8l1.2-2z"/>
+        </svg>
+        <span class="tooltip">Shop</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .product-wrapper { width: 100%; position: relative; }
+  .product-link { display: block; text-decoration: none; width: 100%; }
+  .product-card {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12), 0 8px 20px rgba(0,0,0,0.06);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
+    background: #1a1a2e;
+  }
+  .product-card:hover { transform: translateY(-8px); box-shadow: 0 40px 100px rgba(0,0,0,0.20), 0 12px 30px rgba(0,0,0,0.10); }
+  .product-image { width: 100%; height: 100%; overflow: hidden; }
+  .product-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+  .product-card:hover .product-image img { transform: scale(1.05); }
+  .product-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.80) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .product-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 3;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff;
+    background: rgba(0,0,0,0.55);
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(4px);
+  }
+  .product-brand {
+    position: absolute;
+    bottom: 50px;
+    left: 14px;
+    z-index: 3;
+    font-size: 9px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.40);
+    background: rgba(0,0,0,0.30);
+    padding: 2px 10px;
+    border-radius: 4px;
+  }
+  .product-title {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    right: 70px;
+    z-index: 3;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.3;
+    font-family: 'Space Grotesk', sans-serif;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.60);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .social-buttons {
+    position: absolute;
+    bottom: 14px;
+    right: 14px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .social-btn {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.10);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.05);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+  .social-btn:hover { transform: scale(1.12) translateX(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+  .social-btn:active { transform: scale(0.92); }
+  .social-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  .social-btn.reddit { color: #FF4500; background: rgba(255, 69, 0, 0.12); border-color: rgba(255, 69, 0, 0.15); }
+  .social-btn.reddit:hover { background: rgba(255, 69, 0, 0.25); border-color: rgba(255, 69, 0, 0.35); }
+  .social-btn.youtube { color: #FF0000; background: rgba(255, 0, 0, 0.12); border-color: rgba(255, 0, 0, 0.15); }
+  .social-btn.youtube:hover { background: rgba(255, 0, 0, 0.25); border-color: rgba(255, 0, 0, 0.35); }
+  .social-btn.tiktok { color: #ffffff; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.08); }
+  .social-btn.tiktok:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.20); }
+  .social-btn.shop { color: #FF9900; background: rgba(255, 153, 0, 0.12); border-color: rgba(255, 153, 0, 0.15); }
+  .social-btn.shop:hover { background: rgba(255, 153, 0, 0.25); border-color: rgba(255, 153, 0, 0.35); }
+  .social-btn .tooltip {
+    position: absolute;
+    right: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%) scale(0.90);
+    background: rgba(0,0,0,0.85);
+    color: white;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .social-btn .tooltip::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-left-color: rgba(0,0,0,0.85);
+  }
+  .social-btn:hover .tooltip { opacity: 1; transform: translateY(-50%) scale(1); }
+  
+  @media (max-width: 768px) {
+    .social-btn { width: 30px; height: 30px; border-radius: 8px; }
+    .social-btn svg { width: 14px; height: 14px; }
+    .product-title { font-size: 13px; right: 62px; }
+  }
+  
+  @media (max-width: 480px) {
+    .social-btn { width: 28px; height: 28px; border-radius: 8px; }
+    .social-btn svg { width: 13px; height: 13px; }
+    .social-buttons { gap: 5px; bottom: 12px; right: 12px; }
+    .product-title { right: 54px; font-size: 12px; bottom: 12px; left: 12px; }
+    .social-btn .tooltip { display: none; }
+  }
+</style>
