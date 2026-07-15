@@ -5,6 +5,7 @@ import {
   getSubscriberByEmail, 
   updateSubscriberPreferences 
 } from '../../../lib/newsletter';
+import { EmailService } from '../../../lib/email-service';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -18,6 +19,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
         { status: 400 }
       );
     }
+
+    // Initialize EmailService with Resend API key
+    const apiKey = process.env.RESEND_API_KEY || locals.env?.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error('❌ RESEND_API_KEY not set in environment variables');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured' }),
+        { status: 500 }
+      );
+    }
+    
+    const emailService = new EmailService(apiKey);
 
     // Check if subscriber exists
     const existing = await getSubscriberByEmail(env, email);
@@ -50,7 +63,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
             categories: categories || [],
             frequency: 'weekly'
           };
-          // Use the existing unsubscribe token
           if (existing.unsubscribe_token) {
             await updateSubscriberPreferences(env, existing.unsubscribe_token, preferences);
           }
@@ -67,19 +79,29 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
       
       if (existing.status === 'pending') {
+        // Resend verification email using your EmailService
+        if (existing.verification_token) {
+          await emailService.sendNewsletterVerification(
+            email, 
+            existing.verification_token, 
+            firstName
+          );
+        }
+        
         return new Response(
           JSON.stringify({
-            success: false,
-            message: 'Please verify your email first. Check your inbox!',
+            success: true,
+            message: 'Verification email resent! Please check your inbox.',
             status: 'pending'
           }),
-          { status: 400 }
+          { status: 200 }
         );
       }
       
       if (existing.status === 'unsubscribed') {
         // Reactivate
         const db = getDB(env);
+        const newToken = generateToken();
         await db
           .prepare(`
             UPDATE newsletter_subscribers 
@@ -88,15 +110,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
           `)
-          .bind(generateToken(), existing.id)
+          .bind(newToken, existing.id)
           .run();
         
-        // Now send verification
-        const updated = await getSubscriberByEmail(env, email);
-        if (updated && updated.verification_token) {
-          // TODO: Send verification email
-          console.log(`[NEWSLETTER] Resubscribing ${email} with token ${updated.verification_token}`);
-        }
+        // Send verification email using your EmailService
+        await emailService.sendNewsletterVerification(email, newToken, firstName);
         
         return new Response(
           JSON.stringify({
@@ -112,7 +130,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const result = await createSubscriber(env, {
       email,
       first_name: firstName || '',
-      source: 'footer',
+      source: 'website',
       ip_address: request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for'),
       user_agent: request.headers.get('user-agent')
     });
@@ -131,8 +149,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     }
 
-    // TODO: Send verification email via Resend
-    console.log(`[NEWSLETTER] Verification token for ${email}: ${result.verificationToken}`);
+    // Send verification email using your EmailService
+    await emailService.sendNewsletterVerification(
+      email, 
+      result.verificationToken, 
+      firstName
+    );
 
     return new Response(
       JSON.stringify({
@@ -143,7 +165,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
 
   } catch (error) {
-    console.error('Subscribe error:', error);
+    console.error('❌ Subscribe error:', error);
     return new Response(
       JSON.stringify({ error: 'Failed to subscribe' }),
       { status: 500 }
@@ -151,7 +173,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 };
 
-// Helper function (duplicate from newsletter.ts but needed for this file)
+// Helper function
 function generateToken(): string {
   return Math.random().toString(36).substring(2, 15) + 
          Math.random().toString(36).substring(2, 15);

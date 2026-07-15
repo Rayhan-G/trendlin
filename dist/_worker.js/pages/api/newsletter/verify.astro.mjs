@@ -1,5 +1,5 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
-import { v as verifySubscriber } from '../../../chunks/newsletter_D8gOgD2s.mjs';
+import { v as verifySubscriber } from '../../../chunks/newsletter_igr2G-4O.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const GET = async ({ url, locals }) => {

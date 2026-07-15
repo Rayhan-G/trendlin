@@ -1,6 +1,7 @@
 // /src/pages/api/newsletter/verify.ts
 import type { APIRoute } from 'astro';
-import { verifySubscriber } from '../../../lib/newsletter';
+import { verifySubscriber, getSubscriberById } from '../../../lib/newsletter';
+import { EmailService } from '../../../lib/email-service';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   try {
@@ -21,6 +22,35 @@ export const GET: APIRoute = async ({ url, locals }) => {
       });
     }
 
+    // Send welcome email after successful verification
+    try {
+      const apiKey = process.env.RESEND_API_KEY || locals.env?.RESEND_API_KEY;
+      if (apiKey && result.subscriber) {
+        const emailService = new EmailService(apiKey);
+        
+        // Parse preferences to get categories
+        let categories: string[] = [];
+        try {
+          const prefs = result.subscriber.preferences ? JSON.parse(result.subscriber.preferences) : {};
+          categories = prefs.categories || [];
+        } catch (e) {
+          // Use empty array
+        }
+        
+        // Send welcome email
+        await emailService.sendNewsletterWelcome(
+          result.subscriber.email,
+          result.subscriber.first_name || undefined,
+          categories
+        );
+        
+        console.log(`✅ Welcome email sent to ${result.subscriber.email}`);
+      }
+    } catch (emailError) {
+      // Don't fail verification if welcome email fails
+      console.error('❌ Failed to send welcome email:', emailError);
+    }
+
     // Redirect to success page
     return new Response(null, {
       status: 302,
@@ -28,7 +58,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     });
 
   } catch (error) {
-    console.error('Verification error:', error);
+    console.error('❌ Verification error:', error);
     return new Response('Verification failed', { status: 500 });
   }
 };

@@ -1,6 +1,7 @@
 // /src/pages/api/newsletter/resend-verification.ts
 import type { APIRoute } from 'astro';
 import { getSubscriberByEmail } from '../../../lib/newsletter';
+import { EmailService } from '../../../lib/email-service';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
@@ -40,15 +41,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // TODO: Send verification email via Resend
-    const baseUrl = process.env.BASE_URL || 'https://trendlin.com';
-    const verificationLink = `${baseUrl}/api/newsletter/verify?token=${subscriber.verification_token}`;
+    // Initialize EmailService
+    const apiKey = process.env.RESEND_API_KEY || locals.env?.RESEND_API_KEY;
+    if (!apiKey) {
+      console.error('❌ RESEND_API_KEY not set');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured' }),
+        { status: 500 }
+      );
+    }
     
-    console.log(`[NEWSLETTER] Resending verification to ${email}`);
-    console.log(`[NEWSLETTER] Verification link: ${verificationLink}`);
+    const emailService = new EmailService(apiKey);
 
-    // Here you would actually send the email:
-    // await sendVerificationEmail(email, subscriber.verification_token);
+    // Send verification email using your EmailService
+    await emailService.sendNewsletterVerification(
+      email, 
+      subscriber.verification_token,
+      subscriber.first_name || undefined
+    );
 
     return new Response(
       JSON.stringify({
@@ -59,7 +69,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
 
   } catch (error) {
-    console.error('Error resending verification:', error);
+    console.error('❌ Error resending verification:', error);
     return new Response(
       JSON.stringify({ error: 'Failed to resend verification' }),
       { status: 500 }

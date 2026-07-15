@@ -1,5 +1,5 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
-import { d as deleteCampaign, g as getCampaigns, c as createCampaign, e as enqueueCampaign } from '../../../../chunks/newsletter_D8gOgD2s.mjs';
+import { d as deleteCampaign, a as getCampaigns, c as createCampaign, e as enqueueCampaign } from '../../../../chunks/newsletter_igr2G-4O.mjs';
 export { renderers } from '../../../../renderers.mjs';
 
 const POST = async ({ request, locals }) => {

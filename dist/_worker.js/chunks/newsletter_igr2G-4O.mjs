@@ -298,4 +298,4 @@ async function enqueueCampaign(env, campaignId) {
   return { success: true, count: subscribers.results.length };
 }
 
-export { deleteSubscriber as a, getSubscribers as b, createCampaign as c, deleteCampaign as d, enqueueCampaign as e, getSubscriberByEmail as f, getCampaigns as g, getSubscriberByUnsubscribeToken as h, getSubscriberStats as i, getCampaignStats as j, getLists as k, createSubscriber as l, unsubscribeSubscriber as m, updateSubscriberPreferences as u, verifySubscriber as v };
+export { getCampaigns as a, deleteSubscriber as b, createCampaign as c, deleteCampaign as d, enqueueCampaign as e, getSubscribers as f, getLists as g, getSubscriberByEmail as h, getSubscriberByUnsubscribeToken as i, getSubscriberStats as j, getCampaignStats as k, createSubscriber as l, unsubscribeSubscriber as m, updateSubscriberPreferences as u, verifySubscriber as v };
