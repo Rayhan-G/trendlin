@@ -6,7 +6,7 @@ export { renderers } from '../../../renderers.mjs';
 const POST = async ({ request, locals }) => {
   try {
     const db = locals?.runtime?.env?.DB;
-    const apiKey = locals?.runtime?.env?.RESEND_API_KEY || "re_HhzbKuCc_8BXfREd6JUyuRbj6b4y3iXCc";
+    const apiKey = locals?.runtime?.env?.RESEND_API_KEY || "re_Kfpjk4uw_7ZACMZFkoSWKJHoTh7cosEf9";
     if (!db) {
       return new Response(
         JSON.stringify({ success: false, message: "Database not available" }),

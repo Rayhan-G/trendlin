@@ -4,7 +4,7 @@ export { renderers } from '../../renderers.mjs';
 
 const GET = async ({ locals }) => {
   try {
-    const apiKey = locals?.runtime?.env?.RESEND_API_KEY || "re_HhzbKuCc_8BXfREd6JUyuRbj6b4y3iXCc";
+    const apiKey = locals?.runtime?.env?.RESEND_API_KEY || "re_Kfpjk4uw_7ZACMZFkoSWKJHoTh7cosEf9";
     if (!apiKey) ;
     const resend = new Resend(apiKey);
     const result = await resend.emails.send({

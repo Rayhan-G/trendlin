@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { renderers } from './renderers.mjs';
 import { createExports } from './_@astrojs-ssr-adapter.mjs';
-import { manifest } from './manifest_BB_zQZQQ.mjs';
+import { manifest } from './manifest_CwE1nfVO.mjs';
 
 const serverIslandMap = new Map();;
 
@@ -74,11 +74,12 @@ const _page65 = () => import('./pages/cookies.astro.mjs');
 const _page66 = () => import('./pages/disclosure.astro.mjs');
 const _page67 = () => import('./pages/posts/_slug_.astro.mjs');
 const _page68 = () => import('./pages/privacy.astro.mjs');
-const _page69 = () => import('./pages/terms.astro.mjs');
-const _page70 = () => import('./pages/unsubscribe.astro.mjs');
-const _page71 = () => import('./pages/verify-failed.astro.mjs');
-const _page72 = () => import('./pages/verify-success.astro.mjs');
-const _page73 = () => import('./pages/index.astro.mjs');
+const _page69 = () => import('./pages/sitemap.xml.astro.mjs');
+const _page70 = () => import('./pages/terms.astro.mjs');
+const _page71 = () => import('./pages/unsubscribe.astro.mjs');
+const _page72 = () => import('./pages/verify-failed.astro.mjs');
+const _page73 = () => import('./pages/verify-success.astro.mjs');
+const _page74 = () => import('./pages/index.astro.mjs');
 const pageMap = new Map([
     ["node_modules/@astrojs/cloudflare/dist/entrypoints/image-endpoint.js", _page0],
     ["src/pages/about.astro", _page1],
@@ -149,11 +150,12 @@ const pageMap = new Map([
     ["src/pages/disclosure.astro", _page66],
     ["src/pages/posts/[slug].astro", _page67],
     ["src/pages/privacy.astro", _page68],
-    ["src/pages/terms.astro", _page69],
-    ["src/pages/unsubscribe/index.astro", _page70],
-    ["src/pages/verify-failed.astro", _page71],
-    ["src/pages/verify-success.astro", _page72],
-    ["src/pages/index.astro", _page73]
+    ["src/pages/sitemap.xml.ts", _page69],
+    ["src/pages/terms.astro", _page70],
+    ["src/pages/unsubscribe/index.astro", _page71],
+    ["src/pages/verify-failed.astro", _page72],
+    ["src/pages/verify-success.astro", _page73],
+    ["src/pages/index.astro", _page74]
 ]);
 
 const _manifest = Object.assign(manifest, {
