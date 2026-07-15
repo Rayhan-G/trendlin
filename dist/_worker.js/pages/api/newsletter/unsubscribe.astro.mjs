@@ -1,5 +1,5 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
-import { m as unsubscribeSubscriber } from '../../../chunks/newsletter_igr2G-4O.mjs';
+import { m as unsubscribeSubscriber } from '../../../chunks/newsletter_DvXc4akD.mjs';
 export { renderers } from '../../../renderers.mjs';
 
 const POST = async ({ request, locals }) => {

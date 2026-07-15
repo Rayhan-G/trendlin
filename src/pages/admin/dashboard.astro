@@ -4,7 +4,6 @@
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { getSubscriberStats, getCampaigns } from '../../lib/newsletter';
 
 // ============================================
 // FETCH POSTS
@@ -183,35 +182,6 @@ try {
   console.error('Error fetching content metadata:', error);
 }
 
-// ============================================
-// FETCH NEWSLETTER STATS
-// ============================================
-let newsletterStats = {
-  total: 0,
-  active: 0,
-  pending: 0,
-  unsubscribed: 0,
-  campaigns: 0
-};
-
-try {
-  const env = Astro.locals.env;
-  const stats = await getSubscriberStats(env);
-  const campaigns = await getCampaigns(env, { limit: 100 });
-  
-  if (stats) {
-    newsletterStats = {
-      total: stats.total || 0,
-      active: stats.active || 0,
-      pending: stats.pending || 0,
-      unsubscribed: stats.unsubscribed || 0,
-      campaigns: campaigns?.length || 0
-    };
-  }
-} catch (error) {
-  console.error('Error fetching newsletter stats:', error);
-}
-
 const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources + contentStats.total;
 ---
 
@@ -245,7 +215,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- 7 STATS CARDS (Added Newsletter) -->
+  <!-- 6 STATS CARDS - Premium Design (Added Content Calendar) -->
   <!-- ============================================ -->
   <div class="stats-grid">
     
@@ -404,7 +374,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       </div>
     </div>
 
-    <!-- 6. CONTENT CALENDAR -->
+    <!-- 6. CONTENT CALENDAR (NEW) -->
     <div class="stat-card stat-card-pink">
       <div class="stat-card-inner">
         <div class="stat-card-left">
@@ -441,42 +411,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
         <a href="/admin/content" class="stat-action-btn stat-action-btn-pink">+ New Content</a>
       </div>
     </div>
-
-    <!-- 7. NEWSLETTER (NEW) -->
-    <div class="stat-card stat-card-rose">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Newsletter</div>
-            <div class="stat-value">{newsletterStats.total}</div>
-          </div>
-        </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
-            {newsletterStats.active} Active
-          </span>
-          <span class="stat-badge stat-badge-yellow">
-            <span class="stat-dot stat-dot-yellow"></span>
-            {newsletterStats.pending} Pending
-          </span>
-          <span class="stat-badge stat-badge-red">
-            <span class="stat-dot stat-dot-red"></span>
-            {newsletterStats.unsubscribed} Unsubscribed
-          </span>
-        </div>
-      </div>
-      <div class="stat-actions">
-        <a href="/admin/newsletter" class="stat-action-link">View All →</a>
-        <a href="/admin/newsletter/new" class="stat-action-btn stat-action-btn-rose">+ New Campaign</a>
-      </div>
-    </div>
-
   </div>
 
   <!-- ============================================ -->
@@ -795,20 +729,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
         }
       });
     });
-
-    // Search functionality
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-      searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const rows = document.querySelectorAll('.posts-table tbody tr');
-        
-        rows.forEach(row => {
-          const title = row.querySelector('.post-title')?.textContent?.toLowerCase() || '';
-          row.style.display = title.includes(searchTerm) ? '' : 'none';
-        });
-      });
-    }
   });
 </script>
 
@@ -877,11 +797,11 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   }
 
   /* ============================================
-     STATS GRID - 7 Cards
+     STATS GRID
      ============================================ */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
   }
@@ -931,7 +851,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-card-indigo .stat-icon-wrapper { background: #e0e7ff; }
   .stat-card-cyan .stat-icon-wrapper { background: #cffafe; }
   .stat-card-pink .stat-icon-wrapper { background: #fce7f3; }
-  .stat-card-rose .stat-icon-wrapper { background: #ffe4e6; }
 
   .stat-icon {
     width: 20px;
@@ -944,7 +863,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-card-indigo .stat-icon { color: #4f46e5; }
   .stat-card-cyan .stat-icon { color: #0891b2; }
   .stat-card-pink .stat-icon { color: #db2777; }
-  .stat-card-rose .stat-icon { color: #e11d48; }
 
   .stat-label {
     font-size: 0.75rem;
@@ -967,7 +885,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-card-indigo .stat-value { color: #4f46e5; }
   .stat-card-cyan .stat-value { color: #0891b2; }
   .stat-card-pink .stat-value { color: #db2777; }
-  .stat-card-rose .stat-value { color: #e11d48; }
 
   .stat-badges {
     display: flex;
@@ -992,7 +909,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-badge-blue { background: #dbeafe; color: #1e40af; }
   .stat-badge-purple { background: #ede9fe; color: #5b21b6; }
   .stat-badge-orange { background: #ffedd5; color: #9a3412; }
-  .stat-badge-red { background: #fecaca; color: #991b1b; }
 
   .stat-dot {
     width: 5px;
@@ -1006,7 +922,6 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   .stat-dot-blue { background: #3b82f6; }
   .stat-dot-purple { background: #8b5cf6; }
   .stat-dot-orange { background: #f97316; }
-  .stat-dot-red { background: #ef4444; }
 
   .stat-actions {
     display: flex;
@@ -1044,18 +959,21 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
   .stat-action-btn-blue { background: #2563eb; }
   .stat-action-btn-blue:hover { background: #1d4ed8; }
+
   .stat-action-btn-orange { background: #ea580c; }
   .stat-action-btn-orange:hover { background: #c2410c; }
+
   .stat-action-btn-green { background: #16a34a; }
   .stat-action-btn-green:hover { background: #15803d; }
+
   .stat-action-btn-indigo { background: #4f46e5; }
   .stat-action-btn-indigo:hover { background: #4338ca; }
+
   .stat-action-btn-cyan { background: #0891b2; }
   .stat-action-btn-cyan:hover { background: #0e7490; }
+
   .stat-action-btn-pink { background: #db2777; }
   .stat-action-btn-pink:hover { background: #be185d; }
-  .stat-action-btn-rose { background: #e11d48; }
-  .stat-action-btn-rose:hover { background: #be123c; }
 
   .stat-action-btn:hover {
     transform: translateY(-1px);
@@ -1376,15 +1294,9 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   /* ============================================
      RESPONSIVE
      ============================================ */
-  @media (max-width: 1200px) {
-    .stats-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    }
-  }
-
   @media (max-width: 1024px) {
     .stats-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     }
   }
 
