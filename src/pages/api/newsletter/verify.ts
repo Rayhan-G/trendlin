@@ -14,12 +14,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const result = await verifySubscriber(env, token);
 
     if (!result.success) {
+      // Redirect to failed page
       return new Response(null, {
         status: 302,
         headers: { Location: '/verify-failed' }
       });
     }
 
+    // Redirect to success page
     return new Response(null, {
       status: 302,
       headers: { Location: '/verify-success' }

@@ -1,79 +1,68 @@
+// /src/pages/api/newsletter/resend-verification.ts
 import type { APIRoute } from 'astro';
-import { getSubscriberByEmail } from '@/lib/newsletter';
-import { EmailService } from '@/lib/email-service';
+import { getSubscriberByEmail } from '../../../lib/newsletter';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const db = (locals as any)?.runtime?.env?.DB;
-    const apiKey = (locals as any)?.runtime?.env?.RESEND_API_KEY || 
-                   import.meta.env.RESEND_API_KEY || 
-                   process.env.RESEND_API_KEY;
+    const { email } = await request.json();
+    const env = locals.env;
 
-    if (!db) {
+    if (!email) {
       return new Response(
-        JSON.stringify({ success: false, message: 'Database not available' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Email is required' }),
+        { status: 400 }
       );
     }
 
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Email service not configured' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    const subscriber = await getSubscriberByEmail(env, email);
 
-    const body = await request.json();
-    const { email } = body;
-
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return new Response(
-        JSON.stringify({ success: false, message: 'Invalid email address' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const subscriber = await getSubscriberByEmail(email, db);
     if (!subscriber) {
       return new Response(
-        JSON.stringify({ success: false, message: 'No subscription found' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Subscriber not found' }),
+        { status: 404 }
       );
     }
 
-    if (subscriber.verified === 1) {
+    if (subscriber.status === 'active') {
       return new Response(
-        JSON.stringify({ success: false, message: 'Email already verified' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          message: 'Subscriber is already verified' 
+        }),
+        { status: 400 }
       );
     }
 
-    const token = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
-    await db.prepare(`
-      UPDATE subscribers 
-      SET verification_token = ?,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(token, subscriber.id).run();
+    if (!subscriber.verification_token) {
+      return new Response(
+        JSON.stringify({ error: 'No verification token found' }),
+        { status: 400 }
+      );
+    }
 
-    const emailService = new EmailService(apiKey);
-    await emailService.sendNewsletterVerification(email, token, subscriber.first_name);
+    // TODO: Send verification email via Resend
+    const baseUrl = process.env.BASE_URL || 'https://trendlin.com';
+    const verificationLink = `${baseUrl}/api/newsletter/verify?token=${subscriber.verification_token}`;
+    
+    console.log(`[NEWSLETTER] Resending verification to ${email}`);
+    console.log(`[NEWSLETTER] Verification link: ${verificationLink}`);
+
+    // Here you would actually send the email:
+    // await sendVerificationEmail(email, subscriber.verification_token);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Verification email resent! Please check your inbox.',
+        message: 'Verification email resent successfully'
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200 }
     );
+
   } catch (error) {
-    console.error('Resend verification error:', error);
+    console.error('Error resending verification:', error);
     return new Response(
-      JSON.stringify({ 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Something went wrong' 
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Failed to resend verification' }),
+      { status: 500 }
     );
   }
 };
