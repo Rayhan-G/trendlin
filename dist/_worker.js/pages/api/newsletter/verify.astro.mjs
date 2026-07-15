@@ -1,5 +1,5 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
-import { v as verifySubscriber } from '../../../chunks/newsletter_DvXc4akD.mjs';
+import { v as verifySubscriber } from '../../../chunks/newsletter_igr2G-4O.mjs';
 import { E as EmailService } from '../../../chunks/email-service_BZMp7oTW.mjs';
 export { renderers } from '../../../renderers.mjs';
 

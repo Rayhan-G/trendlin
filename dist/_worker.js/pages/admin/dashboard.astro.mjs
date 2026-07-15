@@ -2,7 +2,6 @@ globalThis.process ??= {}; globalThis.process.env ??= {};
 /* empty css                                    */
 import { c as createAstro, a as createComponent, g as renderComponent, e as renderScript, f as renderTemplate, m as maybeRenderHead, b as addAttribute } from '../../chunks/astro/server_DJuXqbzQ.mjs';
 import { $ as $$AdminLayout } from '../../chunks/AdminLayout_Cu1IFVzQ.mjs';
-import { g as getSubscriberStats, a as getCampaigns } from '../../chunks/newsletter_DvXc4akD.mjs';
 /* empty css                                        */
 export { renderers } from '../../renderers.mjs';
 
@@ -145,29 +144,6 @@ const $$Dashboard = createComponent(async ($$result, $$props, $$slots) => {
   } catch (error) {
     console.error("Error fetching content metadata:", error);
   }
-  let newsletterStats = {
-    total: 0,
-    active: 0,
-    pending: 0,
-    unsubscribed: 0,
-    campaigns: 0
-  };
-  try {
-    const env = Astro2.locals.env;
-    const stats = await getSubscriberStats(env);
-    const campaigns = await getCampaigns(env, { limit: 100 });
-    if (stats) {
-      newsletterStats = {
-        total: stats.total || 0,
-        active: stats.active || 0,
-        pending: stats.pending || 0,
-        unsubscribed: stats.unsubscribed || 0,
-        campaigns: campaigns?.length || 0
-      };
-    }
-  } catch (error) {
-    console.error("Error fetching newsletter stats:", error);
-  }
   const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources + contentStats.total;
   return renderTemplate`${renderComponent($$result, "AdminLayout", $$AdminLayout, { "title": "Dashboard - Trendlin" }, { "default": async ($$result2) => renderTemplate`    ${maybeRenderHead()}<div class="dashboard-hero"> <div class="dashboard-hero-content"> <div> <div class="dashboard-greeting"> <span class="greeting-emoji">👋</span> <span>Welcome back!</span> </div> <h1 class="dashboard-title">
 Your Content Dashboard
@@ -183,13 +159,10 @@ You have <strong>${totalContent}</strong> items across your content ecosystem
 </span> <span class="stat-badge stat-badge-orange"> <span class="stat-dot stat-dot-orange"></span> ${templateUsage} Uses
 </span> </div> </div> <div class="stat-actions"> <a href="/admin/templates" class="stat-action-link">View All →</a> <a href="/admin/templates/new" class="stat-action-btn stat-action-btn-indigo">+ New Template</a> </div> </div> <!-- 5. SOURCES --> <div class="stat-card stat-card-cyan"> <div class="stat-card-inner"> <div class="stat-card-left"> <div class="stat-icon-wrapper"> <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"> <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path> </svg> </div> <div> <div class="stat-label">Sources</div> <div class="stat-value">${totalSources}</div> </div> </div> <div class="stat-badges"> <span class="stat-badge stat-badge-blue"> <span class="stat-dot stat-dot-blue"></span> ${totalMasterSources} Universal
 </span> <span class="stat-badge stat-badge-green"> <span class="stat-dot stat-dot-green"></span> ${totalStateSources} State
-</span> </div> </div> <div class="stat-actions"> <a href="/admin/sources" class="stat-action-link">View All →</a> <a href="/admin/sources/new" class="stat-action-btn stat-action-btn-cyan">+ New Source</a> </div> </div> <!-- 6. CONTENT CALENDAR --> <div class="stat-card stat-card-pink"> <div class="stat-card-inner"> <div class="stat-card-left"> <div class="stat-icon-wrapper"> <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"> <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect> <line x1="16" y1="2" x2="16" y2="6"></line> <line x1="8" y1="2" x2="8" y2="6"></line> <line x1="3" y1="10" x2="21" y2="10"></line> </svg> </div> <div> <div class="stat-label">Content Calendar</div> <div class="stat-value">${contentStats.total}</div> </div> </div> <div class="stat-badges"> <span class="stat-badge stat-badge-green"> <span class="stat-dot stat-dot-green"></span> ${contentStats.published} Published
+</span> </div> </div> <div class="stat-actions"> <a href="/admin/sources" class="stat-action-link">View All →</a> <a href="/admin/sources/new" class="stat-action-btn stat-action-btn-cyan">+ New Source</a> </div> </div> <!-- 6. CONTENT CALENDAR (NEW) --> <div class="stat-card stat-card-pink"> <div class="stat-card-inner"> <div class="stat-card-left"> <div class="stat-icon-wrapper"> <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"> <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect> <line x1="16" y1="2" x2="16" y2="6"></line> <line x1="8" y1="2" x2="8" y2="6"></line> <line x1="3" y1="10" x2="21" y2="10"></line> </svg> </div> <div> <div class="stat-label">Content Calendar</div> <div class="stat-value">${contentStats.total}</div> </div> </div> <div class="stat-badges"> <span class="stat-badge stat-badge-green"> <span class="stat-dot stat-dot-green"></span> ${contentStats.published} Published
 </span> <span class="stat-badge stat-badge-blue"> <span class="stat-dot stat-dot-blue"></span> ${contentStats.scheduled} Scheduled
 </span> <span class="stat-badge stat-badge-yellow"> <span class="stat-dot stat-dot-yellow"></span> ${contentStats.drafts} Drafts
-</span> </div> </div> <div class="stat-actions"> <a href="/admin/content" class="stat-action-link">View Calendar →</a> <a href="/admin/content" class="stat-action-btn stat-action-btn-pink">+ New Content</a> </div> </div> <!-- 7. NEWSLETTER (NEW) --> <div class="stat-card stat-card-rose"> <div class="stat-card-inner"> <div class="stat-card-left"> <div class="stat-icon-wrapper"> <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"> <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path> </svg> </div> <div> <div class="stat-label">Newsletter</div> <div class="stat-value">${newsletterStats.total}</div> </div> </div> <div class="stat-badges"> <span class="stat-badge stat-badge-green"> <span class="stat-dot stat-dot-green"></span> ${newsletterStats.active} Active
-</span> <span class="stat-badge stat-badge-yellow"> <span class="stat-dot stat-dot-yellow"></span> ${newsletterStats.pending} Pending
-</span> <span class="stat-badge stat-badge-red"> <span class="stat-dot stat-dot-red"></span> ${newsletterStats.unsubscribed} Unsubscribed
-</span> </div> </div> <div class="stat-actions"> <a href="/admin/newsletter" class="stat-action-link">View All →</a> <a href="/admin/newsletter/new" class="stat-action-btn stat-action-btn-rose">+ New Campaign</a> </div> </div> </div>    <div class="recent-content-grid"> <!-- Recent Content Calendar Items --> <div class="recent-posts-section"> <div class="section-header"> <div> <h2 class="section-title">📅 Recent Content</h2> <p class="section-subtitle">Your latest scheduled and published content</p> </div> <div class="section-actions"> <a href="/admin/content" class="btn-new-post"> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line> </svg>
+</span> </div> </div> <div class="stat-actions"> <a href="/admin/content" class="stat-action-link">View Calendar →</a> <a href="/admin/content" class="stat-action-btn stat-action-btn-pink">+ New Content</a> </div> </div> </div>    <div class="recent-content-grid"> <!-- Recent Content Calendar Items --> <div class="recent-posts-section"> <div class="section-header"> <div> <h2 class="section-title">📅 Recent Content</h2> <p class="section-subtitle">Your latest scheduled and published content</p> </div> <div class="section-actions"> <a href="/admin/content" class="btn-new-post"> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <line x1="12" y1="5" x2="12" y2="19"></line> <line x1="5" y1="12" x2="19" y2="12"></line> </svg>
 New Content
 </a> </div> </div> <div class="table-container"> ${recentContent.length > 0 ? renderTemplate`<div class="table-scroll"> <table class="posts-table"> <thead> <tr> <th>Title</th> <th class="type-col">Type</th> <th class="status-col">Status</th> <th class="date-col">Scheduled</th> <th class="actions-col">Actions</th> </tr> </thead> <tbody> ${recentContent.map((item) => {
     const status = contentStatuses.find((s) => s.id === item.status_id);

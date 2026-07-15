@@ -1,5 +1,5 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
-import { g as getDB, p as prepareFirst, a as prepare } from './db_CaYABffz.mjs';
+import { g as getDB, p as prepare, a as prepareFirst } from './db_Ck9stjmw.mjs';
 
 function generateToken() {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -298,4 +298,4 @@ async function enqueueCampaign(env, campaignId) {
   return { success: true, count: subscribers.results.length };
 }
 
-export { getCampaigns as a, getLists as b, createCampaign as c, deleteCampaign as d, enqueueCampaign as e, deleteSubscriber as f, getSubscriberStats as g, getSubscribers as h, getSubscriberByEmail as i, getSubscriberByUnsubscribeToken as j, getCampaignStats as k, createSubscriber as l, unsubscribeSubscriber as m, updateSubscriberPreferences as u, verifySubscriber as v };
+export { getCampaigns as a, deleteSubscriber as b, createCampaign as c, deleteCampaign as d, enqueueCampaign as e, getSubscribers as f, getLists as g, getSubscriberByEmail as h, getSubscriberByUnsubscribeToken as i, getSubscriberStats as j, getCampaignStats as k, createSubscriber as l, unsubscribeSubscriber as m, updateSubscriberPreferences as u, verifySubscriber as v };

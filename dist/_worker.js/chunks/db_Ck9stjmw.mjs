@@ -17,4 +17,4 @@ function prepareFirst(db, query, params) {
   return stmt.first();
 }
 
-export { prepare as a, getDB as g, prepareFirst as p };
+export { prepareFirst as a, getDB as g, prepare as p };
