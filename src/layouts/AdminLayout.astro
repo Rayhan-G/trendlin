@@ -446,7 +446,7 @@ if (!user) {
     </header>
 
     <!-- ==========================================
-    SIDEBAR - 5 FEATURES + Dashboard
+    SIDEBAR - 6 FEATURES + Newsletter + Dashboard
     ========================================== -->
     <aside class="sidebar" id="sidebar">
       <nav class="sidebar-nav">
@@ -456,7 +456,7 @@ if (!user) {
           <span class="icon">📊</span> Dashboard
         </a>
         
-        <!-- CONTENT SECTION - 5 FEATURES -->
+        <!-- CONTENT SECTION -->
         <div class="nav-label" style="margin-top: 0.5rem;">Content</div>
         
         <!-- 1. POSTS -->
@@ -482,6 +482,11 @@ if (!user) {
         <!-- 5. SOURCES -->
         <a href="/admin/sources" class={Astro.url.pathname === '/admin/sources' ? 'active' : ''}>
           <span class="icon">📚</span> Sources
+        </a>
+        
+        <!-- 🆕 6. NEWSLETTER -->
+        <a href="/admin/newsletter" class={Astro.url.pathname.startsWith('/admin/newsletter') ? 'active' : ''}>
+          <span class="icon">📧</span> Newsletter
         </a>
         
         <!-- SYSTEM SECTION -->

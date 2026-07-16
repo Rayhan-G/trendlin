@@ -112,11 +112,11 @@
       
       if (data.success) {
         messageEl.className = 'message success';
-        messageEl.textContent = data.message;
+        messageEl.textContent = data.message || 'Please check your email to verify your subscription!';
         document.getElementById('email').value = '';
       } else {
         messageEl.className = 'message error';
-        messageEl.textContent = data.message || 'Something went wrong. Please try again.';
+        messageEl.textContent = data.error || data.message || 'Something went wrong. Please try again.';
       }
     } catch (error) {
       messageEl.className = 'message error';

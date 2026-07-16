@@ -1,22 +1,69 @@
+# ============================================
+# WRANGLER CONFIGURATION - TRENDLIN
+# ============================================
+
 name = "trendlin"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
 
+# ============================================
+# D1 DATABASE BINDING
+# ============================================
 [[d1_databases]]
 binding = "DB"
 database_name = "trendlin-db"
 database_id = "4c7e58ee-38af-49ed-ab76-62a07050a2f9"
 
+# ============================================
+# R2 BUCKET BINDING
+# ============================================
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "trendlin-assets"
 preview_bucket_name = "trendlin-assets"
 
+# ============================================
+# ENVIRONMENT VARIABLES (Public only)
+# ============================================
 [vars]
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD_HASH = "$2b$10$m.6/D1LMwG/D6V7Rzdv/FeUJQTUmfEykNcekY9nX29lLukMq9jys2"
 R2_PUBLIC_URL = "https://pub-efd12abaa5114844a7a358cc14a217de.r2.dev"
-
 CONTACT_EMAIL = "contact@trendlin.com"
 FROM_EMAIL = "contact@trendlin.com"
 SITE = "https://trendlin.com"
+SITE_URL = "https://trendlin.com"
+MAX_BATCH_SIZE = "200"
+RATE_LIMIT_DELAY = "10"
+
+# ============================================
+# CRON SCHEDULE
+# ============================================
+[triggers]
+crons = ["*/5 * * * *"]  # Run every 5 minutes
+
+# ============================================
+# BUILD CONFIGURATION
+# ============================================
+[build]
+command = "npm run build"
+watch_dir = "src"
+
+[build.upload]
+format = "modules"
+dir = "dist"
+
+[[build.upload.rules]]
+type = "ESModule"
+globs = ["**/*.js", "**/*.ts", "**/*.tsx", "**/*.astro"]
+
+[[build.upload.rules]]
+type = "Data"
+globs = ["**/*.json", "**/*.html", "**/*.css"]
+
+# ============================================
+# OBSERVABILITY
+# ============================================
+[observability]
+enabled = true
+head_sampling_rate = 1.0

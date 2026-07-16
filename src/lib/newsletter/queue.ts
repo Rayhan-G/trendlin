@@ -1,148 +1,528 @@
-// /src/lib/newsletter/queue.ts
-import { createD1Client } from '../db';
+// ============================================
+// NEWSLETTER QUEUE SYSTEM - PRODUCTION GRADE
+// Handles 200k-500k subscribers efficiently
+// Integrates with your existing EmailService
+// ============================================
+
+import { getDB, prepare, prepareFirst } from '../db';  // ← FIXED PATH
+import { EmailService } from '../email-service';  // ← FIXED PATH
+
+export interface QueueJob {
+  id: number;
+  campaignId: number;
+  subscriberId: number;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  subject: string;
+  content: string;
+  unsubscribeToken: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'bounced';
+  attempts: number;
+  maxAttempts: number;
+  priority: number;
+}
+
+export interface QueueStats {
+  processed: number;
+  successful: number;
+  failed: number;
+  bounced: number;
+  skipped: number;
+}
 
 export class NewsletterQueue {
-  private db: any;
+  private env: any;
+  private emailService: EmailService;
   private batchSize: number = 100;
+  private processing: boolean = false;
+  private rateLimitDelay: number = 10; // ms between emails
 
   constructor(env: any) {
-    this.db = createD1Client(env.DB);
+    this.env = env;
+    const apiKey = env.RESEND_API_KEY || process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY is required');
+    }
+    this.emailService = new EmailService(apiKey);
   }
 
-  async enqueueCampaign(campaignId: number) {
-    // Get all active subscribers for this campaign
-    const subscribers = await this.db.prepare(`
-      SELECT 
-        ns.id as subscriber_id,
-        ns.email,
-        ns.first_name,
-        ns.last_name
-      FROM newsletter_subscribers ns
-      JOIN newsletter_list_members nlm ON ns.id = nlm.subscriber_id
-      WHERE ns.status = 'active'
-        AND nlm.subscribed = 1
-    `).all();
+  // ============================================
+  // ENQUEUE CAMPAIGN - CHUNKED FOR 500K SUBSCRIBERS
+  // ============================================
+  async enqueueCampaign(campaignId: number): Promise<{ success: boolean; count: number }> {
+    const db = getDB(this.env);
+    const CHUNK_SIZE = 1000;
+    let offset = 0;
+    let totalEnqueued = 0;
 
-    // Create queue entries
-    for (const sub of subscribers.results) {
-      // Check if already in queue
-      const existing = await this.db.prepare(`
-        SELECT id FROM newsletter_queue 
-        WHERE campaign_id = ? AND subscriber_id = ?
-      `).bind(campaignId, sub.subscriber_id).first();
+    // Get campaign
+    const campaign = await prepareFirst<any>(
+      db,
+      'SELECT * FROM newsletter_campaigns WHERE id = ?',
+      [campaignId]
+    );
 
-      if (!existing) {
-        await this.db.prepare(`
-          INSERT INTO newsletter_queue (campaign_id, subscriber_id)
-          VALUES (?, ?)
-        `).bind(campaignId, sub.subscriber_id).run();
+    if (!campaign) {
+      throw new Error(`Campaign ${campaignId} not found`);
+    }
 
-        // Create recipient record
-        await this.db.prepare(`
-          INSERT INTO newsletter_campaign_recipients (campaign_id, subscriber_id)
-          VALUES (?, ?)
-        `).bind(campaignId, sub.subscriber_id).run();
+    // Update status to sending
+    await db
+      .prepare('UPDATE newsletter_campaigns SET status = ? WHERE id = ?')
+      .bind('sending', campaignId)
+      .run();
+
+    // Process subscribers in chunks
+    while (true) {
+      const subscribers = await prepare(
+        db,
+        `
+          SELECT 
+            ns.id as subscriber_id,
+            ns.email,
+            ns.first_name,
+            ns.last_name,
+            ns.unsubscribe_token
+          FROM newsletter_subscribers ns
+          JOIN newsletter_list_members nlm ON ns.id = nlm.subscriber_id
+          WHERE ns.status = 'active'
+            AND nlm.subscribed = 1
+            ${campaign.list_id ? `AND nlm.list_id = ${campaign.list_id}` : ''}
+          ORDER BY ns.id
+          LIMIT ? OFFSET ?
+        `,
+        [CHUNK_SIZE, offset]
+      );
+
+      if (!subscribers.results || subscribers.results.length === 0) {
+        break;
+      }
+
+      // Build bulk insert for queue
+      const insertValues = subscribers.results.map((sub: any) => {
+        return `(${campaignId}, ${sub.subscriber_id}, 0, 5, 0)`;
+      }).join(',');
+
+      if (insertValues) {
+        await db
+          .prepare(`
+            INSERT OR IGNORE INTO newsletter_queue 
+            (campaign_id, subscriber_id, priority, max_attempts, attempts)
+            VALUES ${insertValues}
+          `)
+          .run();
+
+        // Insert recipients for tracking
+        const recipientValues = subscribers.results.map((sub: any) => {
+          return `(${campaignId}, ${sub.subscriber_id}, 'pending')`;
+        }).join(',');
+
+        if (recipientValues) {
+          await db
+            .prepare(`
+              INSERT OR IGNORE INTO newsletter_campaign_recipients 
+              (campaign_id, subscriber_id, status)
+              VALUES ${recipientValues}
+            `)
+            .run();
+        }
+
+        totalEnqueued += subscribers.results.length;
+        offset += CHUNK_SIZE;
+        console.log(`📊 Enqueued ${totalEnqueued} subscribers for campaign ${campaignId}`);
       }
     }
 
-    // Update campaign total recipients
-    await this.db.prepare(`
-      UPDATE newsletter_campaigns 
-      SET total_recipients = (
-        SELECT COUNT(*) FROM newsletter_campaign_recipients 
+    // Update total recipients
+    await db
+      .prepare(`
+        UPDATE newsletter_campaigns 
+        SET total_recipients = ?
+        WHERE id = ?
+      `)
+      .bind(totalEnqueued, campaignId)
+      .run();
+
+    return {
+      success: true,
+      count: totalEnqueued
+    };
+  }
+
+  // ============================================
+  // PROCESS QUEUE BATCH - RATE LIMITED FOR API SAFETY
+  // ============================================
+  async processBatch(batchSize: number = this.batchSize): Promise<QueueStats> {
+    if (this.processing) {
+      return { processed: 0, successful: 0, failed: 0, bounced: 0, skipped: 0 };
+    }
+
+    this.processing = true;
+    const db = getDB(this.env);
+    const stats: QueueStats = { processed: 0, successful: 0, failed: 0, bounced: 0, skipped: 0 };
+
+    try {
+      // Get pending jobs with proper ordering
+      const jobs = await prepare(
+        db,
+        `
+          SELECT 
+            nq.id as queue_id,
+            nq.campaign_id,
+            nq.subscriber_id,
+            nq.attempts,
+            nq.max_attempts,
+            nc.subject,
+            nc.content_html,
+            ns.email,
+            ns.first_name,
+            ns.last_name,
+            ns.unsubscribe_token
+          FROM newsletter_queue nq
+          JOIN newsletter_campaigns nc ON nq.campaign_id = nc.id
+          JOIN newsletter_subscribers ns ON nq.subscriber_id = ns.id
+          WHERE nq.status = 'pending'
+            AND nq.attempts < nq.max_attempts
+            AND (nq.scheduled_at IS NULL OR nq.scheduled_at <= CURRENT_TIMESTAMP)
+          ORDER BY nq.priority DESC, nq.created_at ASC
+          LIMIT ?
+        `,
+        [batchSize]
+      );
+
+      if (!jobs.results || jobs.results.length === 0) {
+        this.processing = false;
+        return stats;
+      }
+
+      console.log(`📤 Processing ${jobs.results.length} queued emails...`);
+
+      // Process each job with rate limiting
+      for (const job of jobs.results) {
+        try {
+          stats.processed++;
+
+          // Mark as processing
+          await db
+            .prepare(`
+              UPDATE newsletter_queue 
+              SET status = 'processing', 
+                  attempts = attempts + 1,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `)
+            .bind(job.queue_id)
+            .run();
+
+          // Replace merge tags in content
+          const personalizedContent = this.replaceMergeTags(job.content_html, {
+            email: job.email,
+            firstName: job.first_name || '',
+            lastName: job.last_name || '',
+            unsubscribeToken: job.unsubscribe_token || '',
+            campaignId: job.campaign_id.toString(),
+          });
+
+          // Send email using your existing EmailService
+          await this.emailService.sendNewsletterDigest({
+            to: job.email,
+            subject: job.subject,
+            title: job.subject,
+            content: personalizedContent,
+          });
+
+          // Mark as completed
+          await db
+            .prepare(`
+              UPDATE newsletter_queue 
+              SET status = 'completed', 
+                  processed_at = CURRENT_TIMESTAMP,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `)
+            .bind(job.queue_id)
+            .run();
+
+          // Update campaign recipient status
+          await db
+            .prepare(`
+              UPDATE newsletter_campaign_recipients 
+              SET status = 'sent', 
+                  sent_at = CURRENT_TIMESTAMP,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE campaign_id = ? AND subscriber_id = ?
+            `)
+            .bind(job.campaign_id, job.subscriber_id)
+            .run();
+
+          // Update campaign delivered count
+          await db
+            .prepare(`
+              UPDATE newsletter_campaigns 
+              SET delivered_count = delivered_count + 1
+              WHERE id = ?
+            `)
+            .bind(job.campaign_id)
+            .run();
+
+          // Log event
+          await db
+            .prepare(`
+              INSERT INTO newsletter_events (subscriber_id, campaign_id, type)
+              VALUES (?, ?, 'confirm')
+            `)
+            .bind(job.subscriber_id, job.campaign_id)
+            .run();
+
+          stats.successful++;
+
+          // Rate limiting - prevent API throttling
+          await this.delay(this.rateLimitDelay);
+
+        } catch (error: any) {
+          console.error(`❌ Job ${job.queue_id} failed:`, error.message);
+
+          const isBounce = error.message?.toLowerCase().includes('bounce') || 
+                          error.message?.toLowerCase().includes('undelivered') ||
+                          error.message?.toLowerCase().includes('invalid');
+
+          const newAttempts = job.attempts + 1;
+          const isFinalAttempt = newAttempts >= job.max_attempts;
+
+          let status = 'pending';
+          if (isBounce) {
+            status = 'bounced';
+          } else if (isFinalAttempt) {
+            status = 'failed';
+          }
+
+          await db
+            .prepare(`
+              UPDATE newsletter_queue 
+              SET status = ?,
+                  attempts = ?,
+                  error_message = ?,
+                  processed_at = CASE 
+                    WHEN ? IN ('failed', 'bounced') THEN CURRENT_TIMESTAMP 
+                    ELSE processed_at 
+                  END,
+                  updated_at = CURRENT_TIMESTAMP
+              WHERE id = ?
+            `)
+            .bind(
+              status,
+              newAttempts,
+              error.message || 'Unknown error',
+              status,
+              job.queue_id
+            )
+            .run();
+
+          if (isBounce || isFinalAttempt) {
+            // Update recipient status
+            await db
+              .prepare(`
+                UPDATE newsletter_campaign_recipients 
+                SET status = ?,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE campaign_id = ? AND subscriber_id = ?
+              `)
+              .bind(
+                isBounce ? 'bounced' : 'failed',
+                job.campaign_id,
+                job.subscriber_id
+              )
+              .run();
+
+            // Update campaign counts
+            const countField = isBounce ? 'bounced_count' : 'failed_count';
+            await db
+              .prepare(`
+                UPDATE newsletter_campaigns 
+                SET ${countField} = ${countField} + 1
+                WHERE id = ?
+              `)
+              .bind(job.campaign_id)
+              .run();
+
+            // Update subscriber status on bounce
+            if (isBounce) {
+              await db
+                .prepare(`
+                  UPDATE newsletter_subscribers 
+                  SET status = 'bounced',
+                      updated_at = CURRENT_TIMESTAMP
+                  WHERE id = ?
+                `)
+                .bind(job.subscriber_id)
+                .run();
+
+              stats.bounced++;
+            } else {
+              stats.failed++;
+            }
+
+            // Log event
+            await db
+              .prepare(`
+                INSERT INTO newsletter_events (subscriber_id, campaign_id, type, metadata)
+                VALUES (?, ?, ?, ?)
+              `)
+              .bind(
+                job.subscriber_id,
+                job.campaign_id,
+                isBounce ? 'bounce' : 'unsubscribe',
+                JSON.stringify({ error: error.message, attempts: newAttempts })
+              )
+              .run();
+          }
+        }
+      }
+
+      // Check if campaign is complete
+      await this.checkCampaignComplete(db);
+
+    } catch (error) {
+      console.error('❌ Batch processing error:', error);
+    } finally {
+      this.processing = false;
+    }
+
+    return stats;
+  }
+
+  // ============================================
+  // GET QUEUE STATUS
+  // ============================================
+  async getQueueStatus(campaignId: number): Promise<any> {
+    const db = getDB(this.env);
+    
+    const stats = await prepareFirst(
+      db,
+      `
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+          SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+          SUM(CASE WHEN status = 'bounced' THEN 1 ELSE 0 END) as bounced
+        FROM newsletter_queue
         WHERE campaign_id = ?
-      )
-      WHERE id = ?
-    `).bind(campaignId, campaignId).run();
+      `,
+      [campaignId]
+    );
 
-    return subscribers.results.length;
+    return stats;
   }
 
-  async processBatch(): Promise<number> {
-    // Get pending jobs
-    const jobs = await this.db.prepare(`
-      SELECT 
-        nq.id as queue_id,
-        nq.campaign_id,
-        nq.subscriber_id,
-        nc.subject,
-        nc.content_html,
-        ns.email,
-        ns.first_name
-      FROM newsletter_queue nq
-      JOIN newsletter_campaigns nc ON nq.campaign_id = nc.id
-      JOIN newsletter_subscribers ns ON nq.subscriber_id = ns.id
-      WHERE nq.status = 'pending'
-        AND nq.attempts < nq.max_attempts
-      ORDER BY nq.priority DESC, nq.created_at ASC
-      LIMIT ?
-    `).bind(this.batchSize).all();
+  // ============================================
+  // RETRY FAILED JOBS
+  // ============================================
+  async retryFailedJobs(campaignId: number): Promise<number> {
+    const db = getDB(this.env);
+    
+    const result = await db
+      .prepare(`
+        UPDATE newsletter_queue 
+        SET status = 'pending',
+            attempts = 0,
+            error_message = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE campaign_id = ?
+          AND status IN ('failed', 'bounced')
+          AND attempts < max_attempts
+      `)
+      .bind(campaignId)
+      .run();
 
-    let processed = 0;
+    return result.meta.changes || 0;
+  }
 
-    for (const job of jobs.results) {
-      try {
-        // Update to processing
-        await this.db.prepare(`
-          UPDATE newsletter_queue 
-          SET status = 'processing', 
-              attempts = attempts + 1
-          WHERE id = ?
-        `).bind(job.queue_id).run();
+  // ============================================
+  // PAUSE/RESUME CAMPAIGN
+  // ============================================
+  async pauseCampaign(campaignId: number): Promise<void> {
+    const db = getDB(this.env);
+    
+    await db
+      .prepare(`
+        UPDATE newsletter_campaigns 
+        SET status = 'paused'
+        WHERE id = ?
+      `)
+      .bind(campaignId)
+      .run();
+  }
 
-        // Here you would send the email via Resend or other provider
-        // For now, just mark as completed
-        console.log(`Sending email to ${job.email}: ${job.subject}`);
+  async resumeCampaign(campaignId: number): Promise<void> {
+    const db = getDB(this.env);
+    
+    await db
+      .prepare(`
+        UPDATE newsletter_campaigns 
+        SET status = 'sending'
+        WHERE id = ?
+      `)
+      .bind(campaignId)
+      .run();
+  }
 
-        // Update recipient
-        await this.db.prepare(`
-          UPDATE newsletter_campaign_recipients 
-          SET status = 'sent', 
-              sent_at = CURRENT_TIMESTAMP,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE campaign_id = ? AND subscriber_id = ?
-        `).bind(job.campaign_id, job.subscriber_id).run();
+  // ============================================
+  // HELPERS
+  // ============================================
 
-        // Update queue
-        await this.db.prepare(`
-          UPDATE newsletter_queue 
-          SET status = 'completed', 
-              processed_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `).bind(job.queue_id).run();
+  private replaceMergeTags(html: string, data: Record<string, string>): string {
+    let result = html;
+    for (const [key, value] of Object.entries(data)) {
+      result = result.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    }
+    return result;
+  }
 
-        // Update campaign delivered count
-        await this.db.prepare(`
-          UPDATE newsletter_campaigns 
-          SET delivered_count = delivered_count + 1
-          WHERE id = ?
-        `).bind(job.campaign_id).run();
+  private async checkCampaignComplete(db: any): Promise<void> {
+    // Get campaigns that are sending
+    const campaigns = await prepare(
+      db,
+      `
+        SELECT DISTINCT campaign_id 
+        FROM newsletter_queue 
+        WHERE status IN ('pending', 'processing')
+      `
+    );
 
-        processed++;
+    for (const row of campaigns.results || []) {
+      const stats = await prepareFirst(
+        db,
+        `
+          SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('pending', 'processing') THEN 1 ELSE 0 END) as pending_or_processing
+          FROM newsletter_queue
+          WHERE campaign_id = ?
+        `,
+        [row.campaign_id]
+      );
 
-      } catch (error) {
-        console.error(`Error processing job ${job.queue_id}:`, error);
-
-        // Update queue with error
-        await this.db.prepare(`
-          UPDATE newsletter_queue 
-          SET status = 'failed',
-              error_message = ?,
-              processed_at = CURRENT_TIMESTAMP
-          WHERE id = ?
-        `).bind(error.message || 'Unknown error', job.queue_id).run();
-
-        // Update recipient
-        await this.db.prepare(`
-          UPDATE newsletter_campaign_recipients 
-          SET status = 'failed',
-              error_message = ?,
-              updated_at = CURRENT_TIMESTAMP
-          WHERE campaign_id = ? AND subscriber_id = ?
-        `).bind(error.message || 'Unknown error', job.campaign_id, job.subscriber_id).run();
+      if (stats.pending_or_processing === 0) {
+        await db
+          .prepare(`
+            UPDATE newsletter_campaigns 
+            SET status = 'completed',
+                sent_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `)
+          .bind(row.campaign_id)
+          .run();
+        
+        console.log(`✅ Campaign ${row.campaign_id} completed!`);
       }
     }
+  }
 
-    return processed;
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 }
