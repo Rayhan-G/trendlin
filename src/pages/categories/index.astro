@@ -1,12 +1,15 @@
 ---
 // ============================================
-// CATEGORIES PAGE - Refined Premium Design
+// CATEGORIES PAGE - Refined Premium Design with Hero Sections
 // ============================================
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostCard from '../../components/PostCard.astro';
 
-const categories = [
+// ============================================
+// HARDCODED CATEGORIES DATA (Fallback)
+// ============================================
+const categoriesData = [
   { 
     name: 'Health & Wellness', 
     icon: '🧘', 
@@ -89,6 +92,9 @@ const categories = [
   }
 ];
 
+// ============================================
+// FETCH POSTS FROM DATABASE
+// ============================================
 let allPosts = [];
 let postCounts = {};
 let totalPosts = 0;
@@ -112,12 +118,48 @@ try {
 } catch (error) {
   console.error('Database error:', error);
 }
+
+// ============================================
+// FETCH CATEGORIES FROM DATABASE (for hero images)
+// ============================================
+let dbCategories = [];
+try {
+  const { DB } = Astro.locals.runtime.env;
+  
+  const result = await DB.prepare(`
+    SELECT * FROM categories ORDER BY name ASC
+  `).all();
+  
+  dbCategories = result.results || [];
+} catch (error) {
+  console.error('Error fetching categories:', error);
+}
+
+// ============================================
+// MERGE CATEGORIES DATA WITH DATABASE HERO IMAGES
+// ============================================
+const categories = categoriesData.map(cat => {
+  const dbCat = dbCategories.find(dbc => dbc.slug === cat.slug);
+  return {
+    ...cat,
+    hero_image: dbCat?.hero_image || cat.image // Fallback to original image
+  };
+});
+
+// ============================================
+// HELPER FUNCTION TO GET HERO IMAGE
+// ============================================
+function getHeroImage(category) {
+  return category.hero_image || category.image;
+}
 ---
 
 <BaseLayout title="Categories - Trendlin">
   <div class="max-w-6xl mx-auto px-6 py-16 sm:py-24 selection:bg-black selection:text-white">
     
-    <!-- Header -->
+    <!-- ============================================ -->
+    <!-- HEADER -->
+    <!-- ============================================ -->
     <div class="mb-20 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 border-b border-gray-100 pb-8">
       <div>
         <h1 class="text-4xl sm:text-6xl font-bold text-gray-900 tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">
@@ -133,13 +175,16 @@ try {
       </div>
     </div>
 
-    <!-- Main Categories Stack -->
+    <!-- ============================================ -->
+    <!-- MAIN CATEGORIES STACK -->
+    <!-- ============================================ -->
     <div class="space-y-16" id="matrixContainer">
       {categories.map((category, index) => {
         const count = postCounts[category.name] || 0;
         const posts = allPosts.filter(p => p.category === category.name);
         const isImageRight = index % 2 === 0;
         const targetGradient = category.gradient;
+        const heroImage = getHeroImage(category);
         
         return (
           <div 
@@ -150,7 +195,9 @@ try {
           >
             <div class="view-wrapper relative bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-md transition-all duration-500 hover:shadow-xl hover:border-gray-200/80">
               
-              <!-- STATE 1: Split View -->
+              <!-- ========================================== -->
+              <!-- STATE 1: SPLIT VIEW (Default) -->
+              <!-- ========================================== -->
               <div class="state-split grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[380px]">
                 
                 <!-- Image Side -->
@@ -207,28 +254,77 @@ try {
 
               </div>
 
-              <!-- STATE 2: Expanded Posts with Floating PostCard -->
+              <!-- ========================================== -->
+              <!-- STATE 2: EXPANDED SLIDER WITH HERO SECTION -->
+              <!-- ========================================== -->
               <div class="state-slider hidden flex-col transition-all duration-500">
-                <div class="bg-gray-900 px-6 py-4 flex items-center justify-between border-b border-gray-800">
-                  <div class="flex items-center gap-3 text-white">
-                    <span class="text-lg">{category.icon}</span>
-                    <h3 class="font-bold tracking-tight text-sm sm:text-base" style="font-family: 'Space Grotesk', sans-serif;">
-                      {category.name} Archive
-                    </h3>
-                    <span class="text-xs text-gray-400 font-normal">/ {count} entries</span>
+                
+                <!-- 🆕 HERO SECTION - WIDE FORMAT -->
+                <div class="category-hero relative w-full overflow-hidden bg-gray-900">
+                  <div class="relative h-48 sm:h-56 md:h-64 lg:h-72">
+                    
+                    <!-- Hero Image -->
+                    <img 
+                      src={heroImage} 
+                      alt={`${category.name} hero`}
+                      class="w-full h-full object-cover"
+                      loading="lazy"
+                      onerror="this.style.display='none'; this.parentElement.querySelector('.hero-fallback').style.display='flex';"
+                    />
+                    
+                    <!-- Fallback if image fails -->
+                    <div class="hero-fallback absolute inset-0 hidden items-center justify-center bg-gradient-to-r from-gray-800 to-gray-900">
+                      <div class="text-center text-white">
+                        <span class="text-4xl block mb-2">{category.icon}</span>
+                        <span class="text-xl font-bold">{category.name}</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Gradient Overlay for text readability -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                    
+                    <!-- Hero Content Overlay -->
+                    <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8 text-white">
+                      <div class="max-w-3xl">
+                        <div class="flex items-center gap-3 mb-2">
+                          <span class="text-3xl sm:text-4xl">{category.icon}</span>
+                          <h3 class="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">
+                            {category.name}
+                          </h3>
+                        </div>
+                        <p class="text-sm sm:text-base text-white/90 max-w-2xl">
+                          {category.description}
+                        </p>
+                        <div class="flex items-center gap-3 mt-3 flex-wrap">
+                          <span class="text-xs font-medium bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                            {count} {count === 1 ? 'Article' : 'Articles'}
+                          </span>
+                          <span class="text-xs font-medium bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                            🏷️ {category.slug.replace('-', ' ')}
+                          </span>
+                          {category.hero_image && (
+                            <span class="text-xs font-medium bg-emerald-500/30 backdrop-blur-sm px-3 py-1 rounded-full">
+                              ✨ Custom Hero
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                  
+                  <!-- Close Button inside hero -->
                   <button 
-                    class="close-matrix-btn text-xs text-gray-400 hover:text-white flex items-center gap-1.5 transition-colors duration-200 px-2.5 py-1 rounded-md border border-gray-800 hover:border-gray-700"
+                    class="close-matrix-btn absolute top-4 right-4 text-white/70 hover:text-white flex items-center gap-1.5 transition-colors duration-200 px-3 py-1.5 rounded-md bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-white/20"
                     data-category={category.slug}
                   >
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
-                    Esc
+                    <span class="text-xs font-medium">Close</span>
                   </button>
                 </div>
 
-                <!-- HORIZONTAL SCROLL - NO VISIBLE SCROLLBAR -->
+                <!-- Horizontal Scroll - Posts -->
                 <div class="flex overflow-x-auto gap-5 p-6 sm:p-8 bg-gray-50/70 dark:bg-gray-900/30 scroll-smooth" 
                      style="scrollbar-width: none; -ms-overflow-style: none; overflow-x: auto;">
                   <style>
@@ -243,7 +339,8 @@ try {
                     ))
                   ) : (
                     <div class="w-full text-center py-12 text-gray-400 font-light text-sm">
-                      No publications found in this category.
+                      <span class="text-4xl block mb-3">📭</span>
+                      No publications found in this category yet.
                     </div>
                   )}
                 </div>
@@ -253,7 +350,7 @@ try {
                   <svg class="w-3.5 h-3.5 animate-bounce-x" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                   </svg>
-                  <span>Scroll to explore</span>
+                  <span>Scroll to explore articles</span>
                   <svg class="w-3.5 h-3.5 animate-bounce-x" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                   </svg>
@@ -268,6 +365,9 @@ try {
   </div>
 </BaseLayout>
 
+<!-- ============================================ -->
+<!-- GLOBAL STYLES -->
+<!-- ============================================ -->
 <style is:global>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
   
@@ -278,6 +378,7 @@ try {
     overflow: hidden;
   }
   
+  /* Hide scrollbar but keep functionality */
   .scroll-smooth::-webkit-scrollbar {
     height: 6px;
   }
@@ -293,6 +394,7 @@ try {
     background: #d1d5db;
   }
   
+  /* Bounce Animation */
   @keyframes bounce-x {
     0%, 100% { transform: translateX(0); }
     50% { transform: translateX(6px); }
@@ -301,9 +403,28 @@ try {
   .animate-bounce-x {
     animation: bounce-x 1.8s ease-in-out infinite;
   }
+  
+  /* Hero image loading transition */
+  .category-hero img {
+    transition: opacity 0.5s ease;
+  }
+  
+  .category-hero img[loading] {
+    opacity: 0;
+  }
+  
+  .category-hero img[loaded] {
+    opacity: 1;
+  }
 </style>
 
+<!-- ============================================ -->
+<!-- JAVASCRIPT - INTERACTIVITY -->
+<!-- ============================================ -->
 <script>
+  // ============================================
+  // CLOSE ALL OPEN SLIDERS
+  // ============================================
   function closeAllSliders() {
     document.querySelectorAll('.state-slider').forEach(s => {
       const section = s.closest('.category-section');
@@ -318,6 +439,9 @@ try {
     });
   }
 
+  // ============================================
+  // EXPLORE MATRIX BUTTON - OPEN SLIDER
+  // ============================================
   document.querySelectorAll('.explore-matrix-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const section = this.closest('.category-section');
@@ -329,18 +453,22 @@ try {
       const isOpen = !sliderState.classList.contains('hidden');
       
       if (isOpen) {
+        // Close if already open
         sliderState.classList.add('hidden');
         sliderState.classList.remove('flex');
         splitState.classList.remove('hidden');
         wrapper.classList.remove('ring-4', customRing);
       } else {
+        // Close all others first
         closeAllSliders();
 
+        // Open this one
         splitState.classList.add('hidden');
         sliderState.classList.remove('hidden');
         sliderState.classList.add('flex');
         wrapper.classList.add('ring-4', customRing);
         
+        // Smooth scroll to section
         setTimeout(() => {
           section.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 80);
@@ -348,6 +476,9 @@ try {
     });
   });
   
+  // ============================================
+  // CLOSE BUTTON
+  // ============================================
   document.querySelectorAll('.close-matrix-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       const section = this.closest('.category-section');
@@ -363,9 +494,29 @@ try {
     });
   });
   
+  // ============================================
+  // ESC KEY TO CLOSE ALL
+  // ============================================
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeAllSliders();
     }
+  });
+
+  // ============================================
+  // IMAGE LOADING HANDLER
+  // ============================================
+  document.addEventListener('DOMContentLoaded', function() {
+    // Handle hero image loading
+    document.querySelectorAll('.category-hero img').forEach(img => {
+      img.addEventListener('load', function() {
+        this.setAttribute('loaded', '');
+      });
+      
+      // If image already loaded
+      if (img.complete) {
+        img.setAttribute('loaded', '');
+      }
+    });
   });
 </script>

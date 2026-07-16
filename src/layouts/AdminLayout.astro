@@ -464,27 +464,32 @@ if (!user) {
           <span class="icon">📄</span> Posts
         </a>
         
-        <!-- 2. PRODUCTS -->
+        <!-- 🆕 2. CATEGORIES -->
+        <a href="/admin/categories" class={Astro.url.pathname === '/admin/categories' || Astro.url.pathname.startsWith('/admin/categories/') ? 'active' : ''}>
+          <span class="icon">🏷️</span> Categories
+        </a>
+        
+        <!-- 3. PRODUCTS -->
         <a href="/admin/products" class={Astro.url.pathname.startsWith('/admin/products') ? 'active' : ''}>
           <span class="icon">📦</span> Products
         </a>
         
-        <!-- 3. MEDIA -->
+        <!-- 4. MEDIA -->
         <a href="/admin/media" class={Astro.url.pathname.startsWith('/admin/media') ? 'active' : ''}>
           <span class="icon">🖼️</span> Media Library
         </a>
         
-        <!-- 4. TEMPLATES -->
+        <!-- 5. TEMPLATES -->
         <a href="/admin/templates" class={Astro.url.pathname === '/admin/templates' ? 'active' : ''}>
           <span class="icon">📋</span> Templates
         </a>
         
-        <!-- 5. SOURCES -->
+        <!-- 6. SOURCES -->
         <a href="/admin/sources" class={Astro.url.pathname === '/admin/sources' ? 'active' : ''}>
           <span class="icon">📚</span> Sources
         </a>
         
-        <!-- 🆕 6. NEWSLETTER -->
+        <!-- 7. NEWSLETTER -->
         <a href="/admin/newsletter" class={Astro.url.pathname.startsWith('/admin/newsletter') ? 'active' : ''}>
           <span class="icon">📧</span> Newsletter
         </a>
