@@ -4,53 +4,82 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 
 <AdminLayout title="Newsletter | Admin">
   <!-- ============================================ -->
-  <!-- HEADER -->
+  <!-- HEADER WITH NAVIGATION LINKS -->
   <!-- ============================================ -->
   <div class="page-header">
-    <h1>📧 Newsletter Management</h1>
-    <p>Manage subscribers, create campaigns, and track performance</p>
+    <div class="page-header-top">
+      <div>
+        <h1>📧 Newsletter Management</h1>
+        <p>Manage subscribers, create campaigns, and track performance</p>
+      </div>
+      <div class="page-actions">
+        <a href="/admin/newsletter/subscribers" class="btn btn-outline">
+          📬 View Subscribers
+        </a>
+        <a href="/admin/newsletter/new" class="btn btn-primary">
+          ✏️ New Campaign
+        </a>
+      </div>
+    </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- STATS -->
+  <!-- SUBSCRIBER STATS - FIXED -->
   <!-- ============================================ -->
   <div class="stats-grid" id="newsletter-stats">
     <div class="stat-card">
       <div class="stat-label">Total Subscribers</div>
-      <div class="stat-value" id="total-subscribers">—</div>
+      <div class="stat-value" id="total-subscribers">0</div>
     </div>
     <div class="stat-card stat-active">
       <div class="stat-label">Active</div>
-      <div class="stat-value" id="active-subscribers">—</div>
+      <div class="stat-value" id="active-subscribers">0</div>
     </div>
     <div class="stat-card stat-pending">
       <div class="stat-label">Pending</div>
-      <div class="stat-value" id="pending-subscribers">—</div>
+      <div class="stat-value" id="pending-subscribers">0</div>
     </div>
     <div class="stat-card stat-unsubscribed">
       <div class="stat-label">Unsubscribed</div>
-      <div class="stat-value" id="unsubscribed-subscribers">—</div>
+      <div class="stat-value" id="unsubscribed-subscribers">0</div>
     </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- QUICK ACTIONS -->
+  <!-- CAMPAIGN STATS -->
   <!-- ============================================ -->
-  <div class="quick-actions">
-    <a href="/admin/newsletter/subscribers" class="quick-action">
-      <span>📬</span>
+  <div class="campaign-stats">
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">📨</div>
       <div>
-        <strong>Subscribers</strong>
-        <span>Manage your subscriber list</span>
+        <div class="campaign-stat-label">Total Campaigns</div>
+        <div class="campaign-stat-value" id="total-campaigns">0</div>
       </div>
-    </a>
-    <a href="/admin/newsletter/new" class="quick-action">
-      <span>✏️</span>
+    </div>
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">📊</div>
       <div>
-        <strong>New Campaign</strong>
-        <span>Create and send a newsletter</span>
+        <div class="campaign-stat-label">Open Rate</div>
+        <div class="campaign-stat-value" id="open-rate">0%</div>
       </div>
-    </a>
+    </div>
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">👆</div>
+      <div>
+        <div class="campaign-stat-label">Click Rate</div>
+        <div class="campaign-stat-value" id="click-rate">0%</div>
+      </div>
+    </div>
+    <div class="campaign-stat-card" style="border-color: #8b5cf6;">
+      <div class="campaign-stat-icon">➕</div>
+      <div>
+        <div class="campaign-stat-label">Quick Actions</div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.25rem;flex-wrap:wrap;">
+          <a href="/admin/newsletter/new" class="btn btn-sm btn-primary">New Campaign</a>
+          <a href="/admin/newsletter/subscribers" class="btn btn-sm btn-outline">Subscribers</a>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ============================================ -->
@@ -58,12 +87,37 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   <!-- ============================================ -->
   <div class="card">
     <div class="card-header">
-      <h2 class="card-title">📋 Recent Campaigns</h2>
-      <a href="/admin/newsletter/new" class="btn btn-primary">+ New</a>
+      <div>
+        <h2 class="card-title">📋 Recent Campaigns</h2>
+        <p class="card-subtitle">Your latest sent and drafted newsletters</p>
+      </div>
+      <a href="/admin/newsletter/new" class="btn btn-primary btn-sm">+ New Campaign</a>
     </div>
     <div id="campaign-list">
       <p class="text-muted">Loading campaigns...</p>
     </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- QUICK LINKS -->
+  <!-- ============================================ -->
+  <div class="quick-links">
+    <a href="/admin/newsletter/subscribers" class="quick-link">
+      <span class="quick-icon">📬</span>
+      <div>
+        <h4>Manage Subscribers</h4>
+        <p>View, search, and manage your subscriber list</p>
+      </div>
+      <span class="quick-arrow">→</span>
+    </a>
+    <a href="/admin/newsletter/new" class="quick-link">
+      <span class="quick-icon">✏️</span>
+      <div>
+        <h4>Create Campaign</h4>
+        <p>Write and send a new newsletter to your subscribers</p>
+      </div>
+      <span class="quick-arrow">→</span>
+    </a>
   </div>
 
 </AdminLayout>
@@ -74,6 +128,14 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
      ============================================ */
   .page-header {
     margin-bottom: 1.5rem;
+  }
+
+  .page-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
   }
 
   .page-header h1 {
@@ -88,12 +150,80 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     margin: 0.25rem 0 0;
   }
 
+  .page-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    font-family: inherit;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+  }
+
+  .btn-outline:hover {
+    background: #eef2ff;
+  }
+
+  .btn-secondary {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #7c3aed;
+  }
+
+  .btn-success {
+    background: #22c55e;
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: #16a34a;
+  }
+
   /* ============================================
      STATS GRID
      ============================================ */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
@@ -125,46 +255,41 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .stat-unsubscribed .stat-value { color: #ef4444; }
 
   /* ============================================
-     QUICK ACTIONS
+     CAMPAIGN STATS
      ============================================ */
-  .quick-actions {
+  .campaign-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 1rem;
     margin-bottom: 1.5rem;
   }
 
-  .quick-action {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1.25rem;
+  .campaign-stat-card {
     background: white;
+    padding: 1rem 1.25rem;
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
-    text-decoration: none;
-    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
-  .quick-action:hover {
-    border-color: #3b82f6;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  }
-
-  .quick-action span:first-child {
+  .campaign-stat-icon {
     font-size: 1.5rem;
   }
 
-  .quick-action strong {
-    display: block;
-    font-size: 0.875rem;
-    color: #0f172a;
+  .campaign-stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  .quick-action span:last-child {
-    font-size: 0.75rem;
-    color: #94a3b8;
+  .campaign-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
   }
 
   /* ============================================
@@ -175,40 +300,29 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     border-radius: 0.75rem;
     border: 1px solid #e2e8f0;
     padding: 1.5rem;
+    margin-bottom: 1.5rem;
   }
 
   .card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     margin-bottom: 1rem;
   }
 
   .card-title {
-    font-size: 1rem;
+    font-size: 1.125rem;
     font-weight: 600;
     color: #0f172a;
     margin: 0;
   }
 
-  .btn {
-    padding: 0.375rem 1rem;
-    border: none;
-    border-radius: 0.5rem;
+  .card-subtitle {
     font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    font-family: inherit;
-  }
-
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .btn-primary:hover {
-    background: #2563eb;
+    color: #94a3b8;
+    margin: 0.125rem 0 0;
   }
 
   .text-muted {
@@ -222,7 +336,7 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.625rem 0;
+    padding: 0.75rem 0;
     border-bottom: 1px solid #f1f5f9;
   }
 
@@ -255,17 +369,91 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .campaign-status.sending { background: #fef3c7; color: #92400e; }
   .campaign-status.completed { background: #dcfce7; color: #166534; }
   .campaign-status.failed { background: #fecaca; color: #991b1b; }
+  .campaign-status.paused { background: #fef9c3; color: #854d0e; }
+  .campaign-status.cancelled { background: #f1f5f9; color: #64748b; }
+
+  /* ============================================
+     QUICK LINKS
+     ============================================ */
+  .quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .quick-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .quick-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+    border-color: #3b82f6;
+  }
+
+  .quick-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+
+  .quick-link h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .quick-link p {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin: 0.125rem 0 0;
+  }
+
+  .quick-arrow {
+    margin-left: auto;
+    color: #94a3b8;
+    font-size: 1.25rem;
+  }
+
+  .quick-link:hover .quick-arrow {
+    color: #3b82f6;
+    transform: translateX(4px);
+    transition: all 0.2s;
+  }
 
   /* ============================================
      RESPONSIVE
      ============================================ */
   @media (max-width: 640px) {
+    .page-header-top {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .page-actions {
+      flex-direction: column;
+    }
+
+    .page-actions .btn {
+      text-align: center;
+      justify-content: center;
+    }
+
     .stats-grid {
       grid-template-columns: 1fr 1fr;
     }
 
-    .quick-actions {
-      grid-template-columns: 1fr;
+    .campaign-stats {
+      grid-template-columns: 1fr 1fr;
     }
 
     .campaign-item {
@@ -273,33 +461,52 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       align-items: flex-start;
       gap: 0.5rem;
     }
+
+    .quick-links {
+      grid-template-columns: 1fr;
+    }
+
+    .quick-link {
+      flex-wrap: wrap;
+    }
   }
 </style>
 
 <script>
   document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
-    // LOAD STATS
+    // LOAD STATS - WITH DEBUG
     // ============================================
     async function loadStats() {
       try {
+        console.log('📊 Fetching stats...');
         const response = await fetch('/api/newsletter/stats');
         const data = await response.json();
-
+        
         console.log('📊 Stats response:', data);
-
+        
         if (data.success) {
+          // Subscriber stats
           const subs = data.data.subscribers || {};
           document.getElementById('total-subscribers').textContent = subs.total || 0;
           document.getElementById('active-subscribers').textContent = subs.active || 0;
           document.getElementById('pending-subscribers').textContent = subs.pending || 0;
           document.getElementById('unsubscribed-subscribers').textContent = subs.unsubscribed || 0;
+          
+          // Campaign stats
+          const campaigns = data.data.campaigns || {};
+          document.getElementById('total-campaigns').textContent = campaigns.total || 0;
+          
+          const openRate = campaigns.avg_open_rate || 0;
+          const clickRate = campaigns.avg_click_rate || 0;
+          document.getElementById('open-rate').textContent = openRate + '%';
+          document.getElementById('click-rate').textContent = clickRate + '%';
         } else {
-          console.error('Stats error:', data.error);
+          console.error('❌ Stats API returned error:', data.error);
           setDefaultStats();
         }
       } catch (error) {
-        console.error('Error loading stats:', error);
+        console.error('❌ Error loading stats:', error);
         setDefaultStats();
       }
     }
@@ -309,6 +516,9 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       document.getElementById('active-subscribers').textContent = '0';
       document.getElementById('pending-subscribers').textContent = '0';
       document.getElementById('unsubscribed-subscribers').textContent = '0';
+      document.getElementById('total-campaigns').textContent = '0';
+      document.getElementById('open-rate').textContent = '0%';
+      document.getElementById('click-rate').textContent = '0%';
     }
 
     // ============================================
@@ -316,12 +526,13 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     // ============================================
     async function loadCampaigns() {
       try {
+        console.log('📋 Fetching campaigns...');
         const response = await fetch('/api/newsletter/campaigns');
         const data = await response.json();
         const list = document.getElementById('campaign-list');
-
+        
         console.log('📋 Campaigns response:', data);
-
+        
         if (data.success && data.data && data.data.length > 0) {
           list.innerHTML = data.data.map(c => `
             <div class="campaign-item">
@@ -333,10 +544,10 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
             </div>
           `).join('');
         } else {
-          list.innerHTML = '<p class="text-muted">No campaigns yet. <a href="/admin/newsletter/new" style="color:#3b82f6;">Create one →</a></p>';
+          list.innerHTML = '<p class="text-muted">No campaigns yet. <a href="/admin/newsletter/new" style="color:#3b82f6;">Create your first one →</a></p>';
         }
       } catch (error) {
-        console.error('Error loading campaigns:', error);
+        console.error('❌ Error loading campaigns:', error);
         document.getElementById('campaign-list').innerHTML = '<p class="text-muted">Error loading campaigns.</p>';
       }
     }
