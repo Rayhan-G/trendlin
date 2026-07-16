@@ -8,11 +8,41 @@ import { EmailService } from '../../../lib/email-service';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const { email, firstName, lastName, categories } = await request.json();
-    const env = locals.env;
-    const db = getDB(env);
+    console.log('📧 Subscribe API called');
+    
+    // Get env from locals.runtime.env (matching admin pattern)
+    const env = locals?.runtime?.env || locals?.env || {};
+    console.log('🔍 env keys:', Object.keys(env));
+    
+    const { email, firstName, lastName } = await request.json();
 
-    console.log('🔍 Subscribe API called with:', { email, firstName, categories });
+    // Check database
+    let db;
+    try {
+      db = getDB(env);
+      console.log('✅ Database connection successful');
+    } catch (dbError: any) {
+      console.error('❌ Database error:', dbError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Database not available: ' + dbError.message 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check Resend API key
+    if (!env.RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY missing');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email service not configured' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Validate email
     if (!email || !email.includes('@')) {
@@ -22,19 +52,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    // Check if RESEND_API_KEY exists
-    if (!env.RESEND_API_KEY) {
-      console.error('❌ RESEND_API_KEY is missing from environment!');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Email service is not configured. Please try again later.' 
-        }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check if already subscribed
+    // Check existing subscriber
     const existing = await prepareFirst(
       db,
       'SELECT * FROM newsletter_subscribers WHERE email = ?',
@@ -44,35 +62,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (existing) {
       if (existing.status === 'active') {
         return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Already subscribed' 
-          }),
+          JSON.stringify({ success: false, error: 'Already subscribed' }),
           { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
       }
       if (existing.status === 'pending') {
-        // Resend verification
-        console.log('📧 Resending verification for pending subscriber:', email);
-        try {
-          const emailService = new EmailService(env.RESEND_API_KEY);
-          await emailService.sendNewsletterVerification(
-            email, 
-            existing.verification_token, 
-            firstName
-          );
-          console.log('✅ Verification email resent successfully!');
-        } catch (emailError: any) {
-          console.error('❌ Failed to resend verification:', emailError);
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'Failed to send verification email. Please try again.' 
-            }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-          );
-        }
-        
+        const emailService = new EmailService(env.RESEND_API_KEY);
+        await emailService.sendNewsletterVerification(
+          email, 
+          existing.verification_token, 
+          firstName
+        );
         return new Response(
           JSON.stringify({ 
             success: true, 
@@ -81,50 +81,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
       }
-      if (existing.status === 'unsubscribed') {
-        // Re-subscribe
-        const newToken = Math.random().toString(36).substring(2, 15) + 
-                        Math.random().toString(36).substring(2, 15);
-        await db
-          .prepare(`
-            UPDATE newsletter_subscribers 
-            SET status = 'pending',
-                verification_token = ?,
-                unsubscribed_at = NULL,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `)
-          .bind(newToken, existing.id)
-          .run();
-
-        console.log('📧 Sending verification for re-subscribe:', email);
-        try {
-          const emailService = new EmailService(env.RESEND_API_KEY);
-          await emailService.sendNewsletterVerification(email, newToken, firstName);
-          console.log('✅ Verification email sent successfully!');
-        } catch (emailError: any) {
-          console.error('❌ Failed to send verification:', emailError);
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'Failed to send verification email. Please try again.' 
-            }),
-            { status: 500, headers: { 'Content-Type': 'application/json' } }
-          );
-        }
-
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Welcome back! Please verify your email.' 
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
     }
 
     // Create new subscriber
-    console.log('📝 Creating new subscriber:', email);
     const verificationToken = Math.random().toString(36).substring(2, 15) + 
                             Math.random().toString(36).substring(2, 15);
     const unsubscribeToken = Math.random().toString(36).substring(2, 15) + 
@@ -160,59 +119,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .bind(subscriberId)
       .run();
 
-    // Log event
-    await db
-      .prepare(`
-        INSERT INTO newsletter_events (subscriber_id, type)
-        VALUES (?, 'subscribe')
-      `)
-      .bind(subscriberId)
-      .run();
-
     // Send verification email
-    console.log('📧 Sending verification email to:', email);
-    console.log('🔑 Verification token:', verificationToken);
-    
-    try {
-      const emailService = new EmailService(env.RESEND_API_KEY);
-      await emailService.sendNewsletterVerification(email, verificationToken, firstName);
-      console.log('✅ Verification email sent successfully!');
-    } catch (emailError: any) {
-      console.error('❌ Failed to send verification email:', emailError);
-      console.error('❌ Error details:', {
-        message: emailError.message,
-        stack: emailError.stack
-      });
-      
-      // Still return success but with warning
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Account created but verification email failed. Please try resending.',
-          warning: true,
-          data: {
-            email: email,
-            status: 'pending'
-          }
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
+    const emailService = new EmailService(env.RESEND_API_KEY);
+    await emailService.sendNewsletterVerification(email, verificationToken, firstName);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Please check your email to verify your subscription.',
-        data: {
-          email: email,
-          status: 'pending'
-        }
+        message: 'Please check your email to verify your subscription.'
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Subscribe error:', error);
+    console.error('❌ Subscribe error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 

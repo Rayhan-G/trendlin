@@ -7,8 +7,8 @@ export default defineConfig({
   output: 'server',
 
   adapter: cloudflare({
-    runtime: 'off',
-    platformProxy: 'off'
+    runtime: 'off',           // Keep off for Pages
+    platformProxy: 'enabled'  // CHANGE: Enable platform proxy
   }),
 
   integrations: [

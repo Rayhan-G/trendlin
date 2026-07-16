@@ -7,7 +7,7 @@ compatibility_date = "2024-01-01"
 pages_build_output_dir = "dist"
 
 # ============================================
-# D1 DATABASE BINDING (MUST BE HERE)
+# D1 DATABASE BINDING
 # ============================================
 [[d1_databases]]
 binding = "DB"
