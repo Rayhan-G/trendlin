@@ -96,7 +96,13 @@ const categoriesData = [
 // ============================================
 // GET DATABASE CONNECTION
 // ============================================
-const db = getDB(Astro.locals.runtime.env);
+let db;
+try {
+  db = getDB(Astro.locals.runtime.env);
+} catch (error) {
+  console.error('❌ Database connection error:', error);
+  db = null;
+}
 
 // ============================================
 // FETCH POSTS FROM DATABASE
@@ -104,59 +110,60 @@ const db = getDB(Astro.locals.runtime.env);
 let allPosts = [];
 let postCounts = {};
 let totalPosts = 0;
-
-try {
-  const result = await prepare(
-    db,
-    `SELECT * FROM posts WHERE is_draft = 0 ORDER BY created_at DESC`
-  );
-  
-  allPosts = result?.results || [];
-  
-  allPosts.forEach(post => {
-    if (post.category) {
-      postCounts[post.category] = (postCounts[post.category] || 0) + 1;
-      totalPosts++;
-    }
-  });
-  
-} catch (error) {
-  console.error('Database error:', error);
-}
-
-// ============================================
-// FETCH CATEGORY HERO IMAGES FROM category_hero TABLE
-// ============================================
 let categoryHeroes = {};
+let categories = [];
 
-try {
-  const result = await prepare(
-    db,
-    `SELECT 
-      c.slug,
-      ch.hero_image
-    FROM category_hero ch
-    JOIN categories c ON ch.category_id = c.id
-    WHERE ch.is_active = 1`
-  );
-  
-  const heroes = result?.results || [];
-  heroes.forEach(hero => {
-    if (hero.slug) {
-      categoryHeroes[hero.slug] = hero.hero_image;
-    }
-  });
-  
-  console.log('✅ Loaded hero images for categories:', Object.keys(categoryHeroes));
-  
-} catch (error) {
-  console.error('Error fetching category heroes:', error);
+if (db) {
+  try {
+    // Fetch posts
+    const result = await prepare(
+      db,
+      `SELECT * FROM posts WHERE is_draft = 0 ORDER BY created_at DESC`
+    );
+    
+    allPosts = result?.results || [];
+    
+    allPosts.forEach(post => {
+      if (post.category) {
+        postCounts[post.category] = (postCounts[post.category] || 0) + 1;
+        totalPosts++;
+      }
+    });
+    
+  } catch (error) {
+    console.error('Database error:', error);
+  }
+
+  try {
+    // Fetch category hero images
+    const result = await prepare(
+      db,
+      `SELECT 
+        c.slug,
+        ch.hero_image
+      FROM category_hero ch
+      JOIN categories c ON ch.category_id = c.id
+      WHERE ch.is_active = 1`
+    );
+    
+    const heroes = result?.results || [];
+    heroes.forEach(hero => {
+      if (hero.slug) {
+        categoryHeroes[hero.slug] = hero.hero_image;
+      }
+    });
+    
+    console.log('✅ Loaded hero images for categories:', Object.keys(categoryHeroes));
+    
+  } catch (error) {
+    console.error('Error fetching category heroes:', error);
+  }
 }
 
 // ============================================
 // MERGE CATEGORIES DATA WITH HERO IMAGES
 // ============================================
-const categories = categoriesData.map(cat => {
+categories = categoriesData.map(cat => {
   return {
     ...cat,
     hero_image: categoryHeroes[cat.slug] || null // Only use hero image if it exists in database
@@ -276,7 +283,7 @@ function getHeroImage(category) {
               <!-- ========================================== -->
               <div class="state-slider hidden flex-col transition-all duration-500">
                 
-                <!-- 🆕 HERO SECTION - Appears ONLY in expanded view -->
+                <!-- HERO SECTION - Appears ONLY in expanded view -->
                 {heroImage ? (
                   <div class="category-hero relative w-full overflow-hidden bg-gray-900">
                     <div class="relative h-48 sm:h-56 md:h-64 lg:h-72">
