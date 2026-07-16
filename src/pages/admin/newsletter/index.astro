@@ -5,70 +5,120 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 <AdminLayout title="Newsletter | Admin">
   <div class="page-header">
     <h1>📧 Newsletter Management</h1>
-    <p>Manage subscribers, create campaigns, and track performance</p>
+    <p>Manage subscribers, create campaigns, and track performance — all in one place</p>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-grid" id="newsletter-stats">
-    <div class="stat-card">
-      <div class="stat-label">Total Subscribers</div>
-      <div class="stat-value" id="total-subscribers">—</div>
+  <!-- ============================================ -->
+  <!-- SUBSCRIBERS SECTION -->
+  <!-- ============================================ -->
+  <div class="card subscribers-card">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+      <div>
+        <h2 class="card-title">📬 Subscribers</h2>
+        <p class="card-subtitle">Manage your newsletter subscribers</p>
+      </div>
+      <a href="/admin/newsletter/subscribers" class="btn btn-sm btn-outline">View All →</a>
     </div>
-    <div class="stat-card stat-active">
-      <div class="stat-label">Active</div>
-      <div class="stat-value" id="active-subscribers">—</div>
+    
+    <!-- Stats -->
+    <div class="stats-grid" id="newsletter-stats">
+      <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-value" id="total-subscribers">—</div>
+      </div>
+      <div class="stat-card stat-active">
+        <div class="stat-label">Active</div>
+        <div class="stat-value" id="active-subscribers">—</div>
+      </div>
+      <div class="stat-card stat-pending">
+        <div class="stat-label">Pending</div>
+        <div class="stat-value" id="pending-subscribers">—</div>
+      </div>
+      <div class="stat-card stat-unsubscribed">
+        <div class="stat-label">Unsubscribed</div>
+        <div class="stat-value" id="unsubscribed-subscribers">—</div>
+      </div>
     </div>
-    <div class="stat-card stat-pending">
-      <div class="stat-label">Pending</div>
-      <div class="stat-value" id="pending-subscribers">—</div>
-    </div>
-    <div class="stat-card stat-unsubscribed">
-      <div class="stat-label">Unsubscribed</div>
-      <div class="stat-value" id="unsubscribed-subscribers">—</div>
+
+    <!-- Subscriber List -->
+    <div class="table-container">
+      <div class="table-toolbar">
+        <div class="search-wrapper">
+          <input 
+            type="text" 
+            id="subscriber-search" 
+            placeholder="Search subscribers..." 
+            class="search-input"
+          />
+          <button id="search-btn" class="btn btn-sm btn-primary">Search</button>
+        </div>
+        <div>
+          <span id="subscriber-count" class="text-muted">Loading...</span>
+        </div>
+      </div>
+      
+      <div class="table-scroll">
+        <table class="subscribers-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subscriber-list">
+            <tr><td colspan="5" class="text-center text-muted">Loading subscribers...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Campaign Stats -->
-  <div class="campaign-stats">
-    <div class="campaign-stat-card">
-      <div class="campaign-stat-icon">📨</div>
-      <div>
-        <div class="campaign-stat-label">Total Campaigns</div>
-        <div class="campaign-stat-value" id="total-campaigns">—</div>
-      </div>
-    </div>
-    <div class="campaign-stat-card">
-      <div class="campaign-stat-icon">📊</div>
-      <div>
-        <div class="campaign-stat-label">Open Rate</div>
-        <div class="campaign-stat-value" id="open-rate">—</div>
-      </div>
-    </div>
-    <div class="campaign-stat-card">
-      <div class="campaign-stat-icon">👆</div>
-      <div>
-        <div class="campaign-stat-label">Click Rate</div>
-        <div class="campaign-stat-value" id="click-rate">—</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Create Campaign -->
+  <!-- ============================================ -->
+  <!-- CREATE CAMPAIGN SECTION (Integrated) -->
+  <!-- ============================================ -->
   <div class="card create-campaign-card">
-    <h2 class="card-header">Create New Campaign</h2>
-    <form id="create-campaign-form" class="campaign-form">
-      <div class="form-group">
-        <label for="campaign-subject">Subject *</label>
-        <input type="text" id="campaign-subject" placeholder="Enter email subject" required />
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">✏️ Create New Campaign</h2>
+        <p class="card-subtitle">Write and send your newsletter to subscribers</p>
       </div>
-      <div class="form-group">
-        <label for="campaign-content">Content (HTML) *</label>
-        <textarea id="campaign-content" rows="8" placeholder="Write your email content in HTML..." required></textarea>
-      </div>
+    </div>
+
+    <form id="campaign-form" novalidate>
       <div class="form-row">
         <div class="form-group">
-          <label for="campaign-category">Category</label>
-          <select id="campaign-category">
+          <label for="subject">Subject Line *</label>
+          <input 
+            type="text" 
+            id="subject" 
+            required 
+            placeholder="Your newsletter subject"
+            class="form-input"
+            maxlength="200"
+          />
+          <div class="char-counter" id="subject-counter">0/200</div>
+        </div>
+
+        <div class="form-group">
+          <label for="preview">Preview Text</label>
+          <input 
+            type="text" 
+            id="preview" 
+            placeholder="Preview text for email clients"
+            class="form-input"
+            maxlength="150"
+          />
+          <div class="char-counter" id="preview-counter">0/150</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="category">Category</label>
+          <select id="category" class="form-select">
             <option value="general">All Subscribers</option>
             <option value="technology">💻 Technology</option>
             <option value="health-wellness">🧘 Health & Wellness</option>
@@ -80,30 +130,89 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
             <option value="finance">💰 Finance</option>
           </select>
         </div>
+
         <div class="form-group">
-          <label for="campaign-schedule">Schedule (optional)</label>
-          <input type="datetime-local" id="campaign-schedule" />
+          <label for="schedule">Schedule (optional)</label>
+          <input 
+            type="datetime-local" 
+            id="schedule" 
+            class="form-input"
+          />
+          <p class="form-hint" style="font-size:0.7rem;color:#94a3b8;margin-top:0.25rem;">Leave blank to send immediately</p>
         </div>
       </div>
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">💾 Save Draft</button>
-        <button type="button" id="schedule-btn" class="btn btn-secondary">📅 Schedule</button>
-        <button type="button" id="send-now-btn" class="btn btn-success">🚀 Send Now</button>
+
+      <div class="form-group">
+        <label for="content">Email Content (HTML) *</label>
+        <textarea 
+          id="content" 
+          rows="8" 
+          placeholder="Write your newsletter content here... Use HTML for formatting."
+          class="form-textarea"
+          required
+        ></textarea>
+        <div class="char-counter" id="content-counter">0 characters</div>
+        <p class="form-hint">You can use HTML tags: &lt;h1&gt;, &lt;p&gt;, &lt;strong&gt;, etc. Use <code>{{firstName}}</code> for personalization.</p>
       </div>
+
+      <div class="form-actions">
+        <button type="button" id="save-draft" class="btn btn-secondary">💾 Save Draft</button>
+        <button type="button" id="schedule-btn" class="btn btn-primary">📅 Schedule</button>
+        <button type="button" id="send-now" class="btn btn-success">🚀 Send Now</button>
+      </div>
+
       <div id="campaign-message" class="form-message hidden"></div>
     </form>
   </div>
 
-  <!-- Campaign List -->
+  <!-- ============================================ -->
+  <!-- CAMPAIGN PERFORMANCE STATS -->
+  <!-- ============================================ -->
+  <div class="campaign-stats">
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">📨</div>
+      <div>
+        <div class="campaign-stat-label">Total Campaigns</div>
+        <div class="campaign-stat-value" id="total-campaigns">—</div>
+      </div>
+    </div>
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">📊</div>
+      <div>
+        <div class="campaign-stat-label">Avg Open Rate</div>
+        <div class="campaign-stat-value" id="open-rate">—</div>
+      </div>
+    </div>
+    <div class="campaign-stat-card">
+      <div class="campaign-stat-icon">👆</div>
+      <div>
+        <div class="campaign-stat-label">Avg Click Rate</div>
+        <div class="campaign-stat-value" id="click-rate">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- RECENT CAMPAIGNS -->
+  <!-- ============================================ -->
   <div class="card">
-    <h2 class="card-header">Recent Campaigns</h2>
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">📋 Recent Campaigns</h2>
+        <p class="card-subtitle">Your latest sent and drafted newsletters</p>
+      </div>
+    </div>
     <div id="campaign-list">
       <p class="text-muted">Loading campaigns...</p>
     </div>
   </div>
+
 </AdminLayout>
 
 <style is:global>
+  /* ============================================
+     PAGE HEADER
+     ============================================ */
   .page-header {
     margin-bottom: 1.5rem;
   }
@@ -120,22 +229,58 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     margin: 0.25rem 0 0;
   }
 
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 1rem;
+  /* ============================================
+     CARDS
+     ============================================ */
+  .card {
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
     margin-bottom: 1.5rem;
   }
 
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .card-subtitle {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0.125rem 0 0;
+  }
+
+  /* ============================================
+     STATS GRID
+     ============================================ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
   .stat-card {
-    background: white;
-    padding: 1.25rem;
-    border-radius: 0.75rem;
+    background: #f8fafc;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
     border: 1px solid #e2e8f0;
   }
 
   .stat-label {
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 500;
     color: #94a3b8;
     text-transform: uppercase;
@@ -143,16 +288,315 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   }
 
   .stat-value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: #0f172a;
-    margin-top: 0.25rem;
+    margin-top: 0.125rem;
   }
 
   .stat-active .stat-value { color: #22c55e; }
   .stat-pending .stat-value { color: #eab308; }
   .stat-unsubscribed .stat-value { color: #ef4444; }
 
+  /* ============================================
+     SUBSCRIBERS TABLE
+     ============================================ */
+  .table-container {
+    margin-top: 0.5rem;
+  }
+
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .search-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .search-input {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    outline: none;
+    transition: all 0.2s;
+    width: 200px;
+  }
+
+  .search-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .subscribers-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .subscribers-table thead {
+    background: #f8fafc;
+  }
+
+  .subscribers-table th {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .subscribers-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+
+  .subscribers-table tbody tr:hover {
+    background: #f8fafc;
+  }
+
+  /* ============================================
+     STATUS BADGES
+     ============================================ */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .status-active {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .status-pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-unsubscribed {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .status-suspended {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .status-bounced {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-active .status-dot { background: #22c55e; }
+  .status-pending .status-dot { background: #eab308; }
+  .status-unsubscribed .status-dot { background: #ef4444; }
+  .status-suspended .status-dot { background: #94a3b8; }
+  .status-bounced .status-dot { background: #f97316; }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
+    padding: 0.375rem 0.875rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.7rem;
+  }
+
+  .btn-primary {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #2563eb;
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
+  }
+
+  .btn-outline:hover {
+    background: #eef2ff;
+  }
+
+  .btn-secondary {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #7c3aed;
+  }
+
+  .btn-success {
+    background: #22c55e;
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: #16a34a;
+  }
+
+  .btn-danger {
+    background: #ef4444;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+
+  /* ============================================
+     CAMPAIGN FORM
+     ============================================ */
+  .create-campaign-card {
+    margin-bottom: 1.5rem;
+  }
+
+  .campaign-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .form-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    background: white;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-textarea {
+    min-height: 150px;
+    resize: vertical;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .form-message {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .form-message.success {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .form-message.error {
+    background: #fecaca;
+    color: #991b1b;
+  }
+
+  .form-message.hidden {
+    display: none;
+  }
+
+  .char-counter {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-align: right;
+    margin-top: 0.125rem;
+  }
+
+  .form-hint {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+  }
+
+  code {
+    background: #f1f5f9;
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-family: monospace;
+  }
+
+  /* ============================================
+     CAMPAIGN STATS
+     ============================================ */
   .campaign-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -188,137 +632,9 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     color: #0f172a;
   }
 
-  .card {
-    background: white;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .card-header {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #0f172a;
-    margin: 0 0 1rem;
-  }
-
-  .create-campaign-card {
-    margin-bottom: 1.5rem;
-  }
-
-  .campaign-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .form-group label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #475569;
-  }
-
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    padding: 0.625rem 0.875rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-family: inherit;
-    background: white;
-    transition: border-color 0.2s;
-  }
-
-  .form-group input:focus,
-  .form-group select:focus,
-  .form-group textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-  }
-
-  .form-actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .btn {
-    padding: 0.625rem 1.25rem;
-    border: none;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: inherit;
-  }
-
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-
-  .btn-primary:hover {
-    background: #2563eb;
-  }
-
-  .btn-secondary {
-    background: #8b5cf6;
-    color: white;
-  }
-
-  .btn-secondary:hover {
-    background: #7c3aed;
-  }
-
-  .btn-success {
-    background: #22c55e;
-    color: white;
-  }
-
-  .btn-success:hover {
-    background: #16a34a;
-  }
-
-  .form-message {
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
-  }
-
-  .form-message.success {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  .form-message.error {
-    background: #fecaca;
-    color: #991b1b;
-  }
-
-  .form-message.hidden {
-    display: none;
-  }
-
-  .text-muted {
-    color: #94a3b8;
-  }
-
+  /* ============================================
+     CAMPAIGN LIST
+     ============================================ */
   .campaign-item {
     display: flex;
     justify-content: space-between;
@@ -359,7 +675,49 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .campaign-status.paused { background: #fef9c3; color: #854d0e; }
   .campaign-status.cancelled { background: #f1f5f9; color: #64748b; }
 
-  @media (max-width: 640px) {
+  .text-center {
+    text-align: center;
+  }
+
+  .text-muted {
+    color: #94a3b8;
+  }
+
+  /* ============================================
+     ACTION BUTTONS
+     ============================================ */
+  .action-btn {
+    padding: 0.125rem 0.5rem;
+    border: none;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+
+  .action-btn-edit {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .action-btn-edit:hover {
+    background: #c7d2fe;
+  }
+
+  .action-btn-delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .action-btn-delete:hover {
+    background: #fecaca;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 768px) {
     .form-row {
       grid-template-columns: 1fr;
     }
@@ -386,31 +744,169 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       align-items: flex-start;
       gap: 0.5rem;
     }
+
+    .table-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .search-wrapper {
+      flex-direction: column;
+    }
+
+    .search-input {
+      width: 100%;
+    }
+
+    .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .campaign-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .card {
+      padding: 1rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.25rem;
+    }
   }
 </style>
 
 <script>
   document.addEventListener('DOMContentLoaded', async () => {
-    // Load stats
-    await loadStats();
-    
-    // Load campaigns
-    await loadCampaigns();
+    // ============================================
+    // CHARACTER COUNTERS
+    // ============================================
+    const subjectInput = document.getElementById('subject');
+    const previewInput = document.getElementById('preview');
+    const contentInput = document.getElementById('content');
+    const subjectCounter = document.getElementById('subject-counter');
+    const previewCounter = document.getElementById('preview-counter');
+    const contentCounter = document.getElementById('content-counter');
 
-    // Create campaign handlers
-    const form = document.getElementById('create-campaign-form');
-    
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await createCampaign('draft');
+    subjectInput?.addEventListener('input', () => {
+      const len = subjectInput.value.length;
+      subjectCounter.textContent = `${len}/200`;
+      subjectCounter.className = 'char-counter' + (len > 180 ? ' warning' : '') + (len > 190 ? ' danger' : '');
     });
 
-    document.getElementById('schedule-btn').addEventListener('click', async () => {
-      await createCampaign('scheduled');
+    previewInput?.addEventListener('input', () => {
+      const len = previewInput.value.length;
+      previewCounter.textContent = `${len}/150`;
+      previewCounter.className = 'char-counter' + (len > 130 ? ' warning' : '') + (len > 140 ? ' danger' : '');
     });
 
-    document.getElementById('send-now-btn').addEventListener('click', async () => {
-      await createCampaign('sending');
+    contentInput?.addEventListener('input', () => {
+      const len = contentInput.value.length;
+      contentCounter.textContent = `${len} characters`;
+    });
+
+    // ============================================
+    // SET MIN SCHEDULE TIME
+    // ============================================
+    const scheduleInput = document.getElementById('schedule');
+    if (scheduleInput) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 15);
+      scheduleInput.min = now.toISOString().slice(0, 16);
+    }
+
+    // ============================================
+    // LOAD SUBSCRIBERS
+    // ============================================
+    async function loadSubscribers(search = '') {
+      try {
+        const url = search 
+          ? `/api/admin/newsletter/subscribers?search=${encodeURIComponent(search)}`
+          : '/api/admin/newsletter/subscribers';
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        const list = document.getElementById('subscriber-list');
+        const count = document.getElementById('subscriber-count');
+        
+        if (data.success && data.data && data.data.length > 0) {
+          list.innerHTML = data.data.map(s => `
+            <tr>
+              <td><strong>${s.email}</strong></td>
+              <td>${s.first_name || '—'} ${s.last_name || ''}</td>
+              <td>
+                <span class="status-badge status-${s.status}">
+                  <span class="status-dot"></span>
+                  ${s.status}
+                </span>
+              </td>
+              <td>${new Date(s.created_at).toLocaleDateString()}</td>
+              <td>
+                <button class="action-btn action-btn-delete delete-subscriber" data-id="${s.id}" data-email="${s.email}">Delete</button>
+              </td>
+            </tr>
+          `).join('');
+          
+          count.textContent = `Showing ${data.data.length} subscribers`;
+        } else {
+          list.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No subscribers found.</td></tr>';
+          count.textContent = '0 subscribers';
+        }
+      } catch (error) {
+        console.error('Error loading subscribers:', error);
+        document.getElementById('subscriber-list').innerHTML = '<tr><td colspan="5" class="text-center text-muted">Error loading subscribers.</td></tr>';
+      }
+    }
+
+    // ============================================
+    // DELETE SUBSCRIBER
+    // ============================================
+    document.addEventListener('click', async (e) => {
+      if (e.target.classList.contains('delete-subscriber')) {
+        const id = e.target.dataset.id;
+        const email = e.target.dataset.email;
+        
+        if (!confirm(`Are you sure you want to delete ${email}?`)) return;
+        
+        try {
+          const response = await fetch(`/api/admin/newsletter/subscribers?id=${id}`, {
+            method: 'DELETE'
+          });
+          const data = await response.json();
+          
+          if (data.success) {
+            alert('✅ Subscriber deleted!');
+            await loadSubscribers(document.getElementById('subscriber-search').value);
+            await loadStats();
+          } else {
+            alert('❌ Failed to delete: ' + data.error);
+          }
+        } catch (error) {
+          console.error('Error deleting subscriber:', error);
+          alert('❌ Network error. Please try again.');
+        }
+      }
+    });
+
+    // ============================================
+    // SEARCH SUBSCRIBERS
+    // ============================================
+    document.getElementById('search-btn')?.addEventListener('click', () => {
+      const search = document.getElementById('subscriber-search').value.trim();
+      loadSubscribers(search);
+    });
+
+    document.getElementById('subscriber-search')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('search-btn').click();
+      }
     });
 
     // ============================================
@@ -428,7 +924,6 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
           document.getElementById('unsubscribed-subscribers').textContent = data.data.subscribers?.unsubscribed || 0;
           document.getElementById('total-campaigns').textContent = data.data.campaigns?.total || 0;
           
-          // Calculate rates
           const openRate = data.data.campaigns?.avg_open_rate || 0;
           const clickRate = data.data.campaigns?.avg_click_rate || 0;
           document.getElementById('open-rate').textContent = openRate + '%';
@@ -448,7 +943,7 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
         const data = await response.json();
         const list = document.getElementById('campaign-list');
         
-        if (data.success && data.data.length > 0) {
+        if (data.success && data.data && data.data.length > 0) {
           list.innerHTML = data.data.map(c => `
             <div class="campaign-item">
               <div class="campaign-info">
@@ -468,79 +963,222 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     }
 
     // ============================================
-    // CREATE CAMPAIGN
+    // CAMPAIGN FORM - MESSAGE HELPER
     // ============================================
-    async function createCampaign(status) {
-      const subject = document.getElementById('campaign-subject').value.trim();
-      const content = document.getElementById('campaign-content').value.trim();
-      const category = document.getElementById('campaign-category').value;
-      const scheduledAt = document.getElementById('campaign-schedule').value;
-      const messageEl = document.getElementById('campaign-message');
-
-      if (!subject || !content) {
-        showMessage('Please fill in both subject and content.', 'error');
-        return;
-      }
-
-      const isSending = status === 'sending';
-      const isScheduled = status === 'scheduled';
-
-      if (isScheduled && !scheduledAt) {
-        showMessage('Please select a schedule date and time.', 'error');
-        return;
-      }
-
-      // Disable buttons
-      const buttons = document.querySelectorAll('.form-actions .btn');
-      buttons.forEach(btn => btn.disabled = true);
-
-      try {
-        const response = await fetch('/api/newsletter/campaigns', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subject,
-            contentHtml: content,
-            category,
-            scheduledAt: isScheduled ? scheduledAt : null,
-            sendNow: isSending,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          showMessage(data.message || 'Campaign created successfully!', 'success');
-          // Clear form
-          document.getElementById('campaign-subject').value = '';
-          document.getElementById('campaign-content').value = '';
-          document.getElementById('campaign-schedule').value = '';
-          // Reload campaigns
-          await loadCampaigns();
-          await loadStats();
-        } else {
-          showMessage(data.message || data.error || 'Failed to create campaign.', 'error');
-        }
-      } catch (error) {
-        console.error('Error creating campaign:', error);
-        showMessage('Network error. Please try again.', 'error');
-      } finally {
-        // Re-enable buttons
-        buttons.forEach(btn => btn.disabled = false);
-      }
-    }
-
-    function showMessage(msg, type) {
+    const showMessage = (text, type) => {
       const el = document.getElementById('campaign-message');
-      el.textContent = msg;
+      el.textContent = text;
       el.className = `form-message ${type}`;
       el.classList.remove('hidden');
-      
-      if (type === 'success') {
-        setTimeout(() => {
-          el.classList.add('hidden');
-        }, 5000);
+      setTimeout(() => {
+        el.classList.add('hidden');
+      }, 5000);
+    };
+
+    // ============================================
+    // CAMPAIGN FORM - GET DATA
+    // ============================================
+    const getFormData = () => ({
+      subject: document.getElementById('subject').value.trim(),
+      preview_text: document.getElementById('preview').value.trim(),
+      content_html: document.getElementById('content').value.trim(),
+      category: document.getElementById('category').value,
+    });
+
+    // ============================================
+    // CAMPAIGN FORM - VALIDATE
+    // ============================================
+    const validateForm = () => {
+      const data = getFormData();
+      if (!data.subject) {
+        showMessage('Please enter a subject line.', 'error');
+        document.getElementById('subject').focus();
+        return null;
       }
-    }
+      if (data.subject.length > 200) {
+        showMessage('Subject must be 200 characters or less.', 'error');
+        document.getElementById('subject').focus();
+        return null;
+      }
+      if (!data.content_html) {
+        showMessage('Please enter the email content.', 'error');
+        document.getElementById('content').focus();
+        return null;
+      }
+      if (data.content_html.length < 50) {
+        showMessage('Content is too short. Please add more content.', 'error');
+        document.getElementById('content').focus();
+        return null;
+      }
+      return data;
+    };
+
+    // ============================================
+    // CAMPAIGN FORM - CREATE
+    // ============================================
+    const createCampaign = async (data, status, scheduledAt = null) => {
+      const payload = {
+        subject: data.subject,
+        preview_text: data.preview_text,
+        content_html: data.content_html,
+        category: data.category,
+        status: status,
+        scheduled_at: scheduledAt,
+        sendNow: status === 'sending',
+      };
+
+      const response = await fetch('/api/newsletter/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create campaign');
+      }
+      return result;
+    };
+
+    // ============================================
+    // CAMPAIGN FORM - BUTTON HANDLERS
+    // ============================================
+
+    // Save Draft
+    document.getElementById('save-draft')?.addEventListener('click', async () => {
+      const data = validateForm();
+      if (!data) return;
+
+      const button = document.getElementById('save-draft');
+      const originalText = button.textContent;
+      button.textContent = 'Saving...';
+      button.disabled = true;
+
+      try {
+        const result = await createCampaign(data, 'draft');
+        showMessage(`✅ Campaign saved as draft! (ID: ${result.id})`, 'success');
+        // Clear form
+        document.getElementById('subject').value = '';
+        document.getElementById('preview').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('subject-counter').textContent = '0/200';
+        document.getElementById('preview-counter').textContent = '0/150';
+        document.getElementById('content-counter').textContent = '0 characters';
+        await loadCampaigns();
+        await loadStats();
+      } catch (error) {
+        showMessage('❌ Failed to save draft: ' + error.message, 'error');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    });
+
+    // Schedule
+    document.getElementById('schedule-btn')?.addEventListener('click', async () => {
+      const data = validateForm();
+      if (!data) return;
+
+      const scheduleInput = document.getElementById('schedule');
+      const scheduledAt = scheduleInput.value;
+
+      if (!scheduledAt) {
+        showMessage('Please select a schedule time.', 'error');
+        scheduleInput.focus();
+        return;
+      }
+
+      const scheduleTime = new Date(scheduledAt);
+      const now = new Date();
+      if (scheduleTime <= now) {
+        showMessage('Please select a future date and time (at least 15 minutes from now).', 'error');
+        scheduleInput.focus();
+        return;
+      }
+
+      const button = document.getElementById('schedule-btn');
+      const originalText = button.textContent;
+      button.textContent = 'Scheduling...';
+      button.disabled = true;
+
+      try {
+        const result = await createCampaign(data, 'scheduled', scheduledAt);
+        showMessage(`✅ Campaign scheduled for ${new Date(scheduledAt).toLocaleString()}`, 'success');
+        // Clear form
+        document.getElementById('subject').value = '';
+        document.getElementById('preview').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('schedule').value = '';
+        document.getElementById('subject-counter').textContent = '0/200';
+        document.getElementById('preview-counter').textContent = '0/150';
+        document.getElementById('content-counter').textContent = '0 characters';
+        await loadCampaigns();
+        await loadStats();
+      } catch (error) {
+        showMessage('❌ Failed to schedule: ' + error.message, 'error');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    });
+
+    // Send Now
+    document.getElementById('send-now')?.addEventListener('click', async () => {
+      if (!confirm('⚠️ Are you sure you want to send this campaign now? This cannot be undone.')) {
+        return;
+      }
+
+      const data = validateForm();
+      if (!data) return;
+
+      const button = document.getElementById('send-now');
+      const originalText = button.textContent;
+      button.textContent = 'Sending...';
+      button.disabled = true;
+
+      try {
+        const result = await createCampaign(data, 'sending');
+        showMessage('🚀 Campaign is being sent to your subscribers!', 'success');
+        // Clear form
+        document.getElementById('subject').value = '';
+        document.getElementById('preview').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('schedule').value = '';
+        document.getElementById('subject-counter').textContent = '0/200';
+        document.getElementById('preview-counter').textContent = '0/150';
+        document.getElementById('content-counter').textContent = '0 characters';
+        await loadCampaigns();
+        await loadStats();
+      } catch (error) {
+        showMessage('❌ Failed to send: ' + error.message, 'error');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    });
+
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.getElementById('subject')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('preview')?.focus();
+      }
+    });
+
+    document.getElementById('preview')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('content')?.focus();
+      }
+    });
+
+    // ============================================
+    // INITIAL LOAD
+    // ============================================
+    await loadSubscribers();
+    await loadStats();
+    await loadCampaigns();
   });
 </script>

@@ -40,17 +40,6 @@ export async function GET({ locals }) {
       `)
       .first();
 
-    // Get today's activity
-    const todayActivity = await DB
-      .prepare(`
-        SELECT 
-          SUM(CASE WHEN type = 'subscribe' AND DATE(created_at) = DATE('now') THEN 1 ELSE 0 END) as subscribed_today,
-          SUM(CASE WHEN type = 'unsubscribe' AND DATE(created_at) = DATE('now') THEN 1 ELSE 0 END) as unsubscribed_today,
-          SUM(CASE WHEN type = 'confirm' AND DATE(created_at) = DATE('now') THEN 1 ELSE 0 END) as verified_today
-        FROM newsletter_events
-      `)
-      .first();
-
     // Get campaign stats
     const campaignStats = await DB
       .prepare(`
@@ -59,7 +48,17 @@ export async function GET({ locals }) {
           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
           SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled,
           SUM(CASE WHEN status = 'sending' THEN 1 ELSE 0 END) as sending,
-          SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as drafts
+          SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as drafts,
+          ROUND(AVG(CASE 
+            WHEN delivered_count > 0 
+            THEN CAST(opened_count AS FLOAT) / delivered_count * 100 
+            ELSE NULL 
+          END), 2) as avg_open_rate,
+          ROUND(AVG(CASE 
+            WHEN opened_count > 0 
+            THEN CAST(clicked_count AS FLOAT) / opened_count * 100 
+            ELSE NULL 
+          END), 2) as avg_click_rate
         FROM newsletter_campaigns
       `)
       .first();
@@ -78,17 +77,14 @@ export async function GET({ locals }) {
             suspended: stats?.suspended || 0,
             bounced: stats?.bounced || 0
           },
-          today: {
-            subscribed: todayActivity?.subscribed_today || 0,
-            unsubscribed: todayActivity?.unsubscribed_today || 0,
-            verified: todayActivity?.verified_today || 0
-          },
           campaigns: {
             total: campaignStats?.total_campaigns || 0,
             completed: campaignStats?.completed || 0,
             scheduled: campaignStats?.scheduled || 0,
             sending: campaignStats?.sending || 0,
-            drafts: campaignStats?.drafts || 0
+            drafts: campaignStats?.drafts || 0,
+            avg_open_rate: campaignStats?.avg_open_rate || 0,
+            avg_click_rate: campaignStats?.avg_click_rate || 0
           }
         }
       }),
