@@ -71,13 +71,14 @@ try {
                 class="btn btn-sm btn-outline edit-btn"
                 onclick="openEditModal({id: ${category.id}, name: '${category.name}', slug: '${category.slug}', icon: '${category.icon || ''}', description: '${escapedDescription}', hero_image: '${category.hero_image || ''}', is_active: ${category.is_active || 1}})"
               >
-                Edit
+                ✏️ Edit
               </button>
               <button 
                 class="btn btn-sm btn-danger delete-btn"
+                data-id="${category.id}"
                 onclick="deleteCategory(${category.id})"
               >
-                Delete
+                🗑️ Delete
               </button>
             </div>
           </div>
@@ -126,7 +127,7 @@ try {
           
           <div class="category-stats">
             <span class="stat">
-              <span class="stat-label">Posts:</span>
+              <span class="stat-label">📄 Posts:</span>
               <span class="stat-value">{category.post_count || 0}</span>
             </span>
             <span class="stat">
@@ -142,7 +143,9 @@ try {
   </div>
 </AdminLayout>
 
-<!-- Edit Modal -->
+<!-- ============================================ -->
+<!-- EDIT MODAL -->
+<!-- ============================================ -->
 <div id="editModal" class="modal" style="display:none;">
   <div class="modal-content">
     <div class="modal-header">
@@ -176,7 +179,17 @@ try {
       <div class="form-group">
         <label for="categoryHero">Hero Image URL</label>
         <div class="hero-upload-wrapper">
-          <input type="text" id="categoryHero" name="hero_image" placeholder="https://example.com/hero.jpg" />
+          <div class="hero-input-group">
+            <input type="text" id="categoryHero" name="hero_image" placeholder="https://example.com/hero.jpg" />
+            <button 
+              type="button" 
+              class="btn btn-browse-media" 
+              onclick="openMediaLibrary()"
+              title="Browse Media Library"
+            >
+              📚 Browse
+            </button>
+          </div>
           <div class="hero-upload-help">
             <span class="help-text">Recommended size: 1200×400px</span>
             <button type="button" class="btn btn-sm btn-secondary upload-btn" onclick="document.getElementById('heroFileInput').click()">
@@ -202,14 +215,41 @@ try {
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
         <button type="submit" class="btn btn-primary" id="saveBtn">
-          <span id="saveBtnText">Save Category</span>
-          <span id="saveBtnLoading" style="display:none;">Saving...</span>
+          <span id="saveBtnText">💾 Save Category</span>
+          <span id="saveBtnLoading" style="display:none;">⏳ Saving...</span>
         </button>
       </div>
     </form>
   </div>
 </div>
 
+<!-- ============================================ -->
+<!-- MEDIA LIBRARY MODAL (Embedded) -->
+<!-- ============================================ -->
+<div id="mediaLibraryModal" class="modal" style="display:none;">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h2>📚 Media Library</h2>
+      <button class="modal-close" onclick="closeMediaLibrary()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="mediaLibraryContent">
+        <div class="media-loading text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p class="text-gray-500 mt-2">Loading media...</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeMediaLibrary()">Close</button>
+      <button type="button" class="btn btn-primary" onclick="refreshMediaLibrary()">🔄 Refresh</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- STYLES -->
+<!-- ============================================ -->
 <style is:global>
   /* ============================================
      CATEGORIES PAGE STYLES
@@ -372,6 +412,32 @@ try {
   
   .btn-danger:hover {
     background: #dc2626;
+    transform: scale(1.05);
+  }
+  
+  .btn-browse-media {
+    background: #8b5cf6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  
+  .btn-browse-media:hover {
+    background: #7c3aed;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+  }
+  
+  .hero-input-group {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+  
+  .hero-input-group input {
+    flex: 1;
   }
   
   /* Hero Preview */
@@ -519,6 +585,26 @@ try {
     padding: 1.5rem;
   }
   
+  .modal-large {
+    max-width: 900px;
+    width: 95%;
+  }
+  
+  .modal-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 1rem 0;
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 1rem;
+  }
+  
   .modal-header {
     display: flex;
     justify-content: space-between;
@@ -657,6 +743,98 @@ try {
     border-top: 1px solid #f1f5f9;
   }
   
+  .media-grid-mini {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+  }
+  
+  .media-item-mini {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .media-item-mini:hover {
+    border-color: #3b82f6;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  
+  .media-item-mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .media-item-mini .overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-align: center;
+    padding: 0.25rem;
+  }
+  
+  .media-item-mini:hover .overlay {
+    opacity: 1;
+  }
+  
+  .media-loading {
+    padding: 2rem;
+  }
+  
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    z-index: 9999;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .toast-success {
+    background: #10b981;
+    color: white;
+  }
+  
+  .toast-error {
+    background: #ef4444;
+    color: white;
+  }
+  
+  .toast-info {
+    background: #3b82f6;
+    color: white;
+  }
+  
   /* Responsive */
   @media (max-width: 768px) {
     .categories-grid {
@@ -676,16 +854,58 @@ try {
       margin: 1rem;
       padding: 1rem;
     }
+    
+    .hero-input-group {
+      flex-direction: column;
+    }
+    
+    .modal-large {
+      max-width: 95%;
+    }
   }
 </style>
 
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
 <script>
+  // ============================================
+  // TOAST NOTIFICATION
+  // ============================================
+  
+  function showToast(message, type = 'success') {
+    // Remove existing toasts
+    document.querySelectorAll('.toast').forEach(el => el.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+      toast.style.transform = 'translateY(0)';
+      toast.style.opacity = '1';
+    }, 50);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+      toast.style.transform = 'translateY(20px)';
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  }
+
   // ============================================
   // MODAL FUNCTIONS
   // ============================================
   
   function openEditModal(data) {
-    document.getElementById('modalTitle').textContent = 'Edit Category';
+    document.getElementById('modalTitle').textContent = '✏️ Edit Category';
     document.getElementById('categoryId').value = data.id || '';
     document.getElementById('categoryName').value = data.name || '';
     document.getElementById('categorySlug').value = data.slug || '';
@@ -706,7 +926,7 @@ try {
   }
   
   function openAddModal() {
-    document.getElementById('modalTitle').textContent = 'Add New Category';
+    document.getElementById('modalTitle').textContent = '➕ Add New Category';
     document.getElementById('categoryId').value = '';
     document.getElementById('categoryName').value = '';
     document.getElementById('categorySlug').value = '';
@@ -741,22 +961,107 @@ try {
       if (modal.style.display === 'flex') {
         closeModal();
       }
+      const mediaModal = document.getElementById('mediaLibraryModal');
+      if (mediaModal.style.display === 'flex') {
+        closeMediaLibrary();
+      }
     }
   });
+  
+  // ============================================
+  // MEDIA LIBRARY INTEGRATION
+  // ============================================
+  
+  function openMediaLibrary() {
+    const modal = document.getElementById('mediaLibraryModal');
+    modal.style.display = 'flex';
+    loadMediaLibrary();
+  }
+  
+  function closeMediaLibrary() {
+    document.getElementById('mediaLibraryModal').style.display = 'none';
+  }
+  
+  function refreshMediaLibrary() {
+    loadMediaLibrary();
+  }
+  
+  async function loadMediaLibrary() {
+    const content = document.getElementById('mediaLibraryContent');
+    content.innerHTML = `
+      <div class="media-loading text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p class="text-gray-500 mt-2">Loading media...</p>
+      </div>
+    `;
+    
+    try {
+      const response = await fetch('/api/admin/media');
+      const result = await response.json();
+      
+      if (result.success) {
+        const media = result.media || [];
+        const imageMedia = media.filter(m => m.mime_type && m.mime_type.startsWith('image/'));
+        
+        if (imageMedia.length === 0) {
+          content.innerHTML = `
+            <div class="text-center py-8">
+              <p class="text-gray-500">No images found in your media library.</p>
+              <button onclick="closeMediaLibrary(); document.getElementById('heroFileInput').click()" class="mt-2 btn btn-primary">
+                📤 Upload an Image
+              </button>
+            </div>
+          `;
+          return;
+        }
+        
+        let html = `<div class="media-grid-mini">`;
+        imageMedia.slice(0, 20).forEach(item => {
+          const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
+          html += `
+            <div class="media-item-mini" onclick="selectMediaImage('${item.url}', '${displayName}')" title="${displayName}">
+              <img src="${item.url}" alt="${displayName}" loading="lazy" />
+              <div class="overlay">${displayName}</div>
+            </div>
+          `;
+        });
+        html += `</div>`;
+        
+        if (imageMedia.length > 20) {
+          html += `<p class="text-center text-sm text-gray-400 mt-2">Showing 20 of ${imageMedia.length} images. <a href="/admin/media" target="_blank" class="text-blue-600 hover:underline">View all in Media Library →</a></p>`;
+        }
+        
+        content.innerHTML = html;
+      } else {
+        content.innerHTML = `<p class="text-red-500 text-center py-4">Error loading media: ${result.error}</p>`;
+      }
+    } catch (error) {
+      console.error('Error loading media library:', error);
+      content.innerHTML = `<p class="text-red-500 text-center py-4">Failed to load media library</p>`;
+    }
+  }
+  
+  function selectMediaImage(url, name) {
+    document.getElementById('categoryHero').value = url;
+    document.getElementById('heroPreviewImage').src = url;
+    document.getElementById('heroPreview').style.display = 'block';
+    closeMediaLibrary();
+    showToast('✅ Image selected: ' + name);
+  }
   
   // ============================================
   // HERO IMAGE FUNCTIONS
   // ============================================
   
   function setHeroImage(categoryId, slug) {
-    openEditModal({id: categoryId});
+    openEditModal({id: categoryId, slug: slug});
     setTimeout(() => {
       document.getElementById('categoryHero').focus();
     }, 100);
   }
   
   function changeHeroImage(categoryId, slug) {
-    openEditModal({id: categoryId});
+    openEditModal({id: categoryId, slug: slug});
     setTimeout(() => {
       document.getElementById('categoryHero').focus();
     }, 100);
@@ -777,14 +1082,14 @@ try {
     
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file.');
+      showToast('Please upload an image file.', 'error');
       this.value = '';
       return;
     }
     
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image must be less than 5MB.');
+      showToast('Image must be less than 5MB.', 'error');
       this.value = '';
       return;
     }
@@ -810,13 +1115,13 @@ try {
         document.getElementById('categoryHero').value = result.url;
         document.getElementById('heroPreviewImage').src = result.url;
         document.getElementById('heroPreview').style.display = 'block';
-        alert('✅ Image uploaded successfully!');
+        showToast('✅ Image uploaded successfully!');
       } else {
-        alert('Upload failed: ' + (result.error || 'Unknown error'));
+        showToast('Upload failed: ' + (result.error || 'Unknown error'), 'error');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload failed. Please try again.');
+      showToast('Upload failed. Please try again.', 'error');
     } finally {
       uploadBtn.textContent = originalText;
       uploadBtn.disabled = false;
@@ -826,12 +1131,15 @@ try {
   });
   
   // ============================================
-  // DELETE CATEGORY
+  // DELETE CATEGORY - FIXED
   // ============================================
   
   async function deleteCategory(id) {
-    if (!confirm('⚠️ Are you sure you want to delete this category?\n\nThis action cannot be undone!')) return;
+    if (!confirm('⚠️ Are you sure you want to delete this category?\n\nThis action cannot be undone!')) {
+      return;
+    }
     
+    // Find and disable the delete button
     const deleteBtn = document.querySelector(`.delete-btn[data-id="${id}"]`);
     if (deleteBtn) {
       deleteBtn.textContent = '⏳ Deleting...';
@@ -847,20 +1155,36 @@ try {
       const result = await response.json();
       
       if (response.ok) {
-        alert('✅ Category deleted successfully!');
-        window.location.reload();
+        showToast('✅ Category deleted successfully!');
+        // Remove the category card from the DOM
+        const card = document.querySelector(`.category-card[data-id="${id}"]`);
+        if (card) {
+          card.style.transition = 'all 0.3s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.9)';
+          setTimeout(() => {
+            card.remove();
+            // Check if no categories left
+            const remaining = document.querySelectorAll('.category-card');
+            if (remaining.length === 0) {
+              location.reload();
+            }
+          }, 300);
+        } else {
+          location.reload();
+        }
       } else {
-        alert('❌ Error: ' + (result.error || 'Failed to delete category'));
+        showToast('❌ Error: ' + (result.error || 'Failed to delete category'), 'error');
         if (deleteBtn) {
-          deleteBtn.textContent = 'Delete';
+          deleteBtn.textContent = '🗑️ Delete';
           deleteBtn.disabled = false;
         }
       }
     } catch (error) {
       console.error('Delete error:', error);
-      alert('❌ Failed to delete category');
+      showToast('❌ Failed to delete category', 'error');
       if (deleteBtn) {
-        deleteBtn.textContent = 'Delete';
+        deleteBtn.textContent = '🗑️ Delete';
         deleteBtn.disabled = false;
       }
     }
@@ -878,7 +1202,7 @@ try {
     
     // Validate slug format
     if (data.slug && !/^[a-z0-9-]+$/.test(data.slug)) {
-      alert('❌ Slug can only contain lowercase letters, numbers, and hyphens.');
+      showToast('❌ Slug can only contain lowercase letters, numbers, and hyphens.', 'error');
       return;
     }
     
@@ -907,14 +1231,16 @@ try {
       const result = await response.json();
       
       if (response.ok) {
-        alert(isEdit ? '✅ Category updated successfully!' : '✅ Category created successfully!');
-        window.location.reload();
+        showToast(isEdit ? '✅ Category updated successfully!' : '✅ Category created successfully!');
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       } else {
-        alert('❌ Error: ' + (result.error || 'Failed to save category'));
+        showToast('❌ Error: ' + (result.error || 'Failed to save category'), 'error');
       }
     } catch (error) {
       console.error('Save error:', error);
-      alert('❌ Failed to save category');
+      showToast('❌ Failed to save category', 'error');
     } finally {
       saveBtn.disabled = false;
       saveBtnText.style.display = 'inline';
