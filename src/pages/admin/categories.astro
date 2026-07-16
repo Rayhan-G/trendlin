@@ -44,7 +44,14 @@ try {
   <!-- Categories Grid -->
   <div class="categories-grid">
     {categories.map((category) => {
+      // Escape description for JavaScript
       const escapedDescription = category.description ? category.description.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
+      const escapedName = category.name ? category.name.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
+      const escapedSlug = category.slug ? category.slug.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
+      const escapedIcon = category.icon ? category.icon.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
+      const heroImage = category.hero_image || '';
+      const heroId = category.hero_id || '';
+      const isActive = category.is_active || 1;
       
       return (
         <div class="category-card" data-id={category.id}>
@@ -56,9 +63,7 @@ try {
             </div>
           </div>
           
-          <!-- ========================================== -->
-          <!-- HERO IMAGE PREVIEW WITH BUTTONS -->
-          <!-- ========================================== -->
+          <!-- Hero Image Preview with Buttons -->
           <div class="hero-preview-container">
             {category.hero_image ? (
               <div class="hero-image-container">
@@ -66,14 +71,14 @@ try {
                   src={category.hero_image} 
                   alt={`${category.name} hero`}
                   class="hero-image"
-                  onerror="this.style.display='none'; this.parentElement.querySelector('.no-hero').style.display='flex';"
+                  onerror="this.style.display='none'"
                 />
                 <div class="hero-overlay">
                   <span class="hero-label">🎨 Hero Image</span>
                   <div class="hero-actions">
                     <button 
                       class="btn btn-sm btn-outline-light change-hero-btn"
-                      onclick="openEditModal({id: ${category.id}, name: '${category.name}', slug: '${category.slug}', icon: '${category.icon || ''}', description: '${escapedDescription}', hero_image: '${category.hero_image || ''}', hero_id: '${category.hero_id || ''}', is_active: ${category.is_active || 1}})"
+                      onclick="openEditModal({id: ${category.id}, name: '${escapedName}', slug: '${escapedSlug}', icon: '${escapedIcon}', description: '${escapedDescription}', hero_image: '${heroImage}', hero_id: '${heroId}', is_active: ${isActive}})"
                     >
                       🔄 Change
                     </button>
@@ -99,7 +104,7 @@ try {
                 <div class="hero-actions">
                   <button 
                     class="btn btn-sm btn-success add-hero-btn"
-                    onclick="openEditModal({id: ${category.id}, name: '${category.name}', slug: '${category.slug}', icon: '${category.icon || ''}', description: '${escapedDescription}', hero_image: '', hero_id: '', is_active: ${category.is_active || 1}})"
+                    onclick="openEditModal({id: ${category.id}, name: '${escapedName}', slug: '${escapedSlug}', icon: '${escapedIcon}', description: '${escapedDescription}', hero_image: '', hero_id: '', is_active: ${isActive}})"
                   >
                     ➕ Add Hero Image
                   </button>
@@ -131,7 +136,7 @@ try {
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- EDIT MODAL (Only for Hero Image) -->
+<!-- EDIT MODAL -->
 <!-- ============================================ -->
 <div id="editModal" class="modal" style="display:none;">
   <div class="modal-content">
@@ -148,9 +153,7 @@ try {
         <p id="categoryDisplayName" class="font-semibold text-gray-900"></p>
       </div>
       
-      <!-- ========================================== -->
-      <!-- HERO IMAGE SECTION WITH PREVIEW & BUTTONS -->
-      <!-- ========================================== -->
+      <!-- Hero Image Section -->
       <div class="form-group hero-section">
         <label>Hero Image URL</label>
         <div class="hero-upload-wrapper">
@@ -771,46 +774,51 @@ try {
 <!-- JAVASCRIPT -->
 <!-- ============================================ -->
 <script>
-  // ============================================
-  // TOAST
-  // ============================================
+  // Toast Notification
   function showToast(message, type = 'success') {
     document.querySelectorAll('.toast').forEach(el => el.remove());
     
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
+    toast.className = 'toast toast-' + type;
     toast.textContent = message;
     document.body.appendChild(toast);
     
-    setTimeout(() => {
+    setTimeout(function() {
       toast.style.transform = 'translateY(0)';
       toast.style.opacity = '1';
     }, 50);
     
-    setTimeout(() => {
+    setTimeout(function() {
       toast.style.transform = 'translateY(20px)';
       toast.style.opacity = '0';
-      setTimeout(() => {
+      setTimeout(function() {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
       }, 300);
     }, 3000);
   }
 
-  // ============================================
-  // MODAL
-  // ============================================
+  // Modal Functions
   function openEditModal(data) {
-    document.getElementById('modalTitle').textContent = data.hero_image ? '🔄 Change Hero Image' : '➕ Add Hero Image';
+    var title = document.getElementById('modalTitle');
+    if (data.hero_image) {
+      title.textContent = '🔄 Change Hero Image';
+    } else {
+      title.textContent = '➕ Add Hero Image';
+    }
+    
     document.getElementById('categoryId').value = data.id || '';
     document.getElementById('categoryHeroId').value = data.hero_id || '';
     document.getElementById('categoryDisplayName').textContent = data.name || '';
     document.getElementById('categoryHero').value = data.hero_image || '';
     
+    var preview = document.getElementById('heroPreview');
+    var previewImg = document.getElementById('heroPreviewImage');
+    
     if (data.hero_image) {
-      document.getElementById('heroPreviewImage').src = data.hero_image;
-      document.getElementById('heroPreview').style.display = 'block';
+      previewImg.src = data.hero_image;
+      preview.style.display = 'block';
     } else {
-      document.getElementById('heroPreview').style.display = 'none';
+      preview.style.display = 'none';
     }
     
     document.getElementById('editModal').style.display = 'flex';
@@ -826,19 +834,16 @@ try {
   
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      const modal = document.getElementById('editModal');
+      var modal = document.getElementById('editModal');
       if (modal.style.display === 'flex') closeModal();
-      const mediaModal = document.getElementById('mediaLibraryModal');
+      var mediaModal = document.getElementById('mediaLibraryModal');
       if (mediaModal.style.display === 'flex') closeMediaLibrary();
     }
   });
   
-  // ============================================
-  // MEDIA LIBRARY
-  // ============================================
+  // Media Library
   function openMediaLibrary() {
-    const modal = document.getElementById('mediaLibraryModal');
-    modal.style.display = 'flex';
+    document.getElementById('mediaLibraryModal').style.display = 'flex';
     loadMediaLibrary();
   }
   
@@ -851,7 +856,7 @@ try {
   }
   
   async function loadMediaLibrary() {
-    const content = document.getElementById('mediaLibraryContent');
+    var content = document.getElementById('mediaLibraryContent');
     content.innerHTML = `
       <div class="media-loading text-center py-8">
         <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -860,12 +865,14 @@ try {
     `;
     
     try {
-      const response = await fetch('/api/admin/media');
-      const result = await response.json();
+      var response = await fetch('/api/admin/media');
+      var result = await response.json();
       
       if (result.success) {
-        const media = result.media || [];
-        const imageMedia = media.filter(m => m.mime_type && m.mime_type.startsWith('image/'));
+        var media = result.media || [];
+        var imageMedia = media.filter(function(m) {
+          return m.mime_type && m.mime_type.startsWith('image/');
+        });
         
         if (imageMedia.length === 0) {
           content.innerHTML = `
@@ -879,9 +886,9 @@ try {
           return;
         }
         
-        let html = `<div class="media-grid-mini">`;
-        imageMedia.forEach(item => {
-          const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
+        var html = '<div class="media-grid-mini">';
+        imageMedia.forEach(function(item) {
+          var displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
           html += `
             <div class="media-item-mini" onclick="selectMediaImage('${item.url}', '${displayName}')" title="${displayName}">
               <img src="${item.url}" alt="${displayName}" loading="lazy" />
@@ -889,15 +896,15 @@ try {
             </div>
           `;
         });
-        html += `</div>`;
+        html += '</div>';
         
         content.innerHTML = html;
       } else {
-        content.innerHTML = `<p class="text-red-500 text-center py-4">Error loading media: ${result.error}</p>`;
+        content.innerHTML = '<p class="text-red-500 text-center py-4">Error loading media: ' + result.error + '</p>';
       }
     } catch (error) {
       console.error('Error loading media library:', error);
-      content.innerHTML = `<p class="text-red-500 text-center py-4">Failed to load media library</p>`;
+      content.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load media library</p>';
     }
   }
   
@@ -909,9 +916,7 @@ try {
     showToast('✅ Image selected: ' + name);
   }
   
-  // ============================================
-  // HERO IMAGE
-  // ============================================
+  // Hero Image Functions
   function removeHeroPreview() {
     document.getElementById('categoryHero').value = '';
     document.getElementById('heroPreview').style.display = 'none';
@@ -921,17 +926,17 @@ try {
     if (!confirm('⚠️ Are you sure you want to remove this hero image?')) return;
     
     try {
-      const response = await fetch(`/api/admin/categories/${categoryId}/hero`, {
+      var response = await fetch('/api/admin/categories/' + categoryId + '/hero', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ heroId: heroId })
       });
       
-      const result = await response.json();
+      var result = await response.json();
       
       if (response.ok) {
         showToast('✅ Hero image removed successfully!');
-        setTimeout(() => window.location.reload(), 500);
+        setTimeout(function() { window.location.reload(); }, 500);
       } else {
         showToast('❌ Error: ' + (result.error || 'Failed to remove hero image'), 'error');
       }
@@ -941,11 +946,9 @@ try {
     }
   }
   
-  // ============================================
-  // UPLOAD
-  // ============================================
+  // Upload
   document.getElementById('heroFileInput').addEventListener('change', async function(e) {
-    const file = this.files[0];
+    var file = this.files[0];
     if (!file) return;
     
     if (!file.type.startsWith('image/')) {
@@ -960,21 +963,21 @@ try {
       return;
     }
     
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('image', file);
     
-    const uploadBtn = document.querySelector('.upload-btn');
-    const originalText = uploadBtn.textContent;
+    var uploadBtn = document.querySelector('.upload-btn');
+    var originalText = uploadBtn.textContent;
     uploadBtn.textContent = '⏳ Uploading...';
     uploadBtn.disabled = true;
     
     try {
-      const response = await fetch('/api/upload', {
+      var response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
       
-      const result = await response.json();
+      var result = await response.json();
       
       if (result.success) {
         document.getElementById('categoryHero').value = result.url;
@@ -995,45 +998,41 @@ try {
     this.value = '';
   });
   
-  // ============================================
-  // FORM SUBMISSION (Save Hero Image)
-  // ============================================
+  // Form Submission (Save Hero Image)
   document.getElementById('categoryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
+    var formData = new FormData(this);
+    var data = Object.fromEntries(formData);
     
-    const categoryId = data.id;
-    const heroImage = data.hero_image;
-    const heroId = data.hero_id || '';
+    var categoryId = data.id;
+    var heroImage = data.hero_image;
+    var heroId = data.hero_id || '';
     
-    // If no hero image URL, show error
     if (!heroImage) {
       showToast('❌ Please select or enter a hero image URL', 'error');
       return;
     }
     
-    const saveBtn = document.getElementById('saveBtn');
-    const saveBtnText = document.getElementById('saveBtnText');
-    const saveBtnLoading = document.getElementById('saveBtnLoading');
+    var saveBtn = document.getElementById('saveBtn');
+    var saveBtnText = document.getElementById('saveBtnText');
+    var saveBtnLoading = document.getElementById('saveBtnLoading');
     saveBtn.disabled = true;
     saveBtnText.style.display = 'none';
     saveBtnLoading.style.display = 'inline';
     
     try {
-      // Update just the hero image
-      const response = await fetch(`/api/admin/categories/${categoryId}/hero`, {
+      var response = await fetch('/api/admin/categories/' + categoryId + '/hero', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hero_image: heroImage, hero_id: heroId || null })
       });
       
-      const result = await response.json();
+      var result = await response.json();
       
       if (response.ok) {
         showToast('✅ Hero image saved successfully!');
-        setTimeout(() => window.location.reload(), 500);
+        setTimeout(function() { window.location.reload(); }, 500);
       } else {
         showToast('❌ Error: ' + (result.error || 'Failed to save hero image'), 'error');
       }
