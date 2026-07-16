@@ -4,7 +4,6 @@
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { getSubscriberStats, getCampaigns } from '../../lib/newsletter';
 
 // ============================================
 // GET DATABASE FROM LOCALS
@@ -200,22 +199,36 @@ let newsletterStats = {
 };
 
 try {
-  // Use the working database pattern
-  const stats = await getSubscriberStats(Astro.locals.runtime.env);
-  const campaigns = await getCampaigns(Astro.locals.runtime.env, { limit: 100 });
-  
-  if (stats) {
-    newsletterStats = {
-      total: stats.total || 0,
-      active: stats.active || 0,
-      pending: stats.pending || 0,
-      unsubscribed: stats.unsubscribed || 0,
-      campaigns: campaigns?.length || 0
-    };
+  if (DB) {
+    // Get subscriber stats
+    const statsResult = await DB
+      .prepare(`
+        SELECT 
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+          SUM(CASE WHEN status = 'unsubscribed' THEN 1 ELSE 0 END) as unsubscribed
+        FROM newsletter_subscribers
+      `)
+      .first();
+
+    // Get campaign count
+    const campaignResult = await DB
+      .prepare('SELECT COUNT(*) as count FROM newsletter_campaigns')
+      .first();
+
+    if (statsResult) {
+      newsletterStats = {
+        total: statsResult.total || 0,
+        active: statsResult.active || 0,
+        pending: statsResult.pending || 0,
+        unsubscribed: statsResult.unsubscribed || 0,
+        campaigns: campaignResult?.count || 0
+      };
+    }
   }
 } catch (error) {
   console.error('Error fetching newsletter stats:', error);
-  // Don't fail the page if newsletter stats fail
 }
 
 const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources + contentStats.total;
@@ -486,10 +499,9 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- RECENT CONTENT + RECENT POSTS SIDEBAR -->
+  <!-- RECENT CONTENT SECTION -->
   <!-- ============================================ -->
   <div class="recent-content-grid">
-    <!-- Recent Content Calendar Items -->
     <div class="recent-posts-section">
       <div class="section-header">
         <div>
