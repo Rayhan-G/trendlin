@@ -1,5 +1,8 @@
 ---
-// P:\Projects\trendlin\src\pages\admin\categories.astro
+// ============================================
+// ADMIN CATEGORIES MANAGEMENT - Trendlin
+// ============================================
+
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { DB } from '../../lib/db';
 
@@ -38,86 +41,91 @@ try {
 
   <!-- Categories Grid -->
   <div class="categories-grid">
-    {categories.map((category) => (
-      <div class="category-card" data-id={category.id}>
-        <div class="category-card-header">
-          <div class="category-icon">{category.icon}</div>
-          <div class="category-info">
-            <h3 class="category-name">{category.name}</h3>
-            <span class="category-slug">{category.slug}</span>
-          </div>
-          <div class="category-actions">
-            <button 
-              class="btn btn-sm btn-outline edit-btn"
-              onclick="openEditModal({id: ${category.id}, name: '${category.name}', slug: '${category.slug}', icon: '${category.icon}', description: '${category.description.replace(/'/g, "\\'")}', hero_image: '${category.hero_image || ''}'})"
-            >
-              Edit
-            </button>
-            <button 
-              class="btn btn-sm btn-danger delete-btn"
-              onclick="deleteCategory(${category.id})"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-        
-        <!-- Hero Image Preview -->
-        <div class="hero-preview">
-          {category.hero_image ? (
-            <div class="hero-image-container">
-              <img 
-                src={category.hero_image} 
-                alt={`${category.name} hero`}
-                class="hero-image"
-                onerror="this.style.display='none'; this.parentElement.querySelector('.no-hero').style.display='flex';"
-              />
-              <div class="hero-overlay">
-                <span class="hero-label">Hero Image</span>
-                <button 
-                  class="btn btn-sm btn-outline-light change-hero-btn"
-                  onclick="changeHeroImage(${category.id}, '${category.slug}')"
-                >
-                  Change
-                </button>
-              </div>
+    {categories.map((category) => {
+      // Escape description for JavaScript
+      const escapedDescription = category.description ? category.description.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
+      
+      return (
+        <div class="category-card" data-id={category.id}>
+          <div class="category-card-header">
+            <div class="category-icon">{category.icon || '📁'}</div>
+            <div class="category-info">
+              <h3 class="category-name">{category.name}</h3>
+              <span class="category-slug">{category.slug}</span>
             </div>
-          ) : (
-            <div class="no-hero">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <path d="M21 15l-5-5L5 21"/>
-              </svg>
-              <p>No hero image set</p>
+            <div class="category-actions">
               <button 
-                class="btn btn-sm btn-primary set-hero-btn"
-                onclick="setHeroImage(${category.id}, '${category.slug}')"
+                class="btn btn-sm btn-outline edit-btn"
+                onclick="openEditModal({id: ${category.id}, name: '${category.name}', slug: '${category.slug}', icon: '${category.icon || ''}', description: '${escapedDescription}', hero_image: '${category.hero_image || ''}'})"
               >
-                Set Hero Image
+                Edit
+              </button>
+              <button 
+                class="btn btn-sm btn-danger delete-btn"
+                onclick="deleteCategory(${category.id})"
+              >
+                Delete
               </button>
             </div>
-          )}
-        </div>
-        
-        <div class="category-description">
-          {category.description}
-        </div>
-        
-        <div class="category-stats">
-          <span class="stat">
-            <span class="stat-label">Posts:</span>
-            <span class="stat-value">{category.post_count || 0}</span>
-          </span>
-          <span class="stat">
-            <span class="stat-label">Status:</span>
-            <span class={`status-badge ${category.is_active ? 'status-active' : 'status-inactive'}`}>
-              {category.is_active ? 'Active' : 'Inactive'}
+          </div>
+          
+          <!-- Hero Image Preview -->
+          <div class="hero-preview">
+            {category.hero_image ? (
+              <div class="hero-image-container">
+                <img 
+                  src={category.hero_image} 
+                  alt={`${category.name} hero`}
+                  class="hero-image"
+                  onerror="this.style.display='none'; this.parentElement.querySelector('.no-hero').style.display='flex';"
+                />
+                <div class="hero-overlay">
+                  <span class="hero-label">Hero Image</span>
+                  <button 
+                    class="btn btn-sm btn-outline-light change-hero-btn"
+                    onclick="changeHeroImage(${category.id}, '${category.slug}')"
+                  >
+                    Change
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div class="no-hero">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <path d="M21 15l-5-5L5 21"/>
+                </svg>
+                <p>No hero image set</p>
+                <button 
+                  class="btn btn-sm btn-primary set-hero-btn"
+                  onclick="setHeroImage(${category.id}, '${category.slug}')"
+                >
+                  Set Hero Image
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <div class="category-description">
+            {category.description}
+          </div>
+          
+          <div class="category-stats">
+            <span class="stat">
+              <span class="stat-label">Posts:</span>
+              <span class="stat-value">{category.post_count || 0}</span>
             </span>
-          </span>
+            <span class="stat">
+              <span class="stat-label">Status:</span>
+              <span class={`status-badge ${category.is_active ? 'status-active' : 'status-inactive'}`}>
+                {category.is_active ? 'Active' : 'Inactive'}
+              </span>
+            </span>
+          </div>
         </div>
-      </div>
-    ))}
+      );
+    })}
   </div>
 </AdminLayout>
 
@@ -455,11 +463,15 @@ try {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.5);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     padding: 1rem;
+  }
+  
+  .modal[style*="display:flex"] {
+    display: flex !important;
   }
   
   .modal-content {
