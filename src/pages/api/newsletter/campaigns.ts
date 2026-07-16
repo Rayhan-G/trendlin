@@ -1,32 +1,78 @@
 // ============================================
-// API: CREATE NEWSLETTER CAMPAIGN
+// API: CREATE & LIST CAMPAIGNS
 // ============================================
 
 import type { APIRoute } from 'astro';
-import { getDB, prepareFirst } from '../../../lib/db';
+import { getDB, prepare, prepareFirst } from '../../../lib/db';
 import { getCurrentUser } from '../../../lib/auth';
 
-export const POST: APIRoute = async ({ request, locals }) => {
+// GET - List campaigns
+export const GET: APIRoute = async ({ locals, url }) => {
   try {
-    // Check authentication
-    const user = await getCurrentUser(request, locals.env.DB);
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
+    const env = locals?.env || {};
+    const db = getDB(env);
+    
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
+    const status = url.searchParams.get('status');
+
+    let query = `
+      SELECT 
+        id, subject, preview_text, status,
+        total_recipients, delivered_count, opened_count,
+        scheduled_at, sent_at, created_at
+      FROM newsletter_campaigns 
+      WHERE 1=1
+    `;
+    const params: any[] = [];
+
+    if (status) {
+      query += ` AND status = ?`;
+      params.push(status);
     }
 
-    const { subject, preview_text, content_html, list_id, scheduled_at } = await request.json();
-    const env = locals.env;
-    const db = getDB(env);
+    query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
 
-    // Validate required fields
-    if (!subject || !content_html) {
+    const campaigns = await prepare(db, query, params);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: campaigns.results || [],
+        total: campaigns.results?.length || 0
+      }),
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    );
+
+  } catch (error: any) {
+    console.error('Get campaigns error:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || 'Failed to get campaigns' 
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+};
+
+// POST - Create campaign
+export const POST: APIRoute = async ({ request, locals }) => {
+  try {
+    const env = locals?.env || {};
+    const db = getDB(env);
+    const { subject, contentHtml, category, scheduledAt, sendNow } = await request.json();
+
+    // Validate
+    if (!subject || !contentHtml) {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Subject and content are required' 
+          message: 'Subject and content are required' 
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -34,34 +80,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Determine status
     let status = 'draft';
-    if (scheduled_at) {
-      status = 'scheduled';
-    }
+    if (sendNow) status = 'sending';
+    if (scheduledAt) status = 'scheduled';
 
     // Create campaign
     const result = await db
       .prepare(`
         INSERT INTO newsletter_campaigns (
-          subject,
-          preview_text,
-          content_html,
-          list_id,
-          status,
-          scheduled_at,
-          created_by,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          subject, content_html, preview_text, status,
+          scheduled_at, metadata, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id
       `)
       .bind(
         subject,
-        preview_text || '',
-        content_html,
-        list_id || null,
+        contentHtml,
+        subject.substring(0, 150),
         status,
-        scheduled_at || null,
-        user.id
+        scheduledAt || null,
+        JSON.stringify({ category: category || 'general' })
       )
       .first();
 
@@ -69,20 +106,37 @@ export const POST: APIRoute = async ({ request, locals }) => {
       throw new Error('Failed to create campaign');
     }
 
+    // If sending now, enqueue it
+    if (sendNow) {
+      try {
+        const { NewsletterQueue } = await import('../../../lib/newsletter/queue');
+        const queue = new NewsletterQueue(env);
+        await queue.enqueueCampaign(result.id);
+      } catch (queueError) {
+        console.error('Failed to enqueue campaign:', queueError);
+        // Still return success but warn
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Campaign created but failed to start sending. Please send manually.',
+            data: { id: result.id, status: 'draft' }
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        data: {
-          id: result.id,
-          subject,
+        message: sendNow ? 'Campaign sent successfully!' : 'Campaign created successfully!',
+        data: { 
+          id: result.id, 
           status,
-          scheduled_at: scheduled_at || null,
-          message: status === 'scheduled' 
-            ? 'Campaign scheduled successfully' 
-            : 'Campaign created as draft'
+          subject
         }
       }),
-      { status: 201, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
@@ -90,7 +144,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Failed to create campaign' 
+        message: error.message || 'Failed to create campaign' 
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );

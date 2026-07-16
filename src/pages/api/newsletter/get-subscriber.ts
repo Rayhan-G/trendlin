@@ -1,39 +1,40 @@
 // ============================================
-// API: GET SUBSCRIBER BY EMAIL OR TOKEN
+// API: GET SUBSCRIBER BY EMAIL
 // ============================================
 
 import type { APIRoute } from 'astro';
 import { getDB, prepareFirst } from '../../../lib/db';
 
-export const GET: APIRoute = async ({ url, locals }) => {
+export const GET: APIRoute = async ({ locals, url }) => {
   try {
+    const env = locals?.env || {};
+    const db = getDB(env);
     const email = url.searchParams.get('email');
     const token = url.searchParams.get('token');
-    const env = locals.env;
-    const db = getDB(env);
 
-    let subscriber = null;
-
-    if (token) {
-      subscriber = await prepareFirst(
-        db,
-        'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ?',
-        [token]
-      );
-    } else if (email) {
-      subscriber = await prepareFirst(
-        db,
-        'SELECT * FROM newsletter_subscribers WHERE email = ?',
-        [email.toLowerCase().trim()]
+    if (!email && !token) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Email or token required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
+    let query = 'SELECT * FROM newsletter_subscribers WHERE ';
+    let param: string;
+
+    if (token) {
+      query += 'unsubscribe_token = ?';
+      param = token;
+    } else {
+      query += 'email = ?';
+      param = email!.toLowerCase().trim();
+    }
+
+    const subscriber = await prepareFirst(db, query, [param]);
+
     if (!subscriber) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'Subscriber not found' 
-        }),
+        JSON.stringify({ success: false, error: 'Subscriber not found' }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -41,12 +42,9 @@ export const GET: APIRoute = async ({ url, locals }) => {
     // Parse preferences
     let preferences = {};
     let categories: string[] = [];
-    let frequency = 'weekly';
-    
     try {
       preferences = subscriber.preferences ? JSON.parse(subscriber.preferences) : {};
       categories = preferences.categories || [];
-      frequency = preferences.frequency || 'weekly';
     } catch (e) {
       // Use defaults
     }
@@ -62,12 +60,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
           status: subscriber.status,
           token: subscriber.unsubscribe_token,
           categories: categories,
-          frequency: frequency,
           createdAt: subscriber.created_at,
           verifiedAt: subscriber.verified_at
         }
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
     );
 
   } catch (error: any) {
