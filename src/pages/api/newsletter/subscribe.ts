@@ -1,6 +1,5 @@
 // ============================================
 // API: SUBSCRIBE TO NEWSLETTER
-// Uses your existing EmailService
 // ============================================
 
 import type { APIRoute } from 'astro';
@@ -9,15 +8,29 @@ import { EmailService } from '../../../lib/email-service';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const { email, firstName, lastName } = await request.json();
+    const { email, firstName, lastName, categories } = await request.json();
     const env = locals.env;
     const db = getDB(env);
+
+    console.log('🔍 Subscribe API called with:', { email, firstName, categories });
 
     // Validate email
     if (!email || !email.includes('@')) {
       return new Response(
         JSON.stringify({ success: false, error: 'Invalid email address' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if RESEND_API_KEY exists
+    if (!env.RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY is missing from environment!');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email service is not configured. Please try again later.' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -39,13 +52,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
         );
       }
       if (existing.status === 'pending') {
-        // Resend verification email
-        const emailService = new EmailService(env.RESEND_API_KEY);
-        await emailService.sendNewsletterVerification(
-          email, 
-          existing.verification_token, 
-          firstName
-        );
+        // Resend verification
+        console.log('📧 Resending verification for pending subscriber:', email);
+        try {
+          const emailService = new EmailService(env.RESEND_API_KEY);
+          await emailService.sendNewsletterVerification(
+            email, 
+            existing.verification_token, 
+            firstName
+          );
+          console.log('✅ Verification email resent successfully!');
+        } catch (emailError: any) {
+          console.error('❌ Failed to resend verification:', emailError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Failed to send verification email. Please try again.' 
+            }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
         
         return new Response(
           JSON.stringify({ 
@@ -57,7 +83,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
       if (existing.status === 'unsubscribed') {
         // Re-subscribe
-        const newToken = Math.random().toString(36).substring(2, 15);
+        const newToken = Math.random().toString(36).substring(2, 15) + 
+                        Math.random().toString(36).substring(2, 15);
         await db
           .prepare(`
             UPDATE newsletter_subscribers 
@@ -70,8 +97,21 @@ export const POST: APIRoute = async ({ request, locals }) => {
           .bind(newToken, existing.id)
           .run();
 
-        const emailService = new EmailService(env.RESEND_API_KEY);
-        await emailService.sendNewsletterVerification(email, newToken, firstName);
+        console.log('📧 Sending verification for re-subscribe:', email);
+        try {
+          const emailService = new EmailService(env.RESEND_API_KEY);
+          await emailService.sendNewsletterVerification(email, newToken, firstName);
+          console.log('✅ Verification email sent successfully!');
+        } catch (emailError: any) {
+          console.error('❌ Failed to send verification:', emailError);
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'Failed to send verification email. Please try again.' 
+            }),
+            { status: 500, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
 
         return new Response(
           JSON.stringify({ 
@@ -84,6 +124,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Create new subscriber
+    console.log('📝 Creating new subscriber:', email);
     const verificationToken = Math.random().toString(36).substring(2, 15) + 
                             Math.random().toString(36).substring(2, 15);
     const unsubscribeToken = Math.random().toString(36).substring(2, 15) + 
@@ -129,8 +170,34 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .run();
 
     // Send verification email
-    const emailService = new EmailService(env.RESEND_API_KEY);
-    await emailService.sendNewsletterVerification(email, verificationToken, firstName);
+    console.log('📧 Sending verification email to:', email);
+    console.log('🔑 Verification token:', verificationToken);
+    
+    try {
+      const emailService = new EmailService(env.RESEND_API_KEY);
+      await emailService.sendNewsletterVerification(email, verificationToken, firstName);
+      console.log('✅ Verification email sent successfully!');
+    } catch (emailError: any) {
+      console.error('❌ Failed to send verification email:', emailError);
+      console.error('❌ Error details:', {
+        message: emailError.message,
+        stack: emailError.stack
+      });
+      
+      // Still return success but with warning
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Account created but verification email failed. Please try resending.',
+          warning: true,
+          data: {
+            email: email,
+            status: 'pending'
+          }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
       JSON.stringify({

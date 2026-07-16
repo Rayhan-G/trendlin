@@ -11,6 +11,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const env = locals.env;
     const db = getDB(env);
 
+    console.log('📝 Save preferences for:', email);
+
     if (!email || !token || !categories) {
       return new Response(
         JSON.stringify({ 
@@ -53,6 +55,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       `)
       .bind(JSON.stringify(preferences), subscriber.id)
       .run();
+
+    console.log('✅ Preferences saved for:', email);
 
     return new Response(
       JSON.stringify({

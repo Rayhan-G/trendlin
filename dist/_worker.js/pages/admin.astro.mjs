@@ -1,0 +1,23 @@
+globalThis.process ??= {}; globalThis.process.env ??= {};
+/* empty css                                 */
+import { a as createComponent, g as renderComponent, e as renderScript, f as renderTemplate, m as maybeRenderHead } from '../chunks/astro/server_DJuXqbzQ.mjs';
+import { $ as $$AdminLayout } from '../chunks/AdminLayout_Cu1IFVzQ.mjs';
+export { renderers } from '../renderers.mjs';
+
+const $$Index = createComponent(async ($$result, $$props, $$slots) => {
+  return renderTemplate`${renderComponent($$result, "AdminLayout", $$AdminLayout, { "title": "Newsletter | Admin" }, { "default": async ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="p-6"> <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">📬 Newsletter Management</h1> <!-- Stats --> <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"> <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6"> <p class="text-sm text-gray-500 dark:text-gray-400">Total Subscribers</p> <p id="total-subscribers" class="text-2xl font-bold text-gray-900 dark:text-white">—</p> </div> <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6"> <p class="text-sm text-gray-500 dark:text-gray-400">Active</p> <p id="active-subscribers" class="text-2xl font-bold text-green-600">—</p> </div> <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6"> <p class="text-sm text-gray-500 dark:text-gray-400">Pending</p> <p id="pending-subscribers" class="text-2xl font-bold text-yellow-600">—</p> </div> <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6"> <p class="text-sm text-gray-500 dark:text-gray-400">Unsubscribed</p> <p id="unsubscribed-subscribers" class="text-2xl font-bold text-red-600">—</p> </div> </div> <!-- Create Campaign --> <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8"> <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create Campaign</h2> <form id="create-campaign-form" class="space-y-4"> <div> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Subject</label> <input type="text" id="campaign-subject" class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600" required> </div> <div> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Content (HTML)</label> <textarea id="campaign-content" rows="8" class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 font-mono text-sm" required></textarea> </div> <div> <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label> <select id="campaign-category" class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"> <option value="general">All Subscribers</option> <option value="technology">Technology</option> <option value="health-wellness">Health & Wellness</option> <option value="shopping">Shopping</option> <option value="finance">Finance</option> <option value="entertainment">Entertainment</option> <option value="food-dining">Food & Dining</option> <option value="lifestyle">Lifestyle</option> <option value="real-estate">Real Estate</option> </select> </div> <div class="flex gap-4"> <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Draft</button> <button type="button" id="schedule-btn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Schedule</button> <button type="button" id="send-now-btn" class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Send Now</button> </div> <div id="campaign-message" class="hidden text-sm"></div> </form> </div> <!-- Campaign List --> <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6"> <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Recent Campaigns</h2> <div id="campaign-list" class="space-y-4"> <p class="text-gray-500 dark:text-gray-400">Loading campaigns...</p> </div> </div> <!-- Subscriber List --> <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-8"> <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Subscribers</h2> <div id="subscriber-list" class="space-y-4"> <p class="text-gray-500 dark:text-gray-400">Loading subscribers...</p> </div> </div> </div> ` })} ${renderScript($$result, "P:/Projects/trendlin/src/pages/admin/index.astro?astro&type=script&index=0&lang.ts")}`;
+}, "P:/Projects/trendlin/src/pages/admin/index.astro", void 0);
+
+const $$file = "P:/Projects/trendlin/src/pages/admin/index.astro";
+const $$url = "/admin";
+
+const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
+  __proto__: null,
+  default: $$Index,
+  file: $$file,
+  url: $$url
+}, Symbol.toStringTag, { value: 'Module' }));
+
+const page = () => _page;
+
+export { page };

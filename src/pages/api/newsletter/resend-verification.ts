@@ -12,10 +12,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const env = locals.env;
     const db = getDB(env);
 
+    console.log('📧 Resend verification requested for:', email);
+
     if (!email) {
       return new Response(
         JSON.stringify({ success: false, error: 'Email is required' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check if RESEND_API_KEY exists
+    if (!env.RESEND_API_KEY) {
+      console.error('❌ RESEND_API_KEY is missing from environment!');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email service is not configured.' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
@@ -56,17 +70,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Resend verification email
-    const emailService = new EmailService(env.RESEND_API_KEY);
-    await emailService.sendNewsletterVerification(
-      subscriber.email,
-      subscriber.verification_token,
-      subscriber.first_name || undefined
-    );
+    console.log('📧 Resending verification to:', email);
+    try {
+      const emailService = new EmailService(env.RESEND_API_KEY);
+      await emailService.sendNewsletterVerification(
+        subscriber.email,
+        subscriber.verification_token,
+        subscriber.first_name || undefined
+      );
+      console.log('✅ Verification resent successfully!');
+    } catch (emailError: any) {
+      console.error('❌ Failed to resend verification:', emailError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Failed to send verification email. Please try again.' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Verification email resent successfully'
+        message: 'Verification email resent successfully. Please check your inbox.'
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
