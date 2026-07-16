@@ -1071,6 +1071,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     border-top: 1px solid var(--color-gray-100);
     background: var(--color-gray-50);
     gap: 0.5rem;
+    min-height: 48px; /* Ensures consistent height */
   }
 
   .stat-link {
@@ -1095,6 +1096,12 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     text-decoration: none;
     transition: var(--transition);
     color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px; /* Fixed height for consistency */
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .stat-action-blue { background: #2563eb; }
@@ -1217,6 +1224,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     text-decoration: none;
     transition: var(--transition);
     white-space: nowrap;
+    height: 34px; /* Fixed height */
   }
 
   .section-action-btn:hover {
