@@ -1,6 +1,6 @@
 ---
 // ============================================
-// ADMIN LAYOUT - Trendlin (Complete)
+// ADMIN LAYOUT - Trendlin (Enterprise Edition)
 // ============================================
 
 export interface Props {
@@ -55,6 +55,7 @@ if (!user) {
         --radius-lg: 16px;
         --nav-height: 64px;
         --sidebar-width: 240px;
+        --transition-speed: 0.3s;
       }
       
       @media (min-width: 768px) {
@@ -119,8 +120,9 @@ if (!user) {
         overflow-y: auto;
         padding: 1.5rem 0.75rem;
         transform: translateX(-100%);
-        transition: transform 0.3s ease;
+        transition: transform var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         z-index: 40;
+        box-shadow: var(--shadow-sm);
       }
       
       .sidebar.open {
@@ -130,25 +132,28 @@ if (!user) {
       @media (min-width: 1024px) {
         .sidebar {
           transform: translateX(0);
+          box-shadow: none;
         }
       }
       
       .sidebar-nav {
         display: flex;
         flex-direction: column;
-        gap: 0.25rem;
+        gap: 0.125rem;
       }
       
       .sidebar-nav .nav-label {
         font-size: 0.65rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
         color: var(--text-muted);
-        padding: 0.75rem 0.75rem 0.25rem;
+        padding: 0.75rem 0.75rem 0.375rem;
         font-weight: 600;
+        user-select: none;
       }
       
-      .sidebar-nav a {
+      .sidebar-nav a,
+      .sidebar-nav button {
         display: flex;
         align-items: center;
         gap: 0.75rem;
@@ -157,10 +162,17 @@ if (!user) {
         font-size: 0.875rem;
         font-weight: 500;
         color: var(--text-secondary);
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
+        width: 100%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-family: inherit;
+        text-align: left;
       }
       
-      .sidebar-nav a:hover {
+      .sidebar-nav a:hover,
+      .sidebar-nav button:hover {
         background: #f1f5f9;
         color: var(--text-primary);
       }
@@ -170,11 +182,30 @@ if (!user) {
         color: #2563eb;
       }
       
-      .sidebar-nav a .icon {
-        font-size: 1.125rem;
-        width: 1.5rem;
-        text-align: center;
+      .sidebar-nav a .nav-icon {
+        width: 1.25rem;
+        height: 1.25rem;
         flex-shrink: 0;
+        color: currentColor;
+      }
+      
+      .sidebar-divider {
+        border-top: 1px solid var(--border-color);
+        margin: 0.75rem 0.75rem 0.5rem;
+      }
+      
+      .sidebar-footer {
+        margin-top: auto;
+        padding-top: 0.75rem;
+      }
+      
+      .sidebar-footer .logout-btn {
+        color: #dc2626;
+      }
+      
+      .sidebar-footer .logout-btn:hover {
+        background: #fef2f2;
+        color: #b91c1c;
       }
       
       /* ==========================================
@@ -185,7 +216,7 @@ if (!user) {
         margin-left: 0;
         padding: 1.5rem;
         min-height: calc(100vh - var(--nav-height));
-        transition: margin-left 0.3s ease;
+        transition: margin-left var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
       }
       
       @media (min-width: 1024px) {
@@ -205,9 +236,9 @@ if (!user) {
         right: 0;
         z-index: 50;
         height: var(--nav-height);
-        background: rgba(255, 255, 255, 0.85);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border-bottom: 1px solid var(--border-color);
         padding: 0 1.5rem;
       }
@@ -223,7 +254,7 @@ if (!user) {
         align-items: center;
         justify-content: space-between;
         height: 100%;
-        max-width: 1280px;
+        max-width: 1440px;
         margin: 0 auto;
       }
       
@@ -244,12 +275,18 @@ if (!user) {
         border-radius: 0.5rem;
         cursor: pointer;
         color: var(--text-secondary);
-        font-size: 1.25rem;
-        transition: background 0.2s;
+        transition: all 0.15s ease;
+        padding: 0;
       }
       
       .sidebar-toggle:hover {
         background: #f1f5f9;
+        color: var(--text-primary);
+      }
+      
+      .sidebar-toggle svg {
+        width: 1.25rem;
+        height: 1.25rem;
       }
       
       @media (min-width: 1024px) {
@@ -265,8 +302,8 @@ if (!user) {
       }
       
       .navbar-logo-icon {
-        width: 2rem;
-        height: 2rem;
+        width: 2.25rem;
+        height: 2.25rem;
         background: linear-gradient(135deg, #2563eb, #7c3aed);
         border-radius: 0.625rem;
         display: flex;
@@ -282,6 +319,12 @@ if (!user) {
         font-size: 1rem;
         font-weight: 700;
         color: var(--text-primary);
+        letter-spacing: -0.025em;
+      }
+      
+      .navbar-logo-text span {
+        color: var(--text-muted);
+        font-weight: 400;
       }
       
       @media (min-width: 768px) {
@@ -293,15 +336,19 @@ if (!user) {
       .navbar-right {
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.75rem;
       }
       
       .user-info {
         display: none;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.625rem;
         font-size: 0.875rem;
         color: var(--text-secondary);
+        padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+        border-radius: 9999px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
       }
       
       @media (min-width: 640px) {
@@ -311,8 +358,8 @@ if (!user) {
       }
       
       .user-avatar {
-        width: 2rem;
-        height: 2rem;
+        width: 1.75rem;
+        height: 1.75rem;
         border-radius: 50%;
         background: linear-gradient(135deg, #2563eb, #7c3aed);
         color: #fff;
@@ -320,11 +367,14 @@ if (!user) {
         align-items: center;
         justify-content: center;
         font-weight: 600;
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         flex-shrink: 0;
       }
       
-      .logout-btn {
+      .logout-nav-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
         padding: 0.375rem 0.875rem;
         border: 1px solid #fecaca;
         background: #fef2f2;
@@ -333,13 +383,18 @@ if (!user) {
         font-size: 0.75rem;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.15s ease;
         font-family: inherit;
       }
       
-      .logout-btn:hover {
+      .logout-nav-btn:hover {
         background: #fee2e2;
         border-color: #fca5a5;
+      }
+      
+      .logout-nav-btn svg {
+        width: 0.875rem;
+        height: 0.875rem;
       }
       
       /* ==========================================
@@ -351,11 +406,15 @@ if (!user) {
         background: rgba(0, 0, 0, 0.3);
         z-index: 39;
         display: none;
-        backdrop-filter: blur(2px);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        opacity: 0;
+        transition: opacity var(--transition-speed) ease;
       }
       
       .sidebar-overlay.visible {
         display: block;
+        opacity: 1;
       }
       
       @media (min-width: 1024px) {
@@ -375,6 +434,7 @@ if (!user) {
         font-size: 1.5rem;
         font-weight: 700;
         color: var(--text-primary);
+        letter-spacing: -0.025em;
       }
       
       .page-header p {
@@ -403,6 +463,19 @@ if (!user) {
         margin-bottom: 0.75rem;
         color: var(--text-primary);
       }
+      
+      /* ==========================================
+      RESPONSIVE ADJUSTMENTS
+      ========================================== */
+      @media (max-width: 639px) {
+        .main-content {
+          padding: 1rem;
+        }
+        
+        .navbar {
+          padding: 0 1rem;
+        }
+      }
     </style>
   </head>
   
@@ -428,7 +501,7 @@ if (!user) {
           
           <a href="/admin/dashboard" class="navbar-logo">
             <div class="navbar-logo-icon">T</div>
-            <span class="navbar-logo-text">Admin</span>
+            <span class="navbar-logo-text">Trendlin <span>Admin</span></span>
           </a>
         </div>
         
@@ -439,7 +512,14 @@ if (!user) {
           </div>
           
           <form method="POST" action="/api/auth/logout" style="display:inline;">
-            <button type="submit" class="logout-btn">Logout</button>
+            <button type="submit" class="logout-nav-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Logout
+            </button>
           </form>
         </div>
       </div>
@@ -453,58 +533,110 @@ if (!user) {
         <!-- MAIN SECTION -->
         <div class="nav-label">Main</div>
         <a href="/admin/dashboard" class={Astro.url.pathname === '/admin/dashboard' ? 'active' : ''}>
-          <span class="icon">📊</span> Dashboard
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+          Dashboard
         </a>
         
         <!-- CONTENT SECTION -->
-        <div class="nav-label" style="margin-top: 0.5rem;">Content</div>
+        <div class="nav-label">Content</div>
         
         <!-- 1. POSTS -->
         <a href="/admin/posts" class={Astro.url.pathname === '/admin/posts' ? 'active' : ''}>
-          <span class="icon">📄</span> Posts
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          Posts
         </a>
         
-        <!-- 🆕 2. CATEGORIES -->
+        <!-- 2. CATEGORIES -->
         <a href="/admin/categories" class={Astro.url.pathname === '/admin/categories' || Astro.url.pathname.startsWith('/admin/categories/') ? 'active' : ''}>
-          <span class="icon">🏷️</span> Categories
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          Categories
         </a>
         
         <!-- 3. PRODUCTS -->
         <a href="/admin/products" class={Astro.url.pathname.startsWith('/admin/products') ? 'active' : ''}>
-          <span class="icon">📦</span> Products
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+          Products
         </a>
         
         <!-- 4. MEDIA -->
         <a href="/admin/media" class={Astro.url.pathname.startsWith('/admin/media') ? 'active' : ''}>
-          <span class="icon">🖼️</span> Media Library
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          Media Library
         </a>
         
         <!-- 5. TEMPLATES -->
         <a href="/admin/templates" class={Astro.url.pathname === '/admin/templates' ? 'active' : ''}>
-          <span class="icon">📋</span> Templates
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <line x1="10" y1="9" x2="8" y2="9" />
+          </svg>
+          Templates
         </a>
         
         <!-- 6. SOURCES -->
         <a href="/admin/sources" class={Astro.url.pathname === '/admin/sources' ? 'active' : ''}>
-          <span class="icon">📚</span> Sources
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          Sources
         </a>
         
         <!-- 7. NEWSLETTER -->
         <a href="/admin/newsletter" class={Astro.url.pathname.startsWith('/admin/newsletter') ? 'active' : ''}>
-          <span class="icon">📧</span> Newsletter
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+          Newsletter
         </a>
+        
+        <!-- DIVIDER -->
+        <div class="sidebar-divider"></div>
         
         <!-- SYSTEM SECTION -->
-        <div class="nav-label" style="margin-top: 0.5rem;">System</div>
+        <div class="nav-label">System</div>
         <a href="/" target="_blank">
-          <span class="icon">🌐</span> View Site
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          View Site
         </a>
         
-        <!-- LOGOUT -->
-        <div style="border-top: 1px solid var(--border-color); margin-top: 0.75rem; padding-top: 0.75rem;">
+        <!-- LOGOUT (Sidebar) -->
+        <div class="sidebar-footer">
           <form method="POST" action="/api/auth/logout">
-            <button type="submit" style="display:flex;align-items:center;gap:0.75rem;width:100%;padding:0.625rem 0.75rem;border:none;background:transparent;border-radius:0.5rem;font-size:0.875rem;font-weight:500;color:#dc2626;cursor:pointer;transition:background 0.2s;font-family:inherit;">
-              <span class="icon">🚪</span> Logout
+            <button type="submit" class="logout-btn">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              Logout
             </button>
           </form>
         </div>
@@ -546,7 +678,7 @@ if (!user) {
       });
       
       // Close sidebar when clicking a link on mobile
-      document.querySelectorAll('.sidebar-nav a').forEach(link => {
+      document.querySelectorAll('.sidebar-nav a, .sidebar-nav button').forEach(link => {
         link.addEventListener('click', function() {
           if (window.innerWidth < 1024) {
             const sidebar = document.getElementById('sidebar');
@@ -555,6 +687,14 @@ if (!user) {
             overlay.classList.remove('visible');
           }
         });
+      });
+      
+      // Handle overlay click
+      document.getElementById('sidebarOverlay')?.addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.remove('open');
+        overlay.classList.remove('visible');
       });
     </script>
   </body>
