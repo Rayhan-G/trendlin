@@ -7,6 +7,11 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getSubscriberStats, getCampaigns } from '../../lib/newsletter';
 
 // ============================================
+// GET DATABASE FROM LOCALS
+// ============================================
+const { DB } = Astro.locals.runtime.env;
+
+// ============================================
 // FETCH POSTS
 // ============================================
 let posts = [];
@@ -184,7 +189,7 @@ try {
 }
 
 // ============================================
-// FETCH NEWSLETTER STATS
+// FETCH NEWSLETTER STATS - FIXED
 // ============================================
 let newsletterStats = {
   total: 0,
@@ -195,9 +200,9 @@ let newsletterStats = {
 };
 
 try {
-  const env = Astro.locals.env;
-  const stats = await getSubscriberStats(env);
-  const campaigns = await getCampaigns(env, { limit: 100 });
+  // Use the working database pattern
+  const stats = await getSubscriberStats(Astro.locals.runtime.env);
+  const campaigns = await getCampaigns(Astro.locals.runtime.env, { limit: 100 });
   
   if (stats) {
     newsletterStats = {
@@ -210,6 +215,7 @@ try {
   }
 } catch (error) {
   console.error('Error fetching newsletter stats:', error);
+  // Don't fail the page if newsletter stats fail
 }
 
 const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + totalSources + contentStats.total;
@@ -245,7 +251,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- 7 STATS CARDS (Added Newsletter) -->
+  <!-- 7 STATS CARDS -->
   <!-- ============================================ -->
   <div class="stats-grid">
     
@@ -442,7 +448,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       </div>
     </div>
 
-    <!-- 7. NEWSLETTER (NEW) -->
+    <!-- 7. NEWSLETTER (FIXED) -->
     <div class="stat-card stat-card-rose">
       <div class="stat-card-inner">
         <div class="stat-card-left">
@@ -595,7 +601,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   </div>
 
   <!-- ============================================ -->
-  <!-- RECENT POSTS SECTION (Existing) -->
+  <!-- RECENT POSTS SECTION -->
   <!-- ============================================ -->
   <div class="recent-posts-section" style="margin-top: 1.5rem;">
     <div class="section-header">
