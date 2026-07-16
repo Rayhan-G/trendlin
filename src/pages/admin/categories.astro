@@ -4,14 +4,26 @@
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
-import { DB } from '../../lib/db';
 
-// Fetch all categories with their hero images
+// ============================================
+// FETCH CATEGORIES USING Astro.locals (same as other admin pages)
+// ============================================
 let categories = [];
+
 try {
+  // Get DB from locals (same pattern as dashboard and other admin pages)
+  const { DB } = Astro.locals.runtime.env;
+  
   const result = await DB.prepare(`
-    SELECT * FROM categories ORDER BY name ASC
+    SELECT 
+      c.*,
+      COUNT(p.id) as post_count
+    FROM categories c
+    LEFT JOIN posts p ON p.category = c.name AND p.is_draft = 0
+    GROUP BY c.id
+    ORDER BY c.name ASC
   `).all();
+  
   categories = result.results || [];
 } catch (error) {
   console.error('Error fetching categories:', error);
