@@ -1,6 +1,6 @@
 ---
 // ============================================
-// ADMIN DASHBOARD - Trendlin (Premium Design)
+// ADMIN DASHBOARD - Trendlin (Enterprise Edition)
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
@@ -241,484 +241,439 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   <!-- ============================================ -->
   <div class="dashboard-hero">
     <div class="dashboard-hero-content">
-      <div>
+      <div class="dashboard-greeting-wrapper">
         <div class="dashboard-greeting">
           <span class="greeting-emoji">👋</span>
-          <span>Welcome back!</span>
+          <span>Welcome back</span>
         </div>
         <h1 class="dashboard-title">
-          Your Content Dashboard
+          Content Dashboard
         </h1>
         <p class="dashboard-subtitle">
-          You have <strong>{totalContent}</strong> items across your content ecosystem
+          Managing <strong>{totalContent}</strong> content items across your ecosystem
         </p>
       </div>
-      <div class="dashboard-time">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <polyline points="12 6 12 12 16 14"/>
-        </svg>
-        <span>{new Date().toLocaleString()}</span>
+      <div class="dashboard-meta">
+        <div class="dashboard-time">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span>{new Date().toLocaleString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</span>
+        </div>
+        <div class="dashboard-status">
+          <span class="status-indicator"></span>
+          All systems operational
+        </div>
       </div>
     </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- 7 STATS CARDS -->
+  <!-- STATS GRID - 7 Cards -->
   <!-- ============================================ -->
   <div class="stats-grid">
     
     <!-- 1. POSTS -->
-    <div class="stat-card stat-card-blue">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Total Posts</div>
-            <div class="stat-value">{totalPosts}</div>
-          </div>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon-wrapper stat-icon-blue">
+          <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+          </svg>
         </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
+        <span class="stat-card-badge">Posts</span>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{totalPosts}</div>
+        <div class="stat-metrics">
+          <span class="metric-item metric-success">
+            <span class="metric-dot"></span>
             {publishedPosts} Published
           </span>
-          <span class="stat-badge stat-badge-yellow">
-            <span class="stat-dot stat-dot-yellow"></span>
+          <span class="metric-item metric-warning">
+            <span class="metric-dot"></span>
             {draftPosts} Drafts
           </span>
         </div>
       </div>
-      <div class="stat-actions">
-        <a href="/admin/posts" class="stat-action-link">View All →</a>
-        <a href="/admin/new" class="stat-action-btn stat-action-btn-blue">+ New Post</a>
+      <div class="stat-card-footer">
+        <a href="/admin/posts" class="stat-link">View all posts →</a>
+        <a href="/admin/new" class="stat-action stat-action-blue">+ New</a>
       </div>
     </div>
 
     <!-- 2. PRODUCTS -->
-    <div class="stat-card stat-card-orange">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Total Products</div>
-            <div class="stat-value">{totalProducts}</div>
-          </div>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon-wrapper stat-icon-orange">
+          <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
         </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
+        <span class="stat-card-badge">Products</span>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{totalProducts}</div>
+        <div class="stat-metrics">
+          <span class="metric-item metric-success">
+            <span class="metric-dot"></span>
             {productsInStock} In Stock
           </span>
-          <span class="stat-badge stat-badge-purple">
-            <span class="stat-dot stat-dot-purple"></span>
+          <span class="metric-item metric-info">
+            <span class="metric-dot"></span>
             {totalResources} Resources
           </span>
         </div>
       </div>
-      <div class="stat-actions">
-        <a href="/admin/products" class="stat-action-link">View All →</a>
-        <a href="/admin/products/new" class="stat-action-btn stat-action-btn-orange">+ New Product</a>
+      <div class="stat-card-footer">
+        <a href="/admin/products" class="stat-link">View all products →</a>
+        <a href="/admin/products/new" class="stat-action stat-action-orange">+ New</a>
       </div>
     </div>
 
     <!-- 3. MEDIA -->
-    <div class="stat-card stat-card-green">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Media Files</div>
-            <div class="stat-value">{totalMedia}</div>
-          </div>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon-wrapper stat-icon-green">
+          <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
         </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-blue">
-            <span class="stat-dot stat-dot-blue"></span>
+        <span class="stat-card-badge">Media</span>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{totalMedia}</div>
+        <div class="stat-metrics">
+          <span class="metric-item metric-info">
+            <span class="metric-dot"></span>
             {totalFolders} Folders
           </span>
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
+          <span class="metric-item metric-success">
+            <span class="metric-dot"></span>
             {totalMedia} Files
           </span>
         </div>
       </div>
-      <div class="stat-actions">
-        <a href="/admin/media" class="stat-action-link">View All →</a>
-        <a href="/admin/media" class="stat-action-btn stat-action-btn-green">+ Upload</a>
+      <div class="stat-card-footer">
+        <a href="/admin/media" class="stat-link">View all media →</a>
+        <a href="/admin/media" class="stat-action stat-action-green">+ Upload</a>
       </div>
     </div>
 
     <!-- 4. TEMPLATES -->
-    <div class="stat-card stat-card-indigo">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Templates</div>
-            <div class="stat-value">{totalTemplates}</div>
-          </div>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon-wrapper stat-icon-indigo">
+          <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
         </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
+        <span class="stat-card-badge">Templates</span>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{totalTemplates}</div>
+        <div class="stat-metrics">
+          <span class="metric-item metric-success">
+            <span class="metric-dot"></span>
             {activeTemplates} Active
           </span>
-          <span class="stat-badge stat-badge-orange">
-            <span class="stat-dot stat-dot-orange"></span>
+          <span class="metric-item metric-warning">
+            <span class="metric-dot"></span>
             {templateUsage} Uses
           </span>
         </div>
       </div>
-      <div class="stat-actions">
-        <a href="/admin/templates" class="stat-action-link">View All →</a>
-        <a href="/admin/templates/new" class="stat-action-btn stat-action-btn-indigo">+ New Template</a>
+      <div class="stat-card-footer">
+        <a href="/admin/templates" class="stat-link">View all templates →</a>
+        <a href="/admin/templates/new" class="stat-action stat-action-indigo">+ New</a>
       </div>
     </div>
 
     <!-- 5. SOURCES -->
-    <div class="stat-card stat-card-cyan">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Sources</div>
-            <div class="stat-value">{totalSources}</div>
-          </div>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon-wrapper stat-icon-cyan">
+          <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
         </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-blue">
-            <span class="stat-dot stat-dot-blue"></span>
+        <span class="stat-card-badge">Sources</span>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{totalSources}</div>
+        <div class="stat-metrics">
+          <span class="metric-item metric-info">
+            <span class="metric-dot"></span>
             {totalMasterSources} Universal
           </span>
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
+          <span class="metric-item metric-success">
+            <span class="metric-dot"></span>
             {totalStateSources} State
           </span>
         </div>
       </div>
-      <div class="stat-actions">
-        <a href="/admin/sources" class="stat-action-link">View All →</a>
-        <a href="/admin/sources/new" class="stat-action-btn stat-action-btn-cyan">+ New Source</a>
+      <div class="stat-card-footer">
+        <a href="/admin/sources" class="stat-link">View all sources →</a>
+        <a href="/admin/sources/new" class="stat-action stat-action-cyan">+ New</a>
       </div>
     </div>
 
     <!-- 6. CONTENT CALENDAR -->
-    <div class="stat-card stat-card-pink">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Content Calendar</div>
-            <div class="stat-value">{contentStats.total}</div>
-          </div>
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon-wrapper stat-icon-pink">
+          <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
         </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
+        <span class="stat-card-badge">Calendar</span>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{contentStats.total}</div>
+        <div class="stat-metrics">
+          <span class="metric-item metric-success">
+            <span class="metric-dot"></span>
             {contentStats.published} Published
           </span>
-          <span class="stat-badge stat-badge-blue">
-            <span class="stat-dot stat-dot-blue"></span>
+          <span class="metric-item metric-info">
+            <span class="metric-dot"></span>
             {contentStats.scheduled} Scheduled
           </span>
-          <span class="stat-badge stat-badge-yellow">
-            <span class="stat-dot stat-dot-yellow"></span>
+          <span class="metric-item metric-warning">
+            <span class="metric-dot"></span>
             {contentStats.drafts} Drafts
           </span>
         </div>
       </div>
-      <div class="stat-actions">
-        <a href="/admin/content" class="stat-action-link">View Calendar →</a>
-        <a href="/admin/content" class="stat-action-btn stat-action-btn-pink">+ New Content</a>
+      <div class="stat-card-footer">
+        <a href="/admin/content" class="stat-link">View calendar →</a>
+        <a href="/admin/content" class="stat-action stat-action-pink">+ New</a>
       </div>
     </div>
 
-    <!-- 7. NEWSLETTER (FIXED) -->
-    <div class="stat-card stat-card-rose">
-      <div class="stat-card-inner">
-        <div class="stat-card-left">
-          <div class="stat-icon-wrapper">
-            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
-          </div>
-          <div>
-            <div class="stat-label">Newsletter</div>
-            <div class="stat-value">{newsletterStats.total}</div>
-          </div>
+    <!-- 7. NEWSLETTER -->
+    <div class="stat-card">
+      <div class="stat-card-header">
+        <div class="stat-icon-wrapper stat-icon-rose">
+          <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
         </div>
-        <div class="stat-badges">
-          <span class="stat-badge stat-badge-green">
-            <span class="stat-dot stat-dot-green"></span>
+        <span class="stat-card-badge">Newsletter</span>
+      </div>
+      <div class="stat-card-body">
+        <div class="stat-value">{newsletterStats.total}</div>
+        <div class="stat-metrics">
+          <span class="metric-item metric-success">
+            <span class="metric-dot"></span>
             {newsletterStats.active} Active
           </span>
-          <span class="stat-badge stat-badge-yellow">
-            <span class="stat-dot stat-dot-yellow"></span>
+          <span class="metric-item metric-warning">
+            <span class="metric-dot"></span>
             {newsletterStats.pending} Pending
           </span>
-          <span class="stat-badge stat-badge-red">
-            <span class="stat-dot stat-dot-red"></span>
+          <span class="metric-item metric-danger">
+            <span class="metric-dot"></span>
             {newsletterStats.unsubscribed} Unsubscribed
           </span>
         </div>
       </div>
-      <div class="stat-actions">
-        <a href="/admin/newsletter" class="stat-action-link">View All →</a>
-        <a href="/admin/newsletter/new" class="stat-action-btn stat-action-btn-rose">+ New Campaign</a>
+      <div class="stat-card-footer">
+        <a href="/admin/newsletter" class="stat-link">View subscribers →</a>
+        <a href="/admin/newsletter/new" class="stat-action stat-action-rose">+ Campaign</a>
       </div>
     </div>
 
   </div>
 
   <!-- ============================================ -->
-  <!-- RECENT CONTENT SECTION -->
+  <!-- CONTENT SECTIONS GRID -->
   <!-- ============================================ -->
-  <div class="recent-content-grid">
-    <div class="recent-posts-section">
+  <div class="content-sections-grid">
+    
+    <!-- RECENT CONTENT -->
+    <div class="content-section">
       <div class="section-header">
         <div>
-          <h2 class="section-title">📅 Recent Content</h2>
-          <p class="section-subtitle">Your latest scheduled and published content</p>
+          <h2 class="section-title">
+            <span class="section-icon">📅</span>
+            Recent Content
+          </h2>
+          <p class="section-subtitle">Latest scheduled and published content</p>
         </div>
-        <div class="section-actions">
-          <a href="/admin/content" class="btn-new-post">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            New Content
-          </a>
-        </div>
+        <a href="/admin/content" class="section-action-btn">View All →</a>
       </div>
 
-      <div class="table-container">
+      <div class="section-body">
         {recentContent.length > 0 ? (
-          <div class="table-scroll">
-            <table class="posts-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th class="type-col">Type</th>
-                  <th class="status-col">Status</th>
-                  <th class="date-col">Scheduled</th>
-                  <th class="actions-col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentContent.map((item) => {
-                  const status = contentStatuses.find(s => s.id === item.status_id);
-                  const type = contentTypes.find(t => t.id === item.content_type_id);
-                  const statusColor = status ? status.color : '#94a3b8';
-                  const statusName = status ? status.name : 'Unknown';
-                  const typeIcon = type ? type.icon : '📄';
-                  const typeName = type ? type.name : 'Unknown';
+          <div class="content-list">
+            {recentContent.map((item) => {
+              const status = contentStatuses.find(s => s.id === item.status_id);
+              const type = contentTypes.find(t => t.id === item.content_type_id);
+              const statusColor = status ? status.color : '#94a3b8';
+              const statusName = status ? status.name : 'Unknown';
+              const typeIcon = type ? type.icon : '📄';
+              const typeName = type ? type.name : 'Unknown';
 
-                  return (
-                    <tr key={item.id}>
-                      <td>
-                        <div class="post-title-cell">
-                          <span class="post-title">{item.title}</span>
-                        </div>
-                      </td>
-                      <td class="type-col">
-                        <span class="type-badge" style="background: {type ? type.color + '20' : '#94a3b820'}; color: {type ? type.color : '#94a3b8'}">
+              return (
+                <div class="content-item" key={item.id}>
+                  <div class="content-item-main">
+                    <div class="content-item-info">
+                      <span class="content-item-title">{item.title}</span>
+                      <div class="content-item-meta">
+                        <span class="content-type" style="background: {type ? type.color + '20' : '#94a3b820'}; color: {type ? type.color : '#94a3b8'}">
                           {typeIcon} {typeName}
                         </span>
-                      </td>
-                      <td class="status-col">
-                        <span class="status-badge" style="background: {statusColor}20; color: {statusColor}">
-                          <span class="status-dot" style="background: {statusColor}"></span>
+                        <span class="content-status" style="background: {statusColor}20; color: {statusColor}">
+                          <span class="status-indicator-dot" style="background: {statusColor}"></span>
                           {statusName}
                         </span>
-                      </td>
-                      <td class="date-col">
-                        {item.scheduled_publish_at ? new Date(item.scheduled_publish_at).toLocaleDateString('en-US', { 
-                          month: 'short', 
-                          day: 'numeric', 
-                          year: 'numeric' 
-                        }) : '—'}
-                      </td>
-                      <td class="actions-col">
-                        <div class="action-buttons">
-                          <a href={`/admin/content/edit/${item.id}`} class="action-btn action-btn-edit">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                            Edit
-                          </a>
-                          <button 
-                            class="action-btn action-btn-delete delete-content-btn"
-                            data-id={item.id}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                              <polyline points="3 6 5 6 21 6"/>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                            </svg>
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                    <div class="content-item-date">
+                      {item.scheduled_publish_at ? new Date(item.scheduled_publish_at).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      }) : '—'}
+                    </div>
+                  </div>
+                  <div class="content-item-actions">
+                    <a href={`/admin/content/edit/${item.id}`} class="content-action content-action-edit">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                      </svg>
+                      Edit
+                    </a>
+                    <button 
+                      class="content-action content-action-delete delete-content-btn"
+                      data-id={item.id}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div class="empty-state">
-            <div class="empty-icon">📅</div>
-            <p>No content yet</p>
-            <a href="/admin/content" class="empty-action">Create your first content →</a>
+            <div class="empty-state-icon">📅</div>
+            <p class="empty-state-text">No content scheduled yet</p>
+            <a href="/admin/content" class="empty-state-action">Create your first content →</a>
           </div>
         )}
       </div>
+    </div>
 
-      {recentContent.length > 0 && (
-        <div class="view-all-container">
-          <a href="/admin/content" class="view-all-link">
-            View all {contentStats.total} content items →
+    <!-- RECENT POSTS -->
+    <div class="content-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span class="section-icon">📄</span>
+            Recent Posts
+          </h2>
+          <p class="section-subtitle">Latest published and draft articles</p>
+        </div>
+        <div class="section-actions">
+          <div class="search-wrapper">
+            <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input 
+              type="text" 
+              id="searchInput"
+              placeholder="Search posts..." 
+              class="search-input"
+            />
+          </div>
+          <a href="/admin/new" class="section-action-btn primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Post
           </a>
         </div>
-      )}
-    </div>
-  </div>
-
-  <!-- ============================================ -->
-  <!-- RECENT POSTS SECTION -->
-  <!-- ============================================ -->
-  <div class="recent-posts-section" style="margin-top: 1.5rem;">
-    <div class="section-header">
-      <div>
-        <h2 class="section-title">📄 Recent Posts</h2>
-        <p class="section-subtitle">Your latest published and draft articles</p>
       </div>
-      <div class="section-actions">
-        <div class="search-wrapper">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input 
-            type="text" 
-            id="searchInput"
-            placeholder="Search posts..." 
-            class="search-input"
-          />
-        </div>
-        <a href="/admin/new" class="btn-new-post">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          New Post
-        </a>
-      </div>
-    </div>
 
-    <div class="table-container">
-      {posts.length > 0 ? (
-        <div class="table-scroll">
-          <table class="posts-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th class="status-col">Status</th>
-                <th class="date-col">Published</th>
-                <th class="actions-col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {posts.slice(0, 5).map((post) => (
-                <tr key={post.id}>
-                  <td>
-                    <div class="post-title-cell">
-                      <span class="post-title">{post.title}</span>
-                    </div>
-                  </td>
-                  <td class="status-col">
-                    <span class={`status-badge ${post.is_draft ? 'status-draft' : 'status-published'}`}>
-                      <span class="status-dot"></span>
+      <div class="section-body">
+        {posts.length > 0 ? (
+          <div class="post-list">
+            {posts.slice(0, 5).map((post) => (
+              <div class="post-item" key={post.id}>
+                <div class="post-item-main">
+                  <div class="post-item-info">
+                    <span class="post-item-title">{post.title}</span>
+                    <span class={`post-status ${post.is_draft ? 'post-status-draft' : 'post-status-published'}`}>
+                      <span class="status-indicator-dot"></span>
                       {post.is_draft ? 'Draft' : 'Published'}
                     </span>
-                  </td>
-                  <td class="date-col">
+                  </div>
+                  <div class="post-item-date">
                     {post.published_at ? new Date(post.published_at).toLocaleDateString('en-US', { 
                       month: 'short', 
                       day: 'numeric', 
                       year: 'numeric' 
                     }) : '—'}
-                  </td>
-                  <td class="actions-col">
-                    <div class="action-buttons">
-                      <a href={`/admin/edit/${post.id}`} class="action-btn action-btn-edit">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                        Edit
-                      </a>
-                      <button 
-                        class="action-btn action-btn-delete delete-btn"
-                        data-id={post.id}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                          <polyline points="3 6 5 6 21 6"/>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div class="empty-state">
-          <div class="empty-icon">📝</div>
-          <p>No posts yet</p>
-          <a href="/admin/new" class="empty-action">Create your first post →</a>
+                  </div>
+                </div>
+                <div class="post-item-actions">
+                  <a href={`/admin/edit/${post.id}`} class="post-action post-action-edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit
+                  </a>
+                  <button 
+                    class="post-action post-action-delete delete-btn"
+                    data-id={post.id}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <p class="empty-state-text">No posts created yet</p>
+            <a href="/admin/new" class="empty-state-action">Create your first post →</a>
+          </div>
+        )}
+      </div>
+
+      {posts.length > 5 && (
+        <div class="section-footer">
+          <a href="/admin/posts" class="view-all-link">
+            View all {posts.length} posts →
+          </a>
         </div>
       )}
     </div>
 
-    {posts.length > 5 && (
-      <div class="view-all-container">
-        <a href="/admin/posts" class="view-all-link">
-          View all {posts.length} posts →
-        </a>
-      </div>
-    )}
   </div>
 
 </AdminLayout>
@@ -741,10 +696,10 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
           return;
         }
         
-        const originalText = this.innerHTML;
+        const originalHTML = this.innerHTML;
         this.innerHTML = 'Deleting...';
         this.disabled = true;
-        this.classList.add('opacity-50');
+        this.classList.add('loading');
         
         try {
           const response = await fetch(`/api/admin/posts/${postId}`, {
@@ -758,15 +713,21 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
             throw new Error(result.error || 'Delete failed');
           }
           
-          alert('✅ Post deleted successfully!');
-          window.location.reload();
+          // Show success feedback
+          const postItem = this.closest('.post-item');
+          postItem.style.opacity = '0.5';
+          postItem.style.transition = 'opacity 0.3s';
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
           
         } catch (error) {
           console.error('Error:', error);
           alert('❌ Failed to delete post');
-          this.innerHTML = originalText;
+          this.innerHTML = originalHTML;
           this.disabled = false;
-          this.classList.remove('opacity-50');
+          this.classList.remove('loading');
         }
       });
     });
@@ -784,10 +745,10 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
           return;
         }
         
-        const originalText = this.innerHTML;
+        const originalHTML = this.innerHTML;
         this.innerHTML = 'Deleting...';
         this.disabled = true;
-        this.classList.add('opacity-50');
+        this.classList.add('loading');
         
         try {
           const response = await fetch(`/api/admin/content/${contentId}`, {
@@ -801,15 +762,20 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
             throw new Error(result.error || 'Delete failed');
           }
           
-          alert('✅ Content deleted successfully!');
-          window.location.reload();
+          const contentItem = this.closest('.content-item');
+          contentItem.style.opacity = '0.5';
+          contentItem.style.transition = 'opacity 0.3s';
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
           
         } catch (error) {
           console.error('Error:', error);
           alert('❌ Failed to delete content');
-          this.innerHTML = originalText;
+          this.innerHTML = originalHTML;
           this.disabled = false;
-          this.classList.remove('opacity-50');
+          this.classList.remove('loading');
         }
       });
     });
@@ -818,12 +784,13 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
       searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const rows = document.querySelectorAll('.posts-table tbody tr');
+        const searchTerm = this.value.toLowerCase().trim();
+        const postItems = document.querySelectorAll('.post-item');
         
-        rows.forEach(row => {
-          const title = row.querySelector('.post-title')?.textContent?.toLowerCase() || '';
-          row.style.display = title.includes(searchTerm) ? '' : 'none';
+        postItems.forEach(item => {
+          const title = item.querySelector('.post-item-title')?.textContent?.toLowerCase() || '';
+          const shouldShow = searchTerm === '' || title.includes(searchTerm);
+          item.style.display = shouldShow ? '' : 'none';
         });
       });
     }
@@ -832,22 +799,75 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
 <style is:global>
   /* ============================================
+     DESIGN SYSTEM
+     ============================================ */
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-success: #22c55e;
+    --color-warning: #eab308;
+    --color-danger: #ef4444;
+    --color-info: #3b82f6;
+    
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.05);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ============================================
      DASHBOARD HERO
      ============================================ */
   .dashboard-hero {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-radius: 16px;
-    padding: 1.75rem 2rem;
+    background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-100) 100%);
+    border-radius: var(--radius-lg);
+    padding: 2rem 2rem;
     margin-bottom: 2rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-gray-200);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dashboard-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(59,130,246,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
   }
 
   .dashboard-hero-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .dashboard-greeting-wrapper {
+    flex: 1;
   }
 
   .dashboard-greeting {
@@ -856,7 +876,8 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     gap: 0.5rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #64748b;
+    color: var(--color-gray-500);
+    margin-bottom: 0.25rem;
   }
 
   .greeting-emoji {
@@ -864,21 +885,30 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   }
 
   .dashboard-title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    color: #0f172a;
-    margin: 0.25rem 0 0.125rem;
+    color: var(--color-gray-900);
+    margin: 0 0 0.25rem 0;
+    letter-spacing: -0.025em;
   }
 
   .dashboard-subtitle {
     font-size: 0.875rem;
-    color: #64748b;
+    color: var(--color-gray-500);
     margin: 0;
   }
 
   .dashboard-subtitle strong {
-    color: #0f172a;
+    color: var(--color-gray-900);
     font-weight: 600;
+  }
+
+  .dashboard-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+    padding-top: 0.25rem;
   }
 
   .dashboard-time {
@@ -886,169 +916,176 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     align-items: center;
     gap: 0.5rem;
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--color-gray-400);
     background: white;
     padding: 0.375rem 0.875rem;
     border-radius: 9999px;
-    border: 1px solid #e2e8f0;
-    flex-shrink: 0;
+    border: 1px solid var(--color-gray-200);
+    white-space: nowrap;
+  }
+
+  .dashboard-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    background: white;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    border: 1px solid var(--color-gray-200);
+    white-space: nowrap;
+  }
+
+  .status-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
   }
 
   /* ============================================
-     STATS GRID - 7 Cards
+     STATS GRID
      ============================================ */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
   }
 
   .stat-card {
     background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
     overflow: hidden;
-    transition: all 0.2s ease;
+    transition: var(--transition);
     display: flex;
     flex-direction: column;
   }
 
   .stat-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-gray-300);
   }
 
-  .stat-card-inner {
-    padding: 1.25rem 1.25rem 0.75rem;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .stat-card-left {
+  .stat-card-header {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0.5rem;
   }
 
   .stat-icon-wrapper {
-    width: 44px;
-    height: 44px;
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
   }
 
-  .stat-card-blue .stat-icon-wrapper { background: #dbeafe; }
-  .stat-card-orange .stat-icon-wrapper { background: #ffedd5; }
-  .stat-card-green .stat-icon-wrapper { background: #d1fae5; }
-  .stat-card-indigo .stat-icon-wrapper { background: #e0e7ff; }
-  .stat-card-cyan .stat-icon-wrapper { background: #cffafe; }
-  .stat-card-pink .stat-icon-wrapper { background: #fce7f3; }
-  .stat-card-rose .stat-icon-wrapper { background: #ffe4e6; }
+  .stat-icon-blue { background: #dbeafe; }
+  .stat-icon-orange { background: #ffedd5; }
+  .stat-icon-green { background: #d1fae5; }
+  .stat-icon-indigo { background: #e0e7ff; }
+  .stat-icon-cyan { background: #cffafe; }
+  .stat-icon-pink { background: #fce7f3; }
+  .stat-icon-rose { background: #ffe4e6; }
 
   .stat-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
-  .stat-card-blue .stat-icon { color: #2563eb; }
-  .stat-card-orange .stat-icon { color: #ea580c; }
-  .stat-card-green .stat-icon { color: #16a34a; }
-  .stat-card-indigo .stat-icon { color: #4f46e5; }
-  .stat-card-cyan .stat-icon { color: #0891b2; }
-  .stat-card-pink .stat-icon { color: #db2777; }
-  .stat-card-rose .stat-icon { color: #e11d48; }
+  .stat-icon-blue .stat-icon { color: #2563eb; }
+  .stat-icon-orange .stat-icon { color: #ea580c; }
+  .stat-icon-green .stat-icon { color: #16a34a; }
+  .stat-icon-indigo .stat-icon { color: #4f46e5; }
+  .stat-icon-cyan .stat-icon { color: #0891b2; }
+  .stat-icon-pink .stat-icon { color: #db2777; }
+  .stat-icon-rose .stat-icon { color: #e11d48; }
 
-  .stat-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #94a3b8;
+  .stat-card-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gray-400);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  .stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #0f172a;
-    line-height: 1.1;
+  .stat-card-body {
+    padding: 0 1.25rem 0.75rem;
+    flex: 1;
   }
 
-  .stat-card-blue .stat-value { color: #2563eb; }
-  .stat-card-orange .stat-value { color: #ea580c; }
-  .stat-card-green .stat-value { color: #16a34a; }
-  .stat-card-indigo .stat-value { color: #4f46e5; }
-  .stat-card-cyan .stat-value { color: #0891b2; }
-  .stat-card-pink .stat-value { color: #db2777; }
-  .stat-card-rose .stat-value { color: #e11d48; }
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.5rem;
+  }
 
-  .stat-badges {
+  .stat-metrics {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
   }
 
-  .stat-badge {
+  .metric-item {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     font-size: 0.7rem;
     font-weight: 500;
-    padding: 0.125rem 0.625rem;
-    border-radius: 9999px;
-    background: #f1f5f9;
-    color: #475569;
+    color: var(--color-gray-600);
   }
 
-  .stat-badge-green { background: #dcfce7; color: #166534; }
-  .stat-badge-yellow { background: #fef3c7; color: #92400e; }
-  .stat-badge-blue { background: #dbeafe; color: #1e40af; }
-  .stat-badge-purple { background: #ede9fe; color: #5b21b6; }
-  .stat-badge-orange { background: #ffedd5; color: #9a3412; }
-  .stat-badge-red { background: #fecaca; color: #991b1b; }
-
-  .stat-dot {
+  .metric-dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
     flex-shrink: 0;
   }
 
-  .stat-dot-green { background: #22c55e; }
-  .stat-dot-yellow { background: #eab308; }
-  .stat-dot-blue { background: #3b82f6; }
-  .stat-dot-purple { background: #8b5cf6; }
-  .stat-dot-orange { background: #f97316; }
-  .stat-dot-red { background: #ef4444; }
+  .metric-success .metric-dot { background: var(--color-success); }
+  .metric-warning .metric-dot { background: var(--color-warning); }
+  .metric-danger .metric-dot { background: var(--color-danger); }
+  .metric-info .metric-dot { background: var(--color-info); }
 
-  .stat-actions {
+  .stat-card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0.625rem 1.25rem;
-    border-top: 1px solid #f1f5f9;
-    background: #fafbfc;
+    border-top: 1px solid var(--color-gray-100);
+    background: var(--color-gray-50);
     gap: 0.5rem;
   }
 
-  .stat-action-link {
+  .stat-link {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #64748b;
+    color: var(--color-gray-500);
     text-decoration: none;
-    transition: color 0.2s;
+    transition: var(--transition);
   }
 
-  .stat-action-link:hover {
-    color: #0f172a;
+  .stat-link:hover {
+    color: var(--color-gray-900);
   }
 
-  .stat-action-btn {
+  .stat-action {
     font-size: 0.7rem;
     font-weight: 600;
     padding: 0.25rem 0.75rem;
@@ -1056,76 +1093,82 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     border: none;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: var(--transition);
     color: white;
   }
 
-  .stat-action-btn-blue { background: #2563eb; }
-  .stat-action-btn-blue:hover { background: #1d4ed8; }
-  .stat-action-btn-orange { background: #ea580c; }
-  .stat-action-btn-orange:hover { background: #c2410c; }
-  .stat-action-btn-green { background: #16a34a; }
-  .stat-action-btn-green:hover { background: #15803d; }
-  .stat-action-btn-indigo { background: #4f46e5; }
-  .stat-action-btn-indigo:hover { background: #4338ca; }
-  .stat-action-btn-cyan { background: #0891b2; }
-  .stat-action-btn-cyan:hover { background: #0e7490; }
-  .stat-action-btn-pink { background: #db2777; }
-  .stat-action-btn-pink:hover { background: #be185d; }
-  .stat-action-btn-rose { background: #e11d48; }
-  .stat-action-btn-rose:hover { background: #be123c; }
+  .stat-action-blue { background: #2563eb; }
+  .stat-action-blue:hover { background: #1d4ed8; }
+  .stat-action-orange { background: #ea580c; }
+  .stat-action-orange:hover { background: #c2410c; }
+  .stat-action-green { background: #16a34a; }
+  .stat-action-green:hover { background: #15803d; }
+  .stat-action-indigo { background: #4f46e5; }
+  .stat-action-indigo:hover { background: #4338ca; }
+  .stat-action-cyan { background: #0891b2; }
+  .stat-action-cyan:hover { background: #0e7490; }
+  .stat-action-pink { background: #db2777; }
+  .stat-action-pink:hover { background: #be185d; }
+  .stat-action-rose { background: #e11d48; }
+  .stat-action-rose:hover { background: #be123c; }
 
-  .stat-action-btn:hover {
+  .stat-action:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
 
   /* ============================================
-     RECENT CONTENT GRID
+     CONTENT SECTIONS GRID
      ============================================ */
-  .recent-content-grid {
+  .content-sections-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
   }
 
-  /* ============================================
-     RECENT POSTS
-     ============================================ */
-  .recent-posts-section {
+  .content-section {
     background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
     flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .section-title {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-gray-900);
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-icon {
+    font-size: 1.1rem;
   }
 
   .section-subtitle {
-    font-size: 0.8rem;
-    color: #94a3b8;
+    font-size: 0.75rem;
+    color: var(--color-gray-400);
     margin: 0.125rem 0 0;
   }
 
   .section-actions {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .search-wrapper {
@@ -1137,201 +1180,253 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     left: 0.625rem;
     top: 50%;
     transform: translateY(-50%);
-    color: #94a3b8;
+    color: var(--color-gray-400);
   }
 
   .search-input {
     padding: 0.375rem 0.75rem 0.375rem 2rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
     font-size: 0.8rem;
     outline: none;
-    transition: all 0.2s;
-    width: 160px;
-    background: #fafbfc;
+    transition: var(--transition);
+    width: 140px;
+    background: var(--color-gray-50);
+    color: var(--color-gray-800);
   }
 
   .search-input:focus {
-    border-color: #3b82f6;
+    border-color: var(--color-primary);
     background: white;
     box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-    width: 200px;
+    width: 180px;
   }
 
-  .btn-new-post {
+  .section-action-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
     padding: 0.375rem 1rem;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: white;
-    border: none;
-    border-radius: 8px;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    background: white;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.2s;
+    transition: var(--transition);
     white-space: nowrap;
   }
 
-  .btn-new-post:hover {
+  .section-action-btn:hover {
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-300);
+  }
+
+  .section-action-btn.primary {
+    background: linear-gradient(135deg, var(--color-primary), #8b5cf6);
+    color: white;
+    border: none;
+  }
+
+  .section-action-btn.primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 15px rgba(59,130,246,0.3);
   }
 
-  .table-container {
-    overflow-x: auto;
-  }
-
-  .table-scroll {
-    overflow-x: auto;
-  }
-
-  .posts-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.875rem;
-  }
-
-  .posts-table thead {
-    background: #f8fafc;
-  }
-
-  .posts-table th {
-    padding: 0.625rem 1.25rem;
-    text-align: left;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #94a3b8;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .posts-table td {
-    padding: 0.625rem 1.25rem;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
-  }
-
-  .posts-table tbody tr {
-    transition: background 0.15s;
-  }
-
-  .posts-table tbody tr:hover {
-    background: #f8fafc;
-  }
-
-  .status-col {
-    width: 110px;
-  }
-
-  .type-col {
-    width: 130px;
-  }
-
-  .date-col {
-    width: 120px;
-  }
-
-  .actions-col {
-    width: 150px;
-    text-align: right;
-  }
-
-  .post-title-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .post-title {
-    font-weight: 500;
-    color: #0f172a;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
+  .section-body {
+    flex: 1;
     overflow: hidden;
   }
 
-  .status-badge {
+  /* ============================================
+     CONTENT LIST
+     ============================================ */
+  .content-list,
+  .post-list {
+    padding: 0.25rem 0;
+  }
+
+  .content-item,
+  .post-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    transition: var(--transition);
+    gap: 0.75rem;
+  }
+
+  .content-item:hover,
+  .post-item:hover {
+    background: var(--color-gray-50);
+  }
+
+  .content-item:last-child,
+  .post-item:last-child {
+    border-bottom: none;
+  }
+
+  .content-item-main,
+  .post-item-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    gap: 1rem;
+  }
+
+  .content-item-info,
+  .post-item-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .content-item-title,
+  .post-item-title {
+    font-weight: 500;
+    color: var(--color-gray-900);
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+
+  .content-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .content-type,
+  .content-status,
+  .post-status {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
     padding: 0.125rem 0.625rem;
     border-radius: 9999px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 500;
+    white-space: nowrap;
   }
 
-  .status-published {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  .status-draft {
-    background: #fef3c7;
-    color: #92400e;
-  }
-
-  .status-dot {
-    width: 5px;
-    height: 5px;
+  .status-indicator-dot {
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
     flex-shrink: 0;
   }
 
-  .status-published .status-dot { background: #22c55e; }
-  .status-draft .status-dot { background: #eab308; }
-
-  .type-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
+  .post-status {
+    font-size: 0.65rem;
+    font-weight: 500;
     padding: 0.125rem 0.625rem;
     border-radius: 9999px;
-    font-size: 0.7rem;
-    font-weight: 500;
   }
 
-  .action-buttons {
+  .post-status-published {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .post-status-published .status-indicator-dot {
+    background: var(--color-success);
+  }
+
+  .post-status-draft {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .post-status-draft .status-indicator-dot {
+    background: var(--color-warning);
+  }
+
+  .content-item-date,
+  .post-item-date {
+    font-size: 0.75rem;
+    color: var(--color-gray-400);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .content-item-actions,
+  .post-item-actions {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 0.375rem;
+    gap: 0.25rem;
+    flex-shrink: 0;
   }
 
-  .action-btn {
+  .content-action,
+  .post-action {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.25rem 0.625rem;
+    padding: 0.25rem 0.5rem;
     border: none;
     border-radius: 6px;
     font-size: 0.7rem;
     font-weight: 500;
     cursor: pointer;
     text-decoration: none;
-    transition: all 0.15s;
+    transition: var(--transition);
   }
 
-  .action-btn-edit {
+  .content-action-edit,
+  .post-action-edit {
     background: #e0e7ff;
     color: #3730a3;
   }
 
-  .action-btn-edit:hover {
+  .content-action-edit:hover,
+  .post-action-edit:hover {
     background: #c7d2fe;
   }
 
-  .action-btn-delete {
+  .content-action-delete,
+  .post-action-delete {
     background: #fee2e2;
     color: #991b1b;
   }
 
-  .action-btn-delete:hover {
+  .content-action-delete:hover,
+  .post-action-delete:hover {
     background: #fecaca;
+  }
+
+  .content-action.loading,
+  .post-action.loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .section-footer {
+    text-align: center;
+    padding: 0.625rem 1.25rem;
+    border-top: 1px solid var(--color-gray-100);
+    background: var(--color-gray-50);
+  }
+
+  .view-all-link {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+
+  .view-all-link:hover {
+    color: var(--color-primary-dark);
   }
 
   /* ============================================
@@ -1339,56 +1434,30 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
      ============================================ */
   .empty-state {
     text-align: center;
-    padding: 3rem 2rem;
+    padding: 3rem 1.5rem;
   }
 
-  .empty-icon {
-    font-size: 3rem;
+  .empty-state-icon {
+    font-size: 2.5rem;
     margin-bottom: 0.5rem;
     display: block;
   }
 
-  .empty-state p {
-    color: #94a3b8;
+  .empty-state-text {
+    color: var(--color-gray-400);
     font-size: 0.875rem;
     margin: 0 0 0.75rem;
   }
 
-  .empty-action {
-    color: #3b82f6;
+  .empty-state-action {
+    color: var(--color-primary);
     font-weight: 500;
     text-decoration: none;
     font-size: 0.875rem;
   }
 
-  .empty-action:hover {
+  .empty-state-action:hover {
     text-decoration: underline;
-  }
-
-  /* ============================================
-     VIEW ALL
-     ============================================ */
-  .view-all-container {
-    text-align: center;
-    padding: 0.75rem 1.5rem;
-    border-top: 1px solid #f1f5f9;
-    background: #fafbfc;
-  }
-
-  .view-all-link {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: #3b82f6;
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .view-all-link:hover {
-    color: #1d4ed8;
-  }
-
-  .opacity-50 {
-    opacity: 0.5;
   }
 
   /* ============================================
@@ -1401,8 +1470,9 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
   }
 
   @media (max-width: 1024px) {
-    .stats-grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    .content-sections-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
     }
   }
 
@@ -1413,20 +1483,26 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
 
     .dashboard-hero-content {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
     }
 
     .dashboard-title {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
+    }
+
+    .dashboard-meta {
+      flex-wrap: wrap;
     }
 
     .stats-grid {
       grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
     }
 
     .section-header {
       flex-direction: column;
       align-items: stretch;
+      padding: 0.75rem 1rem;
     }
 
     .section-actions {
@@ -1441,34 +1517,43 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       width: 100%;
     }
 
-    .posts-table {
-      font-size: 0.75rem;
-    }
-
-    .posts-table th,
-    .posts-table td {
-      padding: 0.5rem 0.75rem;
-    }
-
-    .status-col {
-      width: 80px;
-    }
-
-    .type-col {
-      width: 100px;
-    }
-
-    .date-col {
-      width: 90px;
-    }
-
-    .actions-col {
-      width: 120px;
-    }
-
-    .action-buttons {
+    .content-item,
+    .post-item {
       flex-direction: column;
-      gap: 0.25rem;
+      align-items: stretch;
+      padding: 0.5rem 1rem;
+      gap: 0.5rem;
+    }
+
+    .content-item-main,
+    .post-item-main {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .content-item-info,
+    .post-item-info {
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .content-item-title,
+    .post-item-title {
+      max-width: 100%;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .content-item-actions,
+    .post-item-actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+
+    .stat-card-footer {
+      flex-wrap: wrap;
+      gap: 0.5rem;
     }
   }
 
@@ -1477,15 +1562,16 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       grid-template-columns: 1fr;
     }
 
-    .stat-card-inner {
-      padding: 1rem;
-    }
-
     .stat-value {
-      font-size: 1.5rem;
+      font-size: 1.75rem;
     }
 
-    .dashboard-time {
+    .stat-card-body {
+      padding: 0 1rem 0.5rem;
+    }
+
+    .dashboard-time,
+    .dashboard-status {
       font-size: 0.65rem;
       padding: 0.25rem 0.625rem;
     }
