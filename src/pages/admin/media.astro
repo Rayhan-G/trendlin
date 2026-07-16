@@ -1,6 +1,6 @@
 ---
 // ============================================
-// MEDIA LIBRARY - Trendlin Admin (Full Featured)
+// MEDIA LIBRARY - Trendlin Admin (Enterprise Edition)
 // ============================================
 
 import AdminLayout from '../../layouts/AdminLayout.astro';
@@ -28,176 +28,258 @@ try {
 
 <AdminLayout title="Media Library - Trendlin">
   
-  <!-- Header -->
-  <div class="mb-6">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <!-- ============================================ -->
+  <!-- HEADER -->
+  <!-- ============================================ -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      </div>
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-          🖼️ Media Library
-        </h1>
-        <p class="text-sm text-gray-500 mt-1">
-          <span id="currentLocationDisplay">📁 Root</span>
-          <span class="mx-2">•</span>
-          <span id="mediaCount">{totalMedia} files</span>
-          <span class="mx-2">•</span>
-          <span id="folderCount">{totalFolders} folders</span>
+        <h1 class="page-title">Media Library</h1>
+        <p class="page-subtitle">
+          <span class="media-count">{totalMedia}</span> files •
+          <span class="folder-count">{totalFolders}</span> folders
         </p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <button 
-          id="createFolderBtn" 
-          class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-green-500/25 hover:shadow-green-500/40 hover:scale-105"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+    </div>
+    <div class="header-actions">
+      <button id="createFolderBtn" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          <line x1="12" y1="11" x2="12" y2="17" />
+          <line x1="9" y1="14" x2="15" y2="14" />
+        </svg>
+        New Folder
+      </button>
+      <button id="uploadBtn" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        Upload Files
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- BREADCRUMB -->
+  <!-- ============================================ -->
+  <div class="breadcrumb-container">
+    <div class="breadcrumb-content">
+      <button id="rootBtn" class="breadcrumb-item">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+        <span>Root</span>
+      </button>
+      <span id="folderPath" class="breadcrumb-path"></span>
+      <div class="breadcrumb-actions">
+        <button id="refreshBtn" class="breadcrumb-refresh" title="Refresh">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
           </svg>
-          New Folder
-        </button>
-        <button 
-          id="uploadBtn" 
-          class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-          </svg>
-          Upload Files
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Breadcrumb Navigation -->
-  <div class="flex items-center gap-2 mb-6 text-sm bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
-    <button id="rootBtn" class="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-blue-50 transition-all">
-      <span>📁</span> Root
-    </button>
-    <span id="folderPath" class="text-gray-400"></span>
-    <div class="flex-1"></div>
-    <button id="refreshBtn" class="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100" title="Refresh">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- Upload Progress -->
-  <div id="uploadProgress" class="hidden mb-6 p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-    <div class="flex items-center gap-4">
-      <div class="flex-1">
-        <div class="flex justify-between text-sm text-gray-600 mb-1.5">
-          <span id="uploadFileName">Uploading...</span>
-          <span id="uploadPercent">0%</span>
-        </div>
-        <div class="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
-          <div id="progressBar" class="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 rounded-full" style="width: 0%"></div>
-        </div>
-        <div class="flex justify-between text-xs text-gray-400 mt-1">
-          <span id="uploadSpeed">0 KB/s</span>
-          <span id="uploadRemaining">--</span>
-        </div>
+  <!-- ============================================ -->
+  <!-- UPLOAD PROGRESS -->
+  <!-- ============================================ -->
+  <div id="uploadProgress" class="upload-progress" style="display:none;">
+    <div class="upload-progress-content">
+      <div class="upload-progress-info">
+        <span id="uploadFileName" class="upload-progress-name">Uploading...</span>
+        <span id="uploadPercent" class="upload-progress-percent">0%</span>
       </div>
-      <button id="cancelUploadBtn" class="text-red-500 hover:text-red-700 text-sm font-medium">Cancel</button>
+      <div class="upload-progress-bar">
+        <div id="progressBar" class="upload-progress-fill" style="width:0%"></div>
+      </div>
+      <div class="upload-progress-meta">
+        <span id="uploadSpeed">0 KB/s</span>
+        <span id="uploadRemaining">--</span>
+      </div>
+      <button id="cancelUploadBtn" class="upload-progress-cancel">Cancel</button>
     </div>
   </div>
 
-  <!-- View Toggle -->
-  <div class="flex items-center justify-between mb-4">
-    <div class="flex items-center gap-2">
-      <button id="gridViewBtn" class="px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 rounded-lg transition-all">Grid</button>
-      <button id="listViewBtn" class="px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg transition-all">List</button>
+  <!-- ============================================ -->
+  <!-- VIEW TOOLS -->
+  <!-- ============================================ -->
+  <div class="view-tools">
+    <div class="view-tools-left">
+      <button id="gridViewBtn" class="view-btn view-btn-active" title="Grid view">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+        Grid
+      </button>
+      <button id="listViewBtn" class="view-btn" title="List view">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+        List
+      </button>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-400">
-      <span id="selectedCount">0 selected</span>
-      <button id="selectAllBtn" class="text-blue-600 hover:text-blue-800 font-medium">Select All</button>
-      <button id="deleteSelectedBtn" class="text-red-500 hover:text-red-700 font-medium hidden">Delete Selected</button>
+    <div class="view-tools-right">
+      <span id="selectedCount" class="selection-count">0 selected</span>
+      <button id="selectAllBtn" class="selection-action">Select All</button>
+      <button id="deleteSelectedBtn" class="selection-action selection-action-danger" style="display:none;">Delete Selected</button>
     </div>
   </div>
 
-  <!-- Media Grid -->
-  <div id="mediaGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-    <!-- Will be populated by JavaScript -->
+  <!-- ============================================ -->
+  <!-- MEDIA GRID -->
+  <!-- ============================================ -->
+  <div id="mediaGrid" class="media-grid">
+    <!-- Populated by JavaScript -->
   </div>
 
-  <!-- Media List (Table View) -->
-  <div id="mediaList" class="hidden bg-white rounded-2xl overflow-hidden border border-gray-100">
-    <div class="overflow-x-auto">
-      <table class="w-full" id="mediaTable">
+  <!-- ============================================ -->
+  <!-- MEDIA LIST -->
+  <!-- ============================================ -->
+  <div id="mediaList" class="media-list" style="display:none;">
+    <div class="table-wrapper">
+      <table class="media-table" id="mediaTable">
         <thead>
-          <tr class="bg-gray-50">
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-10">
-              <input type="checkbox" id="selectAllCheckbox" class="rounded border-gray-300 text-blue-600" />
+          <tr>
+            <th class="col-select">
+              <input type="checkbox" id="selectAllCheckbox" class="checkbox" />
             </th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">File</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Name</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Size</th>
-            <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden xl:table-cell">Uploaded</th>
-            <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+            <th class="col-file">File</th>
+            <th class="col-name">Name</th>
+            <th class="col-size">Size</th>
+            <th class="col-date">Uploaded</th>
+            <th class="col-actions">Actions</th>
           </tr>
         </thead>
-        <tbody id="mediaListBody" class="divide-y divide-gray-100">
+        <tbody id="mediaListBody">
           <!-- Populated by JavaScript -->
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- Empty State -->
-  <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-gray-100">
-    <div class="text-6xl mb-4">📂</div>
-    <h3 class="text-xl font-semibold text-gray-700 mb-2">This folder is empty</h3>
-    <p class="text-gray-500">Upload images or create subfolders to organize your files</p>
-    <div class="mt-4 flex items-center justify-center gap-3">
-      <button onclick="document.getElementById('uploadBtn').click()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">Upload Files</button>
-      <button onclick="document.getElementById('createFolderBtn').click()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">Create Folder</button>
+  <!-- ============================================ -->
+  <!-- EMPTY STATE -->
+  <!-- ============================================ -->
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="empty-icon-wrapper">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+    </div>
+    <h3>This folder is empty</h3>
+    <p>Upload images or create subfolders to organize your files</p>
+    <div class="empty-actions">
+      <button onclick="document.getElementById('uploadBtn').click()" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="17 8 12 3 7 8" />
+          <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+        Upload Files
+      </button>
+      <button onclick="document.getElementById('createFolderBtn').click()" class="btn btn-secondary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          <line x1="12" y1="11" x2="12" y2="17" />
+          <line x1="9" y1="14" x2="15" y2="14" />
+        </svg>
+        Create Folder
+      </button>
     </div>
   </div>
 
-  <!-- Loading State -->
-  <div id="loadingState" class="text-center py-16">
-    <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-    <p class="text-gray-500 mt-3">Loading media...</p>
+  <!-- ============================================ -->
+  <!-- LOADING STATE -->
+  <!-- ============================================ -->
+  <div id="loadingState" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading media...</p>
   </div>
 
   <!-- ============================================ -->
   <!-- PREVIEW MODAL -->
   <!-- ============================================ -->
-  <div id="previewModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 hidden p-4">
-    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-      <div class="flex items-center justify-between p-4 border-b border-gray-200">
-        <div class="flex items-center gap-3">
-          <span id="previewFileType" class="text-sm font-medium text-gray-500">Image</span>
-          <span id="previewFileName" class="text-sm font-semibold text-gray-900"></span>
+  <div id="previewModal" class="modal-overlay" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <span id="previewFileType" class="modal-file-type">Image</span>
+          <span id="previewFileName" class="modal-file-name"></span>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="previewCopyLink" class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">Copy Link</button>
-          <button id="previewCopyMarkdown" class="px-3 py-1.5 text-sm text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">Copy MD</button>
-          <button id="previewCopyHTML" class="px-3 py-1.5 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors">Copy HTML</button>
-          <button onclick="closePreviewModal()" class="text-gray-500 hover:text-gray-700 text-2xl ml-2">&times;</button>
+        <div class="modal-header-actions">
+          <button id="previewCopyLink" class="btn-action btn-action-sm" title="Copy link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+            Link
+          </button>
+          <button id="previewCopyMarkdown" class="btn-action btn-action-sm" title="Copy Markdown">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            MD
+          </button>
+          <button id="previewCopyHTML" class="btn-action btn-action-sm" title="Copy HTML">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg>
+            HTML
+          </button>
+          <button onclick="closePreviewModal()" class="modal-close" title="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
       </div>
-      <div class="flex-1 overflow-auto p-4 flex items-center justify-center bg-gray-50">
-        <div id="previewContent" class="max-w-full max-h-full">
-          <!-- Populated by JavaScript -->
-        </div>
+      <div id="previewContent" class="modal-body modal-body-center">
+        <!-- Populated by JavaScript -->
       </div>
-      <div class="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-        <div class="text-sm text-gray-500">
+      <div class="modal-footer">
+        <div class="modal-footer-info">
           <span id="previewFileSize"></span>
-          <span class="mx-2">•</span>
+          <span class="modal-footer-divider">•</span>
           <span id="previewFileDate"></span>
         </div>
-        <button id="previewDeleteBtn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors">Delete File</button>
+        <button id="previewDeleteBtn" class="btn btn-danger">Delete File</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 translate-y-20 opacity-0 hidden"></div>
+  <!-- ============================================ -->
+  <!-- TOAST -->
+  <!-- ============================================ -->
+  <div id="toast" class="toast"></div>
 
 </AdminLayout>
 
 <!-- ============================================ -->
-<!-- JAVASCRIPT - Full Media Library -->
+<!-- JAVASCRIPT -->
 <!-- ============================================ -->
 <script>
   // ============================================
@@ -230,43 +312,36 @@ try {
   // SETUP EVENT LISTENERS
   // ============================================
   function setupEventListeners() {
-    // Upload button
     document.getElementById('uploadBtn').addEventListener('click', triggerUpload);
-    
-    // Create folder button
     document.getElementById('createFolderBtn').addEventListener('click', createFolder);
     
-    // Root button
     document.getElementById('rootBtn').addEventListener('click', function() {
       navigateToFolder('');
     });
     
-    // Refresh button
     document.getElementById('refreshBtn').addEventListener('click', loadMedia);
     
-    // View toggle
     document.getElementById('gridViewBtn').addEventListener('click', function() {
       viewMode = 'grid';
-      document.getElementById('gridViewBtn').className = 'px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 rounded-lg transition-all';
-      document.getElementById('listViewBtn').className = 'px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg transition-all';
-      document.getElementById('mediaGrid').classList.remove('hidden');
-      document.getElementById('mediaList').classList.add('hidden');
+      document.getElementById('gridViewBtn').className = 'view-btn view-btn-active';
+      document.getElementById('listViewBtn').className = 'view-btn';
+      document.getElementById('mediaGrid').style.display = 'grid';
+      document.getElementById('mediaList').style.display = 'none';
       renderCurrentFolder();
     });
     
     document.getElementById('listViewBtn').addEventListener('click', function() {
       viewMode = 'list';
-      document.getElementById('listViewBtn').className = 'px-3 py-1.5 text-sm font-medium bg-blue-50 text-blue-600 rounded-lg transition-all';
-      document.getElementById('gridViewBtn').className = 'px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-50 rounded-lg transition-all';
-      document.getElementById('mediaGrid').classList.add('hidden');
-      document.getElementById('mediaList').classList.remove('hidden');
+      document.getElementById('listViewBtn').className = 'view-btn view-btn-active';
+      document.getElementById('gridViewBtn').className = 'view-btn';
+      document.getElementById('mediaGrid').style.display = 'none';
+      document.getElementById('mediaList').style.display = 'block';
       renderCurrentFolder();
     });
     
-    // Select all
     document.getElementById('selectAllBtn').addEventListener('click', function() {
       const items = getCurrentItems();
-      if (selectedItems.size === items.length) {
+      if (selectedItems.size === items.filter(i => !i.isFolder).length) {
         selectedItems.clear();
       } else {
         items.forEach(item => {
@@ -294,7 +369,6 @@ try {
       updateSelectionUI();
     });
     
-    // Delete selected
     document.getElementById('deleteSelectedBtn').addEventListener('click', function() {
       if (selectedItems.size === 0) return;
       if (confirm(`Delete ${selectedItems.size} selected files?`)) {
@@ -302,12 +376,10 @@ try {
       }
     });
     
-    // Preview modal close
     document.getElementById('previewModal').addEventListener('click', function(e) {
       if (e.target === this) closePreviewModal();
     });
     
-    // Keyboard shortcuts
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         closePreviewModal();
@@ -362,10 +434,10 @@ try {
   // ============================================
   async function loadMedia() {
     try {
-      document.getElementById('loadingState').classList.remove('hidden');
-      document.getElementById('mediaGrid').classList.add('hidden');
-      document.getElementById('mediaList').classList.add('hidden');
-      document.getElementById('emptyState').classList.add('hidden');
+      document.getElementById('loadingState').style.display = 'block';
+      document.getElementById('mediaGrid').style.display = 'none';
+      document.getElementById('mediaList').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'none';
       
       const response = await fetch('/api/admin/media');
       const result = await response.json();
@@ -374,8 +446,8 @@ try {
         allMedia = result.media || [];
         allFolders = result.folders || [];
         
-        document.getElementById('mediaCount').textContent = `${allMedia.length} files`;
-        document.getElementById('folderCount').textContent = `${allFolders.length} folders`;
+        document.querySelector('.media-count').textContent = allMedia.length;
+        document.querySelector('.folder-count').textContent = allFolders.length;
         
         renderCurrentFolder();
       } else {
@@ -385,7 +457,7 @@ try {
       console.error('Error loading media:', error);
       showToast('Failed to load media', 'error');
     } finally {
-      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('loadingState').style.display = 'none';
     }
   }
 
@@ -446,26 +518,32 @@ try {
     
     const items = getCurrentItems();
     
-    document.getElementById('currentLocationDisplay').textContent = 
-      currentFolder ? `📁 ${currentFolder}` : '📁 Root';
+    const locationDisplay = document.querySelector('.page-subtitle');
+    if (locationDisplay) {
+      const folderDisplay = currentFolder ? `📁 ${currentFolder}` : '📁 Root';
+      const count = items.length;
+      locationDisplay.innerHTML = 
+        `<span class="media-count">${count}</span> items in <span class="folder-count">${folderDisplay}</span>`;
+    }
+    
     updateBreadcrumb();
     
     if (items.length === 0) {
-      grid.classList.add('hidden');
-      list.parentElement?.classList.add('hidden');
-      empty.classList.remove('hidden');
+      grid.style.display = 'none';
+      document.getElementById('mediaList').style.display = 'none';
+      empty.style.display = 'block';
       return;
     }
     
-    empty.classList.add('hidden');
+    empty.style.display = 'none';
     
     if (viewMode === 'grid') {
-      grid.classList.remove('hidden');
-      list.parentElement?.classList.add('hidden');
+      grid.style.display = 'grid';
+      document.getElementById('mediaList').style.display = 'none';
       renderGridView(items);
     } else {
-      grid.classList.add('hidden');
-      list.parentElement?.classList.remove('hidden');
+      grid.style.display = 'none';
+      document.getElementById('mediaList').style.display = 'block';
       renderListView(items);
     }
     
@@ -484,69 +562,69 @@ try {
         const fileCount = allMedia.filter(m => m.folder === item.name).length;
         
         return `
-          <div class="group relative bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border-2 border-dashed border-blue-200 overflow-hidden shadow-sm hover:shadow-md hover:border-blue-400 transition-all cursor-pointer" onclick="navigateToFolder('${item.name}')">
-            <div class="aspect-square flex flex-col items-center justify-center p-4">
-              <div class="text-5xl mb-2">📁</div>
-              <p class="text-sm font-semibold text-gray-700 text-center truncate w-full">${folderName}</p>
-              <p class="text-xs text-gray-500">${fileCount} files</p>
+          <div class="media-grid-item media-folder" onclick="navigateToFolder('${item.name}')">
+            <div class="media-grid-item-content">
+              <div class="media-grid-item-icon media-grid-item-icon-folder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <span class="media-grid-item-name">${escapeHtml(folderName)}</span>
+              <span class="media-grid-item-meta">${fileCount} files</span>
             </div>
           </div>
         `;
       }
       
-      // File item
       const isImage = item.mime_type && item.mime_type.startsWith('image/');
       const isVideo = item.mime_type && item.mime_type.startsWith('video/');
       const isSelected = selectedItems.has(item.id);
       const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
       
       return `
-        <div class="group relative bg-white rounded-xl border-2 ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'} overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer" onclick="toggleSelect(${item.id})" ondblclick="openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-          <div class="aspect-square bg-gray-100 relative overflow-hidden">
+        <div class="media-grid-item ${isSelected ? 'media-grid-item-selected' : ''}" onclick="toggleSelect(${item.id})" ondblclick="window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+          <div class="media-grid-item-thumb">
             ${isImage ? `
               <img 
                 src="${item.url}" 
-                alt="${item.alt_text || displayName}" 
-                class="w-full h-full object-cover" 
+                alt="${escapeHtml(item.alt_text || displayName)}" 
+                class="media-grid-item-img"
                 loading="lazy"
                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22200%22%3E%3Crect fill=%22%23f3f4f6%22 width=%22200%22 height=%22200%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%239ca3af%22 font-size=%2216%22%3ENo Image%3C/text%3E%3C/svg%3E'"
               />
             ` : isVideo ? `
-              <video class="w-full h-full object-cover" muted>
+              <video class="media-grid-item-video" muted>
                 <source src="${item.url}" type="${item.mime_type}">
               </video>
-              <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span class="text-4xl">🎬</span>
+              <div class="media-grid-item-overlay-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
               </div>
             ` : `
-              <div class="w-full h-full flex items-center justify-center bg-gray-100">
-                <span class="text-6xl">📄</span>
+              <div class="media-grid-item-file-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
               </div>
             `}
-            
-            <!-- Selection checkbox -->
-            <div class="absolute top-2 left-2">
-              <input type="checkbox" ${isSelected ? 'checked' : ''} class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" onclick="event.stopPropagation(); toggleSelect(${item.id})" />
+            <div class="media-grid-item-checkbox">
+              <input type="checkbox" ${isSelected ? 'checked' : ''} class="checkbox" onclick="event.stopPropagation(); toggleSelect(${item.id})" />
             </div>
-            
-            <!-- Quick actions overlay -->
-            <div class="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2">
-              <button onclick="event.stopPropagation(); window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">👁️ Preview</button>
-              <button onclick="event.stopPropagation(); window.copyLink('${item.url}')" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">📋 Copy Link</button>
-              <button onclick="event.stopPropagation(); window.copyMarkdown('${item.url}', '${item.alt_text || displayName}')" class="w-full px-2 py-1.5 bg-white text-gray-800 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1">📝 Copy MD</button>
-              <button onclick="event.stopPropagation(); window.deleteMedia(${item.id}, '${item.filename}')" class="w-full px-2 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors flex items-center justify-center gap-1">🗑️ Delete</button>
+            <div class="media-grid-item-overlay">
+              <button onclick="event.stopPropagation(); window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="btn-action btn-action-sm">Preview</button>
+              <button onclick="event.stopPropagation(); window.copyLink('${item.url}')" class="btn-action btn-action-sm">Copy Link</button>
+              <button onclick="event.stopPropagation(); window.deleteMedia(${item.id}, '${item.filename}')" class="btn-action btn-action-sm btn-action-danger">Delete</button>
             </div>
           </div>
-          <div class="p-2">
-            <p class="text-xs font-medium text-gray-700 truncate">${displayName}</p>
-            <p class="text-xs text-gray-400">${formatFileSize(item.file_size)}</p>
+          <div class="media-grid-item-info">
+            <span class="media-grid-item-name">${escapeHtml(displayName)}</span>
+            <span class="media-grid-item-meta">${formatFileSize(item.file_size)}</span>
           </div>
         </div>
       `;
     }).join('');
-    
-    // Update selected count
-    document.getElementById('selectedCount').textContent = `${selectedItems.size} selected`;
   }
 
   // ============================================
@@ -561,18 +639,22 @@ try {
         const fileCount = allMedia.filter(m => m.folder === item.name).length;
         
         return `
-          <tr class="hover:bg-gray-50 cursor-pointer" onclick="navigateToFolder('${item.name}')">
-            <td class="px-4 py-3"></td>
-            <td class="px-4 py-3">
-              <div class="flex items-center gap-3">
-                <span class="text-2xl">📁</span>
-                <span class="font-medium text-gray-900">${folderName}</span>
+          <tr class="media-list-row media-list-folder" onclick="navigateToFolder('${item.name}')">
+            <td class="col-select"></td>
+            <td class="col-file">
+              <div class="media-list-file">
+                <div class="media-list-icon media-list-icon-folder">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <span class="media-list-name">${escapeHtml(folderName)}</span>
               </div>
             </td>
-            <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">Folder</td>
-            <td class="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">${fileCount} files</td>
-            <td class="px-4 py-3 text-sm text-gray-500 hidden xl:table-cell">—</td>
-            <td class="px-4 py-3 text-right"></td>
+            <td class="col-name">Folder</td>
+            <td class="col-size">${fileCount} files</td>
+            <td class="col-date">—</td>
+            <td class="col-actions"></td>
           </tr>
         `;
       }
@@ -583,32 +665,54 @@ try {
       const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
       
       return `
-        <tr class="hover:bg-gray-50 ${isSelected ? 'bg-blue-50' : ''}" onclick="toggleSelect(${item.id})" ondblclick="window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})">
-          <td class="px-4 py-3">
-            <input type="checkbox" ${isSelected ? 'checked' : ''} class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" onclick="event.stopPropagation(); toggleSelect(${item.id})" />
+        <tr class="media-list-row ${isSelected ? 'media-list-row-selected' : ''}" onclick="toggleSelect(${item.id})" ondblclick="window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})">
+          <td class="col-select">
+            <input type="checkbox" ${isSelected ? 'checked' : ''} class="checkbox" onclick="event.stopPropagation(); toggleSelect(${item.id})" />
           </td>
-          <td class="px-4 py-3">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
-                ${isImage ? `
-                  <img src="${item.url}" alt="${displayName}" class="w-full h-full object-cover" />
-                ` : isVideo ? `
-                  <span class="text-2xl">🎬</span>
-                ` : `
-                  <span class="text-2xl">📄</span>
-                `}
-              </div>
-              <span class="font-medium text-gray-900 text-sm">${displayName}</span>
+          <td class="col-file">
+            <div class="media-list-file">
+              ${isImage ? `
+                <img src="${item.url}" alt="${escapeHtml(displayName)}" class="media-list-thumb" />
+              ` : isVideo ? `
+                <div class="media-list-icon media-list-icon-video">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                </div>
+              ` : `
+                <div class="media-list-icon media-list-icon-file">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                </div>
+              `}
+              <span class="media-list-name">${escapeHtml(displayName)}</span>
             </div>
           </td>
-          <td class="px-4 py-3 text-sm text-gray-500 hidden md:table-cell truncate max-w-xs">${item.alt_text || '—'}</td>
-          <td class="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">${formatFileSize(item.file_size)}</td>
-          <td class="px-4 py-3 text-sm text-gray-500 hidden xl:table-cell">${formatDate(item.created_at)}</td>
-          <td class="px-4 py-3 text-right">
-            <div class="flex items-center justify-end gap-1.5">
-              <button onclick="event.stopPropagation(); window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Preview">👁️</button>
-              <button onclick="event.stopPropagation(); window.copyLink('${item.url}')" class="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors" title="Copy Link">📋</button>
-              <button onclick="event.stopPropagation(); window.deleteMedia(${item.id}, '${item.filename}')" class="p-1 text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete">🗑️</button>
+          <td class="col-name">${escapeHtml(item.alt_text || '—')}</td>
+          <td class="col-size">${formatFileSize(item.file_size)}</td>
+          <td class="col-date">${formatDate(item.created_at)}</td>
+          <td class="col-actions">
+            <div class="media-list-actions">
+              <button onclick="event.stopPropagation(); window.openPreview(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="btn-action btn-action-sm" title="Preview">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+              <button onclick="event.stopPropagation(); window.copyLink('${item.url}')" class="btn-action btn-action-sm" title="Copy Link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+              </button>
+              <button onclick="event.stopPropagation(); window.deleteMedia(${item.id}, '${item.filename}')" class="btn-action btn-action-sm btn-action-danger" title="Delete">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </button>
             </div>
           </td>
         </tr>
@@ -623,14 +727,14 @@ try {
     const pathElement = document.getElementById('folderPath');
     if (currentFolder) {
       const parts = currentFolder.split('/');
-      let html = ' <span class="text-gray-400 mx-1">/</span> ';
+      let html = '';
       let path = '';
       parts.forEach((part, index) => {
         path += (index > 0 ? '/' : '') + part;
-        html += `<button onclick="navigateToFolder('${path}')" class="text-blue-600 hover:text-blue-800 font-medium hover:underline">${part}</button>`;
-        if (index < parts.length - 1) {
-          html += ' <span class="text-gray-400 mx-1">/</span> ';
-        }
+        html += `
+          <span class="breadcrumb-separator">/</span>
+          <button onclick="navigateToFolder('${path}')" class="breadcrumb-item breadcrumb-link">${escapeHtml(part)}</button>
+        `;
       });
       pathElement.innerHTML = html;
     } else {
@@ -656,13 +760,12 @@ try {
     document.getElementById('selectedCount').textContent = `${count} selected`;
     const deleteBtn = document.getElementById('deleteSelectedBtn');
     if (count > 0) {
-      deleteBtn.classList.remove('hidden');
-      deleteBtn.textContent = `🗑️ Delete ${count}`;
+      deleteBtn.style.display = 'inline-flex';
+      deleteBtn.textContent = `Delete ${count}`;
     } else {
-      deleteBtn.classList.add('hidden');
+      deleteBtn.style.display = 'none';
     }
     
-    // Update select all checkbox
     const items = getCurrentItems();
     const selectable = items.filter(i => !i.isFolder);
     const allChecked = selectable.length > 0 && selectable.every(i => selectedItems.has(i.id));
@@ -696,7 +799,7 @@ try {
     }
     
     selectedItems.clear();
-    showToast(`✅ Deleted ${deleted} files successfully`, 'success');
+    showToast(`Deleted ${deleted} files successfully`, 'success');
     loadMedia();
   }
 
@@ -720,25 +823,29 @@ try {
     fileDate.textContent = item.created_at ? formatDate(item.created_at) : '—';
     
     if (isImage) {
-      content.innerHTML = `<img src="${item.url}" alt="${item.alt_text || ''}" class="max-w-full max-h-[70vh] object-contain rounded-lg" />`;
+      content.innerHTML = `<img src="${item.url}" alt="${escapeHtml(item.alt_text || '')}" class="preview-image" />`;
     } else if (isVideo) {
       content.innerHTML = `
-        <video controls class="max-w-full max-h-[70vh] rounded-lg">
+        <video controls class="preview-video">
           <source src="${item.url}" type="${item.mime_type}">
           Your browser does not support the video tag.
         </video>
       `;
     } else {
       content.innerHTML = `
-        <div class="text-center py-12">
-          <span class="text-8xl mb-4 block">📄</span>
-          <p class="text-gray-500">Preview not available for this file type</p>
-          <a href="${item.url}" target="_blank" class="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded-lg">Download</a>
+        <div class="preview-file">
+          <div class="preview-file-icon">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
+          </div>
+          <p class="preview-file-message">Preview not available for this file type</p>
+          <a href="${item.url}" target="_blank" class="btn btn-primary">Download</a>
         </div>
       `;
     }
     
-    // Set up preview actions
     document.getElementById('previewCopyLink').onclick = function() {
       copyToClipboard(item.url, 'Link copied to clipboard!');
     };
@@ -755,26 +862,26 @@ try {
       }
     };
     
-    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   };
 
   window.closePreviewModal = function() {
-    document.getElementById('previewModal').classList.add('hidden');
+    document.getElementById('previewModal').style.display = 'none';
   };
 
   // ============================================
   // COPY FUNCTIONS
   // ============================================
   window.copyLink = function(url) {
-    copyToClipboard(url, '✅ Link copied to clipboard!');
+    copyToClipboard(url, 'Link copied to clipboard!');
   };
 
   window.copyMarkdown = function(url, alt) {
-    copyToClipboard(`![${alt || 'Image'}](${url})`, '✅ Markdown copied!');
+    copyToClipboard(`![${alt || 'Image'}](${url})`, 'Markdown copied!');
   };
 
   window.copyHTML = function(url, alt) {
-    copyToClipboard(`<img src="${url}" alt="${alt || 'Image'}" />`, '✅ HTML copied!');
+    copyToClipboard(`<img src="${url}" alt="${alt || 'Image'}" />`, 'HTML copied!');
   };
 
   async function copyToClipboard(text, successMessage) {
@@ -791,9 +898,9 @@ try {
         document.execCommand('copy');
         document.body.removeChild(textarea);
       }
-      showToast(successMessage || '✅ Copied to clipboard!');
+      showToast(successMessage || 'Copied to clipboard!', 'success');
     } catch (error) {
-      showToast('❌ Failed to copy', 'error');
+      showToast('Failed to copy', 'error');
     }
   }
 
@@ -813,7 +920,7 @@ try {
       const result = await response.json();
       
       if (result.success) {
-        showToast('🗑️ Deleted successfully', 'success');
+        showToast('Deleted successfully', 'success');
         loadMedia();
       } else {
         showToast('Failed to delete: ' + result.error, 'error');
@@ -853,7 +960,7 @@ try {
       const result = await response.json();
       
       if (result.success) {
-        showToast(`✅ Folder "${sanitized}" created!`, 'success');
+        showToast(`Folder "${sanitized}" created!`, 'success');
         loadMedia();
         setTimeout(() => {
           navigateToFolder(folderPath);
@@ -898,7 +1005,7 @@ try {
     const remainingSpan = document.getElementById('uploadRemaining');
     const cancelBtn = document.getElementById('cancelUploadBtn');
     
-    progressDiv.classList.remove('hidden');
+    progressDiv.style.display = 'block';
     let cancelled = false;
     
     cancelBtn.onclick = function() {
@@ -908,7 +1015,7 @@ try {
       }
       showToast('Upload cancelled', 'error');
       isUploading = false;
-      progressDiv.classList.add('hidden');
+      progressDiv.style.display = 'none';
     };
     
     const totalFiles = files.length;
@@ -945,7 +1052,6 @@ try {
           progressBar.style.width = `${progress}%`;
           percentSpan.textContent = `${Math.round(progress)}%`;
           
-          // Update speed
           const elapsed = (Date.now() - startTime) / 1000;
           const speed = file.size / elapsed / 1024;
           speedSpan.textContent = `${speed.toFixed(1)} KB/s`;
@@ -957,21 +1063,21 @@ try {
             remainingSpan.textContent = `${Math.round(remaining)}s remaining`;
           }
         } else {
-          showToast(`❌ Failed to upload ${file.name}: ${result.error}`, 'error');
+          showToast(`Failed to upload ${file.name}: ${result.error}`, 'error');
         }
       } catch (error) {
         if (error.name !== 'AbortError') {
           console.error('Upload error:', error);
-          showToast(`❌ Failed to upload ${file.name}`, 'error');
+          showToast(`Failed to upload ${file.name}`, 'error');
         }
       }
     }
     
     isUploading = false;
-    progressDiv.classList.add('hidden');
+    progressDiv.style.display = 'none';
     
     if (!cancelled) {
-      showToast(`✅ Uploaded ${completed} of ${totalFiles} files`, 'success');
+      showToast(`Uploaded ${completed} of ${totalFiles} files`, 'success');
       loadMedia();
     }
   }
@@ -998,23 +1104,25 @@ try {
     });
   }
 
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   // ============================================
   // TOAST NOTIFICATION
   // ============================================
   function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
-    toast.className = `fixed bottom-6 right-6 max-w-sm p-4 rounded-xl shadow-2xl z-50 transform transition-all duration-500 ${
-      type === 'success' ? 'bg-green-500 text-white' : 
-      type === 'error' ? 'bg-red-500 text-white' : 
-      'bg-blue-500 text-white'
-    }`;
-    toast.classList.remove('hidden', 'translate-y-20', 'opacity-0');
-    toast.classList.add('translate-y-0', 'opacity-100');
+    toast.className = `toast toast-${type}`;
+    toast.classList.add('toast-visible');
     
-    setTimeout(() => {
-      toast.classList.add('translate-y-20', 'opacity-0');
-      setTimeout(() => toast.classList.add('hidden'), 500);
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+      toast.classList.remove('toast-visible');
     }, 3000);
   }
 
@@ -1033,32 +1141,1122 @@ try {
   const style = document.createElement('style');
   style.textContent = `
     body.drag-over::before {
-      content: '📤 Drop files here';
+      content: '';
       position: fixed;
       inset: 0;
-      background: rgba(37, 99, 235, 0.1);
+      background: rgba(59, 130, 246, 0.05);
       backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      font-weight: 600;
-      color: #2563eb;
       z-index: 9999;
-      border: 4px dashed #2563eb;
+      border: 4px dashed #3b82f6;
       margin: 20px;
       border-radius: 20px;
+      pointer-events: none;
     }
     
-    .aspect-square {
-      aspect-ratio: 1 / 1;
+    body.drag-over::after {
+      content: 'Drop files here';
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10000;
+      font-size: 2rem;
+      font-weight: 600;
+      color: #3b82f6;
+      pointer-events: none;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
   `;
   document.head.appendChild(style);
 </script>
 
 <style>
-  .aspect-square {
+  /* ============================================
+     DESIGN SYSTEM
+     ============================================ */
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-success: #22c55e;
+    --color-danger: #ef4444;
+    --color-warning: #eab308;
+    
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ============================================
+     PAGE HEADER
+     ============================================ */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #dbeafe, #ede9fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-primary);
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin: 0.125rem 0 0;
+  }
+
+  .media-count,
+  .folder-count {
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.125rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    white-space: nowrap;
+    height: 40px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+  }
+
+  .btn-secondary {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-200);
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-gray-200);
+  }
+
+  .btn-danger {
+    background: var(--color-danger);
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+
+  .btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition);
+    background: white;
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-200);
+  }
+
+  .btn-action:hover {
+    background: var(--color-gray-50);
+  }
+
+  .btn-action-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.65rem;
+  }
+
+  .btn-action-danger {
+    color: var(--color-danger);
+    border-color: #fecaca;
+    background: #fef2f2;
+  }
+
+  .btn-action-danger:hover {
+    background: #fee2e2;
+  }
+
+  /* ============================================
+     BREADCRUMB
+     ============================================ */
+  .breadcrumb-container {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    padding: 0.625rem 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .breadcrumb-content {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    border: none;
+    background: none;
+    font-size: 0.813rem;
+    font-family: var(--font-family);
+    color: var(--color-gray-500);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+  }
+
+  .breadcrumb-item:hover {
+    background: var(--color-gray-50);
+    color: var(--color-gray-900);
+  }
+
+  .breadcrumb-item svg {
+    color: var(--color-gray-400);
+  }
+
+  .breadcrumb-link {
+    color: var(--color-primary);
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--color-primary-dark);
+    text-decoration: underline;
+  }
+
+  .breadcrumb-separator {
+    color: var(--color-gray-300);
+    font-size: 0.75rem;
+  }
+
+  .breadcrumb-path {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb-actions {
+    margin-left: auto;
+  }
+
+  .breadcrumb-refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem;
+    border: none;
+    background: none;
+    color: var(--color-gray-400);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+  }
+
+  .breadcrumb-refresh:hover {
+    color: var(--color-gray-700);
+    background: var(--color-gray-50);
+  }
+
+  /* ============================================
+     UPLOAD PROGRESS
+     ============================================ */
+  .upload-progress {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .upload-progress-content {
+    position: relative;
+  }
+
+  .upload-progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.375rem;
+  }
+
+  .upload-progress-name {
+    font-size: 0.813rem;
+    font-weight: 500;
+    color: var(--color-gray-900);
+  }
+
+  .upload-progress-percent {
+    font-size: 0.813rem;
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+
+  .upload-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--color-gray-200);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .upload-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .upload-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.375rem;
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+  }
+
+  .upload-progress-cancel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.25rem 0.75rem;
+    border: none;
+    background: none;
+    color: var(--color-danger);
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .upload-progress-cancel:hover {
+    color: #dc2626;
+  }
+
+  /* ============================================
+     VIEW TOOLS
+     ============================================ */
+  .view-tools {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .view-tools-left {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .view-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    background: white;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    color: var(--color-gray-500);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .view-btn:hover {
+    background: var(--color-gray-50);
+  }
+
+  .view-btn-active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+  }
+
+  .view-btn-active:hover {
+    background: var(--color-primary-dark);
+  }
+
+  .view-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .view-tools-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.813rem;
+    color: var(--color-gray-500);
+  }
+
+  .selection-count {
+    font-weight: 500;
+  }
+
+  .selection-action {
+    padding: 0.25rem 0.625rem;
+    border: none;
+    background: none;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    color: var(--color-primary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+  }
+
+  .selection-action:hover {
+    background: #dbeafe;
+  }
+
+  .selection-action-danger {
+    color: var(--color-danger);
+  }
+
+  .selection-action-danger:hover {
+    background: #fee2e2;
+  }
+
+  /* ============================================
+     MEDIA GRID
+     ============================================ */
+  .media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+
+  .media-grid-item {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .media-grid-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .media-grid-item-selected {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px var(--color-primary);
+  }
+
+  .media-grid-item-thumb {
+    position: relative;
     aspect-ratio: 1 / 1;
+    background: var(--color-gray-50);
+    overflow: hidden;
+  }
+
+  .media-grid-item-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .media-grid-item-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .media-grid-item-file-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--color-gray-400);
+  }
+
+  .media-grid-item-overlay-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 50%;
+    padding: 0.5rem;
+  }
+
+  .media-grid-item-checkbox {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+  }
+
+  .media-grid-item-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .media-grid-item:hover .media-grid-item-overlay {
+    opacity: 1;
+  }
+
+  .media-grid-item-overlay .btn-action {
+    background: white;
+    color: var(--color-gray-800);
+    min-width: 80px;
+    justify-content: center;
+  }
+
+  .media-grid-item-overlay .btn-action:hover {
+    background: var(--color-gray-100);
+  }
+
+  .media-grid-item-overlay .btn-action-danger {
+    color: var(--color-danger);
+  }
+
+  .media-grid-item-info {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .media-grid-item-name {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .media-grid-item-meta {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--color-gray-400);
+    margin-top: 0.125rem;
+  }
+
+  .media-grid-item-icon-folder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    color: var(--color-primary);
+  }
+
+  .media-folder .media-grid-item-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    min-height: 160px;
+  }
+
+  /* ============================================
+     MEDIA LIST
+     ============================================ */
+  .media-list {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .media-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-family);
+    font-size: 0.875rem;
+  }
+
+  .media-table thead {
+    background: var(--color-gray-50);
+  }
+
+  .media-table th {
+    padding: 0.625rem 1rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-gray-200);
+    white-space: nowrap;
+  }
+
+  .media-table td {
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    vertical-align: middle;
+  }
+
+  .media-table tr:hover td {
+    background: var(--color-gray-50);
+  }
+
+  .col-select { width: 40px; }
+  .col-file { min-width: 200px; }
+  .col-name { min-width: 150px; }
+  .col-size { width: 100px; }
+  .col-date { width: 160px; }
+  .col-actions { width: 120px; text-align: right; }
+
+  .media-list-row-selected {
+    background: #eff6ff;
+  }
+
+  .media-list-file {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .media-list-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .media-list-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+
+  .media-list-icon-folder {
+    background: #dbeafe;
+    color: #2563eb;
+  }
+
+  .media-list-icon-video {
+    background: #fce7f3;
+    color: #db2777;
+  }
+
+  .media-list-icon-file {
+    background: var(--color-gray-100);
+    color: var(--color-gray-500);
+  }
+
+  .media-list-name {
+    font-weight: 500;
+    color: var(--color-gray-900);
+  }
+
+  .media-list-actions {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+
+  .media-list-folder {
+    cursor: pointer;
+  }
+
+  .media-list-folder:hover td {
+    background: #eff6ff;
+  }
+
+  /* ============================================
+     CHECKBOX
+     ============================================ */
+  .checkbox {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-gray-300);
+    border-radius: 4px;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+
+  /* ============================================
+     EMPTY STATE
+     ============================================ */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: var(--radius-md);
+    border: 2px dashed var(--color-gray-200);
+  }
+
+  .empty-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+  }
+
+  .empty-icon-wrapper svg {
+    color: var(--color-gray-300);
+  }
+
+  .empty-state h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 0.25rem;
+  }
+
+  .empty-state p {
+    color: var(--color-gray-500);
+    margin: 0 0 1.25rem;
+  }
+
+  .empty-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ============================================
+     LOADING STATE
+     ============================================ */
+  .loading-state {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-gray-200);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-state p {
+    color: var(--color-gray-400);
+  }
+
+  /* ============================================
+     MODAL
+     ============================================ */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: modalIn 0.2s ease-out;
+  }
+
+  .modal-lg {
+    max-width: 900px;
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+
+  .modal-header-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .modal-file-type {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.125rem 0.5rem;
+    background: var(--color-gray-100);
+    border-radius: 4px;
+  }
+
+  .modal-file-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+
+  .modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gray-400);
+    padding: 0.25rem;
+    transition: var(--transition);
+  }
+
+  .modal-close:hover {
+    color: var(--color-gray-600);
+  }
+
+  .modal-body {
+    flex: 1;
+    overflow: auto;
+    padding: 1.5rem;
+  }
+
+  .modal-body-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+  }
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+  }
+
+  .preview-video {
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: var(--radius-sm);
+  }
+
+  .preview-file {
+    text-align: center;
+  }
+
+  .preview-file-icon {
+    color: var(--color-gray-300);
+    margin-bottom: 1rem;
+  }
+
+  .preview-file-message {
+    color: var(--color-gray-500);
+    margin-bottom: 1.25rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid var(--color-gray-200);
+    background: var(--color-gray-50);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  .modal-footer-info {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+  }
+
+  .modal-footer-divider {
+    margin: 0 0.5rem;
+    color: var(--color-gray-300);
+  }
+
+  /* ============================================
+     TOAST
+     ============================================ */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+    color: white;
+    opacity: 0;
+    transform: translateY(1rem);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+  }
+
+  .toast-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast-success {
+    background: var(--color-success);
+  }
+
+  .toast-error {
+    background: var(--color-danger);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .header-content {
+      gap: 0.75rem;
+    }
+
+    .header-icon-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    .header-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+    }
+
+    .header-actions {
+      flex-direction: column;
+    }
+
+    .header-actions .btn {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .media-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .col-name,
+    .col-date {
+      display: none;
+    }
+
+    .view-tools {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .view-tools-left {
+      justify-content: center;
+    }
+
+    .view-tools-right {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .modal-lg {
+      max-width: 100%;
+    }
+
+    .modal-header {
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+
+    .modal-header-actions {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .modal-footer {
+      flex-direction: column;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+
+    .modal-footer .btn {
+      justify-content: center;
+    }
+
+    .breadcrumb-content {
+      font-size: 0.75rem;
+    }
+
+    .empty-actions {
+      flex-direction: column;
+      align-items: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .media-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .media-grid-item-info {
+      padding: 0.375rem 0.5rem;
+    }
+
+    .media-grid-item-name {
+      font-size: 0.65rem;
+    }
+
+    .media-grid-item-meta {
+      font-size: 0.55rem;
+    }
+
+    .col-actions {
+      width: auto;
+    }
+
+    .media-list-actions {
+      flex-direction: column;
+      gap: 0.125rem;
+    }
   }
 </style>

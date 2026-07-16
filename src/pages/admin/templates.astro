@@ -45,151 +45,199 @@ const categoryOptions = [
 
 <AdminLayout title="Templates Management - Trendlin">
   
-  <!-- Header -->
-  <div class="mb-8">
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <!-- ============================================ -->
+  <!-- HEADER -->
+  <!-- ============================================ -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      </div>
       <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-          📋 Content Templates
-        </h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Manage templates for each category ({templates.length} total)
+        <h1 class="page-title">Content Templates</h1>
+        <p class="page-subtitle">
+          <span class="template-count">{templates.length}</span> templates across your content ecosystem
         </p>
       </div>
-      <button 
-        id="openAddTemplateModal" 
-        class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-sm font-medium rounded-xl transition-all duration-200 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-        </svg>
-        Add Template
-      </button>
     </div>
+    <button id="openAddTemplateModal" class="btn btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+      </svg>
+      Add Template
+    </button>
   </div>
 
-  <!-- Stats Cards -->
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-lg transition-all duration-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Templates</p>
-          <p class="text-2xl sm:text-3xl font-bold text-gray-900 mt-1">{templates.length}</p>
-        </div>
-        <div class="w-11 h-11 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+  <!-- ============================================ -->
+  <!-- STATS CARDS -->
+  <!-- ============================================ -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-blue">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
           </svg>
         </div>
+        <div>
+          <div class="stat-label">Total Templates</div>
+          <div class="stat-value">{templates.length}</div>
+        </div>
       </div>
-      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-        <span>Content templates</span>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-blue"></span>
+          Content templates
+        </span>
       </div>
     </div>
     
-    <div class="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-lg transition-all duration-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Categories</p>
-          <p class="text-2xl sm:text-3xl font-bold text-purple-600 mt-1">{categories.length}</p>
-        </div>
-        <div class="w-11 h-11 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+    <div class="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-purple">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
           </svg>
         </div>
+        <div>
+          <div class="stat-label">Categories</div>
+          <div class="stat-value stat-value-purple">{categories.length}</div>
+        </div>
       </div>
-      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-        <span>Unique categories</span>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-purple"></span>
+          Unique categories
+        </span>
       </div>
     </div>
     
-    <div class="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-lg transition-all duration-200">
-      <div class="flex items-center justify-between">
+    <div class="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-green">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
         <div>
-          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Active</p>
-          <p class="text-2xl sm:text-3xl font-bold text-green-600 mt-1">
+          <div class="stat-label">Active</div>
+          <div class="stat-value stat-value-green">
             {templates.filter(t => t.is_active === 1).length}
-          </p>
-        </div>
-        <div class="w-11 h-11 bg-green-50 rounded-xl flex items-center justify-center text-green-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-          </svg>
+          </div>
         </div>
       </div>
-      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-        <span>Available for use</span>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-green"></span>
+          Available for use
+        </span>
       </div>
     </div>
     
-    <div class="bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-lg transition-all duration-200">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="text-xs font-medium text-gray-400 uppercase tracking-wider">Total Usage</p>
-          <p class="text-2xl sm:text-3xl font-bold text-orange-600 mt-1">
-            {templates.reduce((sum, t) => sum + (t.usage_count || 0), 0)}
-          </p>
-        </div>
-        <div class="w-11 h-11 bg-orange-50 rounded-xl flex items-center justify-center text-orange-600">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+    <div class="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-orange">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
         </div>
-      </div>
-      <div class="mt-3 flex items-center gap-1 text-xs text-gray-400">
-        <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-        <span>Times used</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Category Breakdown -->
-  <div class="mb-8">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">📊 Category Breakdown</h2>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-      {categories.map(cat => (
-        <div class="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-md transition-all">
-          <div class="flex items-center justify-between">
-            <span class="font-medium text-sm text-gray-700">{cat.category}</span>
-            <span class="text-sm font-bold text-indigo-600">{cat.template_count}</span>
-          </div>
-          <div class="mt-1 flex items-center gap-2 text-xs text-gray-400">
-            <span>{cat.active_count} active</span>
-            <span>•</span>
-            <span>{cat.total_usage || 0} uses</span>
+        <div>
+          <div class="stat-label">Total Usage</div>
+          <div class="stat-value stat-value-orange">
+            {templates.reduce((sum, t) => sum + (t.usage_count || 0), 0)}
           </div>
         </div>
-      ))}
+      </div>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-orange"></span>
+          Times used
+        </span>
+      </div>
     </div>
   </div>
 
-  <!-- Templates Table -->
-  <div>
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-900">All Templates</h2>
-        <p class="text-sm text-gray-500">Manage your content templates by category</p>
+  <!-- ============================================ -->
+  <!-- CATEGORY BREAKDOWN -->
+  <!-- ============================================ -->
+  {categories.length > 0 && (
+    <div class="category-breakdown">
+      <div class="category-breakdown-header">
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          Category Breakdown
+        </h2>
+        <p class="section-subtitle">Distribution of templates across categories</p>
       </div>
-      <div class="flex items-center gap-3">
-        <div class="relative">
+      <div class="category-grid">
+        {categories.map(cat => (
+          <div class="category-card" key={cat.category}>
+            <div class="category-card-content">
+              <span class="category-name">{cat.category}</span>
+              <span class="category-count">{cat.template_count}</span>
+            </div>
+            <div class="category-meta">
+              <span class="category-meta-item">
+                <span class="meta-dot meta-dot-active"></span>
+                {cat.active_count} active
+              </span>
+              <span class="category-meta-divider">•</span>
+              <span class="category-meta-item">
+                <span class="meta-dot meta-dot-usage"></span>
+                {cat.total_usage || 0} uses
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <!-- ============================================ -->
+  <!-- TEMPLATES TABLE -->
+  <!-- ============================================ -->
+  <div class="table-section">
+    <div class="table-section-header">
+      <div>
+        <h2 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+          All Templates
+        </h2>
+        <p class="section-subtitle">Manage your content templates by category</p>
+      </div>
+      <div class="table-controls">
+        <div class="search-wrapper">
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
           <input 
             type="text" 
             id="searchInput"
             placeholder="Search templates..." 
-            class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 w-40 sm:w-48"
+            class="search-input"
             oninput="filterTemplates()"
           />
-          <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
         </div>
         <select 
           id="categoryFilter" 
-          class="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          class="filter-select"
           onchange="filterTemplates()"
         >
           <option value="">All Categories</option>
@@ -200,252 +248,190 @@ const categoryOptions = [
       </div>
     </div>
 
-    <div class="bg-white rounded-2xl overflow-hidden border border-gray-100">
+    <div class="table-wrapper">
       {templates.length > 0 ? (
-        <div class="overflow-x-auto">
-          <table class="w-full" id="templatesTable">
-            <thead>
-              <tr class="bg-gray-50">
-                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
-                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Description</th>
-                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Usage</th>
-                <th class="px-5 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
-                <th class="px-5 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100" id="templatesTableBody">
-              {templates.map((template) => (
-                <tr key={template.id} class="hover:bg-gray-50 transition-colors duration-150 template-row" data-name={template.name.toLowerCase()} data-category={template.category}>
-                  <td class="px-5 py-4">
-                    <div class="font-medium text-gray-900 text-sm">{template.name}</div>
-                  </td>
-                  <td class="px-5 py-4">
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
-                      {template.category}
-                    </span>
-                  </td>
-                  <td class="px-5 py-4 text-sm text-gray-500 hidden md:table-cell max-w-xs truncate">
-                    {template.description || '—'}
-                  </td>
-                  <td class="px-5 py-4 text-sm text-gray-500 hidden lg:table-cell">
-                    {template.usage_count || 0} uses
-                  </td>
-                  <td class="px-5 py-4 hidden sm:table-cell">
-                    <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                      template.is_active === 1
-                        ? 'bg-green-50 text-green-700'
-                        : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      <span class={`w-1.5 h-1.5 rounded-full ${template.is_active === 1 ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-                      {template.is_active === 1 ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td class="px-5 py-4 text-right">
-                    <div class="flex items-center justify-end gap-1.5">
-                      <button 
-                        class="edit-template-btn px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
-                        data-id={template.id}
-                        data-name={template.name}
-                        data-category={template.category}
-                        data-content={template.content}
-                        data-description={template.description || ''}
-                        data-is-active={template.is_active}
-                      >
-                        Edit
-                      </button>
-                      <span class="text-gray-300">|</span>
-                      <button 
-                        class="delete-template-btn px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                        data-id={template.id}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
+        <>
+          <div class="table-scroll">
+            <table class="templates-table" id="templatesTable">
+              <thead>
+                <tr>
+                  <th class="col-name">Name</th>
+                  <th class="col-category">Category</th>
+                  <th class="col-description">Description</th>
+                  <th class="col-usage">Usage</th>
+                  <th class="col-status">Status</th>
+                  <th class="col-actions">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody id="templatesTableBody">
+                {templates.map((template) => (
+                  <tr key={template.id} class="template-row" data-name={template.name.toLowerCase()} data-category={template.category}>
+                    <td class="col-name">
+                      <span class="template-name">{template.name}</span>
+                    </td>
+                    <td class="col-category">
+                      <span class="badge badge-category">{template.category}</span>
+                    </td>
+                    <td class="col-description">
+                      <span class="template-description">{template.description || '—'}</span>
+                    </td>
+                    <td class="col-usage">
+                      <span class="usage-count">{template.usage_count || 0}</span>
+                      <span class="usage-label">uses</span>
+                    </td>
+                    <td class="col-status">
+                      <span class={`status-badge ${template.is_active === 1 ? 'status-active' : 'status-inactive'}`}>
+                        <span class="status-dot"></span>
+                        {template.is_active === 1 ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td class="col-actions">
+                      <div class="action-buttons">
+                        <button 
+                          class="btn-action btn-action-edit"
+                          data-id={template.id}
+                          data-name={template.name}
+                          data-category={template.category}
+                          data-content={template.content}
+                          data-description={template.description || ''}
+                          data-is-active={template.is_active}
+                          title="Edit template"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                          Edit
+                        </button>
+                        <button 
+                          class="btn-action btn-action-delete"
+                          data-id={template.id}
+                          title="Delete template"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div class="table-footer">
+            <span class="table-footer-text">
+              Showing <strong id="visibleCount">{templates.length}</strong> template{templates.length > 1 ? 's' : ''}
+            </span>
+            <span class="table-footer-text">
+              <span class="active-indicator"></span>
+              {templates.filter(t => t.is_active === 1).length} active
+            </span>
+          </div>
+        </>
       ) : (
-        <div class="py-12 text-center">
-          <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        <div class="empty-state">
+          <div class="empty-icon-wrapper">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
             </svg>
           </div>
-          <p class="text-gray-500 text-sm">No templates yet</p>
-          <p class="text-gray-400 text-xs mt-1">Click "Add Template" to create your first one</p>
+          <h3>No templates yet</h3>
+          <p>Create your first template to get started</p>
+          <button id="emptyAddTemplateBtn" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Template
+          </button>
         </div>
       )}
     </div>
-
-    {templates.length > 0 && (
-      <div class="mt-4 flex items-center justify-between text-sm text-gray-400">
-        <span>Showing <span id="visibleCount">{templates.length}</span> template{templates.length > 1 ? 's' : ''}</span>
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-gray-400">
-            {templates.filter(t => t.is_active === 1).length} active
-          </span>
-        </div>
-      </div>
-    )}
   </div>
 
   <!-- ============================================ -->
   <!-- ADD TEMPLATE MODAL -->
   <!-- ============================================ -->
-  <div id="addTemplateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-      <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 class="text-xl font-bold text-gray-900">Add New Template</h2>
-        <button onclick="closeAddTemplateModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-      </div>
-      <div class="p-6 overflow-y-auto flex-1">
-        <form id="addTemplateForm" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Template Name *</label>
-            <input 
-              type="text" 
-              id="templateName" 
-              required
-              placeholder="e.g., Health & Wellness - Basic"
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
-            <select 
-              id="templateCategory" 
-              required
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Select a category</option>
-              {categoryOptions.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-            <input 
-              type="text" 
-              id="templateDescription" 
-              placeholder="Brief description of this template"
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">HTML Content *</label>
-            <textarea 
-              id="templateContent" 
-              rows="8"
-              required
-              placeholder="<h1>Your heading</h1><p>Your content...</p>"
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm resize-none"
-            ></textarea>
-            <p class="mt-1 text-xs text-gray-400">Enter HTML content for the template</p>
-          </div>
-          <div>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="templateActive" checked class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-              <span class="text-sm font-medium text-gray-700">Active (available for use)</span>
-            </label>
-          </div>
-        </form>
-      </div>
-      <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-        <button 
-          onclick="closeAddTemplateModal()" 
-          class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-100"
-        >
-          Cancel
+  <div id="addTemplateModal" class="modal-overlay" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 id="addModalTitle">Add Template</h2>
+        <button class="modal-close" onclick="closeAddTemplateModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
-        <button 
-          type="submit"
-          form="addTemplateForm"
-          id="saveTemplateBtn"
-          class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/25"
-        >
+      </div>
+      <form id="addTemplateForm" class="modal-body">
+        <input type="hidden" id="templateEditId" />
+        <div class="form-group">
+          <label class="form-label">Template Name <span class="form-required">*</span></label>
+          <input 
+            type="text" 
+            id="templateName" 
+            required
+            placeholder="e.g., Health & Wellness - Basic"
+            class="form-input"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category <span class="form-required">*</span></label>
+          <select 
+            id="templateCategory" 
+            required
+            class="form-select"
+          >
+            <option value="">Select a category</option>
+            {categoryOptions.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input 
+            type="text" 
+            id="templateDescription" 
+            placeholder="Brief description of this template"
+            class="form-input"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label">HTML Content <span class="form-required">*</span></label>
+          <textarea 
+            id="templateContent" 
+            rows="8"
+            required
+            placeholder="<h1>Your heading</h1><p>Your content...</p>"
+            class="form-textarea"
+          ></textarea>
+          <p class="form-hint">Enter HTML content for the template</p>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="templateActive" checked />
+            <span class="checkbox-custom"></span>
+            Active <span class="checkbox-hint">(available for use)</span>
+          </label>
+        </div>
+        <div id="templateFormMessage" class="form-message" style="display:none;"></div>
+      </form>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeAddTemplateModal()">Cancel</button>
+        <button type="submit" form="addTemplateForm" id="saveTemplateBtn" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
           Save Template
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ============================================ -->
-  <!-- EDIT TEMPLATE MODAL -->
-  <!-- ============================================ -->
-  <div id="editTemplateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden p-4">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-      <div class="flex items-center justify-between p-6 border-b border-gray-200">
-        <h2 class="text-xl font-bold text-gray-900">Edit Template</h2>
-        <button onclick="closeEditTemplateModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-      </div>
-      <div class="p-6 overflow-y-auto flex-1">
-        <form id="editTemplateForm" class="space-y-4">
-          <input type="hidden" id="editTemplateId" />
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Template Name *</label>
-            <input 
-              type="text" 
-              id="editTemplateName" 
-              required
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
-            <select 
-              id="editTemplateCategory" 
-              required
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {categoryOptions.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
-            <input 
-              type="text" 
-              id="editTemplateDescription" 
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1.5">HTML Content *</label>
-            <textarea 
-              id="editTemplateContent" 
-              rows="8"
-              required
-              class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm resize-none"
-            ></textarea>
-          </div>
-          <div>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" id="editTemplateActive" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-              <span class="text-sm font-medium text-gray-700">Active (available for use)</span>
-            </label>
-          </div>
-        </form>
-      </div>
-      <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
-        <button 
-          onclick="closeEditTemplateModal()" 
-          class="px-6 py-2.5 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl hover:bg-gray-100"
-        >
-          Cancel
-        </button>
-        <button 
-          type="submit"
-          form="editTemplateForm"
-          id="updateTemplateBtn"
-          class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/25"
-        >
-          Update Template
         </button>
       </div>
     </div>
@@ -489,31 +475,34 @@ const categoryOptions = [
     };
     
     // ============================================
+    // MODAL HELPERS
+    // ============================================
+    function openModal(modalId) {
+      document.getElementById(modalId).style.display = 'flex';
+    }
+    
+    window.closeAddTemplateModal = function() {
+      document.getElementById('addTemplateModal').style.display = 'none';
+    };
+    
+    // ============================================
     // ADD TEMPLATE MODAL
     // ============================================
     document.getElementById('openAddTemplateModal').addEventListener('click', function() {
-      document.getElementById('addTemplateModal').classList.remove('hidden');
       document.getElementById('addTemplateForm').reset();
       document.getElementById('templateActive').checked = true;
+      document.getElementById('templateEditId').value = '';
+      document.getElementById('addModalTitle').textContent = 'Add Template';
+      document.getElementById('templateFormMessage').style.display = 'none';
+      openModal('addTemplateModal');
     });
     
-    window.closeAddTemplateModal = function() {
-      document.getElementById('addTemplateModal').classList.add('hidden');
-    };
+    document.getElementById('emptyAddTemplateBtn')?.addEventListener('click', function() {
+      document.getElementById('openAddTemplateModal').click();
+    });
     
     document.getElementById('addTemplateModal').addEventListener('click', function(e) {
       if (e.target === this) closeAddTemplateModal();
-    });
-    
-    // ============================================
-    // EDIT TEMPLATE MODAL
-    // ============================================
-    window.closeEditTemplateModal = function() {
-      document.getElementById('editTemplateModal').classList.add('hidden');
-    };
-    
-    document.getElementById('editTemplateModal').addEventListener('click', function(e) {
-      if (e.target === this) closeEditTemplateModal();
     });
     
     // ============================================
@@ -522,6 +511,7 @@ const categoryOptions = [
     document.getElementById('addTemplateForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       
+      const editId = document.getElementById('templateEditId').value;
       const name = document.getElementById('templateName').value.trim();
       const category = document.getElementById('templateCategory').value;
       const description = document.getElementById('templateDescription').value.trim();
@@ -529,20 +519,24 @@ const categoryOptions = [
       const is_active = document.getElementById('templateActive').checked ? 1 : 0;
       
       if (!name || !category || !content) {
-        alert('Please fill in all required fields');
+        const msg = document.getElementById('templateFormMessage');
+        msg.textContent = 'Name, category, and content are required';
+        msg.className = 'form-message error';
+        msg.style.display = 'block';
         return;
       }
       
       const saveBtn = document.getElementById('saveTemplateBtn');
-      const originalText = saveBtn.textContent;
-      saveBtn.textContent = 'Saving...';
+      const originalText = saveBtn.innerHTML;
+      saveBtn.innerHTML = 'Saving...';
       saveBtn.disabled = true;
       
       try {
-        console.log('📤 Creating template:', { name, category, description, contentLength: content.length });
+        const url = editId ? `/api/admin/templates/${editId}` : '/api/admin/templates';
+        const method = editId ? 'PUT' : 'POST';
         
-        const response = await fetch('/api/admin/templates', {
-          method: 'POST',
+        const response = await fetch(url, {
+          method,
           headers: {
             'Content-Type': 'application/json'
           },
@@ -551,7 +545,6 @@ const categoryOptions = [
         
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('❌ Response error:', errorText);
           let errorMsg = 'Failed to save template';
           try {
             const errorJson = JSON.parse(errorText);
@@ -563,29 +556,31 @@ const categoryOptions = [
         }
         
         const result = await response.json();
-        console.log('✅ Create response:', result);
         
         if (!result.success) {
           throw new Error(result.error || 'Failed to save template');
         }
         
-        alert('✅ Template saved successfully!');
+        alert(editId ? '✅ Template updated successfully!' : '✅ Template saved successfully!');
         closeAddTemplateModal();
         window.location.reload();
         
       } catch (error) {
-        console.error('❌ Error saving template:', error);
-        alert('❌ Failed to save template: ' + error.message);
+        console.error('Error saving template:', error);
+        const msg = document.getElementById('templateFormMessage');
+        msg.textContent = error.message || 'Failed to save template';
+        msg.className = 'form-message error';
+        msg.style.display = 'block';
       } finally {
-        saveBtn.textContent = originalText;
+        saveBtn.innerHTML = originalText;
         saveBtn.disabled = false;
       }
     });
     
     // ============================================
-    // EDIT TEMPLATE - Open Modal
+    // EDIT TEMPLATE
     // ============================================
-    document.querySelectorAll('.edit-template-btn').forEach(function(button) {
+    document.querySelectorAll('.btn-action-edit').forEach(function(button) {
       button.addEventListener('click', function() {
         const id = this.dataset.id;
         const name = this.dataset.name;
@@ -594,88 +589,23 @@ const categoryOptions = [
         const description = this.dataset.description;
         const isActive = this.dataset.isActive;
         
-        document.getElementById('editTemplateId').value = id;
-        document.getElementById('editTemplateName').value = name;
-        document.getElementById('editTemplateCategory').value = category;
-        document.getElementById('editTemplateContent').value = content;
-        document.getElementById('editTemplateDescription').value = description;
-        document.getElementById('editTemplateActive').checked = isActive == 1;
+        document.getElementById('templateEditId').value = id;
+        document.getElementById('templateName').value = name;
+        document.getElementById('templateCategory').value = category;
+        document.getElementById('templateContent').value = content;
+        document.getElementById('templateDescription').value = description;
+        document.getElementById('templateActive').checked = isActive == 1;
+        document.getElementById('addModalTitle').textContent = 'Edit Template';
+        document.getElementById('templateFormMessage').style.display = 'none';
         
-        document.getElementById('editTemplateModal').classList.remove('hidden');
+        openModal('addTemplateModal');
       });
-    });
-    
-    // ============================================
-    // UPDATE TEMPLATE
-    // ============================================
-    document.getElementById('editTemplateForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const id = document.getElementById('editTemplateId').value;
-      const name = document.getElementById('editTemplateName').value.trim();
-      const category = document.getElementById('editTemplateCategory').value;
-      const description = document.getElementById('editTemplateDescription').value.trim();
-      const content = document.getElementById('editTemplateContent').value.trim();
-      const is_active = document.getElementById('editTemplateActive').checked ? 1 : 0;
-      
-      if (!name || !category || !content) {
-        alert('Please fill in all required fields');
-        return;
-      }
-      
-      const updateBtn = document.getElementById('updateTemplateBtn');
-      const originalText = updateBtn.textContent;
-      updateBtn.textContent = 'Updating...';
-      updateBtn.disabled = true;
-      
-      try {
-        console.log('📤 Updating template ID:', id);
-        
-        const response = await fetch(`/api/admin/templates/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ name, category, description, content, is_active })
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ Response error:', errorText);
-          let errorMsg = 'Failed to update template';
-          try {
-            const errorJson = JSON.parse(errorText);
-            errorMsg = errorJson.error || errorMsg;
-          } catch (parseError) {
-            errorMsg = `Server error: ${response.status}`;
-          }
-          throw new Error(errorMsg);
-        }
-        
-        const result = await response.json();
-        console.log('✅ Update response:', result);
-        
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to update template');
-        }
-        
-        alert('✅ Template updated successfully!');
-        closeEditTemplateModal();
-        window.location.reload();
-        
-      } catch (error) {
-        console.error('❌ Error updating template:', error);
-        alert('❌ Failed to update template: ' + error.message);
-      } finally {
-        updateBtn.textContent = originalText;
-        updateBtn.disabled = false;
-      }
     });
     
     // ============================================
     // DELETE TEMPLATE
     // ============================================
-    document.querySelectorAll('.delete-template-btn').forEach(function(button) {
+    document.querySelectorAll('.btn-action-delete').forEach(function(button) {
       button.addEventListener('click', async function(e) {
         e.preventDefault();
         
@@ -685,14 +615,11 @@ const categoryOptions = [
           return;
         }
         
-        const originalText = this.textContent;
-        this.textContent = 'Deleting...';
+        const originalText = this.innerHTML;
+        this.innerHTML = 'Deleting...';
         this.disabled = true;
-        this.classList.add('opacity-50');
         
         try {
-          console.log('🗑️ Deleting template ID:', templateId);
-          
           const response = await fetch(`/api/admin/templates/${templateId}`, {
             method: 'DELETE',
             headers: {
@@ -702,7 +629,6 @@ const categoryOptions = [
           
           if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ Response error:', errorText);
             let errorMsg = 'Failed to delete template';
             try {
               const errorJson = JSON.parse(errorText);
@@ -714,7 +640,6 @@ const categoryOptions = [
           }
           
           const result = await response.json();
-          console.log('✅ Delete response:', result);
           
           if (!result.success) {
             throw new Error(result.error || 'Failed to delete template');
@@ -724,12 +649,11 @@ const categoryOptions = [
           window.location.reload();
           
         } catch (error) {
-          console.error('❌ Error deleting template:', error);
+          console.error('Error deleting template:', error);
           alert('❌ Failed to delete template: ' + error.message);
           
-          this.textContent = originalText;
+          this.innerHTML = originalText;
           this.disabled = false;
-          this.classList.remove('opacity-50');
         }
       });
     });
@@ -738,10 +662,1029 @@ const categoryOptions = [
 </script>
 
 <style is:global>
-  .line-clamp-1 {
+  /* ============================================
+     DESIGN SYSTEM
+     ============================================ */
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-success: #22c55e;
+    --color-danger: #ef4444;
+    --color-warning: #eab308;
+    --color-purple: #8b5cf6;
+    --color-orange: #f97316;
+    
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ============================================
+     PAGE HEADER
+     ============================================ */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #dbeafe, #ede9fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-primary);
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin: 0.125rem 0 0;
+  }
+
+  .template-count {
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.125rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    white-space: nowrap;
+    height: 40px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+  }
+
+  .btn-secondary {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-200);
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-gray-200);
+  }
+
+  .btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================
+     STATS GRID
+     ============================================ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+    transition: var(--transition);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .stat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0.5rem;
+  }
+
+  .stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon-blue { background: #dbeafe; }
+  .stat-icon-purple { background: #ede9fe; }
+  .stat-icon-green { background: #d1fae5; }
+  .stat-icon-orange { background: #ffedd5; }
+
+  .stat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .stat-icon-blue .stat-icon { color: #2563eb; }
+  .stat-icon-purple .stat-icon { color: #7c3aed; }
+  .stat-icon-green .stat-icon { color: #16a34a; }
+  .stat-icon-orange .stat-icon { color: #ea580c; }
+
+  .stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .stat-value-purple { color: #7c3aed; }
+  .stat-value-green { color: #16a34a; }
+  .stat-value-orange { color: #ea580c; }
+
+  .stat-card-footer {
+    padding: 0.5rem 1.25rem 0.75rem;
+    border-top: 1px solid var(--color-gray-100);
+  }
+
+  .stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    font-weight: 500;
+  }
+
+  .stat-trend-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .stat-trend-blue { background: #3b82f6; }
+  .stat-trend-purple { background: #8b5cf6; }
+  .stat-trend-green { background: #22c55e; }
+  .stat-trend-orange { background: #f97316; }
+
+  /* ============================================
+     CATEGORY BREAKDOWN
+     ============================================ */
+  .category-breakdown {
+    margin-bottom: 1.5rem;
+  }
+
+  .category-breakdown-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+  }
+
+  .section-title svg {
+    color: var(--color-gray-400);
+  }
+
+  .section-subtitle {
+    font-size: 0.813rem;
+    color: var(--color-gray-400);
+    margin: 0;
+  }
+
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.625rem;
+  }
+
+  .category-card {
+    background: white;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-gray-200);
+    padding: 0.75rem 1rem;
+    transition: var(--transition);
+  }
+
+  .category-card:hover {
+    border-color: var(--color-gray-300);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .category-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .category-name {
+    font-weight: 500;
+    font-size: 0.813rem;
+    color: var(--color-gray-900);
+  }
+
+  .category-count {
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--color-primary);
+  }
+
+  .category-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+  }
+
+  .category-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .meta-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .meta-dot-active { background: var(--color-success); }
+  .meta-dot-usage { background: var(--color-gray-300); }
+
+  .category-meta-divider {
+    color: var(--color-gray-300);
+  }
+
+  /* ============================================
+     TABLE SECTION
+     ============================================ */
+  .table-section {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+  }
+
+  .table-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .table-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .search-wrapper {
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-gray-400);
+  }
+
+  .search-input {
+    padding: 0.375rem 0.75rem 0.375rem 2.25rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    font-family: var(--font-family);
+    outline: none;
+    transition: var(--transition);
+    width: 160px;
+    background: var(--color-gray-50);
+    color: var(--color-gray-800);
+  }
+
+  .search-input:focus {
+    border-color: var(--color-primary);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    width: 200px;
+  }
+
+  .search-input::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  .filter-select {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    font-family: var(--font-family);
+    background: var(--color-gray-50);
+    color: var(--color-gray-800);
+    cursor: pointer;
+    outline: none;
+    transition: var(--transition);
+    min-width: 140px;
+  }
+
+  .filter-select:focus {
+    border-color: var(--color-primary);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* ============================================
+     TABLE
+     ============================================ */
+  .table-scroll {
+    overflow-x: auto;
+  }
+
+  .templates-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-family);
+    font-size: 0.875rem;
+  }
+
+  .templates-table thead {
+    background: var(--color-gray-50);
+  }
+
+  .templates-table th {
+    padding: 0.625rem 1.25rem;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-gray-200);
+    white-space: nowrap;
+  }
+
+  .templates-table td {
+    padding: 0.625rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    vertical-align: middle;
+  }
+
+  .templates-table tr:hover td {
+    background: var(--color-gray-50);
+  }
+
+  .templates-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Column widths */
+  .col-name { min-width: 180px; }
+  .col-category { width: 160px; }
+  .col-description { min-width: 200px; }
+  .col-usage { width: 100px; }
+  .col-status { width: 120px; }
+  .col-actions { width: 140px; text-align: right; }
+
+  .template-name {
+    font-weight: 500;
+    color: var(--color-gray-900);
+  }
+
+  .template-description {
+    color: var(--color-gray-500);
+    font-size: 0.813rem;
     display: -webkit-box;
     -webkit-line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* ============================================
+     BADGES
+     ============================================ */
+  .badge {
+    display: inline-flex;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-category {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+  }
+
+  .usage-count {
+    font-weight: 600;
+    color: var(--color-gray-900);
+    font-size: 0.875rem;
+  }
+
+  .usage-label {
+    color: var(--color-gray-400);
+    font-size: 0.7rem;
+    margin-left: 0.125rem;
+  }
+
+  /* ============================================
+     STATUS
+     ============================================ */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-active {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+
+  .status-active .status-dot {
+    background: #16a34a;
+  }
+
+  .status-inactive {
+    background: var(--color-gray-100);
+    color: var(--color-gray-500);
+  }
+
+  .status-inactive .status-dot {
+    background: var(--color-gray-400);
+  }
+
+  /* ============================================
+     ACTIONS
+     ============================================ */
+  .action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    justify-content: flex-end;
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-action svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .btn-action-edit {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .btn-action-edit:hover {
+    background: #c7d2fe;
+  }
+
+  .btn-action-delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .btn-action-delete:hover {
+    background: #fecaca;
+  }
+
+  /* ============================================
+     TABLE FOOTER
+     ============================================ */
+  .table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 1.25rem;
+    border-top: 1px solid var(--color-gray-100);
+    background: var(--color-gray-50);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .table-footer-text {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+  }
+
+  .table-footer-text strong {
+    color: var(--color-gray-900);
+  }
+
+  .active-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-success);
+    margin-right: 0.375rem;
+  }
+
+  /* ============================================
+     EMPTY STATE
+     ============================================ */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .empty-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+  }
+
+  .empty-icon-wrapper svg {
+    color: var(--color-gray-300);
+  }
+
+  .empty-state h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 0.25rem;
+  }
+
+  .empty-state p {
+    color: var(--color-gray-500);
+    margin: 0 0 1.25rem;
+  }
+
+  /* ============================================
+     MODAL
+     ============================================ */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: modalIn 0.2s ease-out;
+  }
+
+  .modal-lg {
+    max-width: 720px;
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+
+  .modal-header h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gray-400);
+    padding: 0.25rem;
+    transition: var(--transition);
+  }
+
+  .modal-close:hover {
+    color: var(--color-gray-600);
+  }
+
+  .modal-close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-gray-200);
+    background: var(--color-gray-50);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  /* ============================================
+     FORM
+     ============================================ */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.813rem;
+    color: var(--color-gray-900);
+    margin-bottom: 0.25rem;
+  }
+
+  .form-required {
+    color: var(--color-danger);
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+    transition: var(--transition);
+    background: white;
+    color: var(--color-gray-800);
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.813rem;
+    line-height: 1.6;
+  }
+
+  .form-hint {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    margin: 0.25rem 0 0;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 400;
+    color: var(--color-gray-700);
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    display: none;
+  }
+
+  .checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-gray-300);
+    border-radius: 4px;
+    display: inline-block;
+    position: relative;
+    flex-shrink: 0;
+    transition: var(--transition);
+  }
+
+  .checkbox-label input:checked + .checkbox-custom {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  .checkbox-label input:checked + .checkbox-custom::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .checkbox-hint {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    font-weight: 400;
+  }
+
+  .form-message {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-message.error {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .form-message.success {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .header-content {
+      gap: 0.75rem;
+    }
+
+    .header-icon-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    .header-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .stat-card-content {
+      padding: 0.75rem 1rem 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+    }
+
+    .category-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .table-section-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+
+    .table-controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .search-input {
+      width: 100%;
+    }
+
+    .search-input:focus {
+      width: 100%;
+    }
+
+    .filter-select {
+      width: 100%;
+    }
+
+    .templates-table {
+      font-size: 0.75rem;
+    }
+
+    .templates-table th,
+    .templates-table td {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .col-description {
+      display: none;
+    }
+
+    .col-usage {
+      display: none;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    .modal {
+      margin: 0.5rem;
+      max-height: 95vh;
+    }
+
+    .modal-header {
+      padding: 1rem 1.25rem;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+    }
+
+    .modal-footer {
+      padding: 0.75rem 1.25rem;
+      flex-direction: column;
+    }
+
+    .modal-footer .btn {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .table-footer {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .category-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-value {
+      font-size: 1.125rem;
+    }
+
+    .empty-state {
+      padding: 2rem 1rem;
+    }
+
+    .empty-icon-wrapper {
+      width: 60px;
+      height: 60px;
+    }
   }
 </style>

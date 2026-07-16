@@ -1,6 +1,6 @@
 ---
 // ============================================
-// ADMIN - PRODUCTS LIST
+// ADMIN - PRODUCTS LIST (Enterprise Edition)
 // ============================================
 
 import AdminLayout from '../../../layouts/AdminLayout.astro';
@@ -38,97 +38,263 @@ try {
 
 <AdminLayout title="Products" description="Manage your product catalog">
   
-  <div class="products-header">
-    <div>
-      <h1 class="page-title">📦 Products</h1>
-      <p class="page-subtitle">{products.length} products in your catalog</p>
+  <div class="products-page">
+    <!-- ============================================ -->
+    <!-- HEADER -->
+    <!-- ============================================ -->
+    <div class="products-header">
+      <div class="header-content">
+        <div class="header-icon-wrapper">
+          <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="page-title">Products</h1>
+          <p class="page-subtitle">
+            <span class="product-count">{products.length}</span> products in your catalog
+          </p>
+        </div>
+      </div>
+      <a href="/admin/products/new" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        Add Product
+      </a>
     </div>
-    <a href="/admin/products/new" class="btn-primary">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-      Add New Product
-    </a>
+
+    <!-- ============================================ -->
+    <!-- PRODUCTS TABLE -->
+    <!-- ============================================ -->
+    {products.length === 0 ? (
+      <div class="empty-state">
+        <div class="empty-icon-wrapper">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+          </svg>
+        </div>
+        <h3>No products yet</h3>
+        <p>Create your first product to start building your catalog</p>
+        <a href="/admin/products/new" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Product
+        </a>
+      </div>
+    ) : (
+      <div class="table-wrapper">
+        <div class="table-toolbar">
+          <div class="table-toolbar-left">
+            <div class="table-info">
+              <span class="table-info-label">Showing</span>
+              <strong>{products.length}</strong>
+              <span class="table-info-label">products</span>
+            </div>
+            <div class="table-divider"></div>
+            <div class="table-info">
+              <span class="table-info-label">
+                <span class="status-indicator status-indicator-active"></span>
+                {products.filter(p => p.in_stock).length} in stock
+              </span>
+            </div>
+          </div>
+          <div class="table-toolbar-right">
+            <div class="search-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" id="searchProducts" placeholder="Search products..." class="search-input" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="table-scroll">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th class="col-image"></th>
+                <th class="col-name">Product</th>
+                <th class="col-category">Category</th>
+                <th class="col-brand">Brand</th>
+                <th class="col-resources">Resources</th>
+                <th class="col-status">Status</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={product.id} class="product-row">
+                  <td class="col-image">
+                    {product.cover_image ? (
+                      <div class="product-thumb-wrapper">
+                        <img src={product.cover_image} alt={product.name} class="product-thumb" loading="lazy" />
+                      </div>
+                    ) : (
+                      <div class="product-thumb-placeholder">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                      </div>
+                    )}
+                  </td>
+                  <td class="col-name">
+                    <div class="product-name-cell">
+                      <span class="product-name">{product.name}</span>
+                      <div class="product-meta">
+                        <span class="product-slug">{product.slug}</span>
+                        <div class="product-badges">
+                          {product.is_top_pick === 1 && (
+                            <span class="badge badge-top">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                              </svg>
+                              Top Pick
+                            </span>
+                          )}
+                          {product.is_newly_released === 1 && (
+                            <span class="badge badge-new">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                              </svg>
+                              New
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="col-category">
+                    {product.category ? (
+                      <span class="category-tag">{product.category}</span>
+                    ) : (
+                      <span class="empty-value">—</span>
+                    )}
+                  </td>
+                  <td class="col-brand">
+                    {product.brand ? (
+                      <span class="brand-tag">{product.brand}</span>
+                    ) : (
+                      <span class="empty-value">—</span>
+                    )}
+                  </td>
+                  <td class="col-resources">
+                    <div class="resource-cell">
+                      <span class="resource-count">{product.resource_count || 0}</span>
+                      <a href={`/admin/products/${product.id}/resources`} class="resource-link">
+                        Manage
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="9 18 15 12 9 6" />
+                        </svg>
+                      </a>
+                    </div>
+                  </td>
+                  <td class="col-status">
+                    <span class={`status-badge ${product.in_stock ? 'status-in-stock' : 'status-out-of-stock'}`}>
+                      <span class="status-dot"></span>
+                      {product.in_stock ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </td>
+                  <td class="col-actions">
+                    <div class="action-buttons">
+                      <a href={`/admin/products/${product.id}/resources`} class="btn-action btn-action-resources" title="Manage Resources">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                          <polyline points="10 9 9 9 8 9" />
+                        </svg>
+                      </a>
+                      <button class="btn-action btn-action-delete" onclick="if(confirm('Delete this product?')) deleteProduct({product.id})" title="Delete Product">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="table-footer">
+          <span class="table-footer-text">
+            Showing <strong>{products.length}</strong> product{products.length > 1 ? 's' : ''}
+          </span>
+          <div class="table-footer-stats">
+            <span class="table-footer-text">
+              <span class="status-indicator status-indicator-active"></span>
+              {products.filter(p => p.in_stock).length} in stock
+            </span>
+            <span class="table-footer-divider">•</span>
+            <span class="table-footer-text">
+              <span class="status-indicator status-indicator-inactive"></span>
+              {products.filter(p => !p.in_stock).length} out of stock
+            </span>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
-  
-  {products.length === 0 ? (
-    <div class="empty-state">
-      <div class="empty-icon">📦</div>
-      <h3>No products yet</h3>
-      <p>Create your first product to get started.</p>
-      <a href="/admin/products/new" class="btn-primary">Add Product</a>
-    </div>
-  ) : (
-    <div class="table-wrapper">
-      <table class="products-table">
-        <thead>
-          <tr>
-            <th>Image</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Brand</th>
-            <th>Resources</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <tr key={product.id}>
-              <td>
-                {product.cover_image ? (
-                  <img src={product.cover_image} alt={product.name} class="product-thumb" />
-                ) : (
-                  <div class="product-thumb-placeholder">📷</div>
-                )}
-              </td>
-              <td>
-                <strong>{product.name}</strong>
-                <div class="product-slug">/products/{product.slug}</div>
-                <div class="product-badges">
-                  {product.is_top_pick === 1 && <span class="badge badge-top">⭐ Top Pick</span>}
-                  {product.is_newly_released === 1 && <span class="badge badge-new">✨ New</span>}
-                </div>
-              </td>
-              <td>{product.category || '—'}</td>
-              <td>{product.brand || '—'}</td>
-              <td>
-                <span class="resource-badge">{product.resource_count || 0}</span>
-                <a href={`/admin/products/${product.id}/resources`} class="resource-link">Manage</a>
-              </td>
-              <td>
-                <span class={`status-badge ${product.in_stock ? 'in-stock' : 'out-of-stock'}`}>
-                  {product.in_stock ? '✅ In Stock' : '❌ Out of Stock'}
-                </span>
-              </td>
-              <td>
-                <div class="action-buttons">
-                  <a href={`/admin/products/${product.id}/resources`} class="btn-sm btn-resources">🔗 Resources</a>
-                  <button class="btn-sm btn-delete" onclick="if(confirm('Delete this product?')) deleteProduct({product.id})">🗑️ Delete</button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )}
-  
 </AdminLayout>
 
 <style>
-  .page-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #0f172a;
+  /* ============================================
+     DESIGN SYSTEM
+     ============================================ */
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-success: #22c55e;
+    --color-success-bg: #dcfce7;
+    --color-danger: #ef4444;
+    --color-danger-bg: #fee2e2;
+    --color-warning: #eab308;
+    --color-warning-bg: #fef3c7;
+    --color-info: #8b5cf6;
+    --color-info-bg: #ede9fe;
+    
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
-  .page-subtitle {
-    font-size: 0.875rem;
-    color: #94a3b8;
+
+  .products-page {
+    padding: 0;
+    max-width: 1440px;
+    margin: 0 auto;
   }
-  
+
+  /* ============================================
+     HEADER
+     ============================================ */
   .products-header {
     display: flex;
     justify-content: space-between;
@@ -136,226 +302,791 @@ try {
     margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 1rem;
+    padding: 0;
   }
-  
-  .btn-primary {
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #dbeafe, #ede9fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-primary);
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin: 0.125rem 0 0;
+  }
+
+  .product-count {
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    background: #2563eb;
-    color: #fff;
+    padding: 0.5rem 1.25rem;
     border: none;
-    border-radius: 0.5rem;
+    border-radius: var(--radius-sm);
     font-weight: 600;
     font-size: 0.875rem;
+    font-family: var(--font-family);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition);
     text-decoration: none;
+    white-space: nowrap;
+    height: 40px;
   }
-  
+
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+
   .btn-primary:hover {
-    background: #1d4ed8;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
   }
-  
+
+  .btn-primary svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  /* ============================================
+     EMPTY STATE
+     ============================================ */
   .empty-state {
     text-align: center;
     padding: 4rem 2rem;
     background: #fff;
-    border-radius: 12px;
-    border: 2px dashed #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 2px dashed var(--color-gray-200);
+    max-width: 560px;
+    margin: 0 auto;
   }
-  
-  .empty-state .empty-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+
+  .empty-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
   }
-  
+
+  .empty-icon-wrapper svg {
+    color: var(--color-gray-300);
+  }
+
   .empty-state h3 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    color: var(--color-gray-900);
+    margin: 0 0 0.375rem;
   }
-  
+
   .empty-state p {
-    color: #94a3b8;
-    margin-bottom: 1.5rem;
+    color: var(--color-gray-500);
+    margin: 0 0 1.5rem;
+    font-size: 0.875rem;
   }
-  
+
+  /* ============================================
+     TABLE WRAPPER
+     ============================================ */
   .table-wrapper {
     background: #fff;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
     overflow: hidden;
-    overflow-x: auto;
+    box-shadow: var(--shadow-sm);
   }
-  
+
+  /* ============================================
+     TABLE TOOLBAR
+     ============================================ */
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .table-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .table-divider {
+    width: 1px;
+    height: 20px;
+    background: var(--color-gray-200);
+  }
+
+  .table-info {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.813rem;
+    color: var(--color-gray-500);
+  }
+
+  .table-info-label {
+    color: var(--color-gray-400);
+  }
+
+  .table-info strong {
+    color: var(--color-gray-900);
+    font-weight: 600;
+  }
+
+  .table-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  /* ============================================
+     SEARCH
+     ============================================ */
+  .search-wrapper {
+    position: relative;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-gray-400);
+  }
+
+  .search-input {
+    padding: 0.375rem 0.75rem 0.375rem 2.25rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    font-family: var(--font-family);
+    outline: none;
+    transition: var(--transition);
+    width: 200px;
+    background: var(--color-gray-50);
+    color: var(--color-gray-800);
+  }
+
+  .search-input:focus {
+    border-color: var(--color-primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+    width: 240px;
+  }
+
+  .search-input::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  /* ============================================
+     TABLE
+     ============================================ */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .products-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    font-family: var(--font-family);
   }
-  
+
+  .products-table thead {
+    background: var(--color-gray-50);
+  }
+
   .products-table th {
     text-align: left;
-    padding: 0.75rem 1rem;
-    background: #f8fafc;
-    color: #475569;
+    padding: 0.625rem 1.25rem;
+    color: var(--color-gray-500);
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid var(--color-gray-200);
+    white-space: nowrap;
   }
-  
+
   .products-table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.625rem 1.25rem;
+    border-bottom: 1px solid var(--color-gray-100);
     vertical-align: middle;
   }
-  
-  .products-table tr:hover td {
-    background: #f8fafc;
+
+  .product-row {
+    transition: var(--transition);
   }
-  
+
+  .product-row:hover td {
+    background: var(--color-gray-50);
+  }
+
+  .product-row:last-child td {
+    border-bottom: none;
+  }
+
+  /* Column Widths */
+  .col-image { width: 64px; }
+  .col-name { min-width: 260px; }
+  .col-category { width: 140px; }
+  .col-brand { width: 140px; }
+  .col-resources { width: 120px; }
+  .col-status { width: 130px; }
+  .col-actions { width: 88px; text-align: right; }
+
+  /* ============================================
+     PRODUCT IMAGE
+     ============================================ */
+  .product-thumb-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--color-gray-200);
+    flex-shrink: 0;
+  }
+
   .product-thumb {
-    width: 48px;
-    height: 48px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
+    display: block;
   }
-  
+
   .product-thumb-placeholder {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    background: #f1f5f9;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--color-gray-50);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--color-gray-200);
+    color: var(--color-gray-300);
+    flex-shrink: 0;
   }
-  
+
+  /* ============================================
+     PRODUCT NAME
+     ============================================ */
+  .product-name-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .product-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+    font-size: 0.875rem;
+    line-height: 1.3;
+  }
+
+  .product-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
   .product-slug {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-top: 0.125rem;
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    font-weight: 500;
+    font-family: 'SF Mono', 'Menlo', 'Monaco', monospace;
   }
-  
+
   .product-badges {
     display: flex;
     gap: 0.25rem;
-    margin-top: 0.25rem;
   }
-  
+
   .badge {
-    font-size: 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.55rem;
     font-weight: 600;
-    padding: 0.0625rem 0.5rem;
+    padding: 0.125rem 0.5rem;
     border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
-  
+
   .badge-top {
-    background: #fef3c7;
+    background: var(--color-warning-bg);
     color: #d97706;
   }
-  
+
+  .badge-top svg {
+    fill: #d97706;
+    width: 10px;
+    height: 10px;
+  }
+
   .badge-new {
     background: #ecfdf5;
     color: #059669;
   }
-  
-  .resource-badge {
+
+  .badge-new svg {
+    color: #059669;
+    width: 10px;
+    height: 10px;
+  }
+
+  /* ============================================
+     CATEGORY & BRAND TAGS
+     ============================================ */
+  .category-tag,
+  .brand-tag {
     display: inline-block;
     padding: 0.125rem 0.625rem;
-    background: #eef2ff;
-    color: #2563eb;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.75rem;
-  }
-  
-  .resource-link {
-    font-size: 0.7rem;
-    color: #2563eb;
-    text-decoration: none;
-    margin-left: 0.25rem;
-  }
-  
-  .resource-link:hover {
-    text-decoration: underline;
-  }
-  
-  .status-badge {
-    display: inline-block;
-    padding: 0.125rem 0.625rem;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-  
-  .status-badge.in-stock {
-    background: #dcfce7;
-    color: #16a34a;
-  }
-  
-  .status-badge.out-of-stock {
-    background: #fef2f2;
-    color: #dc2626;
-  }
-  
-  .action-buttons {
-    display: flex;
-    gap: 0.375rem;
-    flex-wrap: wrap;
-  }
-  
-  .btn-sm {
-    padding: 0.25rem 0.625rem;
-    border-radius: 0.375rem;
+    border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s ease;
+  }
+
+  .category-tag {
+    background: var(--color-info-bg);
+    color: #6d28d9;
+  }
+
+  .brand-tag {
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
+  }
+
+  .empty-value {
+    color: var(--color-gray-400);
+    font-size: 0.813rem;
+  }
+
+  /* ============================================
+     RESOURCES
+     ============================================ */
+  .resource-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .resource-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 0.625rem;
+    background: var(--color-info-bg);
+    color: var(--color-primary);
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.75rem;
+  }
+
+  .resource-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125rem;
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
     text-decoration: none;
-    display: inline-block;
+    transition: var(--transition);
+    font-weight: 500;
   }
-  
-  .btn-resources {
-    background: #fef3c7;
-    color: #d97706;
+
+  .resource-link:hover {
+    color: var(--color-primary);
   }
-  
-  .btn-resources:hover {
-    background: #fde68a;
+
+  .resource-link svg {
+    transition: var(--transition);
   }
-  
-  .btn-delete {
-    background: #fef2f2;
+
+  .resource-link:hover svg {
+    transform: translateX(2px);
+  }
+
+  /* ============================================
+     STATUS
+     ============================================ */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-in-stock {
+    background: var(--color-success-bg);
+    color: #16a34a;
+  }
+
+  .status-in-stock .status-dot {
+    background: #16a34a;
+  }
+
+  .status-out-of-stock {
+    background: var(--color-danger-bg);
     color: #dc2626;
   }
-  
-  .btn-delete:hover {
-    background: #fee2e2;
+
+  .status-out-of-stock .status-dot {
+    background: #dc2626;
   }
-  
+
+  /* ============================================
+     ACTIONS
+     ============================================ */
+  .action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    font-family: var(--font-family);
+    background: transparent;
+    color: var(--color-gray-400);
+  }
+
+  .btn-action:hover {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+  }
+
+  .btn-action svg {
+    width: 16px;
+    height: 16px;
+    color: currentColor;
+  }
+
+  .btn-action-resources:hover {
+    background: var(--color-warning-bg);
+    color: #d97706;
+  }
+
+  .btn-action-delete:hover {
+    background: var(--color-danger-bg);
+    color: #dc2626;
+  }
+
+  /* ============================================
+     TABLE FOOTER
+     ============================================ */
+  .table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 1.25rem;
+    border-top: 1px solid var(--color-gray-100);
+    background: var(--color-gray-50);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .table-footer-text {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+  }
+
+  .table-footer-text strong {
+    color: var(--color-gray-900);
+  }
+
+  .table-footer-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .table-footer-divider {
+    color: var(--color-gray-300);
+  }
+
+  .status-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-indicator-active {
+    background: var(--color-success);
+  }
+
+  .status-indicator-inactive {
+    background: var(--color-danger);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1200px) {
+    .col-category,
+    .col-brand {
+      width: auto;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .col-category,
+    .col-brand {
+      display: none;
+    }
+  }
+
   @media (max-width: 768px) {
     .products-header {
       flex-direction: column;
       align-items: stretch;
+      gap: 0.75rem;
     }
-    
-    .action-buttons {
+
+    .header-content {
+      gap: 0.75rem;
+    }
+
+    .header-icon-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    .header-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .table-toolbar {
       flex-direction: column;
-      gap: 0.25rem;
+      align-items: stretch;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
     }
-    
-    .btn-sm {
+
+    .table-toolbar-left {
+      flex-wrap: wrap;
+    }
+
+    .table-divider {
+      display: none;
+    }
+
+    .table-toolbar-right {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .search-wrapper {
+      width: 100%;
+    }
+
+    .search-input {
+      width: 100%;
+    }
+
+    .search-input:focus {
+      width: 100%;
+    }
+
+    .col-image {
+      width: 52px;
+    }
+
+    .col-name {
+      min-width: 180px;
+    }
+
+    .col-resources {
+      width: auto;
+    }
+
+    .col-status {
+      width: auto;
+    }
+
+    .col-actions {
+      width: auto;
+    }
+
+    .products-table td,
+    .products-table th {
+      padding: 0.5rem 0.75rem;
+    }
+
+    .product-thumb-wrapper,
+    .product-thumb-placeholder {
+      width: 36px;
+      height: 36px;
+    }
+
+    .resource-count {
+      min-width: 24px;
+      height: 24px;
+      font-size: 0.7rem;
+      padding: 0 0.5rem;
+    }
+
+    .action-buttons {
+      gap: 0.125rem;
+    }
+
+    .btn-action {
+      width: 28px;
+      height: 28px;
+    }
+
+    .btn-action svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .product-badges {
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      font-size: 0.5rem;
+      padding: 0.0625rem 0.375rem;
+    }
+
+    .table-footer {
+      flex-direction: column;
+      align-items: center;
       text-align: center;
+    }
+
+    .table-footer-stats {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .col-image {
+      display: none;
+    }
+
+    .products-table td,
+    .products-table th {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .product-name {
+      font-size: 0.813rem;
+    }
+
+    .product-slug {
+      font-size: 0.6rem;
+    }
+
+    .status-badge {
+      font-size: 0.65rem;
+      padding: 0.125rem 0.5rem;
+    }
+
+    .resource-link {
+      font-size: 0.6rem;
+    }
+
+    .table-info {
+      font-size: 0.75rem;
+    }
+
+    .empty-state {
+      padding: 2rem 1rem;
+    }
+
+    .empty-icon-wrapper {
+      width: 60px;
+      height: 60px;
+    }
+
+    .empty-state h3 {
+      font-size: 1rem;
     }
   }
 </style>
@@ -378,4 +1109,30 @@ try {
       alert('Error deleting product: ' + error.message);
     }
   }
+
+  // Search functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchProducts');
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.product-row');
+        
+        rows.forEach(row => {
+          const name = row.querySelector('.product-name')?.textContent?.toLowerCase() || '';
+          const slug = row.querySelector('.product-slug')?.textContent?.toLowerCase() || '';
+          const category = row.querySelector('.category-tag')?.textContent?.toLowerCase() || '';
+          const brand = row.querySelector('.brand-tag')?.textContent?.toLowerCase() || '';
+          
+          const shouldShow = searchTerm === '' || 
+            name.includes(searchTerm) || 
+            slug.includes(searchTerm) || 
+            category.includes(searchTerm) || 
+            brand.includes(searchTerm);
+          
+          row.style.display = shouldShow ? '' : 'none';
+        });
+      });
+    }
+  });
 </script>

@@ -34,17 +34,31 @@ try {
 ---
 
 <AdminLayout title="Categories - Trendlin Admin">
+  
+  <!-- ============================================ -->
+  <!-- HEADER -->
+  <!-- ============================================ -->
   <div class="page-header">
-    <div>
-      <h1>📂 Category Management</h1>
-      <p class="text-gray-500 text-sm">Manage hero images for your categories</p>
+    <div class="header-content">
+      <div class="header-icon-wrapper">
+        <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="page-title">Category Management</h1>
+        <p class="page-subtitle">
+          <span class="category-count">{categories.length}</span> categories with hero images
+        </p>
+      </div>
     </div>
   </div>
 
-  <!-- Categories Grid -->
+  <!-- ============================================ -->
+  <!-- CATEGORIES GRID -->
+  <!-- ============================================ -->
   <div class="categories-grid">
     {categories.map((category) => {
-      // Escape description for JavaScript
       const escapedDescription = category.description ? category.description.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
       const escapedName = category.name ? category.name.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
       const escapedSlug = category.slug ? category.slug.replace(/'/g, "\\'").replace(/"/g, '\\"') : '';
@@ -56,14 +70,16 @@ try {
       return (
         <div class="category-card" data-id={category.id}>
           <div class="category-card-header">
-            <div class="category-icon">{category.icon || '📁'}</div>
+            <div class="category-icon-wrapper">
+              <span class="category-icon">{category.icon || '📁'}</span>
+            </div>
             <div class="category-info">
               <h3 class="category-name">{category.name}</h3>
-              <span class="category-slug">{category.slug}</span>
+              <span class="category-slug">/{category.slug}</span>
             </div>
           </div>
           
-          <!-- Hero Image Preview with Buttons -->
+          <!-- Hero Image Preview -->
           <div class="hero-preview-container">
             {category.hero_image ? (
               <div class="hero-image-container">
@@ -71,23 +87,39 @@ try {
                   src={category.hero_image} 
                   alt={`${category.name} hero`}
                   class="hero-image"
+                  loading="lazy"
                   onerror="this.style.display='none'"
                 />
                 <div class="hero-overlay">
-                  <span class="hero-label">🎨 Hero Image</span>
+                  <span class="hero-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    Hero Image
+                  </span>
                   <div class="hero-actions">
                     <button 
                       class="btn btn-sm btn-outline-light change-hero-btn"
                       onclick="openEditModal({id: ${category.id}, name: '${escapedName}', slug: '${escapedSlug}', icon: '${escapedIcon}', description: '${escapedDescription}', hero_image: '${heroImage}', hero_id: '${heroId}', is_active: ${isActive}})"
                     >
-                      🔄 Change
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                      Change
                     </button>
                     {category.hero_id && (
                       <button 
                         class="btn btn-sm btn-danger remove-hero-btn"
                         onclick="removeHeroImage(${category.id}, ${category.hero_id})"
                       >
-                        ✕ Remove
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        Remove
                       </button>
                     )}
                   </div>
@@ -95,715 +127,222 @@ try {
               </div>
             ) : (
               <div class="no-hero">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <rect x="3" y="3" width="18" height="18" rx="2"/>
-                  <circle cx="8.5" cy="8.5" r="1.5"/>
-                  <path d="M21 15l-5-5L5 21"/>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
                 </svg>
                 <p>No hero image set</p>
-                <div class="hero-actions">
-                  <button 
-                    class="btn btn-sm btn-success add-hero-btn"
-                    onclick="openEditModal({id: ${category.id}, name: '${escapedName}', slug: '${escapedSlug}', icon: '${escapedIcon}', description: '${escapedDescription}', hero_image: '', hero_id: '', is_active: ${isActive}})"
-                  >
-                    ➕ Add Hero Image
-                  </button>
-                </div>
+                <button 
+                  class="btn btn-sm btn-success add-hero-btn"
+                  onclick="openEditModal({id: ${category.id}, name: '${escapedName}', slug: '${escapedSlug}', icon: '${escapedIcon}', description: '${escapedDescription}', hero_image: '', hero_id: '', is_active: ${isActive}})"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                  Add Hero Image
+                </button>
               </div>
             )}
           </div>
           
           <div class="category-description">
-            {category.description}
+            {category.description || 'No description provided'}
           </div>
           
           <div class="category-stats">
-            <span class="stat">
-              <span class="stat-label">📄 Posts:</span>
+            <div class="stat">
+              <span class="stat-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+                Posts
+              </span>
               <span class="stat-value">{category.post_count || 0}</span>
-            </span>
-            <span class="stat">
-              <span class="stat-label">Status:</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Status</span>
               <span class={`status-badge ${category.is_active ? 'status-active' : 'status-inactive'}`}>
+                <span class="status-dot"></span>
                 {category.is_active ? 'Active' : 'Inactive'}
               </span>
-            </span>
+            </div>
           </div>
         </div>
       );
     })}
   </div>
-</AdminLayout>
 
-<!-- ============================================ -->
-<!-- EDIT MODAL -->
-<!-- ============================================ -->
-<div id="editModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h2 id="modalTitle">🖼️ Manage Hero Image</h2>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
-    </div>
-    <form id="categoryForm">
-      <input type="hidden" id="categoryId" name="id" />
-      <input type="hidden" id="categoryHeroId" name="hero_id" />
-      
-      <div class="form-group">
-        <label>Category</label>
-        <p id="categoryDisplayName" class="font-semibold text-gray-900"></p>
+  <!-- ============================================ -->
+  <!-- EDIT MODAL -->
+  <!-- ============================================ -->
+  <div id="editModal" class="modal-overlay" style="display:none;">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2 id="modalTitle">Manage Hero Image</h2>
+        <button class="modal-close" onclick="closeModal()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
-      
-      <!-- Hero Image Section -->
-      <div class="form-group hero-section">
-        <label>Hero Image URL</label>
-        <div class="hero-upload-wrapper">
-          <div class="hero-input-group">
-            <input type="text" id="categoryHero" name="hero_image" placeholder="https://example.com/hero.jpg" />
-            <button 
-              type="button" 
-              class="btn btn-browse-media" 
-              onclick="openMediaLibrary()"
-              title="Browse Media Library"
-            >
-              📚 Browse
-            </button>
-          </div>
-          <div class="hero-upload-help">
-            <span class="help-text">Recommended size: 1200×400px</span>
-            <button type="button" class="btn btn-sm btn-secondary upload-btn" onclick="document.getElementById('heroFileInput').click()">
-              📤 Upload
-            </button>
-            <input type="file" id="heroFileInput" accept="image/*" style="display:none;" />
-          </div>
+      <form id="categoryForm">
+        <input type="hidden" id="categoryId" name="id" />
+        <input type="hidden" id="categoryHeroId" name="hero_id" />
+        
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <p id="categoryDisplayName" class="category-display-name"></p>
         </div>
         
-        <!-- Preview Box -->
-        <div id="heroPreview" class="hero-preview-box" style="display:none;">
-          <div class="hero-preview-content">
-            <img id="heroPreviewImage" src="" alt="Hero preview" />
-            <div class="hero-preview-actions">
-              <button type="button" class="btn btn-sm btn-danger" onclick="removeHeroPreview()">
-                ✕ Remove
+        <!-- Hero Image Section -->
+        <div class="form-group hero-section">
+          <label class="form-label">Hero Image URL</label>
+          <div class="hero-upload-wrapper">
+            <div class="hero-input-group">
+              <input type="text" id="categoryHero" name="hero_image" placeholder="https://example.com/hero.jpg" class="form-input" />
+              <button 
+                type="button" 
+                class="btn btn-browse-media" 
+                onclick="openMediaLibrary()"
+                title="Browse Media Library"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                Browse
               </button>
+            </div>
+            <div class="hero-upload-help">
+              <span class="help-text">Recommended: 1200×400px</span>
+              <button type="button" class="btn btn-sm btn-secondary upload-btn" onclick="document.getElementById('heroFileInput').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Upload
+              </button>
+              <input type="file" id="heroFileInput" accept="image/*" style="display:none;" />
+            </div>
+          </div>
+          
+          <!-- Preview Box -->
+          <div id="heroPreview" class="hero-preview-box" style="display:none;">
+            <div class="hero-preview-content">
+              <img id="heroPreviewImage" src="" alt="Hero preview" />
+              <div class="hero-preview-actions">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeHeroPreview()">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="saveBtn">
-          <span id="saveBtnText">💾 Save Hero Image</span>
-          <span id="saveBtnLoading" style="display:none;">⏳ Saving...</span>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveBtn">
+            <span id="saveBtnText">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              Save Hero Image
+            </span>
+            <span id="saveBtnLoading" style="display:none;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              Saving...
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- MEDIA LIBRARY MODAL -->
+  <!-- ============================================ -->
+  <div id="mediaLibraryModal" class="modal-overlay" style="display:none;">
+    <div class="modal modal-xl">
+      <div class="modal-header">
+        <h2>Media Library</h2>
+        <button class="modal-close" onclick="closeMediaLibrary()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
       </div>
-    </form>
-  </div>
-</div>
-
-<!-- ============================================ -->
-<!-- MEDIA LIBRARY MODAL -->
-<!-- ============================================ -->
-<div id="mediaLibraryModal" class="modal" style="display:none;">
-  <div class="modal-content modal-large">
-    <div class="modal-header">
-      <h2>📚 Media Library</h2>
-      <button class="modal-close" onclick="closeMediaLibrary()">&times;</button>
-    </div>
-    <div class="modal-body">
-      <div id="mediaLibraryContent">
-        <div class="media-loading text-center py-8">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p class="text-gray-500 mt-2">Loading media...</p>
+      <div class="modal-body">
+        <div id="mediaLibraryContent">
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading media...</p>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" onclick="closeMediaLibrary()">Close</button>
-      <button type="button" class="btn btn-primary" onclick="refreshMediaLibrary()">🔄 Refresh</button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeMediaLibrary()">Close</button>
+        <button type="button" class="btn btn-primary" onclick="refreshMediaLibrary()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+          Refresh
+        </button>
+      </div>
     </div>
   </div>
-</div>
+
+</AdminLayout>
 
 <!-- ============================================ -->
-<!-- STYLES -->
+<!-- TOAST -->
 <!-- ============================================ -->
-<style is:global>
-  .page-header {
-    margin-bottom: 2rem;
-  }
-  
-  .categories-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 1.5rem;
-  }
-  
-  .category-card {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-    transition: all 0.2s;
-  }
-  
-  .category-card:hover {
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
-  }
-  
-  .category-card-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 1.25rem 1.25rem 0.75rem;
-  }
-  
-  .category-icon {
-    font-size: 2rem;
-    width: 3rem;
-    height: 3rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f1f5f9;
-    border-radius: 8px;
-    flex-shrink: 0;
-  }
-  
-  .category-info {
-    flex: 1;
-    min-width: 0;
-  }
-  
-  .category-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #0f172a;
-    margin: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  
-  .category-slug {
-    font-size: 0.75rem;
-    color: #94a3b8;
-  }
-  
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    padding: 0.375rem 1rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.2s;
-    font-family: inherit;
-  }
-  
-  .btn-sm {
-    padding: 0.25rem 0.625rem;
-    font-size: 0.7rem;
-  }
-  
-  .btn-primary {
-    background: #3b82f6;
-    color: white;
-  }
-  .btn-primary:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
-  }
-  
-  .btn-secondary {
-    background: #f1f5f9;
-    color: #475569;
-  }
-  .btn-secondary:hover {
-    background: #e2e8f0;
-  }
-  
-  .btn-outline-light {
-    background: rgba(255,255,255,0.9);
-    color: #0f172a;
-    border: 1px solid rgba(255,255,255,0.3);
-  }
-  .btn-outline-light:hover {
-    background: white;
-    transform: translateY(-1px);
-  }
-  
-  .btn-success {
-    background: #22c55e;
-    color: white;
-  }
-  .btn-success:hover {
-    background: #16a34a;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(34,197,94,0.3);
-  }
-  
-  .btn-danger {
-    background: #ef4444;
-    color: white;
-  }
-  .btn-danger:hover {
-    background: #dc2626;
-  }
-  
-  .btn-browse-media {
-    background: #8b5cf6;
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-  }
-  .btn-browse-media:hover {
-    background: #7c3aed;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(139,92,246,0.3);
-  }
-  
-  .hero-preview-container {
-    margin: 0 1.25rem;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #f8fafc;
-    height: 130px;
-    position: relative;
-  }
-  
-  .hero-image-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-  }
-  
-  .hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .hero-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    background: rgba(0,0,0,0.6);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  
-  .hero-image-container:hover .hero-overlay {
-    opacity: 1;
-  }
-  
-  .hero-label {
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  
-  .hero-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  
-  .hero-actions .btn {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.75rem;
-  }
-  
-  .no-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    height: 100%;
-    color: #94a3b8;
-  }
-  
-  .no-hero svg {
-    stroke: #cbd5e1;
-  }
-  
-  .no-hero p {
-    font-size: 0.8rem;
-    margin: 0;
-  }
-  
-  .category-description {
-    padding: 1rem 1.25rem;
-    font-size: 0.85rem;
-    color: #64748b;
-    line-height: 1.5;
-    border-top: 1px solid #f1f5f9;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
-  .category-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1.25rem;
-    background: #f8fafc;
-    border-top: 1px solid #f1f5f9;
-  }
-  
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    font-size: 0.8rem;
-  }
-  
-  .stat-label { color: #94a3b8; }
-  .stat-value { font-weight: 600; color: #0f172a; }
-  
-  .status-badge {
-    padding: 0.125rem 0.625rem;
-    border-radius: 9999px;
-    font-size: 0.7rem;
-    font-weight: 500;
-  }
-  
-  .status-active { background: #dcfce7; color: #166534; }
-  .status-inactive { background: #f1f5f9; color: #64748b; }
-  
-  .modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 1rem;
-  }
-  
-  .modal[style*="display:flex"] {
-    display: flex !important;
-  }
-  
-  .modal-content {
-    background: white;
-    border-radius: 16px;
-    max-width: 600px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 1.5rem;
-  }
-  
-  .modal-large {
-    max-width: 900px;
-    width: 95%;
-  }
-  
-  .modal-body {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding: 1rem 0;
-  }
-  
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    padding-top: 1rem;
-    border-top: 1px solid #f1f5f9;
-    margin-top: 1rem;
-  }
-  
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  
-  .modal-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-  }
-  
-  .modal-close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: #94a3b8;
-    padding: 0 0.5rem;
-  }
-  .modal-close:hover { color: #0f172a; }
-  
-  .form-group {
-    margin-bottom: 1.25rem;
-  }
-  
-  .form-group label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #475569;
-    margin-bottom: 0.375rem;
-  }
-  
-  .help-text {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    display: block;
-    margin-top: 0.25rem;
-  }
-  
-  .form-group input,
-  .form-group textarea {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    transition: border-color 0.2s;
-    font-family: inherit;
-  }
-  
-  .form-group input:focus,
-  .form-group textarea:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-  }
-  
-  .hero-section {
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    padding: 1rem;
-    background: #fafbfc;
-  }
-  
-  .hero-input-group {
-    display: flex;
-    gap: 0.5rem;
-    width: 100%;
-  }
-  
-  .hero-input-group input {
-    flex: 1;
-  }
-  
-  .hero-upload-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .hero-upload-help {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-  }
-  
-  .hero-preview-box {
-    margin-top: 0.75rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #f8fafc;
-  }
-  
-  .hero-preview-content {
-    position: relative;
-    max-height: 200px;
-  }
-  
-  .hero-preview-content img {
-    width: 100%;
-    height: auto;
-    max-height: 200px;
-    object-fit: cover;
-  }
-  
-  .hero-preview-actions {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-  }
-  
-  .hero-preview-actions .btn {
-    background: rgba(0,0,0,0.7);
-    color: white;
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
-  }
-  
-  .hero-preview-actions .btn:hover {
-    background: rgba(0,0,0,0.9);
-  }
-  
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px solid #f1f5f9;
-  }
-  
-  .media-grid-mini {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 0.75rem;
-  }
-  
-  .media-item-mini {
-    position: relative;
-    aspect-ratio: 1;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 2px solid #e2e8f0;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  
-  .media-item-mini:hover {
-    border-color: #3b82f6;
-    transform: scale(1.02);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-  
-  .media-item-mini img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .media-item-mini .overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s;
-    color: white;
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-align: center;
-    padding: 0.25rem;
-  }
-  
-  .media-item-mini:hover .overlay {
-    opacity: 1;
-  }
-  
-  .media-loading { padding: 2rem; }
-  
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  
-  .toast {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    z-index: 9999;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transform: translateY(20px);
-    opacity: 0;
-    transition: all 0.3s ease;
-  }
-  
-  .toast-success { background: #10b981; color: white; }
-  .toast-error { background: #ef4444; color: white; }
-  
-  @media (max-width: 768px) {
-    .categories-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .category-card-header {
-      flex-wrap: wrap;
-    }
-    
-    .modal-content {
-      margin: 1rem;
-      padding: 1rem;
-    }
-    
-    .hero-input-group {
-      flex-direction: column;
-    }
-    
-    .modal-large {
-      max-width: 95%;
-    }
-  }
-</style>
+<div id="toast" class="toast"></div>
 
 <!-- ============================================ -->
 <!-- JAVASCRIPT -->
 <!-- ============================================ -->
 <script>
-  // Toast Notification
+  // ============================================
+  // TOAST
+  // ============================================
   function showToast(message, type = 'success') {
-    document.querySelectorAll('.toast').forEach(el => el.remove());
-    
-    const toast = document.createElement('div');
-    toast.className = 'toast toast-' + type;
+    const toast = document.getElementById('toast');
     toast.textContent = message;
-    document.body.appendChild(toast);
+    toast.className = `toast toast-${type}`;
+    toast.classList.add('toast-visible');
     
-    setTimeout(function() {
-      toast.style.transform = 'translateY(0)';
-      toast.style.opacity = '1';
-    }, 50);
-    
-    setTimeout(function() {
-      toast.style.transform = 'translateY(20px)';
-      toast.style.opacity = '0';
-      setTimeout(function() {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-      }, 300);
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+      toast.classList.remove('toast-visible');
     }, 3000);
   }
 
-  // Modal Functions
+  // ============================================
+  // MODAL FUNCTIONS
+  // ============================================
   function openEditModal(data) {
-    var title = document.getElementById('modalTitle');
+    const title = document.getElementById('modalTitle');
     if (data.hero_image) {
-      title.textContent = '🔄 Change Hero Image';
+      title.textContent = 'Change Hero Image';
     } else {
-      title.textContent = '➕ Add Hero Image';
+      title.textContent = 'Add Hero Image';
     }
     
     document.getElementById('categoryId').value = data.id || '';
@@ -811,8 +350,8 @@ try {
     document.getElementById('categoryDisplayName').textContent = data.name || '';
     document.getElementById('categoryHero').value = data.hero_image || '';
     
-    var preview = document.getElementById('heroPreview');
-    var previewImg = document.getElementById('heroPreviewImage');
+    const preview = document.getElementById('heroPreview');
+    const previewImg = document.getElementById('heroPreviewImage');
     
     if (data.hero_image) {
       previewImg.src = data.hero_image;
@@ -834,14 +373,16 @@ try {
   
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-      var modal = document.getElementById('editModal');
+      const modal = document.getElementById('editModal');
       if (modal.style.display === 'flex') closeModal();
-      var mediaModal = document.getElementById('mediaLibraryModal');
+      const mediaModal = document.getElementById('mediaLibraryModal');
       if (mediaModal.style.display === 'flex') closeMediaLibrary();
     }
   });
-  
-  // Media Library
+
+  // ============================================
+  // MEDIA LIBRARY
+  // ============================================
   function openMediaLibrary() {
     document.getElementById('mediaLibraryModal').style.display = 'flex';
     loadMediaLibrary();
@@ -856,43 +397,53 @@ try {
   }
   
   async function loadMediaLibrary() {
-    var content = document.getElementById('mediaLibraryContent');
+    const content = document.getElementById('mediaLibraryContent');
     content.innerHTML = `
-      <div class="media-loading text-center py-8">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p class="text-gray-500 mt-2">Loading media...</p>
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading media...</p>
       </div>
     `;
     
     try {
-      var response = await fetch('/api/admin/media');
-      var result = await response.json();
+      const response = await fetch('/api/admin/media');
+      const result = await response.json();
       
       if (result.success) {
-        var media = result.media || [];
-        var imageMedia = media.filter(function(m) {
+        const media = result.media || [];
+        const imageMedia = media.filter(function(m) {
           return m.mime_type && m.mime_type.startsWith('image/');
         });
         
         if (imageMedia.length === 0) {
           content.innerHTML = `
-            <div class="text-center py-8">
-              <p class="text-gray-500">No images found in your media library.</p>
-              <button onclick="closeMediaLibrary(); document.getElementById('heroFileInput').click()" class="mt-2 btn btn-primary">
-                📤 Upload an Image
+            <div class="empty-state-mini">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <p>No images found in your media library.</p>
+              <button onclick="closeMediaLibrary(); document.getElementById('heroFileInput').click()" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Upload an Image
               </button>
             </div>
           `;
           return;
         }
         
-        var html = '<div class="media-grid-mini">';
+        let html = '<div class="media-grid-mini">';
         imageMedia.forEach(function(item) {
-          var displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
+          const displayName = item.original_name || item.filename.split('/').pop() || 'Unknown';
           html += `
             <div class="media-item-mini" onclick="selectMediaImage('${item.url}', '${displayName}')" title="${displayName}">
               <img src="${item.url}" alt="${displayName}" loading="lazy" />
-              <div class="overlay">${displayName}</div>
+              <div class="media-item-overlay">${displayName}</div>
             </div>
           `;
         });
@@ -900,11 +451,11 @@ try {
         
         content.innerHTML = html;
       } else {
-        content.innerHTML = '<p class="text-red-500 text-center py-4">Error loading media: ' + result.error + '</p>';
+        content.innerHTML = `<p class="error-text">Error loading media: ${result.error}</p>`;
       }
     } catch (error) {
       console.error('Error loading media library:', error);
-      content.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load media library</p>';
+      content.innerHTML = '<p class="error-text">Failed to load media library</p>';
     }
   }
   
@@ -913,42 +464,46 @@ try {
     document.getElementById('heroPreviewImage').src = url;
     document.getElementById('heroPreview').style.display = 'block';
     closeMediaLibrary();
-    showToast('✅ Image selected: ' + name);
+    showToast('Image selected: ' + name);
   }
-  
-  // Hero Image Functions
+
+  // ============================================
+  // HERO IMAGE FUNCTIONS
+  // ============================================
   function removeHeroPreview() {
     document.getElementById('categoryHero').value = '';
     document.getElementById('heroPreview').style.display = 'none';
   }
   
   async function removeHeroImage(categoryId, heroId) {
-    if (!confirm('⚠️ Are you sure you want to remove this hero image?')) return;
+    if (!confirm('Are you sure you want to remove this hero image?')) return;
     
     try {
-      var response = await fetch('/api/admin/categories/' + categoryId + '/hero', {
+      const response = await fetch('/api/admin/categories/' + categoryId + '/hero', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ heroId: heroId })
       });
       
-      var result = await response.json();
+      const result = await response.json();
       
       if (response.ok) {
-        showToast('✅ Hero image removed successfully!');
+        showToast('Hero image removed successfully!');
         setTimeout(function() { window.location.reload(); }, 500);
       } else {
-        showToast('❌ Error: ' + (result.error || 'Failed to remove hero image'), 'error');
+        showToast('Error: ' + (result.error || 'Failed to remove hero image'), 'error');
       }
     } catch (error) {
       console.error('Remove hero error:', error);
-      showToast('❌ Failed to remove hero image', 'error');
+      showToast('Failed to remove hero image', 'error');
     }
   }
-  
-  // Upload
+
+  // ============================================
+  // UPLOAD
+  // ============================================
   document.getElementById('heroFileInput').addEventListener('change', async function(e) {
-    var file = this.files[0];
+    const file = this.files[0];
     if (!file) return;
     
     if (!file.type.startsWith('image/')) {
@@ -963,27 +518,27 @@ try {
       return;
     }
     
-    var formData = new FormData();
+    const formData = new FormData();
     formData.append('image', file);
     
-    var uploadBtn = document.querySelector('.upload-btn');
-    var originalText = uploadBtn.textContent;
-    uploadBtn.textContent = '⏳ Uploading...';
+    const uploadBtn = document.querySelector('.upload-btn');
+    const originalText = uploadBtn.innerHTML;
+    uploadBtn.innerHTML = 'Uploading...';
     uploadBtn.disabled = true;
     
     try {
-      var response = await fetch('/api/upload', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
       
-      var result = await response.json();
+      const result = await response.json();
       
       if (result.success) {
         document.getElementById('categoryHero').value = result.url;
         document.getElementById('heroPreviewImage').src = result.url;
         document.getElementById('heroPreview').style.display = 'block';
-        showToast('✅ Image uploaded successfully!');
+        showToast('Image uploaded successfully!');
       } else {
         showToast('Upload failed: ' + (result.error || 'Unknown error'), 'error');
       }
@@ -991,58 +546,990 @@ try {
       console.error('Upload error:', error);
       showToast('Upload failed. Please try again.', 'error');
     } finally {
-      uploadBtn.textContent = originalText;
+      uploadBtn.innerHTML = originalText;
       uploadBtn.disabled = false;
     }
     
     this.value = '';
   });
-  
-  // Form Submission (Save Hero Image)
+
+  // ============================================
+  // FORM SUBMISSION
+  // ============================================
   document.getElementById('categoryForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
-    var formData = new FormData(this);
-    var data = Object.fromEntries(formData);
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData);
     
-    var categoryId = data.id;
-    var heroImage = data.hero_image;
-    var heroId = data.hero_id || '';
+    const categoryId = data.id;
+    const heroImage = data.hero_image;
+    const heroId = data.hero_id || '';
     
     if (!heroImage) {
-      showToast('❌ Please select or enter a hero image URL', 'error');
+      showToast('Please select or enter a hero image URL', 'error');
       return;
     }
     
-    var saveBtn = document.getElementById('saveBtn');
-    var saveBtnText = document.getElementById('saveBtnText');
-    var saveBtnLoading = document.getElementById('saveBtnLoading');
+    const saveBtn = document.getElementById('saveBtn');
+    const saveBtnText = document.getElementById('saveBtnText');
+    const saveBtnLoading = document.getElementById('saveBtnLoading');
     saveBtn.disabled = true;
     saveBtnText.style.display = 'none';
-    saveBtnLoading.style.display = 'inline';
+    saveBtnLoading.style.display = 'inline-flex';
     
     try {
-      var response = await fetch('/api/admin/categories/' + categoryId + '/hero', {
+      const response = await fetch('/api/admin/categories/' + categoryId + '/hero', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ hero_image: heroImage, hero_id: heroId || null })
       });
       
-      var result = await response.json();
+      const result = await response.json();
       
       if (response.ok) {
-        showToast('✅ Hero image saved successfully!');
+        showToast('Hero image saved successfully!');
         setTimeout(function() { window.location.reload(); }, 500);
       } else {
-        showToast('❌ Error: ' + (result.error || 'Failed to save hero image'), 'error');
+        showToast('Error: ' + (result.error || 'Failed to save hero image'), 'error');
       }
     } catch (error) {
       console.error('Save error:', error);
-      showToast('❌ Failed to save hero image', 'error');
+      showToast('Failed to save hero image', 'error');
     } finally {
       saveBtn.disabled = false;
-      saveBtnText.style.display = 'inline';
+      saveBtnText.style.display = 'inline-flex';
       saveBtnLoading.style.display = 'none';
     }
   });
 </script>
+
+<style is:global>
+  /* ============================================
+     DESIGN SYSTEM
+     ============================================ */
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-success: #22c55e;
+    --color-danger: #ef4444;
+    --color-warning: #eab308;
+    
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ============================================
+     PAGE HEADER
+     ============================================ */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #dbeafe, #ede9fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-primary);
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin: 0.125rem 0 0;
+  }
+
+  .category-count {
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 1rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.7rem;
+    height: 30px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+  }
+
+  .btn-secondary {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-200);
+  }
+  .btn-secondary:hover {
+    background: var(--color-gray-200);
+  }
+
+  .btn-outline-light {
+    background: rgba(255,255,255,0.95);
+    color: var(--color-gray-900);
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(4px);
+  }
+  .btn-outline-light:hover {
+    background: white;
+    transform: translateY(-1px);
+  }
+
+  .btn-success {
+    background: var(--color-success);
+    color: white;
+  }
+  .btn-success:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34,197,94,0.3);
+  }
+
+  .btn-danger {
+    background: var(--color-danger);
+    color: white;
+  }
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+
+  .btn-browse-media {
+    background: #8b5cf6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .btn-browse-media:hover {
+    background: #7c3aed;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+  }
+
+  .btn svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  .btn-sm svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ============================================
+     CATEGORIES GRID
+     ============================================ */
+  .categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .category-card {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+    transition: var(--transition);
+  }
+
+  .category-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    border-color: var(--color-gray-300);
+  }
+
+  /* ============================================
+     CATEGORY CARD HEADER
+     ============================================ */
+  .category-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0.75rem;
+  }
+
+  .category-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    background: var(--color-gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: 1px solid var(--color-gray-200);
+  }
+
+  .category-icon {
+    font-size: 1.25rem;
+  }
+
+  .category-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .category-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .category-slug {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    font-weight: 500;
+  }
+
+  /* ============================================
+     HERO PREVIEW
+     ============================================ */
+  .hero-preview-container {
+    margin: 0 1.25rem;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--color-gray-50);
+    height: 120px;
+    position: relative;
+    border: 1px solid var(--color-gray-200);
+  }
+
+  .hero-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(0,0,0,0.6);
+    opacity: 0;
+    transition: var(--transition);
+    padding: 0.75rem;
+  }
+
+  .hero-image-container:hover .hero-overlay {
+    opacity: 1;
+  }
+
+  .hero-label {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-label svg {
+    color: rgba(255,255,255,0.7);
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* ============================================
+     NO HERO STATE
+     ============================================ */
+  .no-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 100%;
+    color: var(--color-gray-400);
+    padding: 0.75rem;
+  }
+
+  .no-hero svg {
+    stroke: var(--color-gray-300);
+  }
+
+  .no-hero p {
+    font-size: 0.8rem;
+    margin: 0;
+  }
+
+  /* ============================================
+     CATEGORY DESCRIPTION
+     ============================================ */
+  .category-description {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.813rem;
+    color: var(--color-gray-500);
+    line-height: 1.5;
+    border-top: 1px solid var(--color-gray-100);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 48px;
+  }
+
+  /* ============================================
+     CATEGORY STATS
+     ============================================ */
+  .category-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.625rem 1.25rem;
+    background: var(--color-gray-50);
+    border-top: 1px solid var(--color-gray-100);
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.75rem;
+  }
+
+  .stat-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--color-gray-400);
+    font-weight: 500;
+  }
+
+  .stat-label svg {
+    color: var(--color-gray-400);
+  }
+
+  .stat-value {
+    font-weight: 600;
+    color: var(--color-gray-900);
+  }
+
+  /* ============================================
+     STATUS BADGE
+     ============================================ */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-active {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .status-active .status-dot {
+    background: #16a34a;
+  }
+
+  .status-inactive {
+    background: var(--color-gray-100);
+    color: var(--color-gray-500);
+  }
+  .status-inactive .status-dot {
+    background: var(--color-gray-400);
+  }
+
+  /* ============================================
+     MODAL
+     ============================================ */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: modalIn 0.2s ease-out;
+  }
+
+  .modal-lg {
+    max-width: 720px;
+  }
+
+  .modal-xl {
+    max-width: 900px;
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+
+  .modal-header h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gray-400);
+    padding: 0.25rem;
+    transition: var(--transition);
+  }
+
+  .modal-close:hover {
+    color: var(--color-gray-600);
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--color-gray-200);
+    background: var(--color-gray-50);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  /* ============================================
+     FORM
+     ============================================ */
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.813rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 0.375rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+    transition: var(--transition);
+    background: white;
+    color: var(--color-gray-800);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .category-display-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+  }
+
+  /* ============================================
+     HERO SECTION
+     ============================================ */
+  .hero-section {
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    background: var(--color-gray-50);
+  }
+
+  .hero-input-group {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .hero-input-group .form-input {
+    flex: 1;
+  }
+
+  .hero-upload-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .hero-upload-help {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .help-text {
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+  }
+
+  /* ============================================
+     HERO PREVIEW BOX
+     ============================================ */
+  .hero-preview-box {
+    margin-top: 0.75rem;
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--color-gray-50);
+  }
+
+  .hero-preview-content {
+    position: relative;
+    max-height: 200px;
+  }
+
+  .hero-preview-content img {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: cover;
+  }
+
+  .hero-preview-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .hero-preview-actions .btn {
+    background: rgba(0,0,0,0.7);
+    color: white;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .hero-preview-actions .btn:hover {
+    background: rgba(0,0,0,0.9);
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-gray-200);
+  }
+
+  .form-actions .btn {
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  /* ============================================
+     MEDIA GRID
+     ============================================ */
+  .media-grid-mini {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .media-item-mini {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 2px solid var(--color-gray-200);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .media-item-mini:hover {
+    border-color: var(--color-primary);
+    transform: scale(1.02);
+    box-shadow: var(--shadow-md);
+  }
+
+  .media-item-mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .media-item-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: var(--transition);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-align: center;
+    padding: 0.25rem;
+  }
+
+  .media-item-mini:hover .media-item-overlay {
+    opacity: 1;
+  }
+
+  /* ============================================
+     LOADING & EMPTY STATES
+     ============================================ */
+  .loading-state {
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--color-gray-200);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 0.75rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-state p {
+    color: var(--color-gray-400);
+    font-size: 0.875rem;
+  }
+
+  .empty-state-mini {
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .empty-state-mini svg {
+    color: var(--color-gray-300);
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-state-mini p {
+    color: var(--color-gray-500);
+    margin-bottom: 1rem;
+  }
+
+  .error-text {
+    color: var(--color-danger);
+    text-align: center;
+    padding: 1rem;
+  }
+
+  /* ============================================
+     TOAST
+     ============================================ */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+    color: white;
+    opacity: 0;
+    transform: translateY(1rem);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+  }
+
+  .toast-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast-success {
+    background: var(--color-success);
+  }
+
+  .toast-error {
+    background: var(--color-danger);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1024px) {
+    .categories-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .header-content {
+      gap: 0.75rem;
+    }
+
+    .header-icon-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    .header-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+    }
+
+    .categories-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .hero-preview-container {
+      height: 100px;
+    }
+
+    .hero-input-group {
+      flex-direction: column;
+    }
+
+    .hero-input-group .btn {
+      justify-content: center;
+    }
+
+    .hero-upload-help {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .hero-upload-help .btn {
+      justify-content: center;
+    }
+
+    .modal {
+      margin: 0.5rem;
+      max-height: 95vh;
+    }
+
+    .modal-header {
+      padding: 1rem 1.25rem;
+    }
+
+    .modal-body {
+      padding: 1.25rem;
+    }
+
+    .modal-footer {
+      padding: 0.75rem 1.25rem;
+      flex-direction: column;
+    }
+
+    .modal-footer .btn {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .form-actions {
+      flex-direction: column;
+    }
+
+    .form-actions .btn {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .category-stats {
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: flex-start;
+    }
+
+    .media-grid-mini {
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    }
+
+    .hero-preview-content {
+      max-height: 150px;
+    }
+
+    .hero-preview-content img {
+      max-height: 150px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .categories-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .category-card-header {
+      padding: 0.75rem 1rem;
+    }
+
+    .hero-preview-container {
+      height: 80px;
+      margin: 0 1rem;
+    }
+
+    .category-description {
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+    }
+
+    .category-stats {
+      padding: 0.5rem 1rem;
+    }
+
+    .stat {
+      font-size: 0.7rem;
+    }
+  }
+</style>

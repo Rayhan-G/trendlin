@@ -4,44 +4,132 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 
 <AdminLayout title="Newsletter | Admin">
   <!-- ============================================ -->
-  <!-- HEADER WITH NAVIGATION LINKS -->
+  <!-- HEADER -->
   <!-- ============================================ -->
   <div class="page-header">
     <div class="page-header-top">
-      <div>
-        <h1>📧 Newsletter Management</h1>
-        <p>Manage subscribers, create campaigns, and track performance</p>
+      <div class="header-content">
+        <div class="header-icon-wrapper">
+          <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="page-title">Newsletter</h1>
+          <p class="page-subtitle">Manage subscribers, create campaigns, and track performance</p>
+        </div>
       </div>
       <div class="page-actions">
         <a href="/admin/newsletter/subscribers" class="btn btn-outline">
-          📬 View Subscribers
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Subscribers
         </a>
         <a href="/admin/newsletter/new" class="btn btn-primary">
-          ✏️ New Campaign
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          New Campaign
         </a>
       </div>
     </div>
   </div>
 
   <!-- ============================================ -->
-  <!-- SUBSCRIBER STATS - FIXED -->
+  <!-- SUBSCRIBER STATS -->
   <!-- ============================================ -->
   <div class="stats-grid" id="newsletter-stats">
     <div class="stat-card">
-      <div class="stat-label">Total Subscribers</div>
-      <div class="stat-value" id="total-subscribers">0</div>
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-blue">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+        <div>
+          <div class="stat-label">Total Subscribers</div>
+          <div class="stat-value" id="total-subscribers">0</div>
+        </div>
+      </div>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-blue"></span>
+          Email subscribers
+        </span>
+      </div>
     </div>
-    <div class="stat-card stat-active">
-      <div class="stat-label">Active</div>
-      <div class="stat-value" id="active-subscribers">0</div>
+    
+    <div class="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-green">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+            <polyline points="22 4 12 14.01 9 11.01" />
+          </svg>
+        </div>
+        <div>
+          <div class="stat-label">Active</div>
+          <div class="stat-value stat-value-green" id="active-subscribers">0</div>
+        </div>
+      </div>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-green"></span>
+          Engaged subscribers
+        </span>
+      </div>
     </div>
-    <div class="stat-card stat-pending">
-      <div class="stat-label">Pending</div>
-      <div class="stat-value" id="pending-subscribers">0</div>
+    
+    <div class="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-yellow">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </div>
+        <div>
+          <div class="stat-label">Pending</div>
+          <div class="stat-value stat-value-yellow" id="pending-subscribers">0</div>
+        </div>
+      </div>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-yellow"></span>
+          Awaiting confirmation
+        </span>
+      </div>
     </div>
-    <div class="stat-card stat-unsubscribed">
-      <div class="stat-label">Unsubscribed</div>
-      <div class="stat-value" id="unsubscribed-subscribers">0</div>
+    
+    <div class="stat-card">
+      <div class="stat-card-content">
+        <div class="stat-icon-wrapper stat-icon-red">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="15" y1="9" x2="9" y2="15" />
+            <line x1="9" y1="9" x2="15" y2="15" />
+          </svg>
+        </div>
+        <div>
+          <div class="stat-label">Unsubscribed</div>
+          <div class="stat-value stat-value-red" id="unsubscribed-subscribers">0</div>
+        </div>
+      </div>
+      <div class="stat-card-footer">
+        <span class="stat-trend">
+          <span class="stat-trend-dot stat-trend-red"></span>
+          Unsubscribed users
+        </span>
+      </div>
     </div>
   </div>
 
@@ -50,33 +138,68 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   <!-- ============================================ -->
   <div class="campaign-stats">
     <div class="campaign-stat-card">
-      <div class="campaign-stat-icon">📨</div>
+      <div class="campaign-stat-icon campaign-icon-purple">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+      </div>
       <div>
         <div class="campaign-stat-label">Total Campaigns</div>
         <div class="campaign-stat-value" id="total-campaigns">0</div>
       </div>
     </div>
+    
     <div class="campaign-stat-card">
-      <div class="campaign-stat-icon">📊</div>
+      <div class="campaign-stat-icon campaign-icon-blue">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 12h4l2-3 2 6 2-3 2 6 4-9 2 3h4" />
+        </svg>
+      </div>
       <div>
         <div class="campaign-stat-label">Open Rate</div>
         <div class="campaign-stat-value" id="open-rate">0%</div>
       </div>
     </div>
+    
     <div class="campaign-stat-card">
-      <div class="campaign-stat-icon">👆</div>
+      <div class="campaign-stat-icon campaign-icon-green">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </div>
       <div>
         <div class="campaign-stat-label">Click Rate</div>
         <div class="campaign-stat-value" id="click-rate">0%</div>
       </div>
     </div>
-    <div class="campaign-stat-card" style="border-color: #8b5cf6;">
-      <div class="campaign-stat-icon">➕</div>
+    
+    <div class="campaign-stat-card campaign-stat-actions">
+      <div class="campaign-stat-icon campaign-icon-indigo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+      </div>
       <div>
         <div class="campaign-stat-label">Quick Actions</div>
-        <div style="display:flex;gap:0.5rem;margin-top:0.25rem;flex-wrap:wrap;">
-          <a href="/admin/newsletter/new" class="btn btn-sm btn-primary">New Campaign</a>
-          <a href="/admin/newsletter/subscribers" class="btn btn-sm btn-outline">Subscribers</a>
+        <div class="campaign-stat-actions-btns">
+          <a href="/admin/newsletter/new" class="btn btn-sm btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Campaign
+          </a>
+          <a href="/admin/newsletter/subscribers" class="btn btn-sm btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+            </svg>
+            Subscribers
+          </a>
         </div>
       </div>
     </div>
@@ -88,13 +211,29 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   <div class="card">
     <div class="card-header">
       <div>
-        <h2 class="card-title">📋 Recent Campaigns</h2>
+        <h2 class="card-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+          Recent Campaigns
+        </h2>
         <p class="card-subtitle">Your latest sent and drafted newsletters</p>
       </div>
-      <a href="/admin/newsletter/new" class="btn btn-primary btn-sm">+ New Campaign</a>
+      <a href="/admin/newsletter/new" class="btn btn-primary btn-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        New Campaign
+      </a>
     </div>
     <div id="campaign-list">
-      <p class="text-muted">Loading campaigns...</p>
+      <div class="loading-skeleton">
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+        <div class="skeleton-row"></div>
+      </div>
     </div>
   </div>
 
@@ -103,26 +242,75 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   <!-- ============================================ -->
   <div class="quick-links">
     <a href="/admin/newsletter/subscribers" class="quick-link">
-      <span class="quick-icon">📬</span>
+      <div class="quick-icon-wrapper quick-icon-blue">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      </div>
       <div>
         <h4>Manage Subscribers</h4>
         <p>View, search, and manage your subscriber list</p>
       </div>
-      <span class="quick-arrow">→</span>
+      <svg class="quick-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
     </a>
+    
     <a href="/admin/newsletter/new" class="quick-link">
-      <span class="quick-icon">✏️</span>
+      <div class="quick-icon-wrapper quick-icon-purple">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+      </div>
       <div>
         <h4>Create Campaign</h4>
         <p>Write and send a new newsletter to your subscribers</p>
       </div>
-      <span class="quick-arrow">→</span>
+      <svg class="quick-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
     </a>
   </div>
-
 </AdminLayout>
 
 <style is:global>
+  /* ============================================
+     DESIGN SYSTEM
+     ============================================ */
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-success: #22c55e;
+    --color-warning: #eab308;
+    --color-danger: #ef4444;
+    
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   /* ============================================
      PAGE HEADER
      ============================================ */
@@ -138,22 +326,48 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     gap: 1rem;
   }
 
-  .page-header h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0;
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
   }
 
-  .page-header p {
-    color: #64748b;
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #dbeafe, #ede9fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-primary);
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+
+  .page-subtitle {
+    color: var(--color-gray-500);
     margin: 0.25rem 0 0;
+    font-size: 0.875rem;
   }
 
   .page-actions {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+    padding-top: 0.25rem;
   }
 
   /* ============================================
@@ -162,60 +376,57 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
-    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+    padding: 0.5rem 1.125rem;
     border: none;
-    border-radius: 0.5rem;
-    font-size: 0.875rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
     font-weight: 500;
+    font-family: var(--font-family);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition);
     text-decoration: none;
-    font-family: inherit;
+    white-space: nowrap;
+    height: 38px;
   }
 
   .btn-sm {
     padding: 0.25rem 0.75rem;
     font-size: 0.75rem;
+    height: 32px;
   }
 
   .btn-primary {
-    background: #3b82f6;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
   }
 
   .btn-primary:hover {
-    background: #2563eb;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
   }
 
   .btn-outline {
     background: transparent;
-    color: #3b82f6;
-    border: 1px solid #3b82f6;
+    color: var(--color-gray-600);
+    border: 1px solid var(--color-gray-200);
   }
 
   .btn-outline:hover {
-    background: #eef2ff;
+    background: var(--color-gray-50);
+    border-color: var(--color-gray-300);
   }
 
-  .btn-secondary {
-    background: #8b5cf6;
-    color: white;
+  .btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
   }
 
-  .btn-secondary:hover {
-    background: #7c3aed;
-  }
-
-  .btn-success {
-    background: #22c55e;
-    color: white;
-  }
-
-  .btn-success:hover {
-    background: #16a34a;
+  .btn-sm svg {
+    width: 14px;
+    height: 14px;
   }
 
   /* ============================================
@@ -223,22 +434,60 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
      ============================================ */
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
   }
 
   .stat-card {
     background: white;
-    padding: 1rem 1.25rem;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+    transition: var(--transition);
   }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .stat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 0.5rem;
+  }
+
+  .stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon-blue { background: #dbeafe; }
+  .stat-icon-green { background: #d1fae5; }
+  .stat-icon-yellow { background: #fef3c7; }
+  .stat-icon-red { background: #fecaca; }
+
+  .stat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .stat-icon-blue .stat-icon { color: #2563eb; }
+  .stat-icon-green .stat-icon { color: #16a34a; }
+  .stat-icon-yellow .stat-icon { color: #d97706; }
+  .stat-icon-red .stat-icon { color: #dc2626; }
 
   .stat-label {
     font-size: 0.7rem;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--color-gray-400);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -246,42 +495,95 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .stat-value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #0f172a;
-    margin-top: 0.125rem;
+    color: var(--color-gray-900);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
   }
 
-  .stat-active .stat-value { color: #22c55e; }
-  .stat-pending .stat-value { color: #eab308; }
-  .stat-unsubscribed .stat-value { color: #ef4444; }
+  .stat-value-green { color: #16a34a; }
+  .stat-value-yellow { color: #d97706; }
+  .stat-value-red { color: #dc2626; }
+
+  .stat-card-footer {
+    padding: 0.5rem 1.25rem 0.75rem;
+    border-top: 1px solid var(--color-gray-100);
+  }
+
+  .stat-trend {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    font-weight: 500;
+  }
+
+  .stat-trend-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .stat-trend-blue { background: #3b82f6; }
+  .stat-trend-green { background: #22c55e; }
+  .stat-trend-yellow { background: #eab308; }
+  .stat-trend-red { background: #ef4444; }
 
   /* ============================================
      CAMPAIGN STATS
      ============================================ */
   .campaign-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
     margin-bottom: 1.5rem;
   }
 
   .campaign-stat-card {
     background: white;
     padding: 1rem 1.25rem;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
+    transition: var(--transition);
+  }
+
+  .campaign-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .campaign-stat-card.campaign-stat-actions {
+    border-color: #8b5cf6;
+    background: linear-gradient(135deg, #faf5ff, #f3e8ff);
   }
 
   .campaign-stat-icon {
-    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .campaign-icon-purple { background: #ede9fe; color: #7c3aed; }
+  .campaign-icon-blue { background: #dbeafe; color: #2563eb; }
+  .campaign-icon-green { background: #d1fae5; color: #16a34a; }
+  .campaign-icon-indigo { background: #e0e7ff; color: #4f46e5; }
+
+  .campaign-stat-icon svg {
+    color: currentColor;
   }
 
   .campaign-stat-label {
     font-size: 0.7rem;
     font-weight: 500;
-    color: #94a3b8;
+    color: var(--color-gray-400);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -289,7 +591,21 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .campaign-stat-value {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--color-gray-900);
+    letter-spacing: -0.025em;
+  }
+
+  .campaign-stat-actions-btns {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .campaign-stat-actions-btns .btn {
+    height: 30px;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.625rem;
   }
 
   /* ============================================
@@ -297,10 +613,15 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
      ============================================ */
   .card {
     background: white;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
+    transition: var(--transition);
+  }
+
+  .card:hover {
+    box-shadow: var(--shadow-sm);
   }
 
   .card-header {
@@ -308,25 +629,28 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
   }
 
   .card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 1.125rem;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-gray-900);
     margin: 0;
+  }
+
+  .card-title svg {
+    color: var(--color-gray-400);
   }
 
   .card-subtitle {
     font-size: 0.8rem;
-    color: #94a3b8;
-    margin: 0.125rem 0 0;
-  }
-
-  .text-muted {
-    color: #94a3b8;
+    color: var(--color-gray-400);
+    margin: 0.125rem 0 0 0;
   }
 
   /* ============================================
@@ -336,41 +660,76 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid var(--color-gray-100);
+    transition: var(--transition);
   }
 
   .campaign-item:last-child {
     border-bottom: none;
   }
 
+  .campaign-item:hover {
+    padding-left: 0.5rem;
+    background: var(--color-gray-50);
+    border-radius: var(--radius-sm);
+    margin: 0 -0.5rem;
+    padding: 0.875rem 0.5rem;
+  }
+
   .campaign-info h4 {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-gray-900);
     margin: 0;
   }
 
   .campaign-info p {
     font-size: 0.75rem;
-    color: #94a3b8;
+    color: var(--color-gray-400);
     margin: 0.125rem 0 0;
   }
 
   .campaign-status {
     font-size: 0.7rem;
     font-weight: 500;
-    padding: 0.25rem 0.625rem;
+    padding: 0.25rem 0.75rem;
     border-radius: 9999px;
+    text-transform: capitalize;
   }
 
-  .campaign-status.draft { background: #f1f5f9; color: #475569; }
+  .campaign-status.draft { background: var(--color-gray-100); color: var(--color-gray-600); }
   .campaign-status.scheduled { background: #dbeafe; color: #1e40af; }
   .campaign-status.sending { background: #fef3c7; color: #92400e; }
   .campaign-status.completed { background: #dcfce7; color: #166534; }
   .campaign-status.failed { background: #fecaca; color: #991b1b; }
   .campaign-status.paused { background: #fef9c3; color: #854d0e; }
-  .campaign-status.cancelled { background: #f1f5f9; color: #64748b; }
+  .campaign-status.cancelled { background: var(--color-gray-100); color: var(--color-gray-500); }
+
+  /* ============================================
+     LOADING SKELETON
+     ============================================ */
+  .loading-skeleton {
+    padding: 0.25rem 0;
+  }
+
+  .skeleton-row {
+    height: 48px;
+    background: linear-gradient(90deg, var(--color-gray-100) 25%, var(--color-gray-50) 50%, var(--color-gray-100) 75%);
+    background-size: 200% 100%;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.5rem;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  .skeleton-row:last-child {
+    margin-bottom: 0;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
 
   /* ============================================
      QUICK LINKS
@@ -378,7 +737,7 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .quick-links {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1rem;
+    gap: 0.75rem;
     margin-top: 0.5rem;
   }
 
@@ -386,57 +745,97 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1.25rem;
+    padding: 1.25rem 1.5rem;
     background: white;
-    border-radius: 0.75rem;
-    border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
     text-decoration: none;
-    transition: all 0.2s;
+    transition: var(--transition);
   }
 
   .quick-link:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.06);
-    border-color: #3b82f6;
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-primary);
   }
 
-  .quick-icon {
-    font-size: 2rem;
+  .quick-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
+  }
+
+  .quick-icon-blue { background: #dbeafe; color: #2563eb; }
+  .quick-icon-purple { background: #ede9fe; color: #7c3aed; }
+
+  .quick-icon-wrapper svg {
+    color: currentColor;
   }
 
   .quick-link h4 {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-gray-900);
     margin: 0;
   }
 
   .quick-link p {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--color-gray-500);
     margin: 0.125rem 0 0;
   }
 
   .quick-arrow {
     margin-left: auto;
-    color: #94a3b8;
-    font-size: 1.25rem;
+    color: var(--color-gray-300);
+    flex-shrink: 0;
+    transition: var(--transition);
   }
 
   .quick-link:hover .quick-arrow {
-    color: #3b82f6;
+    color: var(--color-primary);
     transform: translateX(4px);
-    transition: all 0.2s;
   }
 
   /* ============================================
      RESPONSIVE
      ============================================ */
-  @media (max-width: 640px) {
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+    
+    .campaign-stats {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+  }
+
+  @media (max-width: 768px) {
     .page-header-top {
       flex-direction: column;
       align-items: stretch;
+    }
+
+    .header-content {
+      gap: 0.75rem;
+    }
+
+    .header-icon-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    .header-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
     }
 
     .page-actions {
@@ -444,16 +843,29 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     }
 
     .page-actions .btn {
-      text-align: center;
       justify-content: center;
     }
 
     .stats-grid {
       grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .stat-card-content {
+      padding: 0.75rem 1rem 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
     }
 
     .campaign-stats {
       grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .campaign-stat-card.campaign-stat-actions {
+      grid-column: 1 / -1;
     }
 
     .campaign-item {
@@ -462,12 +874,53 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       gap: 0.5rem;
     }
 
+    .card-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .card-header .btn {
+      justify-content: center;
+    }
+
     .quick-links {
       grid-template-columns: 1fr;
     }
 
     .quick-link {
-      flex-wrap: wrap;
+      padding: 1rem;
+    }
+
+    .campaign-stat-actions-btns {
+      flex-direction: column;
+    }
+
+    .campaign-stat-actions-btns .btn {
+      justify-content: center;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .campaign-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .campaign-stat-card.campaign-stat-actions {
+      grid-column: 1;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+    }
+
+    .stat-card-footer {
+      padding: 0.375rem 1rem 0.5rem;
     }
   }
 </style>
@@ -475,25 +928,20 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 <script>
   document.addEventListener('DOMContentLoaded', async () => {
     // ============================================
-    // LOAD STATS - WITH DEBUG
+    // LOAD STATS
     // ============================================
     async function loadStats() {
       try {
-        console.log('📊 Fetching stats...');
         const response = await fetch('/api/newsletter/stats');
         const data = await response.json();
         
-        console.log('📊 Stats response:', data);
-        
         if (data.success) {
-          // Subscriber stats
           const subs = data.data.subscribers || {};
           document.getElementById('total-subscribers').textContent = subs.total || 0;
           document.getElementById('active-subscribers').textContent = subs.active || 0;
           document.getElementById('pending-subscribers').textContent = subs.pending || 0;
           document.getElementById('unsubscribed-subscribers').textContent = subs.unsubscribed || 0;
           
-          // Campaign stats
           const campaigns = data.data.campaigns || {};
           document.getElementById('total-campaigns').textContent = campaigns.total || 0;
           
@@ -502,11 +950,11 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
           document.getElementById('open-rate').textContent = openRate + '%';
           document.getElementById('click-rate').textContent = clickRate + '%';
         } else {
-          console.error('❌ Stats API returned error:', data.error);
+          console.error('Stats API error:', data.error);
           setDefaultStats();
         }
       } catch (error) {
-        console.error('❌ Error loading stats:', error);
+        console.error('Error loading stats:', error);
         setDefaultStats();
       }
     }
@@ -526,30 +974,60 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     // ============================================
     async function loadCampaigns() {
       try {
-        console.log('📋 Fetching campaigns...');
         const response = await fetch('/api/newsletter/campaigns');
         const data = await response.json();
         const list = document.getElementById('campaign-list');
-        
-        console.log('📋 Campaigns response:', data);
         
         if (data.success && data.data && data.data.length > 0) {
           list.innerHTML = data.data.map(c => `
             <div class="campaign-item">
               <div class="campaign-info">
-                <h4>${c.subject}</h4>
-                <p>${c.total_recipients || 0} recipients · ${new Date(c.created_at).toLocaleDateString()}</p>
+                <h4>${escapeHtml(c.subject)}</h4>
+                <p>${c.total_recipients || 0} recipients · ${new Date(c.created_at).toLocaleDateString('en-US', { 
+                  month: 'short', 
+                  day: 'numeric', 
+                  year: 'numeric' 
+                })}</p>
               </div>
               <span class="campaign-status ${c.status}">${c.status}</span>
             </div>
           `).join('');
         } else {
-          list.innerHTML = '<p class="text-muted">No campaigns yet. <a href="/admin/newsletter/new" style="color:#3b82f6;">Create your first one →</a></p>';
+          list.innerHTML = `
+            <div class="empty-campaigns">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+              <p>No campaigns yet</p>
+              <a href="/admin/newsletter/new" class="btn btn-primary btn-sm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Create your first campaign
+              </a>
+            </div>
+          `;
         }
       } catch (error) {
-        console.error('❌ Error loading campaigns:', error);
-        document.getElementById('campaign-list').innerHTML = '<p class="text-muted">Error loading campaigns.</p>';
+        console.error('Error loading campaigns:', error);
+        document.getElementById('campaign-list').innerHTML = `
+          <div class="error-campaigns">
+            <p>Error loading campaigns</p>
+          </div>
+        `;
       }
+    }
+
+    // ============================================
+    // HELPERS
+    // ============================================
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
     // ============================================
@@ -559,3 +1037,29 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     await loadCampaigns();
   });
 </script>
+
+<style>
+  /* ============================================
+     ADDITIONAL STYLES FOR EMPTY/ERROR STATES
+     ============================================ */
+  .empty-campaigns {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .empty-campaigns svg {
+    color: var(--color-gray-300);
+    margin-bottom: 0.75rem;
+  }
+
+  .empty-campaigns p {
+    color: var(--color-gray-400);
+    margin-bottom: 1rem;
+  }
+
+  .error-campaigns {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--color-danger);
+  }
+</style>

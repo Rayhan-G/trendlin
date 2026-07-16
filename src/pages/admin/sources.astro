@@ -7,22 +7,32 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   <div class="sources-page">
     <!-- Header -->
     <div class="page-header">
-      <div>
-        <h1>📚 Reliable Sources Management</h1>
-        <p class="text-muted">Manage trusted websites across categories</p>
+      <div class="header-content">
+        <div class="header-icon-wrapper">
+          <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="page-title">Reliable Sources</h1>
+          <p class="page-subtitle">Manage trusted websites across categories</p>
+        </div>
       </div>
       <div class="header-actions">
-        <button class="btn-add btn-add-category" id="add-category-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
+        <button class="btn btn-secondary" id="add-category-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            <line x1="12" y1="11" x2="12" y2="17" />
+            <line x1="9" y1="14" x2="15" y2="14" />
           </svg>
-          Add Category
+          Category
         </button>
-        <button class="btn-add" id="add-btn">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
+        <button class="btn btn-primary" id="add-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           Add Website
         </button>
@@ -32,35 +42,63 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <!-- Stats -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-icon">🌐</div>
+        <div class="stat-icon-wrapper stat-icon-blue">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+        </div>
         <div>
           <div class="stat-value" id="total-count">0</div>
           <div class="stat-label">Total Websites</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">📂</div>
+        <div class="stat-icon-wrapper stat-icon-purple">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+        </div>
         <div>
           <div class="stat-value" id="category-count">0</div>
           <div class="stat-label">Categories</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">📑</div>
+        <div class="stat-icon-wrapper stat-icon-indigo">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+        </div>
         <div>
           <div class="stat-value" id="subcategory-count">0</div>
           <div class="stat-label">Subcategories</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">📁</div>
+        <div class="stat-icon-wrapper stat-icon-pink">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+            <polyline points="2 7 2 17 12 22" />
+            <polyline points="22 7 22 17 12 22" />
+          </svg>
+        </div>
         <div>
           <div class="stat-value" id="subsubcategory-count">0</div>
           <div class="stat-label">Sub-Subcategories</div>
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-icon">⭐</div>
+        <div class="stat-icon-wrapper stat-icon-yellow">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+        </div>
         <div>
           <div class="stat-value" id="featured-count">0</div>
           <div class="stat-label">Featured</div>
@@ -69,11 +107,41 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     </div>
 
     <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab active" data-tab="websites">Websites</button>
-      <button class="tab" data-tab="categories">Categories</button>
-      <button class="tab" data-tab="subcategories">Subcategories</button>
-      <button class="tab" data-tab="subsubcategories">Sub-Subcategories</button>
+    <div class="tabs-wrapper">
+      <div class="tabs">
+        <button class="tab active" data-tab="websites">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          Websites
+        </button>
+        <button class="tab" data-tab="categories">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          Categories
+        </button>
+        <button class="tab" data-tab="subcategories">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+          </svg>
+          Subcategories
+        </button>
+        <button class="tab" data-tab="subsubcategories">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" />
+            <path d="M2 17l10 5 10-5" />
+            <path d="M2 12l10 5 10-5" />
+            <polyline points="2 7 2 17 12 22" />
+            <polyline points="22 7 22 17 12 22" />
+          </svg>
+          Sub-Subcategories
+        </button>
+      </div>
     </div>
 
     <!-- ============================================ -->
@@ -101,10 +169,19 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
             <option value="5">5</option>
           </select>
           <div class="search-box">
+            <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
             <input type="text" id="search-input" placeholder="Search websites..." />
           </div>
         </div>
-        <button class="btn-refresh" onclick="loadData()">⟳</button>
+        <button class="btn-refresh" onclick="loadData()" title="Refresh">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+        </button>
       </div>
 
       <div id="loading-state" class="loading">
@@ -113,26 +190,42 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       </div>
 
       <div id="table-wrap" style="display:none;">
-        <table class="sources-table">
-          <thead>
-            <tr>
-              <th>Website</th>
-              <th>Category</th>
-              <th>Subcategory</th>
-              <th>Sub-Subcategory</th>
-              <th>Score</th>
-              <th>Country</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="table-body"></tbody>
-        </table>
+        <div class="table-wrapper">
+          <table class="sources-table">
+            <thead>
+              <tr>
+                <th>Website</th>
+                <th>Category</th>
+                <th>Subcategory</th>
+                <th>Sub-Subcategory</th>
+                <th>Score</th>
+                <th>Country</th>
+                <th>Status</th>
+                <th class="col-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
       </div>
 
-      <div id="empty-state" style="display:none;" class="empty">
-        <div class="empty-icon">📭</div>
+      <div id="empty-state" style="display:none;" class="empty-state">
+        <div class="empty-icon-wrapper">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="2" y1="12" x2="22" y2="12" />
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+        </div>
         <h3>No websites found</h3>
+        <p>Add your first reliable source to get started</p>
+        <button class="btn btn-primary" onclick="openWebsiteModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Add Website
+        </button>
       </div>
     </div>
 
@@ -141,22 +234,35 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <!-- ============================================ -->
     <div id="tab-categories" class="tab-content">
       <div class="table-toolbar">
-        <button class="btn-sm btn-sm-add" id="add-category-btn-tab">+ Add Category</button>
+        <div class="table-toolbar-left">
+          <span class="table-info">Manage your content categories</span>
+        </div>
+        <div class="table-toolbar-right">
+          <button class="btn btn-sm btn-primary" id="add-category-btn-tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Category
+          </button>
+        </div>
       </div>
-      <table class="sources-table">
-        <thead>
-          <tr>
-            <th>Icon</th>
-            <th>Name</th>
-            <th>Slug</th>
-            <th>Description</th>
-            <th>Subcategories</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="categories-table-body"></tbody>
-      </table>
+      <div class="table-wrapper">
+        <table class="sources-table">
+          <thead>
+            <tr>
+              <th style="width:60px;">Icon</th>
+              <th>Name</th>
+              <th>Slug</th>
+              <th>Description</th>
+              <th style="width:120px;">Subcategories</th>
+              <th style="width:120px;">Status</th>
+              <th style="width:100px;" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="categories-table-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ============================================ -->
@@ -164,25 +270,38 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <!-- ============================================ -->
     <div id="tab-subcategories" class="tab-content">
       <div class="table-toolbar">
-        <select id="subcat-filter-category" class="filter-select">
-          <option value="">Filter by Category</option>
-        </select>
-        <button class="btn-sm btn-sm-add" id="add-subcategory-btn">+ Add Subcategory</button>
+        <div class="table-toolbar-left">
+          <select id="subcat-filter-category" class="filter-select">
+            <option value="">Filter by Category</option>
+          </select>
+          <span class="table-info" id="subcat-count"></span>
+        </div>
+        <div class="table-toolbar-right">
+          <button class="btn btn-sm btn-primary" id="add-subcategory-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Subcategory
+          </button>
+        </div>
       </div>
-      <table class="sources-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Slug</th>
-            <th>Category</th>
-            <th>Sub-Subcategories</th>
-            <th>Websites</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="subcategories-table-body"></tbody>
-      </table>
+      <div class="table-wrapper">
+        <table class="sources-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Slug</th>
+              <th>Category</th>
+              <th style="width:140px;">Sub-Subcategories</th>
+              <th style="width:120px;">Websites</th>
+              <th style="width:120px;">Status</th>
+              <th style="width:100px;" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subcategories-table-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ============================================ -->
@@ -190,25 +309,38 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     <!-- ============================================ -->
     <div id="tab-subsubcategories" class="tab-content">
       <div class="table-toolbar">
-        <select id="subsubcat-filter-subcategory" class="filter-select">
-          <option value="">Filter by Subcategory</option>
-        </select>
-        <button class="btn-sm btn-sm-add" id="add-subsubcategory-btn">+ Add Sub-Subcategory</button>
+        <div class="table-toolbar-left">
+          <select id="subsubcat-filter-subcategory" class="filter-select">
+            <option value="">Filter by Subcategory</option>
+          </select>
+          <span class="table-info" id="subsubcat-count"></span>
+        </div>
+        <div class="table-toolbar-right">
+          <button class="btn btn-sm btn-primary" id="add-subsubcategory-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Sub-Subcategory
+          </button>
+        </div>
       </div>
-      <table class="sources-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Slug</th>
-            <th>Subcategory</th>
-            <th>Category</th>
-            <th>Websites</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="subsubcategories-table-body"></tbody>
-      </table>
+      <div class="table-wrapper">
+        <table class="sources-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Slug</th>
+              <th>Subcategory</th>
+              <th>Category</th>
+              <th style="width:120px;">Websites</th>
+              <th style="width:120px;">Status</th>
+              <th style="width:100px;" class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="subsubcategories-table-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ============================================ -->
@@ -218,21 +350,28 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="website-modal-title">Add Website</h2>
-          <button class="modal-close" id="website-modal-close">&times;</button>
+          <button class="modal-close" id="website-modal-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
         <form id="website-form">
           <input type="hidden" id="website-edit-id" />
-          <div class="form-group">
-            <label>Category *</label>
-            <select id="website-form-category" required>
-              <option value="">Select a category</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Subcategory *</label>
-            <select id="website-form-subcategory" required>
-              <option value="">Select a subcategory</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Category *</label>
+              <select id="website-form-category" required>
+                <option value="">Select a category</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Subcategory *</label>
+              <select id="website-form-subcategory" required>
+                <option value="">Select a subcategory</option>
+              </select>
+            </div>
           </div>
           <div class="form-group">
             <label>Sub-Subcategory</label>
@@ -240,21 +379,23 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               <option value="">None (optional)</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Website Name *</label>
-            <input type="text" id="website-form-name" required />
-          </div>
-          <div class="form-group">
-            <label>URL *</label>
-            <input type="url" id="website-form-url" required />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Website Name *</label>
+              <input type="text" id="website-form-name" required placeholder="Enter website name" />
+            </div>
+            <div class="form-group">
+              <label>URL *</label>
+              <input type="url" id="website-form-url" required placeholder="https://example.com" />
+            </div>
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea id="website-form-desc" rows="2"></textarea>
+            <textarea id="website-form-desc" rows="2" placeholder="Brief description of the website"></textarea>
           </div>
           <div class="form-group">
             <label>Notes</label>
-            <textarea id="website-form-notes" rows="2"></textarea>
+            <textarea id="website-form-notes" rows="2" placeholder="Internal notes (optional)"></textarea>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -271,26 +412,31 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           </div>
           <div class="form-group">
             <label>Logo URL</label>
-            <input type="url" id="website-form-logo" />
+            <input type="url" id="website-form-logo" placeholder="https://example.com/logo.png" />
           </div>
           <div class="form-row">
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" id="website-form-active" checked />
+                <span class="checkbox-custom"></span>
                 Active
               </label>
             </div>
             <div class="form-group">
               <label class="checkbox-label">
                 <input type="checkbox" id="website-form-featured" />
-                ⭐ Featured
+                <span class="checkbox-custom"></span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                Featured
               </label>
             </div>
           </div>
           <div id="website-form-message" class="form-message" style="display:none;"></div>
           <div class="form-actions">
-            <button type="button" class="btn-secondary" id="website-modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary">Save Website</button>
+            <button type="button" class="btn btn-secondary" id="website-modal-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Website</button>
           </div>
         </form>
       </div>
@@ -303,40 +449,50 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="category-modal-title">Add Category</h2>
-          <button class="modal-close" id="category-modal-close">&times;</button>
+          <button class="modal-close" id="category-modal-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
         <form id="category-form">
           <input type="hidden" id="category-edit-id" />
-          <div class="form-group">
-            <label>Name *</label>
-            <input type="text" id="category-form-name" required />
-          </div>
-          <div class="form-group">
-            <label>Slug *</label>
-            <input type="text" id="category-form-slug" required />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Name *</label>
+              <input type="text" id="category-form-name" required placeholder="Category name" />
+            </div>
+            <div class="form-group">
+              <label>Slug *</label>
+              <input type="text" id="category-form-slug" required placeholder="category-slug" />
+            </div>
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea id="category-form-desc" rows="2"></textarea>
+            <textarea id="category-form-desc" rows="2" placeholder="Category description"></textarea>
           </div>
-          <div class="form-group">
-            <label>Icon</label>
-            <input type="text" id="category-form-icon" value="📚" />
-          </div>
-          <div class="form-group">
-            <label>Display Order</label>
-            <input type="number" id="category-form-order" value="0" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Icon</label>
+              <input type="text" id="category-form-icon" value="📚" />
+            </div>
+            <div class="form-group">
+              <label>Display Order</label>
+              <input type="number" id="category-form-order" value="0" />
+            </div>
           </div>
           <div class="form-group">
             <label class="checkbox-label">
               <input type="checkbox" id="category-form-active" checked />
+              <span class="checkbox-custom"></span>
               Active
             </label>
           </div>
           <div id="category-form-message" class="form-message" style="display:none;"></div>
           <div class="form-actions">
-            <button type="button" class="btn-secondary" id="category-modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary">Save Category</button>
+            <button type="button" class="btn btn-secondary" id="category-modal-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Category</button>
           </div>
         </form>
       </div>
@@ -349,7 +505,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="subcategory-modal-title">Add Subcategory</h2>
-          <button class="modal-close" id="subcategory-modal-close">&times;</button>
+          <button class="modal-close" id="subcategory-modal-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
         <form id="subcategory-form">
           <input type="hidden" id="subcategory-edit-id" />
@@ -359,32 +520,37 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               <option value="">Select a category</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Name *</label>
-            <input type="text" id="subcategory-form-name" required />
-          </div>
-          <div class="form-group">
-            <label>Slug *</label>
-            <input type="text" id="subcategory-form-slug" required />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Name *</label>
+              <input type="text" id="subcategory-form-name" required placeholder="Subcategory name" />
+            </div>
+            <div class="form-group">
+              <label>Slug *</label>
+              <input type="text" id="subcategory-form-slug" required placeholder="subcategory-slug" />
+            </div>
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea id="subcategory-form-desc" rows="2"></textarea>
+            <textarea id="subcategory-form-desc" rows="2" placeholder="Subcategory description"></textarea>
           </div>
-          <div class="form-group">
-            <label>Display Order</label>
-            <input type="number" id="subcategory-form-order" value="0" />
-          </div>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="subcategory-form-active" checked />
-              Active
-            </label>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Display Order</label>
+              <input type="number" id="subcategory-form-order" value="0" />
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;padding-top:1.5rem;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="subcategory-form-active" checked />
+                <span class="checkbox-custom"></span>
+                Active
+              </label>
+            </div>
           </div>
           <div id="subcategory-form-message" class="form-message" style="display:none;"></div>
           <div class="form-actions">
-            <button type="button" class="btn-secondary" id="subcategory-modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary">Save Subcategory</button>
+            <button type="button" class="btn btn-secondary" id="subcategory-modal-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Subcategory</button>
           </div>
         </form>
       </div>
@@ -397,7 +563,12 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       <div class="modal">
         <div class="modal-header">
           <h2 id="subsubcategory-modal-title">Add Sub-Subcategory</h2>
-          <button class="modal-close" id="subsubcategory-modal-close">&times;</button>
+          <button class="modal-close" id="subsubcategory-modal-close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
         <form id="subsubcategory-form">
           <input type="hidden" id="subsubcategory-edit-id" />
@@ -407,32 +578,37 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
               <option value="">Select a subcategory</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Name *</label>
-            <input type="text" id="subsubcategory-form-name" required />
-          </div>
-          <div class="form-group">
-            <label>Slug *</label>
-            <input type="text" id="subsubcategory-form-slug" required />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Name *</label>
+              <input type="text" id="subsubcategory-form-name" required placeholder="Sub-subcategory name" />
+            </div>
+            <div class="form-group">
+              <label>Slug *</label>
+              <input type="text" id="subsubcategory-form-slug" required placeholder="subsubcategory-slug" />
+            </div>
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea id="subsubcategory-form-desc" rows="2"></textarea>
+            <textarea id="subsubcategory-form-desc" rows="2" placeholder="Sub-subcategory description"></textarea>
           </div>
-          <div class="form-group">
-            <label>Display Order</label>
-            <input type="number" id="subsubcategory-form-order" value="0" />
-          </div>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="subsubcategory-form-active" checked />
-              Active
-            </label>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Display Order</label>
+              <input type="number" id="subsubcategory-form-order" value="0" />
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;padding-top:1.5rem;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="subsubcategory-form-active" checked />
+                <span class="checkbox-custom"></span>
+                Active
+              </label>
+            </div>
           </div>
           <div id="subsubcategory-form-message" class="form-message" style="display:none;"></div>
           <div class="form-actions">
-            <button type="button" class="btn-secondary" id="subsubcategory-modal-cancel">Cancel</button>
-            <button type="submit" class="btn-primary">Save Sub-Subcategory</button>
+            <button type="button" class="btn btn-secondary" id="subsubcategory-modal-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save Sub-Subcategory</button>
           </div>
         </form>
       </div>
@@ -444,136 +620,1194 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 </AdminLayout>
 
 <style>
-  .sources-page { padding: 2rem; max-width: 1400px; margin: 0 auto; }
-  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
-  .page-header h1 { font-size: 1.875rem; font-weight: 700; color: #0f172a; margin: 0; }
-  .page-header .text-muted { color: #64748b; margin: 0; font-size: 0.875rem; }
-  .header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-  
-  .btn-add { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 1.25rem; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 0.75rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
-  .btn-add:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59,130,246,0.4); }
-  .btn-add-category { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
-  .btn-add-category:hover { box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
-  
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-  .stat-card { display: flex; align-items: center; gap: 1rem; padding: 1.25rem; background: white; border-radius: 0.75rem; border: 1px solid #e2e8f0; }
-  .stat-icon { font-size: 1.75rem; line-height: 1; }
-  .stat-value { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
-  .stat-label { font-size: 0.75rem; color: #94a3b8; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-  
-  .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; flex-wrap: wrap; }
-  .tab { padding: 0.5rem 1.25rem; border: none; background: none; font-weight: 500; font-size: 0.875rem; color: #64748b; cursor: pointer; border-radius: 0.5rem; transition: all 0.2s; }
-  .tab:hover { background: #f1f5f9; color: #0f172a; }
-  .tab.active { color: #3b82f6; background: #eff6ff; }
-  
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  
-  .filters-bar { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-  .filters { display: flex; gap: 0.75rem; flex-wrap: wrap; flex: 1; }
-  .filters select, .filter-select { padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; background: white; font-size: 0.875rem; color: #0f172a; cursor: pointer; outline: none; min-width: 140px; }
-  .filters select:focus, .filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-  .search-box { position: relative; flex: 1; min-width: 200px; }
-  .search-box input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem; outline: none; }
-  .search-box input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-  .btn-refresh { padding: 0.5rem 0.75rem; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; cursor: pointer; font-size: 1.25rem; transition: all 0.2s; }
-  .btn-refresh:hover { background: #f1f5f9; transform: rotate(45deg); }
-  
-  .table-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
-  
-  .loading { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
-  .spinner { width: 40px; height: 40px; border: 3px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  
-  .sources-table { width: 100%; border-collapse: collapse; background: white; border-radius: 0.75rem; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-  .sources-table thead { background: #f8fafc; }
-  .sources-table th { padding: 0.75rem 1rem; text-align: left; font-size: 0.75rem; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e2e8f0; }
-  .sources-table td { padding: 0.75rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-  .sources-table tr:hover td { background: #fafbfc; }
-  
-  .source-cell { display: flex; align-items: center; gap: 0.75rem; }
-  .source-logo { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
-  .source-name { font-weight: 600; color: #0f172a; }
-  .source-url { display: block; font-size: 0.75rem; color: #94a3b8; word-break: break-all; }
-  
-  .badge-category { display: inline-block; padding: 0.25rem 0.625rem; background: #e0e7ff; color: #3730a3; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-  .badge-subcategory { display: inline-block; padding: 0.25rem 0.625rem; background: #dbeafe; color: #1e40af; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-  .badge-subsubcategory { display: inline-block; padding: 0.25rem 0.625rem; background: #fce7f3; color: #9d174d; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-  .badge-score { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; min-width: 2.5rem; text-align: center; }
+  /* ============================================
+     DESIGN SYSTEM
+     ============================================ */
+  :root {
+    --color-primary: #3b82f6;
+    --color-primary-dark: #2563eb;
+    --color-success: #22c55e;
+    --color-success-bg: #dcfce7;
+    --color-danger: #ef4444;
+    --color-danger-bg: #fee2e2;
+    --color-warning: #eab308;
+    --color-warning-bg: #fef3c7;
+    --color-info: #8b5cf6;
+    --color-info-bg: #ede9fe;
+    
+    --color-gray-50: #f8fafc;
+    --color-gray-100: #f1f5f9;
+    --color-gray-200: #e2e8f0;
+    --color-gray-300: #cbd5e1;
+    --color-gray-400: #94a3b8;
+    --color-gray-500: #64748b;
+    --color-gray-600: #475569;
+    --color-gray-700: #334155;
+    --color-gray-800: #1e293b;
+    --color-gray-900: #0f172a;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+    --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sources-page {
+    padding: 0;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  /* ============================================
+     HEADER
+     ============================================ */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #dbeafe, #ede9fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--color-primary);
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin: 0.125rem 0 0;
+  }
+
+  /* ============================================
+     BUTTONS
+     ============================================ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.125rem;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    font-weight: 500;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    white-space: nowrap;
+    height: 40px;
+  }
+
+  .btn-sm {
+    padding: 0.25rem 0.875rem;
+    font-size: 0.75rem;
+    height: 34px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+  }
+
+  .btn-secondary {
+    background: var(--color-gray-100);
+    color: var(--color-gray-700);
+    border: 1px solid var(--color-gray-200);
+  }
+
+  .btn-secondary:hover {
+    background: var(--color-gray-200);
+  }
+
+  .btn svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .btn-sm svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  /* ============================================
+     STATS GRID
+     ============================================ */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    transition: var(--transition);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .stat-icon-wrapper {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .stat-icon-blue { background: #dbeafe; }
+  .stat-icon-purple { background: #ede9fe; }
+  .stat-icon-indigo { background: #e0e7ff; }
+  .stat-icon-pink { background: #fce7f3; }
+  .stat-icon-yellow { background: #fef3c7; }
+
+  .stat-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .stat-icon-blue .stat-icon { color: #2563eb; }
+  .stat-icon-purple .stat-icon { color: #7c3aed; }
+  .stat-icon-indigo .stat-icon { color: #4f46e5; }
+  .stat-icon-pink .stat-icon { color: #db2777; }
+  .stat-icon-yellow .stat-icon { color: #d97706; }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-gray-900);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--color-gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ============================================
+     TABS
+     ============================================ */
+  .tabs-wrapper {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-gray-200);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border: none;
+    background: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+    color: var(--color-gray-500);
+    cursor: pointer;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: var(--transition);
+    position: relative;
+  }
+
+  .tab:hover {
+    color: var(--color-gray-900);
+    background: var(--color-gray-50);
+  }
+
+  .tab.active {
+    color: var(--color-primary);
+    background: transparent;
+  }
+
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-primary);
+    border-radius: 2px 2px 0 0;
+  }
+
+  .tab svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .tab-content {
+    display: none;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================
+     FILTERS
+     ============================================ */
+  .filters-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filters {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+
+  .filters select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    background: white;
+    font-size: 0.813rem;
+    font-family: var(--font-family);
+    color: var(--color-gray-800);
+    cursor: pointer;
+    outline: none;
+    min-width: 140px;
+    transition: var(--transition);
+  }
+
+  .filters select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-gray-400);
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    font-family: var(--font-family);
+    outline: none;
+    transition: var(--transition);
+    background: white;
+    color: var(--color-gray-800);
+  }
+
+  .search-box input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .search-box input::placeholder {
+    color: var(--color-gray-400);
+  }
+
+  .btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--color-gray-500);
+    transition: var(--transition);
+  }
+
+  .btn-refresh:hover {
+    background: var(--color-gray-50);
+    color: var(--color-gray-900);
+    transform: rotate(45deg);
+  }
+
+  /* ============================================
+     TABLE TOOLBAR
+     ============================================ */
+  .table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .table-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .table-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .table-info {
+    font-size: 0.813rem;
+    color: var(--color-gray-500);
+  }
+
+  .filter-select {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    background: white;
+    font-size: 0.813rem;
+    font-family: var(--font-family);
+    color: var(--color-gray-800);
+    cursor: pointer;
+    outline: none;
+    min-width: 180px;
+  }
+
+  .filter-select:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* ============================================
+     TABLE
+     ============================================ */
+  .table-wrapper {
+    background: white;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gray-200);
+    overflow: hidden;
+  }
+
+  .sources-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+  }
+
+  .sources-table thead {
+    background: var(--color-gray-50);
+  }
+
+  .sources-table th {
+    text-align: left;
+    padding: 0.625rem 1rem;
+    color: var(--color-gray-500);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--color-gray-200);
+    white-space: nowrap;
+  }
+
+  .sources-table td {
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid var(--color-gray-100);
+    vertical-align: middle;
+  }
+
+  .sources-table tr:hover td {
+    background: var(--color-gray-50);
+  }
+
+  .sources-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .col-actions {
+    text-align: right;
+  }
+
+  /* ============================================
+     SOURCE CELL
+     ============================================ */
+  .source-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .source-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    flex-shrink: 0;
+  }
+
+  .source-logo-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    color: var(--color-gray-400);
+  }
+
+  .source-name {
+    font-weight: 600;
+    color: var(--color-gray-900);
+    font-size: 0.875rem;
+  }
+
+  .source-url {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--color-gray-400);
+    word-break: break-all;
+    font-weight: 500;
+  }
+
+  /* ============================================
+     BADGES
+     ============================================ */
+  .badge-category {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: var(--color-info-bg);
+    color: #6d28d9;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-subcategory {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-subsubcategory {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: #fce7f3;
+    color: #9d174d;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-score {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-width: 2.75rem;
+    text-align: center;
+  }
+
   .badge-score.perfect { background: #dcfce7; color: #166534; }
   .badge-score.high { background: #dbeafe; color: #1e40af; }
   .badge-score.medium { background: #fef3c7; color: #92400e; }
   .badge-score.low { background: #fee2e2; color: #991b1b; }
-  .badge-country { display: inline-block; padding: 0.25rem 0.625rem; background: #f1f5f9; color: #475569; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-  .badge-status { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
-  .badge-status.active { background: #dcfce7; color: #166534; }
-  .badge-status.inactive { background: #fee2e2; color: #991b1b; }
-  .badge-featured { margin-left: 0.25rem; }
-  
-  .actions-cell { display: flex; gap: 0.5rem; justify-content: flex-end; flex-wrap: wrap; }
-  .btn-sm { padding: 0.25rem 0.625rem; border: none; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-  .btn-sm-edit { background: #e0e7ff; color: #3730a3; }
-  .btn-sm-edit:hover { background: #c7d2fe; }
-  .btn-sm-delete { background: #fee2e2; color: #991b1b; }
-  .btn-sm-delete:hover { background: #fecaca; }
-  .btn-sm-verify { background: #d1fae5; color: #065f46; }
-  .btn-sm-verify:hover { background: #a7f3d0; }
-  .btn-sm-add { background: #dbeafe; color: #1e40af; }
-  .btn-sm-add:hover { background: #bfdbfe; }
-  
-  .empty { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
-  .empty-icon { font-size: 4rem; margin-bottom: 1rem; }
-  .empty h3 { color: #475569; margin: 0; }
-  
-  /* Modal */
-  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-  .modal { background: white; border-radius: 1rem; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: modalIn 0.2s ease-out; }
-  @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-  .modal-header h2 { margin: 0; font-size: 1.25rem; color: #0f172a; }
-  .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; padding: 0; line-height: 1; }
-  .modal-close:hover { color: #475569; }
-  
-  .form-group { margin-bottom: 1rem; }
-  .form-group label { display: block; font-weight: 500; font-size: 0.875rem; color: #0f172a; margin-bottom: 0.25rem; }
-  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-size: 0.875rem; transition: border-color 0.2s; font-family: inherit; }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-  .form-group textarea { resize: vertical; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding-top: 0.25rem; }
-  .checkbox-label input[type="checkbox"] { width: 1rem; height: 1rem; cursor: pointer; }
-  .score-slider { display: flex; align-items: center; gap: 0.75rem; }
-  .score-slider input[type="range"] { flex: 1; padding: 0; }
-  .score-slider span { font-weight: 600; color: #0f172a; min-width: 2.5rem; }
-  
-  .form-message { padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; margin-bottom: 0.5rem; }
-  .form-message.error { background: #fee2e2; color: #991b1b; }
-  .form-message.success { background: #dcfce7; color: #166534; }
-  
-  .form-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e2e8f0; }
-  .btn-primary { padding: 0.5rem 1.25rem; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; border-radius: 0.5rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
-  .btn-secondary { padding: 0.5rem 1.25rem; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; }
-  .btn-secondary:hover { background: #e2e8f0; }
-  
-  .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 500; font-size: 0.875rem; color: white; opacity: 0; transform: translateY(1rem); transition: all 0.3s; pointer-events: none; z-index: 2000; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-  .toast.show { opacity: 1; transform: translateY(0); }
-  .toast.success { background: #22c55e; }
-  .toast.error { background: #ef4444; }
-  
+
+  .badge-country {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge-status .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .badge-status.active {
+    background: var(--color-success-bg);
+    color: #16a34a;
+  }
+
+  .badge-status.active .status-dot {
+    background: #16a34a;
+  }
+
+  .badge-status.inactive {
+    background: var(--color-danger-bg);
+    color: #dc2626;
+  }
+
+  .badge-status.inactive .status-dot {
+    background: #dc2626;
+  }
+
+  .badge-featured {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background: var(--color-warning-bg);
+    color: #d97706;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    margin-left: 0.25rem;
+  }
+
+  /* ============================================
+     ACTIONS
+     ============================================ */
+  .actions-cell {
+    display: flex;
+    gap: 0.375rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .btn-sm-edit,
+  .btn-sm-delete,
+  .btn-sm-verify {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.813rem;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-sm-edit {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  .btn-sm-edit:hover {
+    background: #c7d2fe;
+    transform: translateY(-1px);
+  }
+
+  .btn-sm-delete {
+    background: var(--color-danger-bg);
+    color: #dc2626;
+  }
+
+  .btn-sm-delete:hover {
+    background: #fecaca;
+    transform: translateY(-1px);
+  }
+
+  .btn-sm-verify {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .btn-sm-verify:hover {
+    background: #a7f3d0;
+    transform: translateY(-1px);
+  }
+
+  /* ============================================
+     LOADING
+     ============================================ */
+  .loading {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--color-gray-400);
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--color-gray-200);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ============================================
+     EMPTY STATE
+     ============================================ */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: var(--radius-md);
+    border: 2px dashed var(--color-gray-200);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .empty-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--color-gray-50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+  }
+
+  .empty-icon-wrapper svg {
+    color: var(--color-gray-300);
+  }
+
+  .empty-state h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0 0 0.5rem;
+  }
+
+  .empty-state p {
+    color: var(--color-gray-500);
+    margin: 0 0 1.5rem;
+  }
+
+  /* ============================================
+     MODAL
+     ============================================ */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.5);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+  }
+
+  .modal {
+    background: white;
+    border-radius: var(--radius-lg);
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 2rem;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: modalIn 0.2s ease-out;
+  }
+
+  @keyframes modalIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-gray-900);
+    margin: 0;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--color-gray-400);
+    padding: 0.25rem;
+    transition: var(--transition);
+  }
+
+  .modal-close:hover {
+    color: var(--color-gray-600);
+  }
+
+  .modal-close svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* ============================================
+     FORM
+     ============================================ */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: 500;
+    font-size: 0.813rem;
+    color: var(--color-gray-900);
+    margin-bottom: 0.25rem;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+    transition: var(--transition);
+    background: white;
+    color: var(--color-gray-800);
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 400;
+    padding-top: 0.25rem;
+    color: var(--color-gray-700);
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    display: none;
+  }
+
+  .checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--color-gray-300);
+    border-radius: 4px;
+    display: inline-block;
+    position: relative;
+    flex-shrink: 0;
+    transition: var(--transition);
+  }
+
+  .checkbox-label input:checked + .checkbox-custom {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  .checkbox-label input:checked + .checkbox-custom::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .checkbox-label svg {
+    color: var(--color-gray-400);
+    width: 16px;
+    height: 16px;
+  }
+
+  .score-slider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .score-slider input[type="range"] {
+    flex: 1;
+    padding: 0;
+    height: 6px;
+    background: var(--color-gray-200);
+    border-radius: 3px;
+    appearance: none;
+    outline: none;
+  }
+
+  .score-slider input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .score-slider input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  .score-slider span {
+    font-weight: 700;
+    color: var(--color-gray-900);
+    min-width: 2.75rem;
+    font-size: 0.875rem;
+  }
+
+  .form-message {
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-message.error {
+    background: var(--color-danger-bg);
+    color: #991b1b;
+  }
+
+  .form-message.success {
+    background: var(--color-success-bg);
+    color: #166534;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-gray-200);
+  }
+
+  /* ============================================
+     TOAST
+     ============================================ */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: 0.875rem;
+    font-family: var(--font-family);
+    color: white;
+    opacity: 0;
+    transform: translateY(1rem);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    z-index: 2000;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .toast.success {
+    background: var(--color-success);
+  }
+
+  .toast.error {
+    background: var(--color-danger);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  @media (max-width: 1024px) {
+    .stats-grid {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+  }
+
   @media (max-width: 768px) {
-    .sources-page { padding: 1rem; }
-    .page-header { flex-direction: column; align-items: stretch; }
-    .header-actions { flex-direction: column; }
-    .filters { flex-direction: column; }
-    .filters select, .search-box { width: 100%; min-width: unset; }
-    .form-row { grid-template-columns: 1fr; }
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-    .actions-cell { flex-direction: column; }
-    .sources-table { font-size: 0.75rem; }
-    .sources-table th, .sources-table td { padding: 0.5rem; }
-    .tabs { overflow-x: auto; flex-wrap: nowrap; }
-    .table-toolbar { flex-direction: column; align-items: stretch; }
+    .page-header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .header-content {
+      gap: 0.75rem;
+    }
+
+    .header-icon-wrapper {
+      width: 40px;
+      height: 40px;
+    }
+
+    .header-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .page-title {
+      font-size: 1.25rem;
+    }
+
+    .header-actions {
+      flex-direction: column;
+    }
+
+    .header-actions .btn {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .stat-card {
+      padding: 0.75rem 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+    }
+
+    .filters {
+      flex-direction: column;
+    }
+
+    .filters select,
+    .search-box {
+      width: 100%;
+      min-width: unset;
+    }
+
+    .filters-bar {
+      flex-direction: column;
+    }
+
+    .table-toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .table-toolbar-left,
+    .table-toolbar-right {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-select {
+      width: 100%;
+      min-width: unset;
+    }
+
+    .tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      gap: 0;
+    }
+
+    .tab {
+      white-space: nowrap;
+      padding: 0.5rem 0.875rem;
+      font-size: 0.75rem;
+    }
+
+    .tab svg {
+      display: none;
+    }
+
+    .sources-table {
+      font-size: 0.75rem;
+    }
+
+    .sources-table th,
+    .sources-table td {
+      padding: 0.5rem 0.625rem;
+    }
+
+    .source-cell {
+      gap: 0.5rem;
+    }
+
+    .source-logo,
+    .source-logo-placeholder {
+      width: 28px;
+      height: 28px;
+    }
+
+    .source-name {
+      font-size: 0.813rem;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .modal {
+      padding: 1.25rem;
+      margin: 0.5rem;
+    }
+
+    .actions-cell {
+      justify-content: flex-start;
+    }
+
+    .col-actions {
+      text-align: left;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-value {
+      font-size: 1.125rem;
+    }
+
+    .empty-state {
+      padding: 2rem 1rem;
+    }
+
+    .empty-icon-wrapper {
+      width: 60px;
+      height: 60px;
+    }
   }
 </style>
 
@@ -928,7 +2162,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
         <tr>
           <td>
             <div class="source-cell">
-              ${w.logo_url ? `<img src="${w.logo_url}" class="source-logo" />` : `<div class="source-logo" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🌐</div>`}
+              ${w.logo_url ? `<img src="${w.logo_url}" class="source-logo" />` : `<div class="source-logo-placeholder">🌐</div>`}
               <div>
                 <div class="source-name">${escapeHtml(w.name)}</div>
                 <span class="source-url">${escapeHtml(w.url)}</span>
@@ -937,18 +2171,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
           </td>
           <td><span class="badge-category">${escapeHtml(w.category_name || 'Uncategorized')}</span></td>
           <td><span class="badge-subcategory">${escapeHtml(w.subcategory_name || '')}</span></td>
-          <td>${w.subsubcategory_name ? `<span class="badge-subsubcategory">${escapeHtml(w.subsubcategory_name)}</span>` : '<span style="color:#94a3b8;font-size:0.75rem;">—</span>'}</td>
+          <td>${w.subsubcategory_name ? `<span class="badge-subsubcategory">${escapeHtml(w.subsubcategory_name)}</span>` : '<span style="color:var(--color-gray-400);font-size:0.75rem;">—</span>'}</td>
           <td><span class="badge-score ${scoreClass}">${score}/10</span></td>
           <td><span class="badge-country">${escapeHtml(w.country || 'USA')}</span></td>
           <td>
-            <span class="badge-status ${w.is_active ? 'active' : 'inactive'}">${w.is_active ? 'Active' : 'Inactive'}</span>
-            ${w.is_featured ? '<span class="badge-featured">⭐</span>' : ''}
+            <span class="badge-status ${w.is_active ? 'active' : 'inactive'}">
+              <span class="status-dot"></span>
+              ${w.is_active ? 'Active' : 'Inactive'}
+            </span>
+            ${w.is_featured ? '<span class="badge-featured">⭐ Featured</span>' : ''}
           </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="editWebsite(${w.id})">✏️</button>
-              <button class="btn-sm btn-sm-verify" onclick="verifyWebsite(${w.id})">✅</button>
-              <button class="btn-sm btn-sm-delete" onclick="deleteWebsite(${w.id})">🗑️</button>
+              <button class="btn-sm-edit" onclick="editWebsite(${w.id})" title="Edit">✏️</button>
+              <button class="btn-sm-verify" onclick="verifyWebsite(${w.id})" title="Verify">✅</button>
+              <button class="btn-sm-delete" onclick="deleteWebsite(${w.id})" title="Delete">🗑️</button>
             </div>
           </td>
         </tr>
@@ -963,7 +2200,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
   function renderCategories() {
     const tbody = document.getElementById('categories-table-body');
     if (!categories || categories.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty">No categories found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-gray-400);">No categories found</td></tr>';
       return;
     }
     
@@ -971,16 +2208,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
     categories.forEach(c => {
       html += `
         <tr>
-          <td style="font-size:1.5rem;">${c.icon || '📚'}</td>
-          <td><strong>${escapeHtml(c.name)}</strong></td>
-          <td><code>${escapeHtml(c.slug)}</code></td>
-          <td>${escapeHtml(c.description || '')}</td>
+          <td style="font-size:1.5rem;text-align:center;">${c.icon || '📚'}</td>
+          <td><strong style="color:var(--color-gray-900);">${escapeHtml(c.name)}</strong></td>
+          <td><code style="background:var(--color-gray-50);padding:0.125rem 0.5rem;border-radius:4px;font-size:0.75rem;color:var(--color-gray-600);">${escapeHtml(c.slug)}</code></td>
+          <td style="color:var(--color-gray-500);font-size:0.813rem;">${escapeHtml(c.description || '')}</td>
           <td><span class="badge-category">${c.subcategory_count || 0}</span></td>
-          <td><span class="badge-status ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <span class="badge-status ${c.is_active ? 'active' : 'inactive'}">
+              <span class="status-dot"></span>
+              ${c.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="editCategory(${c.id})">✏️</button>
-              <button class="btn-sm btn-sm-delete" onclick="deleteCategory(${c.id})">🗑️</button>
+              <button class="btn-sm-edit" onclick="editCategory(${c.id})" title="Edit">✏️</button>
+              <button class="btn-sm-delete" onclick="deleteCategory(${c.id})" title="Delete">🗑️</button>
             </div>
           </td>
         </tr>
@@ -1001,8 +2243,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       filtered = subcategories.filter(sc => sc.category_id === parseInt(filterCat));
     }
     
+    document.getElementById('subcat-count').textContent = `${filtered.length} items`;
+    
     if (!filtered || filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty">No subcategories found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-gray-400);">No subcategories found</td></tr>';
       return;
     }
     
@@ -1011,16 +2255,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       const cat = categories.find(c => c.id === sc.category_id);
       html += `
         <tr>
-          <td><strong>${escapeHtml(sc.name)}</strong></td>
-          <td><code>${escapeHtml(sc.slug)}</code></td>
+          <td><strong style="color:var(--color-gray-900);">${escapeHtml(sc.name)}</strong></td>
+          <td><code style="background:var(--color-gray-50);padding:0.125rem 0.5rem;border-radius:4px;font-size:0.75rem;color:var(--color-gray-600);">${escapeHtml(sc.slug)}</code></td>
           <td><span class="badge-category">${escapeHtml(cat ? cat.name : 'Unknown')}</span></td>
           <td><span class="badge-subcategory">${sc.subsubcategory_count || 0}</span></td>
           <td><span class="badge-subcategory">${sc.website_count || 0}</span></td>
-          <td><span class="badge-status ${sc.is_active ? 'active' : 'inactive'}">${sc.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <span class="badge-status ${sc.is_active ? 'active' : 'inactive'}">
+              <span class="status-dot"></span>
+              ${sc.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="editSubcategory(${sc.id})">✏️</button>
-              <button class="btn-sm btn-sm-delete" onclick="deleteSubcategory(${sc.id})">🗑️</button>
+              <button class="btn-sm-edit" onclick="editSubcategory(${sc.id})" title="Edit">✏️</button>
+              <button class="btn-sm-delete" onclick="deleteSubcategory(${sc.id})" title="Delete">🗑️</button>
             </div>
           </td>
         </tr>
@@ -1041,8 +2290,10 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       filtered = subsubcategories.filter(ssc => ssc.subcategory_id === parseInt(filterSub));
     }
     
+    document.getElementById('subsubcat-count').textContent = `${filtered.length} items`;
+    
     if (!filtered || filtered.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty">No sub-subcategories found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-gray-400);">No sub-subcategories found</td></tr>';
       return;
     }
     
@@ -1052,16 +2303,21 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
       const cat = categories.find(c => c.id === (subcat ? subcat.category_id : null));
       html += `
         <tr>
-          <td><strong>${escapeHtml(ssc.name)}</strong></td>
-          <td><code>${escapeHtml(ssc.slug)}</code></td>
+          <td><strong style="color:var(--color-gray-900);">${escapeHtml(ssc.name)}</strong></td>
+          <td><code style="background:var(--color-gray-50);padding:0.125rem 0.5rem;border-radius:4px;font-size:0.75rem;color:var(--color-gray-600);">${escapeHtml(ssc.slug)}</code></td>
           <td><span class="badge-subcategory">${escapeHtml(subcat ? subcat.name : 'Unknown')}</span></td>
           <td><span class="badge-category">${escapeHtml(cat ? cat.name : 'Unknown')}</span></td>
           <td><span class="badge-subcategory">${ssc.website_count || 0}</span></td>
-          <td><span class="badge-status ${ssc.is_active ? 'active' : 'inactive'}">${ssc.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <span class="badge-status ${ssc.is_active ? 'active' : 'inactive'}">
+              <span class="status-dot"></span>
+              ${ssc.is_active ? 'Active' : 'Inactive'}
+            </span>
+          </td>
           <td>
             <div class="actions-cell">
-              <button class="btn-sm btn-sm-edit" onclick="editSubSubcategory(${ssc.id})">✏️</button>
-              <button class="btn-sm btn-sm-delete" onclick="deleteSubSubcategory(${ssc.id})">🗑️</button>
+              <button class="btn-sm-edit" onclick="editSubSubcategory(${ssc.id})" title="Edit">✏️</button>
+              <button class="btn-sm-delete" onclick="deleteSubSubcategory(${ssc.id})" title="Delete">🗑️</button>
             </div>
           </td>
         </tr>
