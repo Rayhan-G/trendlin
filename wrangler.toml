@@ -1,5 +1,5 @@
 # ============================================
-# WRANGLER CONFIGURATION - PAGES ONLY
+# WRANGLER CONFIGURATION - PAGES WITH FUNCTIONS
 # ============================================
 
 name = "trendlin"
@@ -35,3 +35,9 @@ SITE = "https://trendlin.com"
 SITE_URL = "https://trendlin.com"
 MAX_BATCH_SIZE = "200"
 RATE_LIMIT_DELAY = "10"
+
+# ============================================
+# PAGES FUNCTIONS CONFIGURATION (ADD THIS)
+# ============================================
+[functions]
+# This tells Pages to use wrangler.toml for bindings
