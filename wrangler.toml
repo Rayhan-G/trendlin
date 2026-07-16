@@ -1,5 +1,5 @@
 # ============================================
-# WRANGLER CONFIGURATION - TRENDLIN
+# WRANGLER CONFIGURATION - PAGES ONLY
 # ============================================
 
 name = "trendlin"
@@ -23,7 +23,7 @@ bucket_name = "trendlin-assets"
 preview_bucket_name = "trendlin-assets"
 
 # ============================================
-# ENVIRONMENT VARIABLES (Public only)
+# ENVIRONMENT VARIABLES
 # ============================================
 [vars]
 ADMIN_USERNAME = "admin"
@@ -35,35 +35,3 @@ SITE = "https://trendlin.com"
 SITE_URL = "https://trendlin.com"
 MAX_BATCH_SIZE = "200"
 RATE_LIMIT_DELAY = "10"
-
-# ============================================
-# CRON SCHEDULE
-# ============================================
-[triggers]
-crons = ["*/5 * * * *"]  # Run every 5 minutes
-
-# ============================================
-# BUILD CONFIGURATION
-# ============================================
-[build]
-command = "npm run build"
-watch_dir = "src"
-
-[build.upload]
-format = "modules"
-dir = "dist"
-
-[[build.upload.rules]]
-type = "ESModule"
-globs = ["**/*.js", "**/*.ts", "**/*.tsx", "**/*.astro"]
-
-[[build.upload.rules]]
-type = "Data"
-globs = ["**/*.json", "**/*.html", "**/*.css"]
-
-# ============================================
-# OBSERVABILITY
-# ============================================
-[observability]
-enabled = true
-head_sampling_rate = 1.0

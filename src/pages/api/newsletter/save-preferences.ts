@@ -1,64 +1,79 @@
-// /src/pages/api/newsletter/save-preferences.ts
+// ============================================
+// API: SAVE SUBSCRIBER PREFERENCES
+// ============================================
+
 import type { APIRoute } from 'astro';
-import { 
-  updateSubscriberPreferences, 
-  getSubscriberByEmail,
-  getSubscriberByUnsubscribeToken
-} from '../../../lib/newsletter';
+import { getDB, prepareFirst } from '../../../lib/db';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const { email, token, categories, frequency } = await request.json();
+    const { email, token, categories } = await request.json();
     const env = locals.env;
+    const db = getDB(env);
 
-    let subscriber;
-
-    // Find subscriber by token or email
-    if (token) {
-      subscriber = await getSubscriberByUnsubscribeToken(env, token);
-    } else if (email) {
-      subscriber = await getSubscriberByEmail(env, email);
+    if (!email || !token || !categories) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email, token, and categories are required' 
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
+
+    // Find subscriber by token
+    const subscriber = await prepareFirst(
+      db,
+      'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ? AND email = ?',
+      [token, email.toLowerCase().trim()]
+    );
 
     if (!subscriber) {
       return new Response(
-        JSON.stringify({ error: 'Subscriber not found' }),
-        { status: 404 }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Subscriber not found' 
+        }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
+    // Update preferences
     const preferences = {
-      categories: categories || [],
-      frequency: frequency || 'weekly'
+      categories: categories,
+      updatedAt: new Date().toISOString()
     };
 
-    // Use the unsubscribe token to update
-    const result = await updateSubscriberPreferences(
-      env, 
-      subscriber.unsubscribe_token || '', 
-      preferences
-    );
-
-    if (!result.success) {
-      return new Response(
-        JSON.stringify({ error: result.error }),
-        { status: 400 }
-      );
-    }
+    await db
+      .prepare(`
+        UPDATE newsletter_subscribers 
+        SET preferences = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `)
+      .bind(JSON.stringify(preferences), subscriber.id)
+      .run();
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Preferences saved successfully'
+        message: 'Preferences updated successfully',
+        data: {
+          email: subscriber.email,
+          categories: categories
+        }
       }),
-      { status: 200 }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    console.error('Error saving preferences:', error);
+  } catch (error: any) {
+    console.error('Save preferences error:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to save preferences' }),
-      { status: 500 }
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || 'Failed to save preferences' 
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 };

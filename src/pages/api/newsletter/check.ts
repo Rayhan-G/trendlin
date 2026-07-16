@@ -1,46 +1,55 @@
-// /src/pages/api/newsletter/check.ts
+// ============================================
+// API: CHECK SUBSCRIBER STATUS
+// ============================================
+
 import type { APIRoute } from 'astro';
-import { getSubscriberByEmail } from '../../../lib/newsletter';
+import { getDB, prepareFirst } from '../../../lib/db';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   try {
     const email = url.searchParams.get('email');
     const env = locals.env;
+    const db = getDB(env);
 
     if (!email) {
       return new Response(
-        JSON.stringify({ error: 'Email is required' }),
-        { status: 400 }
+        JSON.stringify({ success: false, error: 'Email is required' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    const subscriber = await getSubscriberByEmail(env, email);
+    const subscriber = await prepareFirst(
+      db,
+      'SELECT status FROM newsletter_subscribers WHERE email = ?',
+      [email.toLowerCase().trim()]
+    );
 
     if (!subscriber) {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          status: 'not_found',
-          message: 'Email not found in our system'
+          status: 'not_found' 
         }),
-        { status: 200 }
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        status: subscriber.status,
-        message: `Subscriber status: ${subscriber.status}`
+      JSON.stringify({ 
+        success: true, 
+        status: subscriber.status 
       }),
-      { status: 200 }
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 
-  } catch (error) {
-    console.error('Error checking subscriber:', error);
+  } catch (error: any) {
+    console.error('Check subscriber error:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to check subscriber' }),
-      { status: 500 }
+      JSON.stringify({ 
+        success: false, 
+        error: error.message || 'Failed to check subscriber' 
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 };
