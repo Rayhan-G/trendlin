@@ -88,6 +88,7 @@ const currentYear = new Date().getFullYear();
                   placeholder="Enter your email"
                   required
                   class="flex-1 px-4 py-2.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  autocomplete="email"
                 />
                 <button
                   type="button"
@@ -172,7 +173,7 @@ PREFERENCES MODAL
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <!-- Category options with SVG icons -->
+        <!-- Category options -->
         <label class="flex items-center gap-3 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer transition-all">
           <input type="checkbox" name="pref-category" value="health-wellness" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500" />
           <svg class="w-5 h-5 text-blue-500 dark:text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -240,7 +241,7 @@ PREFERENCES MODAL
       </div>
     </div>
 
-    <!-- Resend Button (shown when pending) -->
+    <!-- Resend Button -->
     <div id="resend-container" class="hidden mb-4">
       <button
         id="resend-verification-btn"
@@ -271,7 +272,7 @@ PREFERENCES MODAL
 </div>
 
 <!-- ==========================================
-JAVASCRIPT
+JAVASCRIPT - UPDATED WITH FIXES
 ========================================== -->
 <script>
   document.addEventListener('DOMContentLoaded', () => {
@@ -294,13 +295,11 @@ JAVASCRIPT
     const statusText = document.getElementById('preferences-status-text');
 
     let currentEmail = '';
-    let selectedCategories = [];
     let currentStatus = '';
 
     function updateSelectedCount() {
       const checked = document.querySelectorAll('input[name="pref-category"]:checked');
-      selectedCategories = Array.from(checked).map(cb => cb.value);
-      selectedCount.textContent = selectedCategories.length;
+      selectedCount.textContent = checked.length;
       
       checkboxes.forEach(cb => {
         const label = cb.closest('label');
@@ -318,7 +317,7 @@ JAVASCRIPT
       messageEl.textContent = msg;
       messageEl.className = `text-xs mt-1 ${type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
       messageEl.classList.remove('hidden');
-      if (msg && type === 'success') {
+      if (type === 'success') {
         setTimeout(() => { messageEl.classList.add('hidden'); }, 8000);
       }
     }
@@ -345,7 +344,6 @@ JAVASCRIPT
       hideStatus();
       resendContainer.classList.add('hidden');
 
-      // Check status
       try {
         const checkRes = await fetch(`/api/newsletter/check?email=${encodeURIComponent(email)}`);
         const checkData = await checkRes.json();
@@ -354,51 +352,45 @@ JAVASCRIPT
           currentStatus = checkData.status;
           
           if (checkData.status === 'active') {
-            showStatus('✅ You are already subscribed to our newsletter!', 'success');
-            // Pre-fill categories if subscribed
+            showStatus('✅ You are already subscribed!', 'success');
             const subRes = await fetch(`/api/newsletter/get-subscriber?email=${encodeURIComponent(email)}`);
             const subData = await subRes.json();
             if (subData.success && subData.data.categories.length > 0) {
-              const preSelected = subData.data.categories;
               checkboxes.forEach(cb => {
-                cb.checked = preSelected.includes(cb.value);
+                cb.checked = subData.data.categories.includes(cb.value);
               });
               updateSelectedCount();
             }
             confirmBtn.textContent = 'Update Preferences';
             resendContainer.classList.add('hidden');
             preferencesEmail.textContent = `Managing: ${email}`;
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            document.body.style.overflow = 'hidden';
-            return;
-          }
-          
-          if (checkData.status === 'pending') {
-            showStatus('⏳ Pending verification. Check your inbox or resend the email.', 'warning');
+          } else if (checkData.status === 'pending') {
+            showStatus('⏳ Pending verification. Check your inbox.', 'warning');
             resendContainer.classList.remove('hidden');
             confirmBtn.textContent = 'Resubscribe';
             preferencesEmail.textContent = `Email: ${email}`;
-          }
-          
-          if (checkData.status === 'unsubscribed') {
-            showStatus('You were previously unsubscribed. Subscribe again to receive our newsletter.', 'warning');
+          } else if (checkData.status === 'unsubscribed') {
+            showStatus('You were previously unsubscribed. Subscribe again!', 'warning');
             resendContainer.classList.add('hidden');
             confirmBtn.textContent = 'Subscribe';
             preferencesEmail.textContent = `Email: ${email}`;
+          } else {
+            preferencesEmail.textContent = `Email: ${email}`;
+            confirmBtn.textContent = 'Subscribe';
           }
         }
       } catch (error) {
         console.error('Check error:', error);
+        preferencesEmail.textContent = `Email: ${email}`;
+        confirmBtn.textContent = 'Subscribe';
       }
 
       if (currentStatus !== 'active') {
-        preferencesEmail.textContent = `Email: ${email}`;
         modalError.classList.add('hidden');
-        checkboxes.forEach(cb => cb.checked = false);
-        updateSelectedCount();
-        confirmBtn.textContent = 'Subscribe';
-        resendContainer.classList.add('hidden');
+        if (!currentStatus) {
+          checkboxes.forEach(cb => cb.checked = false);
+          updateSelectedCount();
+        }
       }
       
       modal.classList.remove('hidden');
@@ -406,7 +398,6 @@ JAVASCRIPT
       document.body.style.overflow = 'hidden';
     });
 
-    // Close modal
     function closeModal() {
       modal.classList.add('hidden');
       modal.classList.remove('flex');
@@ -446,7 +437,7 @@ JAVASCRIPT
           showStatus('📧 Verification email resent! Please check your inbox.', 'success');
           showMessage('📧 Verification email sent!', 'success');
         } else {
-          showStatus('❌ ' + (data.message || 'Failed to resend verification.'), 'error');
+          showStatus('❌ ' + (data.error || 'Failed to resend verification.'), 'error');
         }
       } catch (error) {
         showStatus('❌ Network error. Please try again.', 'error');
@@ -475,9 +466,7 @@ JAVASCRIPT
         let endpoint = '/api/newsletter/subscribe';
         let body = { email: currentEmail, firstName: '', categories };
 
-        // If already subscribed, use save-preferences endpoint
         if (currentStatus === 'active') {
-          // Get token first
           const subRes = await fetch(`/api/newsletter/get-subscriber?email=${encodeURIComponent(currentEmail)}`);
           const subData = await subRes.json();
           if (subData.success && subData.data.token) {
@@ -504,17 +493,16 @@ JAVASCRIPT
             resendContainer.classList.remove('hidden');
           }
           emailInput.value = '';
-          setTimeout(() => {
-            closeModal();
-          }, 3000);
+          setTimeout(closeModal, 3000);
         } else {
-          showMessage(data.message || 'Something went wrong. Please try again.', 'error');
-          modalError.textContent = data.message || 'Something went wrong. Please try again.';
+          const errorMsg = data.error || data.message || 'Something went wrong.';
+          showMessage('❌ ' + errorMsg, 'error');
+          modalError.textContent = errorMsg;
           modalError.classList.remove('hidden');
         }
       } catch (error) {
         console.error('Subscription error:', error);
-        showMessage('Network error. Please try again.', 'error');
+        showMessage('❌ Network error. Please try again.', 'error');
         modalError.textContent = 'Network error. Please try again.';
         modalError.classList.remove('hidden');
       } finally {
@@ -523,6 +511,7 @@ JAVASCRIPT
       }
     });
 
+    // Initialize
     updateSelectedCount();
   });
 </script>
@@ -533,9 +522,4 @@ JAVASCRIPT
     to { opacity: 1; transform: scale(1) translateY(0); }
   }
   .animate-scale-in { animation: scale-in 0.25s ease-out; }
-  .animate-spin { animation: spin 1s linear infinite; }
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
 </style>

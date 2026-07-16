@@ -1,86 +1,138 @@
 // ============================================
 // API: SUBSCRIBE TO NEWSLETTER
+// PRODUCTION READY - Cloudflare Pages Compatible
 // ============================================
 
-import type { APIRoute } from 'astro';
-import { getDB, prepareFirst } from '../../../lib/db';
 import { EmailService } from '../../../lib/email-service';
 
-export const POST: APIRoute = async ({ request, locals }) => {
+export async function POST({ request, locals }) {
   try {
     console.log('📧 Subscribe API called');
     
-    // Get env from locals.runtime.env (matching admin pattern)
-    const env = locals?.runtime?.env || locals?.env || {};
-    console.log('🔍 env keys:', Object.keys(env));
+    // ✅ USE THE SAME WORKING PATTERN AS YOUR POSTS API
+    const { DB } = locals.runtime.env;
     
-    const { email, firstName, lastName } = await request.json();
-
-    // Check database
-    let db;
-    try {
-      db = getDB(env);
-      console.log('✅ Database connection successful');
-    } catch (dbError: any) {
-      console.error('❌ Database error:', dbError);
+    if (!DB) {
+      console.error('❌ Database not available!');
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Database not available: ' + dbError.message 
+          error: 'Database not available' 
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    // Check Resend API key
-    if (!env.RESEND_API_KEY) {
+    // Get RESEND_API_KEY
+    const RESEND_API_KEY = locals.runtime.env.RESEND_API_KEY;
+    if (!RESEND_API_KEY) {
       console.error('❌ RESEND_API_KEY missing');
       return new Response(
         JSON.stringify({ 
           success: false, 
           error: 'Email service not configured' 
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
+
+    // Parse request body
+    const { email, firstName, lastName } = await request.json();
 
     // Validate email
     if (!email || !email.includes('@')) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid email address' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid email address' 
+        }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    // Check existing subscriber
-    const existing = await prepareFirst(
-      db,
-      'SELECT * FROM newsletter_subscribers WHERE email = ?',
-      [email.toLowerCase().trim()]
-    );
+    // Normalize email
+    const normalizedEmail = email.toLowerCase().trim();
 
-    if (existing) {
-      if (existing.status === 'active') {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Already subscribed' }),
-          { status: 400, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-      if (existing.status === 'pending') {
-        const emailService = new EmailService(env.RESEND_API_KEY);
-        await emailService.sendNewsletterVerification(
-          email, 
-          existing.verification_token, 
-          firstName
-        );
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Verification email resent. Please check your inbox.' 
-          }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
+    // Check existing subscriber
+    const existing = await DB
+      .prepare('SELECT * FROM newsletter_subscribers WHERE email = ?')
+      .bind(normalizedEmail)
+      .first();
+
+    // If already active
+    if (existing && existing.status === 'active') {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Already subscribed' 
+        }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // If pending - resend verification
+    if (existing && existing.status === 'pending') {
+      const emailService = new EmailService(RESEND_API_KEY);
+      await emailService.sendNewsletterVerification(
+        normalizedEmail, 
+        existing.verification_token, 
+        firstName
+      );
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Verification email resent. Please check your inbox.' 
+        }),
+        { 
+          status: 200, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // If unsubscribed - re-subscribe
+    if (existing && existing.status === 'unsubscribed') {
+      const newToken = Math.random().toString(36).substring(2, 15) + 
+                      Math.random().toString(36).substring(2, 15);
+      
+      await DB
+        .prepare(`
+          UPDATE newsletter_subscribers 
+          SET status = 'pending',
+              verification_token = ?,
+              unsubscribed_at = NULL,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `)
+        .bind(newToken, existing.id)
+        .run();
+
+      const emailService = new EmailService(RESEND_API_KEY);
+      await emailService.sendNewsletterVerification(normalizedEmail, newToken, firstName);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Welcome back! Please verify your email.' 
+        }),
+        { 
+          status: 200, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
     }
 
     // Create new subscriber
@@ -89,7 +141,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const unsubscribeToken = Math.random().toString(36).substring(2, 15) + 
                             Math.random().toString(36).substring(2, 15);
 
-    const result = await db
+    const result = await DB
       .prepare(`
         INSERT INTO newsletter_subscribers (
           email, first_name, last_name, status,
@@ -98,7 +150,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         ) VALUES (?, ?, ?, 'pending', ?, ?, 'website', ?, ?)
       `)
       .bind(
-        email.toLowerCase().trim(),
+        normalizedEmail,
         firstName || '',
         lastName || '',
         verificationToken,
@@ -111,7 +163,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const subscriberId = result.meta.last_row_id;
 
     // Add to default list
-    await db
+    await DB
       .prepare(`
         INSERT OR IGNORE INTO newsletter_list_members (subscriber_id, list_id)
         VALUES (?, (SELECT id FROM newsletter_lists WHERE slug = 'general'))
@@ -120,25 +172,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .run();
 
     // Send verification email
-    const emailService = new EmailService(env.RESEND_API_KEY);
-    await emailService.sendNewsletterVerification(email, verificationToken, firstName);
+    const emailService = new EmailService(RESEND_API_KEY);
+    await emailService.sendNewsletterVerification(normalizedEmail, verificationToken, firstName);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Please check your email to verify your subscription.'
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('❌ Subscribe error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error.message || 'Failed to subscribe' 
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
     );
   }
-};
+}

@@ -1,6 +1,31 @@
 // ============================================
 // EMAIL TEMPLATES - Trendlin (Professional)
+// PRODUCTION READY - HTML Sanitized
 // ============================================
+
+/**
+ * Escape HTML entities to prevent XSS
+ */
+function escapeHtml(text: string): string {
+  if (!text) return '';
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+/**
+ * Truncate text with ellipsis
+ */
+function truncate(text: string, maxLength: number): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
 
 function baseTemplate(content: string, label: string, tag: string): string {
   return `
@@ -50,7 +75,7 @@ function baseTemplate(content: string, label: string, tag: string): string {
     .footer { border-top: 1px solid #e0e0e0; margin-top: 24px; padding-top: 16px; text-align: center; color: #999999; font-size: 13px; }
     .footer .small { font-size: 11px; color: #bbbbbb; margin-top: 2px; }
     .label-sm { font-size: 12px; font-weight: 600; color: #000000; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px; }
-    .value { background: #f7f7f7; padding: 12px 16px; border-radius: 4px; border: 1px solid #e0e0e0; font-size: 15px; color: #000000; }
+    .value { background: #f7f7f7; padding: 12px 16px; border-radius: 4px; border: 1px solid #e0e0e0; font-size: 15px; color: #000000; word-wrap: break-word; }
     .btn { display: inline-block; background: #000000; color: #ffffff; padding: 12px 28px; border-radius: 4px; text-decoration: none; font-weight: 500; }
     @media (max-width: 480px) { .card-body { padding: 20px 16px; } .box { padding: 16px; } }
   </style>
@@ -58,8 +83,8 @@ function baseTemplate(content: string, label: string, tag: string): string {
 <body>
   <div class="card">
     <div class="card-header">
-      <span class="label">${label}</span>
-      <span class="tag">${tag}</span>
+      <span class="label">${escapeHtml(label)}</span>
+      <span class="tag">${escapeHtml(tag)}</span>
     </div>
     <div class="card-body">
       <div class="box">
@@ -90,26 +115,26 @@ export function contactEmailTemplate(data: {
     <div class="line"></div>
     <div style="margin-bottom:24px;">
       <div class="title">New Contact Message</div>
-      <div class="sub">${data.timestamp || 'New inquiry'}</div>
+      <div class="sub">${escapeHtml(data.timestamp || 'New inquiry')}</div>
     </div>
     <div style="margin-bottom:16px;">
       <div class="label-sm">Name</div>
-      <div class="value">${data.name}</div>
+      <div class="value">${escapeHtml(data.name)}</div>
     </div>
     <div style="margin-bottom:16px;">
       <div class="label-sm">Email</div>
-      <div class="value"><a href="mailto:${data.email}" style="color:#000000;text-decoration:underline;">${data.email}</a></div>
+      <div class="value"><a href="mailto:${escapeHtml(data.email)}" style="color:#000000;text-decoration:underline;">${escapeHtml(data.email)}</a></div>
     </div>
-    ${data.phone ? `<div style="margin-bottom:16px;"><div class="label-sm">Phone</div><div class="value">${data.phone}</div></div>` : ''}
+    ${data.phone ? `<div style="margin-bottom:16px;"><div class="label-sm">Phone</div><div class="value">${escapeHtml(data.phone)}</div></div>` : ''}
     <div style="margin-bottom:16px;">
       <div class="label-sm">Subject</div>
-      <div class="value">${data.subject}</div>
+      <div class="value">${escapeHtml(data.subject)}</div>
     </div>
     <div>
       <div class="label-sm">Message</div>
-      <div class="value" style="white-space:pre-wrap;">${data.message}</div>
+      <div class="value" style="white-space:pre-wrap;word-wrap:break-word;">${escapeHtml(data.message)}</div>
     </div>
-    ${data.ip ? `<p style="color:#999999;font-size:11px;margin-top:16px;">IP: ${data.ip}</p>` : ''}
+    ${data.ip ? `<p style="color:#999999;font-size:11px;margin-top:16px;">IP: ${escapeHtml(data.ip)}</p>` : ''}
     <div class="footer">
       Trendlin
     </div>
@@ -127,11 +152,11 @@ export function autoReplyTemplate(data: {
       <div class="title">We've received your message</div>
       <div class="sub">We'll respond within 24 hours</div>
     </div>
-    <div class="greeting">Hi ${data.name},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name)},</div>
     <div class="text">Thank you for contacting Trendlin. We've received your inquiry and will get back to you as soon as possible.</div>
     <div class="info-box">
-      <p><strong>Subject:</strong> ${data.subject}</p>
-      <p style="margin-top:4px;"><strong>Message:</strong> ${data.message.substring(0, 160)}${data.message.length > 160 ? '...' : ''}</p>
+      <p><strong>Subject:</strong> ${escapeHtml(data.subject)}</p>
+      <p style="margin-top:4px;"><strong>Message:</strong> ${escapeHtml(truncate(data.message, 160))}</p>
     </div>
     <p style="color:#666666;font-size:14px;margin:0;">Explore <a href="https://trendlin.com" class="link">Trendlin</a></p>
     <div class="footer">
@@ -148,7 +173,7 @@ export function privacyAutoReplyTemplate(data: { name?: string }): string {
       <div class="title">Privacy Request Received</div>
       <div class="sub">We take your privacy seriously</div>
     </div>
-    <div class="greeting">Hi ${data.name || 'there'},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name || 'there')},</div>
     <div class="text">Thank you for contacting our Privacy Team. We have received your privacy-related inquiry and will respond within 48 hours.</div>
     <div class="info-box">
       <p>Your privacy matters to us. Your request has been logged and will be handled with care.</p>
@@ -168,7 +193,7 @@ export function legalAutoReplyTemplate(data: { name?: string }): string {
       <div class="title">Legal Inquiry Received</div>
       <div class="sub">Forwarded to our legal department</div>
     </div>
-    <div class="greeting">Hi ${data.name || 'there'},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name || 'there')},</div>
     <div class="text">Thank you for contacting our Legal Team. We have received your legal inquiry and will respond within 48 hours.</div>
     <div class="info-box">
       <p>Your message has been forwarded to our legal department for review.</p>
@@ -188,7 +213,7 @@ export function cookieAutoReplyTemplate(data: { name?: string }): string {
       <div class="title">Cookie Policy Question</div>
       <div class="sub">We'll help you understand</div>
     </div>
-    <div class="greeting">Hi ${data.name || 'there'},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name || 'there')},</div>
     <div class="text">Thank you for your question about our Cookie Policy. We will provide a detailed response within 24-48 hours.</div>
     <div class="info-box">
       <p>You can manage cookie preferences in your browser settings at any time.</p>
@@ -208,7 +233,7 @@ export function termsAutoReplyTemplate(data: { name?: string }): string {
       <div class="title">Terms of Service Question</div>
       <div class="sub">We'll clarify our terms</div>
     </div>
-    <div class="greeting">Hi ${data.name || 'there'},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name || 'there')},</div>
     <div class="text">Thank you for your question about our Terms of Service. We will respond within 24-48 hours.</div>
     <div class="info-box">
       <p>Our Terms of Service outline the rules for using our platform.</p>
@@ -228,7 +253,7 @@ export function partnershipAutoReplyTemplate(data: { name?: string }): string {
       <div class="title">Partnership Opportunity</div>
       <div class="sub">Let's explore working together</div>
     </div>
-    <div class="greeting">Hi ${data.name || 'there'},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name || 'there')},</div>
     <div class="text">Thank you for your interest in partnering with Trendlin. We will review your inquiry within 24-48 hours.</div>
     <div class="info-box">
       <p>Our partnerships team will reach out to discuss potential collaboration.</p>
@@ -248,7 +273,7 @@ export function feedbackAutoReplyTemplate(data: { name?: string }): string {
       <div class="title">Feedback Received</div>
       <div class="sub">We value your input</div>
     </div>
-    <div class="greeting">Hi ${data.name || 'there'},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name || 'there')},</div>
     <div class="text">Thank you for sharing your feedback with us. We value your input and will review it carefully.</div>
     <div class="info-box">
       <p>Your feedback helps us improve Trendlin for everyone.</p>
@@ -268,7 +293,7 @@ export function technicalAutoReplyTemplate(data: { name?: string }): string {
       <div class="title">Technical Issue Received</div>
       <div class="sub">We'll investigate and fix it</div>
     </div>
-    <div class="greeting">Hi ${data.name || 'there'},</div>
+    <div class="greeting">Hi ${escapeHtml(data.name || 'there')},</div>
     <div class="text">Thank you for reporting this technical issue. Our team will investigate and get back to you within 24-48 hours.</div>
     <div class="info-box">
       <p>We take technical issues seriously and will prioritize your report.</p>
@@ -288,11 +313,11 @@ export function notificationEmailTemplate(data: {
 }): string {
   return baseTemplate(`
     <div class="line"></div>
-    <div class="title" style="margin-bottom:16px;">${data.title}</div>
+    <div class="title" style="margin-bottom:16px;">${escapeHtml(data.title)}</div>
     <div class="info-box">
-      ${data.message}
+      ${escapeHtml(data.message)}
     </div>
-    ${data.cta ? `<div style="height:16px;"></div><a href="${data.cta.url}" class="btn">${data.cta.text}</a>` : ''}
+    ${data.cta ? `<div style="height:16px;"></div><a href="${escapeHtml(data.cta.url)}" class="btn">${escapeHtml(data.cta.text)}</a>` : ''}
     <div class="footer">
       Trendlin
     </div>
@@ -311,14 +336,14 @@ export function newsletterVerificationTemplate(data: { firstName?: string; verif
       <div class="title">Verify Your Email</div>
       <div class="sub">Confirm your subscription to Trendlin</div>
     </div>
-    <div class="greeting">Hello${data.firstName ? ` ${data.firstName}` : ''},</div>
+    <div class="greeting">Hello${data.firstName ? ` ${escapeHtml(data.firstName)}` : ''},</div>
     <div class="text">Thanks for subscribing to the Trendlin newsletter! Please confirm your email address by clicking the button below:</div>
     <div class="center" style="margin: 24px 0;">
-      <a href="${data.verificationUrl}" class="btn">Confirm Email</a>
+      <a href="${escapeHtml(data.verificationUrl)}" class="btn">Confirm Email</a>
     </div>
     <div class="info-box">
       <p style="font-size: 13px; color: #666666;">Or copy and paste this link into your browser:</p>
-      <p style="font-size: 13px; word-break: break-all; color: #000000; background: #f5f5f5; padding: 8px 12px; border-radius: 4px;">${data.verificationUrl}</p>
+      <p style="font-size: 13px; word-break: break-all; color: #000000; background: #f5f5f5; padding: 8px 12px; border-radius: 4px;">${escapeHtml(data.verificationUrl)}</p>
     </div>
     <p style="color: #999999; font-size: 13px;">This link will expire in 24 hours.</p>
     <div class="footer">
@@ -329,7 +354,9 @@ export function newsletterVerificationTemplate(data: { firstName?: string; verif
 }
 
 export function newsletterWelcomeTemplate(data: { firstName?: string; categories?: string[] }): string {
-  const categoryList = data.categories && data.categories.length > 0 ? data.categories.join(', ') : 'all topics';
+  const categoryList = data.categories && data.categories.length > 0 
+    ? data.categories.map(c => escapeHtml(c)).join(', ') 
+    : 'all topics';
   
   return baseTemplate(`
     <div class="line"></div>
@@ -338,7 +365,7 @@ export function newsletterWelcomeTemplate(data: { firstName?: string; categories
       <div class="title">Welcome to Trendlin!</div>
       <div class="sub">Your source for honest reviews & local insights</div>
     </div>
-    <div class="greeting">Hello${data.firstName ? ` ${data.firstName}` : ''}!</div>
+    <div class="greeting">Hello${data.firstName ? ` ${escapeHtml(data.firstName)}` : ''}!</div>
     <div class="text">Thank you for subscribing to the Trendlin newsletter. We're excited to have you on board!</div>
     <div class="info-box">
       <p><strong>📬 You'll receive updates on:</strong></p>
@@ -371,14 +398,14 @@ export function newsletterDigestTemplate(data: {
     <div class="line"></div>
     <div class="center">
       <div style="font-size: 36px; margin-bottom: 12px;">📰</div>
-      <div class="title">${data.title || 'Trendlin Weekly Digest'}</div>
-      <div class="sub">${data.subtitle || 'The latest reviews and insights'}</div>
+      <div class="title">${escapeHtml(data.title || 'Trendlin Weekly Digest')}</div>
+      <div class="sub">${escapeHtml(data.subtitle || 'The latest reviews and insights')}</div>
     </div>
     ${data.content || ''}
     <div class="footer">
       Trendlin
       <div class="small">You received this email because you subscribed to our newsletter.</div>
-      <div class="small"><a href="${data.unsubscribeUrl || 'https://trendlin.com/unsubscribe'}" style="color: #000000;">Unsubscribe</a> | <a href="https://trendlin.com/preferences" style="color: #000000;">Manage Preferences</a></div>
+      <div class="small"><a href="${escapeHtml(data.unsubscribeUrl || 'https://trendlin.com/unsubscribe')}" style="color: #000000;">Unsubscribe</a> | <a href="https://trendlin.com/preferences" style="color: #000000;">Manage Preferences</a></div>
     </div>
   `, 'Newsletter', 'Weekly');
 }
@@ -391,14 +418,14 @@ export function unsubscribeEmailTemplate(data: { firstName?: string; unsubscribe
       <div class="title">Unsubscribe from Trendlin</div>
       <div class="sub">We're sorry to see you go</div>
     </div>
-    <div class="greeting">Hello${data.firstName ? ` ${data.firstName}` : ''},</div>
+    <div class="greeting">Hello${data.firstName ? ` ${escapeHtml(data.firstName)}` : ''},</div>
     <div class="text">We received a request to unsubscribe you from the Trendlin newsletter. If this was you, click the button below:</div>
     <div class="center" style="margin: 24px 0;">
-      <a href="${data.unsubscribeUrl}" class="btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">Unsubscribe</a>
+      <a href="${escapeHtml(data.unsubscribeUrl)}" class="btn" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">Unsubscribe</a>
     </div>
     <div class="info-box">
       <p style="font-size: 13px; color: #666666;">Or copy and paste this link into your browser:</p>
-      <p style="font-size: 13px; word-break: break-all; color: #000000; background: #f5f5f5; padding: 8px 12px; border-radius: 4px;">${data.unsubscribeUrl}</p>
+      <p style="font-size: 13px; word-break: break-all; color: #000000; background: #f5f5f5; padding: 8px 12px; border-radius: 4px;">${escapeHtml(data.unsubscribeUrl)}</p>
     </div>
     <p style="color: #999999; font-size: 13px;">If you didn't request this, you can safely ignore this email.</p>
     <div class="footer">

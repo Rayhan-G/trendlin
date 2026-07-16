@@ -10,25 +10,27 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
         <p class="text-sm text-gray-500 dark:text-gray-400">Manage your newsletter subscribers</p>
       </div>
       <div class="flex gap-3">
-        <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Export CSV</button>
+        <button id="export-csv" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all hover:shadow-lg">
+          📥 Export CSV
+        </button>
       </div>
     </div>
 
     <!-- Stats -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-blue-500">
         <p class="text-sm text-gray-500 dark:text-gray-400">Total</p>
         <p id="total-subscribers" class="text-2xl font-bold text-gray-900 dark:text-white">—</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-green-500">
         <p class="text-sm text-gray-500 dark:text-gray-400">Active</p>
         <p id="active-subscribers" class="text-2xl font-bold text-green-600">—</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-yellow-500">
         <p class="text-sm text-gray-500 dark:text-gray-400">Pending</p>
         <p id="pending-subscribers" class="text-2xl font-bold text-yellow-600">—</p>
       </div>
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border-l-4 border-red-500">
         <p class="text-sm text-gray-500 dark:text-gray-400">Unsubscribed</p>
         <p id="unsubscribed-subscribers" class="text-2xl font-bold text-red-600">—</p>
       </div>
@@ -36,21 +38,41 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 
     <!-- Filters -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
-      <div class="flex flex-wrap gap-4">
-        <select id="status-filter" class="px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600">
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="pending">Pending</option>
-          <option value="unsubscribed">Unsubscribed</option>
-        </select>
-        <input
-          type="text"
-          id="search-input"
-          placeholder="Search by email..."
-          class="px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 flex-1 min-w-[200px]"
-        />
-        <button id="search-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Search</button>
+      <div class="flex flex-wrap gap-4 items-center">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Search</label>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search by email or name..."
+            class="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+          />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Status</label>
+          <select id="status-filter" class="px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+            <option value="">All Status</option>
+            <option value="active">✅ Active</option>
+            <option value="pending">⏳ Pending</option>
+            <option value="unsubscribed">❌ Unsubscribed</option>
+            <option value="suspended">⛔ Suspended</option>
+            <option value="bounced">📤 Bounced</option>
+          </select>
+        </div>
+        <div class="flex gap-2 items-end">
+          <button id="search-btn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all hover:shadow-lg">
+            🔍 Search
+          </button>
+          <button id="clear-filters" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all">
+            ✕ Clear
+          </button>
+        </div>
       </div>
+    </div>
+
+    <!-- Results Info -->
+    <div id="results-info" class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+      <span id="result-count">Loading...</span>
     </div>
 
     <!-- Subscriber List -->
@@ -62,15 +84,30 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Subscribed</th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Opens</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Source</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Joined</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody id="subscriber-list" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            <tr><td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">Loading subscribers...</td></tr>
+            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">Loading subscribers...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination" class="flex justify-between items-center mt-4">
+      <div class="text-sm text-gray-500 dark:text-gray-400">
+        Showing <span id="page-start">0</span> - <span id="page-end">0</span> of <span id="page-total">0</span>
+      </div>
+      <div class="flex gap-2">
+        <button id="prev-page" class="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+          ← Previous
+        </button>
+        <button id="next-page" class="px-4 py-2 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+          Next →
+        </button>
       </div>
     </div>
   </div>
@@ -80,96 +117,224 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   document.addEventListener('DOMContentLoaded', async () => {
     let currentPage = 1;
     const limit = 50;
+    let currentFilters = {};
 
+    // ============================================
+    // LOAD STATS
+    // ============================================
     async function loadStats() {
-      const response = await fetch('/api/newsletter/stats');
-      const data = await response.json();
-      if (data.success) {
-        document.getElementById('total-subscribers').textContent = data.data.total || 0;
-        document.getElementById('active-subscribers').textContent = data.data.active || 0;
-        document.getElementById('pending-subscribers').textContent = data.data.pending || 0;
-        document.getElementById('unsubscribed-subscribers').textContent = data.data.unsubscribed || 0;
+      try {
+        const response = await fetch('/api/newsletter/stats');
+        const data = await response.json();
+        if (data.success) {
+          document.getElementById('total-subscribers').textContent = data.data.subscribers?.total || 0;
+          document.getElementById('active-subscribers').textContent = data.data.subscribers?.active || 0;
+          document.getElementById('pending-subscribers').textContent = data.data.subscribers?.pending || 0;
+          document.getElementById('unsubscribed-subscribers').textContent = data.data.subscribers?.unsubscribed || 0;
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error);
       }
     }
 
-    async function loadSubscribers(filters = {}) {
+    // ============================================
+    // LOAD SUBSCRIBERS
+    // ============================================
+    async function loadSubscribers(filters = {}, page = 1) {
+      currentPage = page;
+      currentFilters = filters;
+
       const params = new URLSearchParams({
-        page: currentPage,
-        limit: limit,
+        page: page,
+        per_page: limit,
         ...filters
       });
       
-      const response = await fetch(`/api/newsletter/subscribers?${params}`);
-      const data = await response.json();
-      const list = document.getElementById('subscriber-list');
-      
-      if (data.success && data.data.length > 0) {
-        list.innerHTML = data.data.map(s => `
-          <tr>
-            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">${s.email}</td>
-            <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">${s.first_name || '—'} ${s.last_name || ''}</td>
-            <td class="px-6 py-4">
-              <span class="px-3 py-1 text-xs rounded-full ${getStatusColor(s.status)}">${s.status}</span>
-            </td>
-            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${new Date(s.created_at).toLocaleDateString()}</td>
-            <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${s.total_opens || 0}</td>
-            <td class="px-6 py-4">
-              <button onclick="viewSubscriber(${s.id})" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">View</button>
-              <button onclick="suspendSubscriber(${s.id})" class="text-yellow-600 hover:text-yellow-800 dark:text-yellow-400 ml-3">Suspend</button>
-              <button onclick="deleteSubscriber(${s.id})" class="text-red-600 hover:text-red-800 dark:text-red-400 ml-3">Delete</button>
-            </td>
-          </tr>
-        `).join('');
-      } else {
-        list.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">No subscribers found.</td></tr>';
+      try {
+        const response = await fetch(`/api/admin/newsletter/subscribers?${params}`);
+        const data = await response.json();
+        const list = document.getElementById('subscriber-list');
+        
+        if (data.success && data.data.length > 0) {
+          list.innerHTML = data.data.map(s => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+              <td class="px-6 py-4 text-sm text-gray-900 dark:text-white font-medium">${s.email}</td>
+              <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">${s.first_name || '—'} ${s.last_name || ''}</td>
+              <td class="px-6 py-4">
+                <span class="px-3 py-1 text-xs rounded-full ${getStatusColor(s.status)}">${s.status}</span>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${s.source || 'website'}</td>
+              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">${new Date(s.created_at).toLocaleDateString()}</td>
+              <td class="px-6 py-4">
+                <button onclick="viewSubscriber(${s.id})" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm font-medium hover:underline">View</button>
+                <button onclick="deleteSubscriber(${s.id}, '${s.email}')" class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm font-medium hover:underline ml-3">Delete</button>
+              </td>
+            </tr>
+          `).join('');
+
+          // Update pagination
+          const pagination = data.pagination || { total: data.data.length, page: page, perPage: limit };
+          updatePagination(pagination);
+        } else {
+          list.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">No subscribers found.</td></tr>';
+          document.getElementById('page-start').textContent = '0';
+          document.getElementById('page-end').textContent = '0';
+          document.getElementById('page-total').textContent = '0';
+          document.getElementById('prev-page').disabled = true;
+          document.getElementById('next-page').disabled = true;
+        }
+      } catch (error) {
+        console.error('Error loading subscribers:', error);
+        document.getElementById('subscriber-list').innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-red-500">Error loading subscribers. Please try again.</td></tr>';
       }
     }
 
+    // ============================================
+    // UPDATE PAGINATION
+    // ============================================
+    function updatePagination(pagination) {
+      const total = pagination.total || 0;
+      const page = pagination.page || 1;
+      const perPage = pagination.perPage || limit;
+      const start = (page - 1) * perPage + 1;
+      const end = Math.min(page * perPage, total);
+
+      document.getElementById('page-start').textContent = total > 0 ? start : 0;
+      document.getElementById('page-end').textContent = end;
+      document.getElementById('page-total').textContent = total;
+      document.getElementById('result-count').textContent = `Showing ${total} subscriber${total !== 1 ? 's' : ''}`;
+
+      const totalPages = Math.ceil(total / perPage);
+      document.getElementById('prev-page').disabled = page <= 1;
+      document.getElementById('next-page').disabled = page >= totalPages;
+    }
+
+    // ============================================
+    // STATUS COLOR
+    // ============================================
     function getStatusColor(status) {
       const colors = {
         'active': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
         'pending': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
         'unsubscribed': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-        'suspended': 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
+        'suspended': 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400',
+        'bounced': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
       };
       return colors[status] || 'bg-gray-100 text-gray-800';
     }
 
-    // Search
+    // ============================================
+    // SEARCH HANDLERS
+    // ============================================
     document.getElementById('search-btn')?.addEventListener('click', () => {
-      const search = document.getElementById('search-input').value;
+      const search = document.getElementById('search-input').value.trim();
       const status = document.getElementById('status-filter').value;
-      loadSubscribers({ search, status });
+      const filters = {};
+      if (search) filters.search = search;
+      if (status) filters.status = status;
+      loadSubscribers(filters, 1);
     });
 
-    // Enter key for search
+    document.getElementById('clear-filters')?.addEventListener('click', () => {
+      document.getElementById('search-input').value = '';
+      document.getElementById('status-filter').value = '';
+      loadSubscribers({}, 1);
+    });
+
     document.getElementById('search-input')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         document.getElementById('search-btn').click();
       }
     });
 
-    // Load initial data
-    await loadStats();
-    await loadSubscribers();
+    // ============================================
+    // PAGINATION HANDLERS
+    // ============================================
+    document.getElementById('prev-page')?.addEventListener('click', () => {
+      if (currentPage > 1) {
+        loadSubscribers(currentFilters, currentPage - 1);
+      }
+    });
 
-    // Global functions for actions
+    document.getElementById('next-page')?.addEventListener('click', () => {
+      loadSubscribers(currentFilters, currentPage + 1);
+    });
+
+    // ============================================
+    // EXPORT CSV
+    // ============================================
+    document.getElementById('export-csv')?.addEventListener('click', async () => {
+      try {
+        const response = await fetch('/api/admin/newsletter/subscribers?per_page=10000');
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+          // Create CSV content
+          const headers = ['Email', 'First Name', 'Last Name', 'Status', 'Source', 'Joined'];
+          const rows = data.data.map(s => [
+            s.email,
+            s.first_name || '',
+            s.last_name || '',
+            s.status,
+            s.source || 'website',
+            new Date(s.created_at).toLocaleDateString()
+          ]);
+          
+          const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+          ].join('\n');
+
+          // Download CSV
+          const blob = new Blob([csvContent], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `subscribers_${new Date().toISOString().slice(0,10)}.csv`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }
+      } catch (error) {
+        console.error('Error exporting CSV:', error);
+        alert('Failed to export subscribers.');
+      }
+    });
+
+    // ============================================
+    // GLOBAL FUNCTIONS FOR ACTIONS
+    // ============================================
     window.viewSubscriber = (id) => {
-      alert(`View subscriber ${id}`);
+      // Navigate to subscriber detail or open modal
+      alert(`View subscriber ${id} - Feature coming soon`);
+      // window.location.href = `/admin/newsletter/subscriber/${id}`;
     };
 
-    window.suspendSubscriber = async (id) => {
-      if (confirm('Are you sure you want to suspend this subscriber?')) {
-        // Implement suspend logic
-        alert(`Subscriber ${id} suspended`);
+    window.deleteSubscriber = async (id, email) => {
+      if (confirm(`Are you sure you want to delete ${email}? This cannot be undone.`)) {
+        try {
+          const response = await fetch(`/api/admin/newsletter/subscribers?id=${id}`, {
+            method: 'DELETE'
+          });
+          const data = await response.json();
+          
+          if (data.success) {
+            alert(`✅ ${email} deleted successfully`);
+            await loadSubscribers(currentFilters, currentPage);
+            await loadStats();
+          } else {
+            alert(`❌ Failed to delete: ${data.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          console.error('Error deleting subscriber:', error);
+          alert('❌ Network error. Please try again.');
+        }
       }
     };
 
-    window.deleteSubscriber = async (id) => {
-      if (confirm('Are you sure you want to delete this subscriber?')) {
-        // Implement delete logic
-        alert(`Subscriber ${id} deleted`);
-      }
-    };
+    // ============================================
+    // INITIAL LOAD
+    // ============================================
+    await loadStats();
+    await loadSubscribers({}, 1);
   });
 </script>

@@ -3,8 +3,8 @@
 ---
 
 <div class="newsletter-container">
-  <form id="newsletter-form" class="newsletter-form">
-    <h2>Stay Updated</h2>
+  <form id="newsletter-form" class="newsletter-form" novalidate>
+    <h2>📬 Stay Updated</h2>
     <p>Get the latest trends and insights delivered to your inbox.</p>
     <div class="input-group">
       <input 
@@ -13,8 +13,11 @@
         placeholder="Enter your email" 
         required 
         class="email-input"
+        autocomplete="email"
       />
-      <button type="submit" class="subscribe-btn">Subscribe</button>
+      <button type="submit" class="subscribe-btn" id="subscribe-btn">
+        Subscribe
+      </button>
     </div>
     <div id="message" class="message"></div>
   </form>
@@ -26,18 +29,21 @@
     margin: 0 auto;
     padding: 2rem;
     background: #f8fafc;
-    border-radius: 8px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
   }
 
   .newsletter-form h2 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
     color: #1e293b;
+    font-weight: 700;
   }
 
   .newsletter-form p {
     color: #64748b;
     margin-bottom: 1.5rem;
+    font-size: 0.95rem;
   }
 
   .input-group {
@@ -47,10 +53,12 @@
 
   .email-input {
     flex: 1;
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     border: 1px solid #e2e8f0;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 1rem;
+    transition: all 0.2s;
+    background: white;
   }
 
   .email-input:focus {
@@ -59,68 +67,221 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
+  .email-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .subscribe-btn {
     padding: 0.75rem 1.5rem;
     background: #3b82f6;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    white-space: nowrap;
   }
 
-  .subscribe-btn:hover {
+  .subscribe-btn:hover:not(:disabled) {
     background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  }
+
+  .subscribe-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .subscribe-btn.loading {
+    position: relative;
+    padding-right: 2.5rem;
+  }
+
+  .subscribe-btn.loading::after {
+    content: '';
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: translateY(-50%) rotate(360deg); }
   }
 
   .message {
     margin-top: 1rem;
-    padding: 0.75rem;
-    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
     display: none;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .message.success {
     display: block;
     background: #dcfce7;
     color: #166534;
+    border: 1px solid #bbf7d0;
   }
 
   .message.error {
     display: block;
     background: #fee2e2;
     color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  .message.info {
+    display: block;
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+  }
+
+  @media (max-width: 480px) {
+    .newsletter-container {
+      padding: 1.5rem;
+    }
+
+    .input-group {
+      flex-direction: column;
+    }
+
+    .subscribe-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>
 
 <script>
-  document.getElementById('newsletter-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const email = document.getElementById('email').value;
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('newsletter-form');
+    const emailInput = document.getElementById('email');
     const messageEl = document.getElementById('message');
-    
-    try {
-      const response = await fetch('/api/newsletter/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
+    const submitBtn = document.getElementById('subscribe-btn');
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
       
-      const data = await response.json();
+      // Reset message
+      messageEl.className = 'message';
+      messageEl.textContent = '';
       
-      if (data.success) {
-        messageEl.className = 'message success';
-        messageEl.textContent = data.message || 'Please check your email to verify your subscription!';
-        document.getElementById('email').value = '';
-      } else {
-        messageEl.className = 'message error';
-        messageEl.textContent = data.error || data.message || 'Something went wrong. Please try again.';
+      const email = emailInput.value.trim();
+      
+      // Validate email
+      if (!email) {
+        showMessage('Please enter your email address.', 'error');
+        emailInput.focus();
+        return;
       }
-    } catch (error) {
-      messageEl.className = 'message error';
-      messageEl.textContent = 'Network error. Please try again.';
+
+      if (!isValidEmail(email)) {
+        showMessage('Please enter a valid email address.', 'error');
+        emailInput.focus();
+        return;
+      }
+
+      // Disable form
+      emailInput.disabled = true;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Subscribing...';
+      submitBtn.classList.add('loading');
+
+      try {
+        const response = await fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email: email,
+            firstName: '',
+            source: 'footer_form'
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showMessage(
+            data.message || '✅ Please check your email to verify your subscription!', 
+            'success'
+          );
+          emailInput.value = '';
+        } else {
+          showMessage(
+            data.error || data.message || '❌ Something went wrong. Please try again.', 
+            'error'
+          );
+        }
+      } catch (error) {
+        console.error('Subscribe error:', error);
+        showMessage('❌ Network error. Please check your connection and try again.', 'error');
+      } finally {
+        // Re-enable form
+        emailInput.disabled = false;
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Subscribe';
+        submitBtn.classList.remove('loading');
+      }
+    });
+
+    // Real-time validation on blur
+    emailInput.addEventListener('blur', () => {
+      const email = emailInput.value.trim();
+      if (email && !isValidEmail(email)) {
+        showMessage('Please enter a valid email address.', 'error');
+      } else if (email && isValidEmail(email)) {
+        // Clear error if valid
+        if (messageEl.className.includes('error')) {
+          messageEl.className = 'message';
+          messageEl.textContent = '';
+        }
+      }
+    });
+
+    // Clear message on typing
+    emailInput.addEventListener('input', () => {
+      if (messageEl.className.includes('error') || messageEl.className.includes('success')) {
+        messageEl.className = 'message';
+        messageEl.textContent = '';
+      }
+    });
+
+    function showMessage(text, type) {
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      // Auto-hide success messages after 6 seconds
+      if (type === 'success') {
+        setTimeout(() => {
+          if (messageEl.textContent === text) {
+            messageEl.className = 'message';
+            messageEl.textContent = '';
+          }
+        }, 6000);
+      }
+    }
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
   });
 </script>

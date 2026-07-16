@@ -1,5 +1,10 @@
-// /src/lib/newsletter.ts
-import { getDB, prepare, prepareFirst } from './db';
+// ============================================
+// NEWSLETTER LIBRARY - PRODUCTION READY
+// Cloudflare Pages Compatible
+// ============================================
+
+import { getDB, prepare, prepareFirst, execute, isDbValid } from './db';
+import { EmailService } from './email-service';
 
 // ============================================
 // TYPES
@@ -10,14 +15,14 @@ export interface Subscriber {
   email: string;
   first_name: string | null;
   last_name: string | null;
-  status: 'pending' | 'active' | 'unsubscribed' | 'suspended';
+  status: 'pending' | 'active' | 'unsubscribed' | 'suspended' | 'bounced';
   verification_token: string | null;
   unsubscribe_token: string | null;
   source: string;
   ip_address: string | null;
   user_agent: string | null;
-  preferences: string | null; // JSON
-  metadata: string | null; // JSON
+  preferences: string | null;
+  metadata: string | null;
   created_at: string;
   verified_at: string | null;
   unsubscribed_at: string | null;
@@ -29,7 +34,7 @@ export interface Campaign {
   subject: string;
   preview_text: string;
   content_html: string;
-  status: 'draft' | 'scheduled' | 'sending' | 'completed' | 'paused' | 'cancelled';
+  status: 'draft' | 'scheduled' | 'sending' | 'completed' | 'paused' | 'cancelled' | 'failed';
   list_id: number | null;
   created_by: number | null;
   scheduled_at: string | null;
@@ -44,7 +49,7 @@ export interface Campaign {
   bounced_count: number;
   spam_reports: number;
   template_id: number | null;
-  metadata: string | null; // JSON
+  metadata: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -59,6 +64,17 @@ export interface NewsletterList {
   updated_at: string;
 }
 
+export interface QueueJob {
+  id: number;
+  campaign_id: number;
+  subscriber_id: number;
+  status: string;
+  attempts: number;
+  max_attempts: number;
+  error_message: string | null;
+  created_at: string;
+}
+
 // ============================================
 // UTILITY
 // ============================================
@@ -66,6 +82,10 @@ export interface NewsletterList {
 function generateToken(): string {
   return Math.random().toString(36).substring(2, 15) + 
          Math.random().toString(36).substring(2, 15);
+}
+
+function getSiteUrl(env: any): string {
+  return env?.SITE_URL || env?.SITE || 'https://trendlin.com';
 }
 
 // ============================================
@@ -115,7 +135,7 @@ export async function getSubscriberByEmail(env: any, email: string) {
   return await prepareFirst<Subscriber>(
     db,
     'SELECT * FROM newsletter_subscribers WHERE email = ?',
-    [email]
+    [email.toLowerCase().trim()]
   );
 }
 
@@ -140,7 +160,7 @@ export async function createSubscriber(env: any, data: {
   const db = getDB(env);
   const { email, first_name = '', last_name = '', source = 'website', ip_address, user_agent } = data;
 
-  // Generate tokens
+  const normalizedEmail = email.toLowerCase().trim();
   const verificationToken = generateToken();
   const unsubscribeToken = generateToken();
 
@@ -152,8 +172,25 @@ export async function createSubscriber(env: any, data: {
         ip_address, user_agent
       ) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?)
     `)
-    .bind(email, first_name, last_name, verificationToken, unsubscribeToken, source, ip_address, user_agent)
+    .bind(normalizedEmail, first_name, last_name, verificationToken, unsubscribeToken, source, ip_address, user_agent)
     .run();
+
+  // Add to default list
+  const defaultList = await prepareFirst<NewsletterList>(
+    db,
+    'SELECT id FROM newsletter_lists WHERE slug = ?',
+    ['general']
+  );
+
+  if (defaultList) {
+    await db
+      .prepare(`
+        INSERT OR IGNORE INTO newsletter_list_members (subscriber_id, list_id)
+        VALUES (?, ?)
+      `)
+      .bind(result.meta.last_row_id, defaultList.id)
+      .run();
+  }
 
   return {
     success: true,
@@ -166,7 +203,6 @@ export async function createSubscriber(env: any, data: {
 export async function verifySubscriber(env: any, token: string) {
   const db = getDB(env);
   
-  // Find subscriber with token
   const subscriber = await getSubscriberByToken(env, token, 'verification');
   
   if (!subscriber) {
@@ -177,7 +213,6 @@ export async function verifySubscriber(env: any, token: string) {
     return { success: false, error: 'Subscriber already verified' };
   }
 
-  // Update status
   await db
     .prepare(`
       UPDATE newsletter_subscribers 
@@ -189,7 +224,7 @@ export async function verifySubscriber(env: any, token: string) {
     .bind(subscriber.id)
     .run();
 
-  // Add to default list
+  // Ensure they're in the default list
   const defaultList = await prepareFirst<NewsletterList>(
     db,
     'SELECT id FROM newsletter_lists WHERE slug = ?',
@@ -206,11 +241,10 @@ export async function verifySubscriber(env: any, token: string) {
       .run();
   }
 
-  // Log event
   await db
     .prepare(`
       INSERT INTO newsletter_events (subscriber_id, type)
-      VALUES (?, 'subscribe')
+      VALUES (?, 'confirm')
     `)
     .bind(subscriber.id)
     .run();
@@ -230,6 +264,10 @@ export async function unsubscribeSubscriber(env: any, token?: string, email?: st
 
   if (!subscriber) {
     return { success: false, error: 'Subscriber not found' };
+  }
+
+  if (subscriber.status === 'unsubscribed') {
+    return { success: true, message: 'Already unsubscribed', subscriber };
   }
 
   await db
@@ -272,6 +310,7 @@ export async function getSubscriberStats(env: any) {
     pending: number;
     unsubscribed: number;
     suspended: number;
+    bounced: number;
   }>(
     db,
     `
@@ -280,7 +319,8 @@ export async function getSubscriberStats(env: any) {
         SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
         SUM(CASE WHEN status = 'unsubscribed' THEN 1 ELSE 0 END) as unsubscribed,
-        SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END) as suspended
+        SUM(CASE WHEN status = 'suspended' THEN 1 ELSE 0 END) as suspended,
+        SUM(CASE WHEN status = 'bounced' THEN 1 ELSE 0 END) as bounced
       FROM newsletter_subscribers
     `
   );
@@ -333,13 +373,10 @@ export async function getCampaigns(env: any, options?: {
   let query = `
     SELECT 
       c.*,
-      u.username as author,
-      l.name as list_name,
       (SELECT COUNT(*) FROM newsletter_campaign_recipients WHERE campaign_id = c.id) as recipients,
-      (SELECT COUNT(*) FROM newsletter_queue WHERE campaign_id = c.id AND status = 'pending') as queued
+      (SELECT COUNT(*) FROM newsletter_queue WHERE campaign_id = c.id AND status = 'pending') as queued,
+      (SELECT COUNT(*) FROM newsletter_queue WHERE campaign_id = c.id AND status = 'completed') as sent_count
     FROM newsletter_campaigns c
-    LEFT JOIN admins u ON c.created_by = u.id
-    LEFT JOIN newsletter_lists l ON c.list_id = l.id
     WHERE 1=1
   `;
   const params: any[] = [];
@@ -441,7 +478,6 @@ export async function updateCampaign(env: any, id: number, data: Partial<Campaig
 export async function deleteCampaign(env: any, id: number) {
   const db = getDB(env);
   
-  // Check if campaign can be deleted
   const campaign = await getCampaignById(env, id);
   if (!campaign) {
     return { success: false, error: 'Campaign not found' };
@@ -468,8 +504,10 @@ export async function getCampaignStats(env: any) {
     scheduled: number;
     sending: number;
     drafts: number;
+    failed: number;
     avg_open_rate: number | null;
     avg_click_rate: number | null;
+    avg_unsubscribe_rate: number | null;
   }>(
     db,
     `
@@ -479,8 +517,10 @@ export async function getCampaignStats(env: any) {
         SUM(CASE WHEN status = 'scheduled' THEN 1 ELSE 0 END) as scheduled,
         SUM(CASE WHEN status = 'sending' THEN 1 ELSE 0 END) as sending,
         SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as drafts,
-        ROUND(AVG(opened_count * 1.0 / NULLIF(delivered_count, 0)) * 100, 2) as avg_open_rate,
-        ROUND(AVG(clicked_count * 1.0 / NULLIF(opened_count, 0)) * 100, 2) as avg_click_rate
+        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+        ROUND(AVG(CASE WHEN delivered_count > 0 THEN opened_count * 1.0 / delivered_count * 100 ELSE NULL END), 2) as avg_open_rate,
+        ROUND(AVG(CASE WHEN opened_count > 0 THEN clicked_count * 1.0 / opened_count * 100 ELSE NULL END), 2) as avg_click_rate,
+        ROUND(AVG(CASE WHEN delivered_count > 0 THEN unsubscribed_count * 1.0 / delivered_count * 100 ELSE NULL END), 2) as avg_unsubscribe_rate
       FROM newsletter_campaigns
     `
   );
@@ -518,66 +558,98 @@ export async function getListById(env: any, id: number) {
 export async function enqueueCampaign(env: any, campaignId: number) {
   const db = getDB(env);
   
-  // Get campaign
   const campaign = await getCampaignById(env, campaignId);
   if (!campaign) {
     return { success: false, error: 'Campaign not found' };
   }
 
-  // Get active subscribers
-  const subscribers = await prepare(
-    db,
-    `
-      SELECT 
-        ns.id as subscriber_id,
-        ns.email,
-        ns.first_name,
-        ns.last_name
-      FROM newsletter_subscribers ns
-      JOIN newsletter_list_members nlm ON ns.id = nlm.subscriber_id
-      WHERE ns.status = 'active'
-        AND nlm.subscribed = 1
-        ${campaign.list_id ? `AND nlm.list_id = ${campaign.list_id}` : ''}
-    `
-  );
+  // Get active subscribers in chunks
+  const CHUNK_SIZE = 1000;
+  let offset = 0;
+  let totalEnqueued = 0;
 
-  // Enqueue each subscriber
-  for (const sub of subscribers.results) {
-    await db
-      .prepare(`
-        INSERT OR IGNORE INTO newsletter_queue (campaign_id, subscriber_id)
-        VALUES (?, ?)
-      `)
-      .bind(campaignId, sub.subscriber_id)
-      .run();
+  while (true) {
+    const subscribers = await prepare(
+      db,
+      `
+        SELECT 
+          ns.id as subscriber_id,
+          ns.email,
+          ns.first_name,
+          ns.last_name
+        FROM newsletter_subscribers ns
+        JOIN newsletter_list_members nlm ON ns.id = nlm.subscriber_id
+        WHERE ns.status = 'active'
+          AND nlm.subscribed = 1
+          ${campaign.list_id ? `AND nlm.list_id = ${campaign.list_id}` : ''}
+        ORDER BY ns.id
+        LIMIT ? OFFSET ?
+      `,
+      [CHUNK_SIZE, offset]
+    );
 
-    await db
-      .prepare(`
-        INSERT OR IGNORE INTO newsletter_campaign_recipients (campaign_id, subscriber_id)
-        VALUES (?, ?)
-      `)
-      .bind(campaignId, sub.subscriber_id)
-      .run();
+    if (!subscribers.results || subscribers.results.length === 0) {
+      break;
+    }
+
+    // Bulk insert queue entries
+    const queueValues = subscribers.results.map((sub: any) => {
+      return `(${campaignId}, ${sub.subscriber_id}, 0, 5, 0)`;
+    }).join(',');
+
+    if (queueValues) {
+      await db
+        .prepare(`
+          INSERT OR IGNORE INTO newsletter_queue 
+          (campaign_id, subscriber_id, priority, max_attempts, attempts)
+          VALUES ${queueValues}
+        `)
+        .run();
+
+      // Bulk insert recipients
+      const recipientValues = subscribers.results.map((sub: any) => {
+        return `(${campaignId}, ${sub.subscriber_id}, 'pending')`;
+      }).join(',');
+
+      if (recipientValues) {
+        await db
+          .prepare(`
+            INSERT OR IGNORE INTO newsletter_campaign_recipients 
+            (campaign_id, subscriber_id, status)
+            VALUES ${recipientValues}
+          `)
+          .run();
+      }
+
+      totalEnqueued += subscribers.results.length;
+      offset += CHUNK_SIZE;
+    }
   }
 
   // Update total recipients
   await db
     .prepare(`
       UPDATE newsletter_campaigns 
-      SET total_recipients = (
-        SELECT COUNT(*) FROM newsletter_campaign_recipients 
-        WHERE campaign_id = ?
-      )
+      SET total_recipients = ?
       WHERE id = ?
     `)
-    .bind(campaignId, campaignId)
+    .bind(totalEnqueued, campaignId)
     .run();
 
-  return { success: true, count: subscribers.results.length };
+  return { success: true, count: totalEnqueued };
 }
 
 export async function processQueue(env: any, batchSize: number = 100) {
   const db = getDB(env);
+  
+  // Get RESEND_API_KEY
+  const apiKey = env?.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error('❌ RESEND_API_KEY not available for queue processing');
+    return { processed: 0, error: 'RESEND_API_KEY not configured' };
+  }
+
+  const emailService = new EmailService(apiKey);
   
   const jobs = await prepare(
     db,
@@ -586,10 +658,12 @@ export async function processQueue(env: any, batchSize: number = 100) {
         nq.id as queue_id,
         nq.campaign_id,
         nq.subscriber_id,
+        nq.attempts,
         nc.subject,
         nc.content_html,
         ns.email,
-        ns.first_name
+        ns.first_name,
+        ns.unsubscribe_token
       FROM newsletter_queue nq
       JOIN newsletter_campaigns nc ON nq.campaign_id = nc.id
       JOIN newsletter_subscribers ns ON nq.subscriber_id = ns.id
@@ -602,6 +676,8 @@ export async function processQueue(env: any, batchSize: number = 100) {
   );
 
   let processed = 0;
+  let successful = 0;
+  let failed = 0;
 
   for (const job of jobs.results) {
     try {
@@ -616,8 +692,17 @@ export async function processQueue(env: any, batchSize: number = 100) {
         .bind(job.queue_id)
         .run();
 
-      // TODO: Send actual email via Resend or other provider
-      console.log(`[NEWSLETTER] Sending to ${job.email}: ${job.subject}`);
+      // Send email using EmailService
+      const siteUrl = getSiteUrl(env);
+      const unsubscribeUrl = `${siteUrl}/unsubscribe?token=${job.unsubscribe_token}`;
+      
+      await emailService.sendNewsletterDigest({
+        to: job.email,
+        subject: job.subject,
+        title: job.subject,
+        content: job.content_html,
+        unsubscribeUrl
+      });
 
       // Mark as completed
       await db
@@ -650,23 +735,87 @@ export async function processQueue(env: any, batchSize: number = 100) {
         .bind(job.campaign_id)
         .run();
 
+      successful++;
       processed++;
 
-    } catch (error) {
-      console.error(`Error processing job ${job.queue_id}:`, error);
+    } catch (error: any) {
+      console.error(`❌ Error processing job ${job.queue_id}:`, error);
+      
+      const isBounce = error.message?.toLowerCase().includes('bounce') || 
+                      error.message?.toLowerCase().includes('undelivered');
+      
+      const status = isBounce ? 'bounced' : 'failed';
       
       await db
         .prepare(`
           UPDATE newsletter_queue 
-          SET status = 'failed',
+          SET status = ?,
               error_message = ?,
               processed_at = CURRENT_TIMESTAMP
           WHERE id = ?
         `)
-        .bind(error.message || 'Unknown error', job.queue_id)
+        .bind(status, error.message || 'Unknown error', job.queue_id)
         .run();
+
+      failed++;
     }
   }
 
-  return { processed };
+  return { processed, successful, failed };
+}
+
+// ============================================
+// QUEUE MANAGEMENT
+// ============================================
+
+export async function getQueueStats(env: any) {
+  const db = getDB(env);
+  
+  return await prepareFirst<{
+    total: number;
+    pending: number;
+    processing: number;
+    completed: number;
+    failed: number;
+    bounced: number;
+  }>(
+    db,
+    `
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) as processing,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+        SUM(CASE WHEN status = 'bounced' THEN 1 ELSE 0 END) as bounced
+      FROM newsletter_queue
+    `
+  );
+}
+
+export async function retryFailedJobs(env: any, campaignId?: number) {
+  const db = getDB(env);
+  
+  let query = `
+    UPDATE newsletter_queue 
+    SET status = 'pending',
+        attempts = 0,
+        error_message = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE status IN ('failed', 'bounced')
+      AND attempts < max_attempts
+  `;
+  const params: any[] = [];
+
+  if (campaignId) {
+    query += ` AND campaign_id = ?`;
+    params.push(campaignId);
+  }
+
+  const result = await db
+    .prepare(query)
+    .bind(...params)
+    .run();
+
+  return { success: true, updated: result.meta?.changes || 0 };
 }

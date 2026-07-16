@@ -1,11 +1,22 @@
 ---
 // /src/pages/admin/newsletter/new.astro
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import { getLists } from '../../../lib/newsletter';
-import { getDB } from '../../../lib/db';
 
-const env = Astro.locals.env;
-const lists = await getLists(env, true);
+// ✅ USE THE SAME WORKING PATTERN AS YOUR POSTS API
+const { DB } = Astro.locals.runtime.env;
+
+// Get lists for the dropdown
+let lists = [];
+try {
+  if (DB) {
+    const result = await DB
+      .prepare('SELECT id, name FROM newsletter_lists WHERE is_active = 1 ORDER BY name')
+      .all();
+    lists = result.results || [];
+  }
+} catch (error) {
+  console.error('Error fetching lists:', error);
+}
 ---
 
 <AdminLayout title="New Campaign">
@@ -16,17 +27,19 @@ const lists = await getLists(env, true);
     </div>
 
     <div class="card">
-      <form id="campaign-form">
+      <form id="campaign-form" novalidate>
         <div class="form-group">
-          <label for="subject">Subject Line</label>
+          <label for="subject">Subject Line *</label>
           <input 
             type="text" 
             id="subject" 
             required 
             placeholder="Your newsletter subject"
             class="form-input"
+            maxlength="200"
           />
-          <p class="form-hint">Keep it short and engaging. Emojis work great!</p>
+          <p class="form-hint">Keep it short and engaging. Emojis work great! (Max 200 characters)</p>
+          <div id="subject-counter" class="char-counter">0/200</div>
         </div>
 
         <div class="form-group">
@@ -36,8 +49,10 @@ const lists = await getLists(env, true);
             id="preview" 
             placeholder="Preview text for email clients"
             class="form-input"
+            maxlength="150"
           />
-          <p class="form-hint">Appears next to the subject line in inboxes.</p>
+          <p class="form-hint">Appears next to the subject line in inboxes. (Max 150 characters)</p>
+          <div id="preview-counter" class="char-counter">0/150</div>
         </div>
 
         <div class="form-group">
@@ -48,17 +63,20 @@ const lists = await getLists(env, true);
               <option value={list.id}>{list.name}</option>
             ))}
           </select>
+          <p class="form-hint">Select a specific list or send to all subscribers.</p>
         </div>
 
         <div class="form-group">
-          <label for="content">Email Content</label>
+          <label for="content">Email Content *</label>
           <textarea 
             id="content" 
             rows="12" 
             placeholder="Write your newsletter content here... Use HTML for formatting."
             class="form-textarea"
+            required
           ></textarea>
           <p class="form-hint">You can use HTML tags for formatting: &lt;h1&gt;, &lt;p&gt;, &lt;strong&gt;, etc.</p>
+          <div id="content-counter" class="char-counter">0 characters</div>
         </div>
 
         <div class="form-group">
@@ -67,8 +85,9 @@ const lists = await getLists(env, true);
             type="datetime-local" 
             id="schedule" 
             class="form-input"
+            min={new Date().toISOString().slice(0, 16)}
           />
-          <p class="form-hint">Leave blank to send immediately.</p>
+          <p class="form-hint">Leave blank to send immediately. Must be at least 15 minutes in the future.</p>
         </div>
 
         <div class="form-actions">
@@ -103,6 +122,7 @@ const lists = await getLists(env, true);
     font-size: 1.75rem;
     font-weight: 700;
     color: #0f172a;
+    margin: 0;
   }
 
   .page-header p {
@@ -155,6 +175,21 @@ const lists = await getLists(env, true);
     resize: vertical;
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
+  }
+
+  .char-counter {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin-top: 0.25rem;
+    text-align: right;
+  }
+
+  .char-counter.warning {
+    color: #eab308;
+  }
+
+  .char-counter.danger {
+    color: #ef4444;
   }
 
   .form-hint {
@@ -263,146 +298,240 @@ const lists = await getLists(env, true);
 </style>
 
 <script>
-  const showMessage = (text, type) => {
-    const el = document.getElementById('message');
-    el.textContent = text;
-    el.className = `message ${type}`;
-    el.classList.remove('hidden');
-    setTimeout(() => {
-      el.classList.add('hidden');
-    }, 5000);
-  };
+  document.addEventListener('DOMContentLoaded', () => {
+    // ============================================
+    // CHARACTER COUNTERS
+    // ============================================
+    const subjectInput = document.getElementById('subject');
+    const previewInput = document.getElementById('preview');
+    const contentInput = document.getElementById('content');
+    const subjectCounter = document.getElementById('subject-counter');
+    const previewCounter = document.getElementById('preview-counter');
+    const contentCounter = document.getElementById('content-counter');
 
-  const getFormData = () => ({
-    subject: document.getElementById('subject').value.trim(),
-    preview_text: document.getElementById('preview').value.trim(),
-    content_html: document.getElementById('content').value.trim(),
-    list_id: document.getElementById('list').value || null,
-  });
-
-  const validateForm = () => {
-    const data = getFormData();
-    if (!data.subject) {
-      showMessage('Please enter a subject line.', 'error');
-      return null;
-    }
-    if (!data.content_html) {
-      showMessage('Please enter the email content.', 'error');
-      return null;
-    }
-    return data;
-  };
-
-  const createCampaign = async (data, status, scheduledAt = null) => {
-    const payload = {
-      ...data,
-      status,
-      scheduled_at: scheduledAt
-    };
-
-    const response = await fetch('/api/admin/newsletter/campaigns', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    subjectInput?.addEventListener('input', () => {
+      const len = subjectInput.value.length;
+      subjectCounter.textContent = `${len}/200`;
+      subjectCounter.className = 'char-counter' + (len > 180 ? ' warning' : '') + (len > 190 ? ' danger' : '');
     });
 
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.error || 'Failed to create campaign');
-    }
-    return result;
-  };
+    previewInput?.addEventListener('input', () => {
+      const len = previewInput.value.length;
+      previewCounter.textContent = `${len}/150`;
+      previewCounter.className = 'char-counter' + (len > 130 ? ' warning' : '') + (len > 140 ? ' danger' : '');
+    });
 
-  // Save Draft
-  document.getElementById('save-draft')?.addEventListener('click', async () => {
-    const data = validateForm();
-    if (!data) return;
+    contentInput?.addEventListener('input', () => {
+      const len = contentInput.value.length;
+      contentCounter.textContent = `${len} characters`;
+    });
 
-    const button = document.getElementById('save-draft');
-    const originalText = button.textContent;
-    button.textContent = 'Saving...';
-    button.disabled = true;
-
-    try {
-      const result = await createCampaign(data, 'draft');
-      showMessage(`✅ Campaign saved as draft! (ID: ${result.id})`, 'success');
-    } catch (error) {
-      showMessage('❌ Failed to save draft: ' + error.message, 'error');
-    } finally {
-      button.textContent = originalText;
-      button.disabled = false;
-    }
-  });
-
-  // Schedule
-  document.getElementById('schedule-btn')?.addEventListener('click', async () => {
-    const data = validateForm();
-    if (!data) return;
-
+    // ============================================
+    // SET MIN SCHEDULE TIME
+    // ============================================
     const scheduleInput = document.getElementById('schedule');
-    const scheduledAt = scheduleInput.value;
-
-    if (!scheduledAt) {
-      showMessage('Please select a schedule time.', 'error');
-      return;
+    if (scheduleInput) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 15);
+      scheduleInput.min = now.toISOString().slice(0, 16);
     }
 
-    // Validate that scheduled time is in the future
-    const scheduleTime = new Date(scheduledAt);
-    if (scheduleTime <= new Date()) {
-      showMessage('Please select a future date and time.', 'error');
-      return;
-    }
+    // ============================================
+    // MESSAGE HELPER
+    // ============================================
+    const showMessage = (text, type) => {
+      const el = document.getElementById('message');
+      el.textContent = text;
+      el.className = `message ${type}`;
+      el.classList.remove('hidden');
+      setTimeout(() => {
+        el.classList.add('hidden');
+      }, 5000);
+    };
 
-    const button = document.getElementById('schedule-btn');
-    const originalText = button.textContent;
-    button.textContent = 'Scheduling...';
-    button.disabled = true;
+    // ============================================
+    // GET FORM DATA
+    // ============================================
+    const getFormData = () => ({
+      subject: document.getElementById('subject').value.trim(),
+      preview_text: document.getElementById('preview').value.trim(),
+      content_html: document.getElementById('content').value.trim(),
+      list_id: document.getElementById('list').value || null,
+    });
 
-    try {
-      const result = await createCampaign(data, 'scheduled', scheduledAt);
-      showMessage(
-        `✅ Campaign scheduled for ${new Date(scheduledAt).toLocaleString()}`,
-        'success'
-      );
-    } catch (error) {
-      showMessage('❌ Failed to schedule: ' + error.message, 'error');
-    } finally {
-      button.textContent = originalText;
-      button.disabled = false;
-    }
-  });
+    // ============================================
+    // VALIDATE FORM
+    // ============================================
+    const validateForm = () => {
+      const data = getFormData();
+      if (!data.subject) {
+        showMessage('Please enter a subject line.', 'error');
+        document.getElementById('subject').focus();
+        return null;
+      }
+      if (data.subject.length > 200) {
+        showMessage('Subject must be 200 characters or less.', 'error');
+        document.getElementById('subject').focus();
+        return null;
+      }
+      if (!data.content_html) {
+        showMessage('Please enter the email content.', 'error');
+        document.getElementById('content').focus();
+        return null;
+      }
+      if (data.content_html.length < 50) {
+        showMessage('Content is too short. Please add more content.', 'error');
+        document.getElementById('content').focus();
+        return null;
+      }
+      return data;
+    };
 
-  // Send Now
-  document.getElementById('send-now')?.addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to send this campaign now? This cannot be undone.')) {
-      return;
-    }
+    // ============================================
+    // CREATE CAMPAIGN
+    // ============================================
+    const createCampaign = async (data, status, scheduledAt = null) => {
+      const payload = {
+        ...data,
+        status,
+        scheduled_at: scheduledAt
+      };
 
-    const data = validateForm();
-    if (!data) return;
+      const response = await fetch('/api/admin/newsletter/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    const button = document.getElementById('send-now');
-    const originalText = button.textContent;
-    button.textContent = 'Sending...';
-    button.disabled = true;
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create campaign');
+      }
+      return result;
+    };
 
-    try {
-      const result = await createCampaign(data, 'sending');
-      showMessage('🚀 Campaign is being sent to your subscribers!', 'success');
-    } catch (error) {
-      showMessage('❌ Failed to send: ' + error.message, 'error');
-    } finally {
-      button.textContent = originalText;
-      button.disabled = false;
-    }
-  });
+    // ============================================
+    // BUTTON HANDLERS
+    // ============================================
 
-  // Enter key shortcut for subject field
-  document.getElementById('subject')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('preview')?.focus();
-    }
+    // Save Draft
+    document.getElementById('save-draft')?.addEventListener('click', async () => {
+      const data = validateForm();
+      if (!data) return;
+
+      const button = document.getElementById('save-draft');
+      const originalText = button.textContent;
+      button.textContent = 'Saving...';
+      button.disabled = true;
+
+      try {
+        const result = await createCampaign(data, 'draft');
+        showMessage(`✅ Campaign saved as draft! (ID: ${result.id})`, 'success');
+      } catch (error) {
+        showMessage('❌ Failed to save draft: ' + error.message, 'error');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    });
+
+    // Schedule
+    document.getElementById('schedule-btn')?.addEventListener('click', async () => {
+      const data = validateForm();
+      if (!data) return;
+
+      const scheduleInput = document.getElementById('schedule');
+      const scheduledAt = scheduleInput.value;
+
+      if (!scheduledAt) {
+        showMessage('Please select a schedule time.', 'error');
+        scheduleInput.focus();
+        return;
+      }
+
+      const scheduleTime = new Date(scheduledAt);
+      const now = new Date();
+      if (scheduleTime <= now) {
+        showMessage('Please select a future date and time (at least 15 minutes from now).', 'error');
+        scheduleInput.focus();
+        return;
+      }
+
+      const button = document.getElementById('schedule-btn');
+      const originalText = button.textContent;
+      button.textContent = 'Scheduling...';
+      button.disabled = true;
+
+      try {
+        const result = await createCampaign(data, 'scheduled', scheduledAt);
+        showMessage(
+          `✅ Campaign scheduled for ${new Date(scheduledAt).toLocaleString()}`,
+          'success'
+        );
+        // Clear form
+        document.getElementById('subject').value = '';
+        document.getElementById('preview').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('schedule').value = '';
+        document.getElementById('subject-counter').textContent = '0/200';
+        document.getElementById('preview-counter').textContent = '0/150';
+        document.getElementById('content-counter').textContent = '0 characters';
+      } catch (error) {
+        showMessage('❌ Failed to schedule: ' + error.message, 'error');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    });
+
+    // Send Now
+    document.getElementById('send-now')?.addEventListener('click', async () => {
+      if (!confirm('⚠️ Are you sure you want to send this campaign now? This cannot be undone.')) {
+        return;
+      }
+
+      const data = validateForm();
+      if (!data) return;
+
+      const button = document.getElementById('send-now');
+      const originalText = button.textContent;
+      button.textContent = 'Sending...';
+      button.disabled = true;
+
+      try {
+        const result = await createCampaign(data, 'sending');
+        showMessage('🚀 Campaign is being sent to your subscribers!', 'success');
+        // Clear form
+        document.getElementById('subject').value = '';
+        document.getElementById('preview').value = '';
+        document.getElementById('content').value = '';
+        document.getElementById('schedule').value = '';
+        document.getElementById('subject-counter').textContent = '0/200';
+        document.getElementById('preview-counter').textContent = '0/150';
+        document.getElementById('content-counter').textContent = '0 characters';
+      } catch (error) {
+        showMessage('❌ Failed to send: ' + error.message, 'error');
+      } finally {
+        button.textContent = originalText;
+        button.disabled = false;
+      }
+    });
+
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.getElementById('subject')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('preview')?.focus();
+      }
+    });
+
+    document.getElementById('preview')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('content')?.focus();
+      }
+    });
   });
 </script>

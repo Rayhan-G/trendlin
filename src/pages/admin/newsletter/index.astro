@@ -58,11 +58,11 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     <h2 class="card-header">Create New Campaign</h2>
     <form id="create-campaign-form" class="campaign-form">
       <div class="form-group">
-        <label for="campaign-subject">Subject</label>
+        <label for="campaign-subject">Subject *</label>
         <input type="text" id="campaign-subject" placeholder="Enter email subject" required />
       </div>
       <div class="form-group">
-        <label for="campaign-content">Content (HTML)</label>
+        <label for="campaign-content">Content (HTML) *</label>
         <textarea id="campaign-content" rows="8" placeholder="Write your email content in HTML..." required></textarea>
       </div>
       <div class="form-row">
@@ -86,9 +86,9 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
         </div>
       </div>
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Save Draft</button>
-        <button type="button" id="schedule-btn" class="btn btn-secondary">Schedule</button>
-        <button type="button" id="send-now-btn" class="btn btn-success">Send Now</button>
+        <button type="submit" class="btn btn-primary">💾 Save Draft</button>
+        <button type="button" id="schedule-btn" class="btn btn-secondary">📅 Schedule</button>
+        <button type="button" id="send-now-btn" class="btn btn-success">🚀 Send Now</button>
       </div>
       <div id="campaign-message" class="form-message hidden"></div>
     </form>
@@ -104,6 +104,22 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
 </AdminLayout>
 
 <style is:global>
+  .page-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  .page-header p {
+    color: #64748b;
+    margin: 0.25rem 0 0;
+  }
+
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -170,6 +186,21 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     font-size: 1.25rem;
     font-weight: 700;
     color: #0f172a;
+  }
+
+  .card {
+    background: white;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 1rem;
   }
 
   .create-campaign-card {
@@ -323,8 +354,10 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
   .campaign-status.draft { background: #f1f5f9; color: #475569; }
   .campaign-status.scheduled { background: #dbeafe; color: #1e40af; }
   .campaign-status.sending { background: #fef3c7; color: #92400e; }
-  .campaign-status.sent { background: #dcfce7; color: #166534; }
+  .campaign-status.completed { background: #dcfce7; color: #166534; }
   .campaign-status.failed { background: #fecaca; color: #991b1b; }
+  .campaign-status.paused { background: #fef9c3; color: #854d0e; }
+  .campaign-status.cancelled { background: #f1f5f9; color: #64748b; }
 
   @media (max-width: 640px) {
     .form-row {
@@ -339,6 +372,20 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       width: 100%;
       text-align: center;
     }
+
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .campaign-stats {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .campaign-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
   }
 </style>
 
@@ -350,7 +397,7 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
     // Load campaigns
     await loadCampaigns();
 
-    // Create campaign
+    // Create campaign handlers
     const form = document.getElementById('create-campaign-form');
     
     form.addEventListener('submit', async (e) => {
@@ -366,25 +413,35 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       await createCampaign('sending');
     });
 
+    // ============================================
+    // LOAD STATS
+    // ============================================
     async function loadStats() {
       try {
         const response = await fetch('/api/newsletter/stats');
         const data = await response.json();
         
         if (data.success) {
-          document.getElementById('total-subscribers').textContent = data.data.total || 0;
-          document.getElementById('active-subscribers').textContent = data.data.active || 0;
-          document.getElementById('pending-subscribers').textContent = data.data.pending || 0;
-          document.getElementById('unsubscribed-subscribers').textContent = data.data.unsubscribed || 0;
-          document.getElementById('total-campaigns').textContent = data.data.campaigns || 0;
-          document.getElementById('open-rate').textContent = (data.data.openRate || 0) + '%';
-          document.getElementById('click-rate').textContent = (data.data.clickRate || 0) + '%';
+          document.getElementById('total-subscribers').textContent = data.data.subscribers?.total || 0;
+          document.getElementById('active-subscribers').textContent = data.data.subscribers?.active || 0;
+          document.getElementById('pending-subscribers').textContent = data.data.subscribers?.pending || 0;
+          document.getElementById('unsubscribed-subscribers').textContent = data.data.subscribers?.unsubscribed || 0;
+          document.getElementById('total-campaigns').textContent = data.data.campaigns?.total || 0;
+          
+          // Calculate rates
+          const openRate = data.data.campaigns?.avg_open_rate || 0;
+          const clickRate = data.data.campaigns?.avg_click_rate || 0;
+          document.getElementById('open-rate').textContent = openRate + '%';
+          document.getElementById('click-rate').textContent = clickRate + '%';
         }
       } catch (error) {
         console.error('Error loading stats:', error);
       }
     }
 
+    // ============================================
+    // LOAD CAMPAIGNS
+    // ============================================
     async function loadCampaigns() {
       try {
         const response = await fetch('/api/newsletter/campaigns');
@@ -410,6 +467,9 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       }
     }
 
+    // ============================================
+    // CREATE CAMPAIGN
+    // ============================================
     async function createCampaign(status) {
       const subject = document.getElementById('campaign-subject').value.trim();
       const content = document.getElementById('campaign-content').value.trim();
@@ -425,11 +485,14 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
       const isSending = status === 'sending';
       const isScheduled = status === 'scheduled';
 
-      // Validate schedule
       if (isScheduled && !scheduledAt) {
         showMessage('Please select a schedule date and time.', 'error');
         return;
       }
+
+      // Disable buttons
+      const buttons = document.querySelectorAll('.form-actions .btn');
+      buttons.forEach(btn => btn.disabled = true);
 
       try {
         const response = await fetch('/api/newsletter/campaigns', {
@@ -456,11 +519,14 @@ import AdminLayout from '@/layouts/AdminLayout.astro';
           await loadCampaigns();
           await loadStats();
         } else {
-          showMessage(data.message || 'Failed to create campaign.', 'error');
+          showMessage(data.message || data.error || 'Failed to create campaign.', 'error');
         }
       } catch (error) {
         console.error('Error creating campaign:', error);
         showMessage('Network error. Please try again.', 'error');
+      } finally {
+        // Re-enable buttons
+        buttons.forEach(btn => btn.disabled = false);
       }
     }
 

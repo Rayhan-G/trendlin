@@ -1,28 +1,51 @@
 // ============================================
 // API: CHECK SUBSCRIBER STATUS
+// PRODUCTION READY - Cloudflare Pages Compatible
 // ============================================
 
-import type { APIRoute } from 'astro';
-import { getDB, prepareFirst } from '../../../lib/db';
-
-export const GET: APIRoute = async ({ url, locals }) => {
+export async function GET({ url, locals }) {
   try {
-    const email = url.searchParams.get('email');
-    const env = locals.env;
-    const db = getDB(env);
-
-    if (!email) {
+    console.log('🔍 Check subscriber status API called');
+    
+    // ✅ USE THE SAME WORKING PATTERN AS YOUR POSTS API
+    const { DB } = locals.runtime.env;
+    
+    if (!DB) {
+      console.error('❌ Database not available!');
       return new Response(
-        JSON.stringify({ success: false, error: 'Email is required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Database not available' 
+        }),
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
 
-    const subscriber = await prepareFirst(
-      db,
-      'SELECT status FROM newsletter_subscribers WHERE email = ?',
-      [email.toLowerCase().trim()]
-    );
+    const email = url.searchParams.get('email');
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Email is required' 
+        }),
+        { 
+          status: 400, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check if subscriber exists
+    const subscriber = await DB
+      .prepare('SELECT status FROM newsletter_subscribers WHERE email = ?')
+      .bind(normalizedEmail)
+      .first();
 
     if (!subscriber) {
       return new Response(
@@ -30,7 +53,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
           success: true, 
           status: 'not_found' 
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 200, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
 
@@ -39,17 +65,23 @@ export const GET: APIRoute = async ({ url, locals }) => {
         success: true, 
         status: subscriber.status 
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
     );
 
-  } catch (error: any) {
-    console.error('Check subscriber error:', error);
+  } catch (error) {
+    console.error('❌ Check subscriber error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error.message || 'Failed to check subscriber' 
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
     );
   }
-};
+}

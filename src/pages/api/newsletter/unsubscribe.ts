@@ -1,33 +1,44 @@
 // ============================================
 // API: UNSUBSCRIBE FROM NEWSLETTER
-// Uses your existing EmailService from src/lib/email-service.ts
-// RESEND_API_KEY loaded from .env via locals.env
+// PRODUCTION READY - Cloudflare Pages Compatible
 // ============================================
 
-import type { APIRoute } from 'astro';
-import { getDB, prepareFirst } from '../../../lib/db';
-
-export const POST: APIRoute = async ({ request, locals }) => {
+export async function POST({ request, locals }) {
   try {
+    console.log('📧 Unsubscribe API called');
+    
+    // ✅ USE THE SAME WORKING PATTERN AS YOUR POSTS API
+    const { DB } = locals.runtime.env;
+    
+    if (!DB) {
+      console.error('❌ Database not available!');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Database not available' 
+        }),
+        { 
+          status: 500, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const { email, token, reason, feedback } = await request.json();
-    const env = locals.env;
-    const db = getDB(env);
 
     // Find subscriber by email or token
     let subscriber = null;
 
     if (token) {
-      subscriber = await prepareFirst(
-        db,
-        'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ?',
-        [token]
-      );
+      subscriber = await DB
+        .prepare('SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ?')
+        .bind(token)
+        .first();
     } else if (email) {
-      subscriber = await prepareFirst(
-        db,
-        'SELECT * FROM newsletter_subscribers WHERE email = ?',
-        [email.toLowerCase().trim()]
-      );
+      subscriber = await DB
+        .prepare('SELECT * FROM newsletter_subscribers WHERE email = ?')
+        .bind(email.toLowerCase().trim())
+        .first();
     }
 
     if (!subscriber) {
@@ -36,22 +47,29 @@ export const POST: APIRoute = async ({ request, locals }) => {
           success: false, 
           error: 'Subscriber not found' 
         }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 404, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
 
+    // Check if already unsubscribed
     if (subscriber.status === 'unsubscribed') {
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Already unsubscribed' 
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        { 
+          status: 200, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
       );
     }
 
     // Update subscriber status
-    await db
+    await DB
       .prepare(`
         UPDATE newsletter_subscribers 
         SET status = 'unsubscribed',
@@ -63,7 +81,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .run();
 
     // Update list memberships
-    await db
+    await DB
       .prepare(`
         UPDATE newsletter_list_members 
         SET subscribed = 0,
@@ -74,7 +92,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .run();
 
     // Log event
-    await db
+    await DB
       .prepare(`
         INSERT INTO newsletter_events (subscriber_id, type, metadata)
         VALUES (?, 'unsubscribe', ?)
@@ -87,12 +105,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Save feedback if provided
     if (reason || feedback) {
-      await db
+      await DB
         .prepare(`
           INSERT INTO unsubscribe_feedback (subscriber_id, reason, feedback)
           VALUES (?, ?, ?)
         `)
-        .bind(subscriber.id, reason || null, feedback || null)
+        .bind(
+          subscriber.id, 
+          reason || null, 
+          feedback || null
+        )
         .run();
     }
 
@@ -105,17 +127,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
           unsubscribedAt: new Date().toISOString()
         }
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
     );
 
-  } catch (error: any) {
-    console.error('Unsubscribe error:', error);
+  } catch (error) {
+    console.error('❌ Unsubscribe error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error.message || 'Failed to unsubscribe' 
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { 'Content-Type': 'application/json' } 
+      }
     );
   }
-};
+}
