@@ -90,6 +90,32 @@ const shopJson = JSON.stringify(shopResources);
         </svg>
         <span class="tooltip">Shop</span>
       </button>
+      
+      <!-- ============================================ -->
+      <!-- RESOURCES / DETAILS BUTTON (NEW) -->
+      <!-- ============================================ -->
+      <a 
+        href={`/products/${product.slug}`}
+        class="social-btn resources"
+        aria-label="View product details and all resources"
+        title="View all resources"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M4 6h16"/>
+          <path d="M4 10h12"/>
+          <path d="M4 14h16"/>
+          <path d="M4 18h10"/>
+        </svg>
+        <span class="tooltip">Resources</span>
+      </a>
     </div>
   </div>
 </div>
@@ -188,18 +214,41 @@ const shopJson = JSON.stringify(shopResources);
     -webkit-backdrop-filter: blur(12px);
     background: rgba(255,255,255,0.05);
     box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    text-decoration: none;
   }
   .social-btn:hover { transform: scale(1.12) translateX(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
   .social-btn:active { transform: scale(0.92); }
-  .social-btn svg { width: 16px; height: 16px; fill: currentColor; }
+  .social-btn svg { width: 16px; height: 16px; fill: currentColor; stroke: currentColor; }
+  
+  /* Platform-specific colors */
   .social-btn.reddit { color: #FF4500; background: rgba(255, 69, 0, 0.12); border-color: rgba(255, 69, 0, 0.15); }
   .social-btn.reddit:hover { background: rgba(255, 69, 0, 0.25); border-color: rgba(255, 69, 0, 0.35); }
+  
   .social-btn.youtube { color: #FF0000; background: rgba(255, 0, 0, 0.12); border-color: rgba(255, 0, 0, 0.15); }
   .social-btn.youtube:hover { background: rgba(255, 0, 0, 0.25); border-color: rgba(255, 0, 0, 0.35); }
+  
   .social-btn.tiktok { color: #ffffff; background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.08); }
   .social-btn.tiktok:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.20); }
+  
   .social-btn.shop { color: #FF9900; background: rgba(255, 153, 0, 0.12); border-color: rgba(255, 153, 0, 0.15); }
   .social-btn.shop:hover { background: rgba(255, 153, 0, 0.25); border-color: rgba(255, 153, 0, 0.35); }
+  
+  /* NEW: Resources button - uses the hamburger/menu icon */
+  .social-btn.resources { 
+    color: #8B5CF6; 
+    background: rgba(139, 92, 246, 0.12); 
+    border-color: rgba(139, 92, 246, 0.15); 
+  }
+  .social-btn.resources:hover { 
+    background: rgba(139, 92, 246, 0.25); 
+    border-color: rgba(139, 92, 246, 0.35); 
+  }
+  .social-btn.resources svg {
+    stroke: currentColor;
+    fill: none;
+  }
+  
+  /* Tooltip styles */
   .social-btn .tooltip {
     position: absolute;
     right: calc(100% + 12px);
