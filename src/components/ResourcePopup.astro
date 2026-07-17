@@ -142,6 +142,10 @@
     background: #fef3c7 !important;
     color: #FF9900 !important;
   }
+  .popup-header .popup-icon-big.description {
+    background: #cffafe !important;
+    color: #06b6d4 !important;
+  }
   .popup-header .popup-title-group {
     flex: 1 !important;
   }
@@ -251,6 +255,60 @@
     color: #3b82f6 !important;
   }
 
+  /* ===== DESCRIPTION CONTENT ===== */
+  .description-content {
+    padding: 4px 0 8px;
+  }
+
+  .description-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .description-tags .tag {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 100px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .description-tags .tag.category {
+    background: #ede9fe;
+    color: #6d28d9;
+  }
+
+  .description-tags .tag.brand {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .description-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #334155;
+    margin: 0 0 16px 0;
+    font-family: 'Inter', -apple-system, sans-serif;
+  }
+
+  .description-image {
+    margin-top: 16px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #f1f5f9;
+  }
+
+  .description-image img {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: cover;
+    display: block;
+  }
+
   .empty-state {
     text-align: center !important;
     padding: 40px 16px 20px !important;
@@ -297,6 +355,9 @@
     }
     .empty-state .empty-icon {
       font-size: 44px !important;
+    }
+    .description-text {
+      font-size: 14px !important;
     }
   }
 </style>
@@ -426,6 +487,82 @@
       html += '  <div class="empty-description">' + config.emptyDesc + '</div>';
       html += '</div>';
     }
+
+    body.innerHTML = html;
+    popup.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  };
+
+  // ============================================================
+  // DESCRIPTION POPUP CONTROLLER
+  // ============================================================
+  
+  window.openDescriptionPopup = function(event, elementRef) {
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    var popup = document.getElementById('resource-popup');
+    var body = document.getElementById('popup-body');
+
+    if (!popup || !body) {
+      console.warn('Popup not found');
+      return;
+    }
+
+    var descriptionData = {};
+    try {
+      var json = elementRef?.dataset?.description || '{}';
+      descriptionData = JSON.parse(json) || {};
+    } catch(e) {
+      console.warn('Failed to parse description:', e);
+      descriptionData = {};
+    }
+
+    var html = '';
+
+    // Header
+    html += '<div class="popup-header">';
+    html += '  <div class="popup-title-wrap">';
+    html += '    <span class="popup-icon-big description">';
+    html += '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+    html += '        <path d="M4 6h16"/><path d="M4 10h12"/><path d="M4 14h16"/><path d="M4 18h10"/>';
+    html += '      </svg>';
+    html += '    </span>';
+    html += '    <div class="popup-title-group">';
+    html += '      <span class="popup-title">' + (descriptionData.title || 'Product Details') + '</span>';
+    html += '      <span class="popup-platform">Description</span>';
+    html += '    </div>';
+    html += '  </div>';
+    html += '</div>';
+
+    // Description content
+    html += '<div class="description-content">';
+    
+    // Category and Brand tags
+    if (descriptionData.category || descriptionData.brand) {
+      html += '<div class="description-tags">';
+      if (descriptionData.category) {
+        html += '<span class="tag category">' + descriptionData.category + '</span>';
+      }
+      if (descriptionData.brand) {
+        html += '<span class="tag brand">' + descriptionData.brand + '</span>';
+      }
+      html += '</div>';
+    }
+    
+    // Description text
+    html += '<p class="description-text">' + (descriptionData.description || 'No description available.') + '</p>';
+    
+    // Cover image if available
+    if (descriptionData.cover_image) {
+      html += '<div class="description-image">';
+      html += '  <img src="' + descriptionData.cover_image + '" alt="' + (descriptionData.title || 'Product') + '" />';
+      html += '</div>';
+    }
+    
+    html += '</div>';
 
     body.innerHTML = html;
     popup.classList.add('active');
