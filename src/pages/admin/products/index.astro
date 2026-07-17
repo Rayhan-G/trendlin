@@ -130,23 +130,27 @@ try {
               {products.map((product) => (
                 <tr key={product.id} class="product-row">
                   <td class="col-image">
-                    {product.cover_image ? (
-                      <div class="product-thumb-wrapper">
-                        <img src={product.cover_image} alt={product.name} class="product-thumb" loading="lazy" />
-                      </div>
-                    ) : (
-                      <div class="product-thumb-placeholder">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                          <circle cx="8.5" cy="8.5" r="1.5" />
-                          <polyline points="21 15 16 10 5 21" />
-                        </svg>
-                      </div>
-                    )}
+                    <a href={`/admin/products/edit/${product.id}`} class="product-image-link">
+                      {product.cover_image ? (
+                        <div class="product-thumb-wrapper">
+                          <img src={product.cover_image} alt={product.name} class="product-thumb" loading="lazy" />
+                        </div>
+                      ) : (
+                        <div class="product-thumb-placeholder">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                            <circle cx="8.5" cy="8.5" r="1.5" />
+                            <polyline points="21 15 16 10 5 21" />
+                          </svg>
+                        </div>
+                      )}
+                    </a>
                   </td>
                   <td class="col-name">
                     <div class="product-name-cell">
-                      <span class="product-name">{product.name}</span>
+                      <a href={`/admin/products/edit/${product.id}`} class="product-name-link">
+                        <span class="product-name">{product.name}</span>
+                      </a>
                       <div class="product-meta">
                         <span class="product-slug">{product.slug}</span>
                         <div class="product-badges">
@@ -203,6 +207,13 @@ try {
                   </td>
                   <td class="col-actions">
                     <div class="action-buttons">
+                      <!-- EDIT BUTTON - ADDED -->
+                      <a href={`/admin/products/edit/${product.id}`} class="btn-action btn-action-edit" title="Edit Product">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </a>
                       <a href={`/admin/products/${product.id}/resources`} class="btn-action btn-action-resources" title="Manage Resources">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -579,11 +590,16 @@ try {
   .col-brand { width: 140px; }
   .col-resources { width: 120px; }
   .col-status { width: 130px; }
-  .col-actions { width: 88px; text-align: right; }
+  .col-actions { width: 120px; text-align: right; }
 
   /* ============================================
      PRODUCT IMAGE
      ============================================ */
+  .product-image-link {
+    display: block;
+    text-decoration: none;
+  }
+
   .product-thumb-wrapper {
     width: 44px;
     height: 44px;
@@ -591,6 +607,12 @@ try {
     overflow: hidden;
     border: 1px solid var(--color-gray-200);
     flex-shrink: 0;
+    transition: var(--transition);
+  }
+
+  .product-image-link:hover .product-thumb-wrapper {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
   }
 
   .product-thumb {
@@ -611,6 +633,12 @@ try {
     border: 1px solid var(--color-gray-200);
     color: var(--color-gray-300);
     flex-shrink: 0;
+    transition: var(--transition);
+  }
+
+  .product-image-link:hover .product-thumb-placeholder {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
   }
 
   /* ============================================
@@ -622,11 +650,22 @@ try {
     gap: 0.25rem;
   }
 
+  .product-name-link {
+    text-decoration: none;
+    display: inline-block;
+    transition: var(--transition);
+  }
+
+  .product-name-link:hover .product-name {
+    color: var(--color-primary);
+  }
+
   .product-name {
     font-weight: 600;
     color: var(--color-gray-900);
     font-size: 0.875rem;
     line-height: 1.3;
+    transition: var(--transition);
   }
 
   .product-meta {
@@ -828,6 +867,11 @@ try {
     width: 16px;
     height: 16px;
     color: currentColor;
+  }
+
+  .btn-action-edit:hover {
+    background: var(--color-info-bg);
+    color: #6d28d9;
   }
 
   .btn-action-resources:hover {
