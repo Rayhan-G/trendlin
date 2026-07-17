@@ -128,7 +128,7 @@ try {
             </thead>
             <tbody>
               {products.map((product) => (
-                <tr key={product.id} class="product-row">
+                <tr key={product.id} class="product-row" data-product-id={product.id}>
                   <td class="col-image">
                     <a href={`/admin/products/edit/${product.id}`} class="product-image-link">
                       {product.cover_image ? (
@@ -207,7 +207,7 @@ try {
                   </td>
                   <td class="col-actions">
                     <div class="action-buttons">
-                      <!-- EDIT BUTTON - ADDED -->
+                      <!-- EDIT BUTTON -->
                       <a href={`/admin/products/edit/${product.id}`} class="btn-action btn-action-edit" title="Edit Product">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -223,7 +223,7 @@ try {
                           <polyline points="10 9 9 9 8 9" />
                         </svg>
                       </a>
-                      <button class="btn-action btn-action-delete" onclick="if(confirm('Delete this product?')) deleteProduct({product.id})" title="Delete Product">
+                      <button class="btn-action btn-action-delete delete-product-btn" data-id={product.id} title="Delete Product">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                           <polyline points="3 6 5 6 21 6" />
                           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
@@ -884,6 +884,12 @@ try {
     color: #dc2626;
   }
 
+  /* Delete button loading state */
+  .btn-action-delete.loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
   /* ============================================
      TABLE FOOTER
      ============================================ */
@@ -1136,26 +1142,113 @@ try {
 </style>
 
 <script>
-  async function deleteProduct(id) {
-    try {
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: 'DELETE',
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        window.location.reload();
-      } else {
-        alert('Failed to delete product: ' + result.error);
-      }
-    } catch (error) {
-      alert('Error deleting product: ' + error.message);
-    }
-  }
-
-  // Search functionality
   document.addEventListener('DOMContentLoaded', function() {
+    // ============================================
+    // DELETE PRODUCT FUNCTIONALITY
+    // ============================================
+    const deleteButtons = document.querySelectorAll('.delete-product-btn');
+    
+    deleteButtons.forEach(function(button) {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const productId = this.getAttribute('data-id');
+        const productRow = this.closest('.product-row');
+        const productName = productRow?.querySelector('.product-name')?.textContent || 'this product';
+        
+        if (!confirm(`Are you sure you want to delete "${productName}"?`)) {
+          return;
+        }
+        
+        // Show loading state
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '⏳';
+        this.disabled = true;
+        this.classList.add('loading');
+        
+        try {
+          const response = await fetch(`/api/admin/products/${productId}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+          }
+          
+          // Fade out and remove row
+          if (productRow) {
+            productRow.style.transition = 'opacity 0.3s, transform 0.3s';
+            productRow.style.opacity = '0';
+            productRow.style.transform = 'scale(0.95)';
+            
+            setTimeout(() => {
+              productRow.remove();
+              
+              // Update product count if needed
+              const remainingRows = document.querySelectorAll('.product-row');
+              if (remainingRows.length === 0) {
+                // Reload to show empty state
+                window.location.reload();
+              }
+              
+              // Update table info
+              updateTableInfo(remainingRows.length);
+            }, 400);
+          } else {
+            window.location.reload();
+          }
+          
+        } catch (error) {
+          console.error('Error:', error);
+          alert('❌ Failed to delete product: ' + error.message);
+          this.innerHTML = originalHTML;
+          this.disabled = false;
+          this.classList.remove('loading');
+        }
+      });
+    });
+    
+    // ============================================
+    // UPDATE TABLE INFO
+    // ============================================
+    function updateTableInfo(count) {
+      const infoLabels = document.querySelectorAll('.table-info strong');
+      if (infoLabels.length > 0) {
+        infoLabels[0].textContent = count;
+      }
+      
+      // Update footer
+      const footerText = document.querySelector('.table-footer-text strong');
+      if (footerText) {
+        footerText.textContent = count;
+      }
+      
+      // Update in stock count
+      const inStockRows = document.querySelectorAll('.product-row .status-in-stock');
+      const inStockCount = inStockRows.length;
+      const inStockLabels = document.querySelectorAll('.table-info .status-indicator-active');
+      if (inStockLabels.length > 0) {
+        const parent = inStockLabels[0].closest('.table-info');
+        if (parent) {
+          const text = parent.textContent.trim();
+          parent.innerHTML = `
+            <span class="table-info-label">
+              <span class="status-indicator status-indicator-active"></span>
+              ${inStockCount} in stock
+            </span>
+          `;
+        }
+      }
+    }
+    
+    // ============================================
+    // SEARCH FUNCTIONALITY
+    // ============================================
     const searchInput = document.getElementById('searchProducts');
     if (searchInput) {
       searchInput.addEventListener('input', function() {
@@ -1176,6 +1269,20 @@ try {
           
           row.style.display = shouldShow ? '' : 'none';
         });
+        
+        // Update visible count in footer
+        const visibleRows = document.querySelectorAll('.product-row[style*="display: none"]');
+        const totalRows = document.querySelectorAll('.product-row');
+        const visibleCount = totalRows.length - visibleRows.length;
+        
+        const footerText = document.querySelector('.table-footer-text strong');
+        if (footerText) {
+          if (searchTerm) {
+            footerText.textContent = `${visibleCount} of ${totalRows.length}`;
+          } else {
+            footerText.textContent = totalRows.length;
+          }
+        }
       });
     }
   });
