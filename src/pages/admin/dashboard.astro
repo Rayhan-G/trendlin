@@ -674,6 +674,86 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
       )}
     </div>
 
+    <!-- ============================================ -->
+    <!-- RECENT PRODUCTS - NEW SECTION ADDED -->
+    <!-- ============================================ -->
+    <div class="content-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            <span class="section-icon">🛍️</span>
+            Recent Products
+          </h2>
+          <p class="section-subtitle">Latest products in your catalog</p>
+        </div>
+        <div class="section-actions">
+          <a href="/admin/products" class="section-action-btn">View All →</a>
+          <a href="/admin/products/new" class="section-action-btn primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            New Product
+          </a>
+        </div>
+      </div>
+
+      <div class="section-body">
+        {products.length > 0 ? (
+          <div class="post-list">
+            {products.slice(0, 5).map((product) => (
+              <div class="post-item" key={product.id}>
+                <div class="post-item-main">
+                  <div class="post-item-info">
+                    <span class="post-item-title">{product.name || product.title || 'Untitled Product'}</span>
+                    <span class={`post-status ${product.in_stock === 1 ? 'post-status-published' : 'post-status-draft'}`}>
+                      <span class="status-indicator-dot"></span>
+                      {product.in_stock === 1 ? 'In Stock' : 'Out of Stock'}
+                    </span>
+                  </div>
+                  <div class="post-item-date">
+                    ${product.price ? parseFloat(product.price).toFixed(2) : '0.00'} · {product.resource_count || 0} resources
+                  </div>
+                </div>
+                <div class="post-item-actions">
+                  <a href={`/admin/products/edit/${product.id}`} class="post-action post-action-edit">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Edit
+                  </a>
+                  <button 
+                    class="post-action post-action-delete delete-product-btn"
+                    data-id={product.id}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="empty-state">
+            <div class="empty-state-icon">🛍️</div>
+            <p class="empty-state-text">No products created yet</p>
+            <a href="/admin/products/new" class="empty-state-action">Create your first product →</a>
+          </div>
+        )}
+      </div>
+
+      {products.length > 5 && (
+        <div class="section-footer">
+          <a href="/admin/products" class="view-all-link">
+            View all {products.length} products →
+          </a>
+        </div>
+      )}
+    </div>
+
   </div>
 
 </AdminLayout>
@@ -773,6 +853,56 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
         } catch (error) {
           console.error('Error:', error);
           alert('❌ Failed to delete content');
+          this.innerHTML = originalHTML;
+          this.disabled = false;
+          this.classList.remove('loading');
+        }
+      });
+    });
+
+    // ============================================
+    // DELETE PRODUCTS - NEW FUNCTIONALITY ADDED
+    // ============================================
+    const deleteProductButtons = document.querySelectorAll('.delete-product-btn');
+    
+    deleteProductButtons.forEach(function(button) {
+      button.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        const productId = this.getAttribute('data-id');
+        
+        if (!confirm('Are you sure you want to delete this product?')) {
+          return;
+        }
+        
+        const originalHTML = this.innerHTML;
+        this.innerHTML = 'Deleting...';
+        this.disabled = true;
+        this.classList.add('loading');
+        
+        try {
+          const response = await fetch(`/api/admin/products/${productId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          
+          const result = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+          }
+          
+          const productItem = this.closest('.post-item');
+          productItem.style.opacity = '0.5';
+          productItem.style.transition = 'opacity 0.3s';
+          
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+          
+        } catch (error) {
+          console.error('Error:', error);
+          alert('❌ Failed to delete product');
           this.innerHTML = originalHTML;
           this.disabled = false;
           this.classList.remove('loading');
@@ -1071,7 +1201,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     border-top: 1px solid var(--color-gray-100);
     background: var(--color-gray-50);
     gap: 0.5rem;
-    min-height: 48px; /* Ensures consistent height */
+    min-height: 48px;
   }
 
   .stat-link {
@@ -1099,7 +1229,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 28px; /* Fixed height for consistency */
+    height: 28px;
     line-height: 1;
     white-space: nowrap;
   }
@@ -1224,7 +1354,7 @@ const totalContent = totalPosts + totalProducts + totalMedia + totalTemplates + 
     text-decoration: none;
     transition: var(--transition);
     white-space: nowrap;
-    height: 34px; /* Fixed height */
+    height: 34px;
   }
 
   .section-action-btn:hover {
