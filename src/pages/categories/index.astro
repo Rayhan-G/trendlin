@@ -400,8 +400,11 @@ function getHeroImage(category) {
               <!-- ========================================== -->
               <div class="state-slider hidden flex-col transition-all duration-500">
                 
-                <!-- HERO SECTION - Appears ONLY in expanded view -->
+                <!-- ========================================== -->
+                <!-- HERO SECTION - SAME FOR EVERY CATEGORY -->
+                <!-- ========================================== -->
                 {heroImage ? (
+                  <!-- HERO WITH IMAGE -->
                   <div class="category-hero relative w-full overflow-hidden bg-gray-900">
                     <div class="relative h-48 sm:h-56 md:h-64 lg:h-72">
                       
@@ -464,7 +467,7 @@ function getHeroImage(category) {
                     </button>
                   </div>
                 ) : (
-                  <!-- If no hero image, show a simple header -->
+                  <!-- HERO WITHOUT IMAGE (SIMPLE HEADER) - SAME FOR ALL CATEGORIES -->
                   <div class="bg-gradient-to-r from-gray-800 to-gray-900 px-6 py-4 flex items-center justify-between">
                     <div class="flex items-center gap-3 text-white">
                       <span class="text-2xl">{category.icon}</span>

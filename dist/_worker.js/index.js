@@ -1,7 +1,7 @@
 globalThis.process ??= {}; globalThis.process.env ??= {};
 import { renderers } from './renderers.mjs';
 import { createExports } from './_@astrojs-ssr-adapter.mjs';
-import { manifest } from './manifest_BiO5Tgyv.mjs';
+import { manifest } from './manifest_Bm9OL7h8.mjs';
 
 const serverIslandMap = new Map();;
 
