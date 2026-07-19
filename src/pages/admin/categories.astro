@@ -6,6 +6,164 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 
 // ============================================
+// HARDCODED CATEGORIES DATA (Fallback)
+// ============================================
+const allCategories = [
+  { 
+    name: 'Health & Wellness', 
+    icon: '🧘', 
+    slug: 'health-wellness',
+    description: 'Your guide to holistic living. Discover expert advice on fitness, mental health, nutrition, and self-care practices for a balanced life.',
+    gradient: 'from-emerald-500 to-teal-600',
+    color: '#10b981'
+  },
+  { 
+    name: 'Food & Dining', 
+    icon: '🍽️', 
+    slug: 'food-dining',
+    description: 'Explore LA\'s vibrant food scene. From hidden gems to fine dining, we bring you honest reviews and culinary adventures.',
+    gradient: 'from-rose-500 to-red-600',
+    color: '#ef4444'
+  },
+  { 
+    name: 'Entertainment', 
+    icon: '🎬', 
+    slug: 'entertainment',
+    description: 'Stay in the know with LA\'s entertainment scene. Movies, concerts, events, and the latest cultural happenings in the City of Angels.',
+    gradient: 'from-purple-500 to-violet-700',
+    color: '#8b5cf6'
+  },
+  { 
+    name: 'Lifestyle', 
+    icon: '🌴', 
+    slug: 'lifestyle',
+    description: 'Embrace the LA lifestyle. Discover wellness, home decor, local events, and everything that makes living in Los Angeles special.',
+    gradient: 'from-green-500 to-emerald-600',
+    color: '#22c55e'
+  },
+  { 
+    name: 'Technology', 
+    icon: '💻', 
+    slug: 'technology',
+    description: 'Stay ahead with the latest tech trends. Reviews, innovations, and digital insights shaping the future in LA and beyond.',
+    gradient: 'from-cyan-500 to-blue-600',
+    color: '#06b6d4'
+  },
+  { 
+    name: 'Shopping', 
+    icon: '🛍️', 
+    slug: 'shopping',
+    description: 'Find the best deals and shopping guides. From luxury boutiques to thrift stores, we help you shop smarter in LA.',
+    gradient: 'from-blue-500 to-indigo-600',
+    color: '#3b82f6'
+  },
+  { 
+    name: 'Real Estate', 
+    icon: '🏠', 
+    slug: 'real-estate',
+    description: 'Navigate LA\'s real estate market. Neighborhood guides, market trends, and tips for buyers, sellers, and renters.',
+    gradient: 'from-pink-500 to-rose-600',
+    color: '#ec4899'
+  },
+  { 
+    name: 'Finance', 
+    icon: '💰', 
+    slug: 'finance',
+    description: 'Smart money moves for LA residents. Investing, budgeting, and financial advice tailored to your life in Los Angeles.',
+    gradient: 'from-teal-500 to-cyan-600',
+    color: '#14b8a6'
+  },
+  { 
+    name: 'Education', 
+    icon: '📚', 
+    slug: 'education',
+    description: 'K-12, higher education, online learning, and professional development resources for lifelong learning.',
+    gradient: 'from-blue-500 to-sky-600',
+    color: '#3b82f6'
+  },
+  { 
+    name: 'Careers', 
+    icon: '💼', 
+    slug: 'careers',
+    description: 'Job search strategies, career development, workplace trends, and professional growth opportunities.',
+    gradient: 'from-indigo-500 to-purple-600',
+    color: '#6366f1'
+  },
+  { 
+    name: 'Travel', 
+    icon: '✈️', 
+    slug: 'travel',
+    description: 'Discover amazing destinations, transportation options, accommodation guides, and travel planning tips.',
+    gradient: 'from-sky-500 to-indigo-600',
+    color: '#0ea5e9'
+  },
+  { 
+    name: 'Sports', 
+    icon: '⚽', 
+    slug: 'sports',
+    description: 'Team sports, individual athletics, fitness training, and esports coverage for sports enthusiasts.',
+    gradient: 'from-green-500 to-emerald-600',
+    color: '#22c55e'
+  },
+  { 
+    name: 'Automotive', 
+    icon: '🚗', 
+    slug: 'automotive',
+    description: 'Cars, motorcycles, electric vehicles, and automotive industry insights for vehicle enthusiasts.',
+    gradient: 'from-gray-500 to-zinc-600',
+    color: '#6b7280'
+  },
+  { 
+    name: 'Science', 
+    icon: '🔬', 
+    slug: 'science',
+    description: 'Biology, chemistry, physics, space exploration, and environmental science discoveries.',
+    gradient: 'from-amber-500 to-orange-600',
+    color: '#f59e0b'
+  },
+  { 
+    name: 'Family', 
+    icon: '👨‍👩‍👧‍👦', 
+    slug: 'family',
+    description: 'Parenting advice, pregnancy guidance, child development, and family life resources.',
+    gradient: 'from-pink-500 to-rose-600',
+    color: '#ec4899'
+  },
+  { 
+    name: 'Pets', 
+    icon: '🐾', 
+    slug: 'pets',
+    description: 'Pet care essentials, animal health, training tips, and adoption information for pet lovers.',
+    gradient: 'from-yellow-500 to-amber-600',
+    color: '#eab308'
+  },
+  { 
+    name: 'Government', 
+    icon: '🏛️', 
+    slug: 'government',
+    description: 'Federal, state, and local government services, policies, and citizen resources.',
+    gradient: 'from-slate-500 to-gray-600',
+    color: '#64748b'
+  },
+  { 
+    name: 'Legal', 
+    icon: '⚖️', 
+    slug: 'legal',
+    description: 'Civil, criminal, family, business, and other legal information and resources.',
+    gradient: 'from-stone-500 to-neutral-600',
+    color: '#78716c'
+  },
+  { 
+    name: 'Environment', 
+    icon: '🌍', 
+    slug: 'environment',
+    description: 'Climate change, conservation, sustainability, and green living solutions for a better planet.',
+    gradient: 'from-emerald-500 to-green-600',
+    color: '#10b981'
+  }
+];
+
+// ============================================
 // FETCH CATEGORIES WITH HERO IMAGES
 // ============================================
 let categories = [];
@@ -27,9 +185,54 @@ try {
     ORDER BY c.name ASC
   `).all();
   
-  categories = result.results || [];
+  // Merge with hardcoded data to ensure all 19 categories exist
+  const dbCategories = result.results || [];
+  
+  // Create a map of existing categories
+  const categoryMap = {};
+  dbCategories.forEach(cat => {
+    categoryMap[cat.name] = cat;
+  });
+  
+  // Merge: if a category exists in hardcoded data but not in DB, create it
+  allCategories.forEach(hardcodedCat => {
+    if (!categoryMap[hardcodedCat.name]) {
+      // This category doesn't exist in DB yet - add it with default values
+      categories.push({
+        id: 0, // Will be handled by the database
+        name: hardcodedCat.name,
+        slug: hardcodedCat.slug,
+        icon: hardcodedCat.icon,
+        description: hardcodedCat.description,
+        hero_id: null,
+        hero_image: null,
+        hero_active: 0,
+        post_count: 0,
+        is_active: 1
+      });
+    } else {
+      // Use the DB data but ensure icon and description are correct
+      const dbCat = categoryMap[hardcodedCat.name];
+      categories.push({
+        ...dbCat,
+        icon: dbCat.icon || hardcodedCat.icon,
+        description: dbCat.description || hardcodedCat.description
+      });
+    }
+  });
+  
 } catch (error) {
   console.error('Error fetching categories:', error);
+  // Fallback to hardcoded data
+  categories = allCategories.map(cat => ({
+    ...cat,
+    id: 0,
+    hero_id: null,
+    hero_image: null,
+    hero_active: 0,
+    post_count: 0,
+    is_active: 1
+  }));
 }
 ---
 
@@ -51,6 +254,15 @@ try {
           <span class="category-count">{categories.length}</span> categories with hero images
         </p>
       </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm btn-secondary" onclick="refreshPage()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+        Refresh
+      </button>
     </div>
   </div>
 
@@ -195,7 +407,10 @@ try {
         
         <div class="form-group">
           <label class="form-label">Category</label>
-          <p id="categoryDisplayName" class="category-display-name"></p>
+          <div class="category-display-wrapper">
+            <span id="categoryDisplayIcon" class="category-display-icon"></span>
+            <p id="categoryDisplayName" class="category-display-name"></p>
+          </div>
         </div>
         
         <!-- Hero Image Section -->
@@ -219,7 +434,7 @@ try {
               </button>
             </div>
             <div class="hero-upload-help">
-              <span class="help-text">Recommended: 1200×400px</span>
+              <span class="help-text">Recommended: 1200×400px (Max 5MB)</span>
               <button type="button" class="btn btn-sm btn-secondary upload-btn" onclick="document.getElementById('heroFileInput').click()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -335,6 +550,13 @@ try {
   }
 
   // ============================================
+  // REFRESH PAGE
+  // ============================================
+  function refreshPage() {
+    window.location.reload();
+  }
+
+  // ============================================
   // MODAL FUNCTIONS
   // ============================================
   function openEditModal(data) {
@@ -348,6 +570,7 @@ try {
     document.getElementById('categoryId').value = data.id || '';
     document.getElementById('categoryHeroId').value = data.hero_id || '';
     document.getElementById('categoryDisplayName').textContent = data.name || '';
+    document.getElementById('categoryDisplayIcon').textContent = data.icon || '📁';
     document.getElementById('categoryHero').value = data.hero_image || '';
     
     const preview = document.getElementById('heroPreview');
@@ -656,6 +879,11 @@ try {
     gap: 1rem;
   }
 
+  .header-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
   .header-icon-wrapper {
     width: 48px;
     height: 48px;
@@ -709,6 +937,7 @@ try {
     transition: var(--transition);
     text-decoration: none;
     white-space: nowrap;
+    line-height: 1.5;
   }
 
   .btn-sm {
@@ -1162,8 +1391,22 @@ try {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
 
+  .category-display-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-gray-50);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-gray-200);
+  }
+
+  .category-display-icon {
+    font-size: 1.25rem;
+  }
+
   .category-display-name {
-    font-size: 0.875rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--color-gray-900);
     margin: 0;

@@ -12,6 +12,9 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Index;
   const categoriesData = [
+    // ==========================================
+    // ORIGINAL 8 CATEGORIES
+    // ==========================================
     {
       name: "Health & Wellness",
       icon: "\u{1F9D8}",
@@ -91,6 +94,119 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
       gradient: "from-teal-500 to-cyan-600",
       color: "#14b8a6",
       ringClass: "ring-teal-500/30"
+    },
+    // ==========================================
+    // 11 NEW CATEGORIES
+    // ==========================================
+    {
+      name: "Education",
+      icon: "\u{1F4DA}",
+      slug: "education",
+      description: "K-12, higher education, online learning, and professional development resources for lifelong learning.",
+      image: "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=600&h=600&fit=crop",
+      gradient: "from-blue-500 to-sky-600",
+      color: "#3b82f6",
+      ringClass: "ring-blue-500/30"
+    },
+    {
+      name: "Careers",
+      icon: "\u{1F4BC}",
+      slug: "careers",
+      description: "Job search strategies, career development, workplace trends, and professional growth opportunities.",
+      image: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=600&h=600&fit=crop",
+      gradient: "from-indigo-500 to-purple-600",
+      color: "#6366f1",
+      ringClass: "ring-indigo-500/30"
+    },
+    {
+      name: "Travel",
+      icon: "\u2708\uFE0F",
+      slug: "travel",
+      description: "Discover amazing destinations, transportation options, accommodation guides, and travel planning tips.",
+      image: "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=600&h=600&fit=crop",
+      gradient: "from-sky-500 to-indigo-600",
+      color: "#0ea5e9",
+      ringClass: "ring-sky-500/30"
+    },
+    {
+      name: "Sports",
+      icon: "\u26BD",
+      slug: "sports",
+      description: "Team sports, individual athletics, fitness training, and esports coverage for sports enthusiasts.",
+      image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&h=600&fit=crop",
+      gradient: "from-green-500 to-emerald-600",
+      color: "#22c55e",
+      ringClass: "ring-green-500/30"
+    },
+    {
+      name: "Automotive",
+      icon: "\u{1F697}",
+      slug: "automotive",
+      description: "Cars, motorcycles, electric vehicles, and automotive industry insights for vehicle enthusiasts.",
+      image: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&h=600&fit=crop",
+      gradient: "from-gray-500 to-zinc-600",
+      color: "#6b7280",
+      ringClass: "ring-gray-500/30"
+    },
+    {
+      name: "Science",
+      icon: "\u{1F52C}",
+      slug: "science",
+      description: "Biology, chemistry, physics, space exploration, and environmental science discoveries.",
+      image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&h=600&fit=crop",
+      gradient: "from-amber-500 to-orange-600",
+      color: "#f59e0b",
+      ringClass: "ring-amber-500/30"
+    },
+    {
+      name: "Family",
+      icon: "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}",
+      slug: "family",
+      description: "Parenting advice, pregnancy guidance, child development, and family life resources.",
+      image: "https://images.unsplash.com/photo-1511895426328-dc8714191300?w=600&h=600&fit=crop",
+      gradient: "from-pink-500 to-rose-600",
+      color: "#ec4899",
+      ringClass: "ring-pink-500/30"
+    },
+    {
+      name: "Pets",
+      icon: "\u{1F43E}",
+      slug: "pets",
+      description: "Pet care essentials, animal health, training tips, and adoption information for pet lovers.",
+      image: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=600&fit=crop",
+      gradient: "from-yellow-500 to-amber-600",
+      color: "#eab308",
+      ringClass: "ring-yellow-500/30"
+    },
+    {
+      name: "Government",
+      icon: "\u{1F3DB}\uFE0F",
+      slug: "government",
+      description: "Federal, state, and local government services, policies, and citizen resources.",
+      image: "https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?w=600&h=600&fit=crop",
+      gradient: "from-slate-500 to-gray-600",
+      color: "#64748b",
+      ringClass: "ring-slate-500/30"
+    },
+    {
+      name: "Legal",
+      icon: "\u2696\uFE0F",
+      slug: "legal",
+      description: "Civil, criminal, family, business, and other legal information and resources.",
+      image: "https://images.unsplash.com/photo-1589391886645-d51941baf7fb?w=600&h=600&fit=crop",
+      gradient: "from-stone-500 to-neutral-600",
+      color: "#78716c",
+      ringClass: "ring-stone-500/30"
+    },
+    {
+      name: "Environment",
+      icon: "\u{1F30D}",
+      slug: "environment",
+      description: "Climate change, conservation, sustainability, and green living solutions for a better planet.",
+      image: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&h=600&fit=crop",
+      gradient: "from-emerald-500 to-green-600",
+      color: "#10b981",
+      ringClass: "ring-emerald-500/30"
     }
   ];
   let db;
@@ -155,7 +271,7 @@ const $$Index = createComponent(async ($$result, $$props, $$slots) => {
   return renderTemplate`${renderComponent($$result, "BaseLayout", $$BaseLayout, { "title": "Categories - Trendlin" }, { "default": async ($$result2) => renderTemplate` ${maybeRenderHead()}<div class="max-w-6xl mx-auto px-6 py-16 sm:py-24 selection:bg-black selection:text-white"> <!-- ============================================ --> <!-- HEADER --> <!-- ============================================ --> <div class="mb-20 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 border-b border-gray-100 pb-8"> <div> <h1 class="text-4xl sm:text-6xl font-bold text-gray-900 tracking-tight" style="font-family: 'Space Grotesk', sans-serif;">
 Categories
 </h1> <p class="text-gray-500 text-base sm:text-lg mt-3 font-light tracking-wide">
-Discover <span class="font-medium text-gray-800">${totalPosts} articles</span> curated across our lifestyle matrix.
+Discover <span class="font-medium text-gray-800">${totalPosts} articles</span> curated across <span class="font-medium text-gray-800">${categories.length}</span> categories.
 </p> </div> <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-gray-400" style="font-family: 'Space Grotesk', sans-serif;"> <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
 Matrix Engine v2
 </div> </div> <!-- ============================================ --> <!-- MAIN CATEGORIES STACK --> <!-- ============================================ --> <div class="space-y-16" id="matrixContainer"> ${categories.map((category, index) => {

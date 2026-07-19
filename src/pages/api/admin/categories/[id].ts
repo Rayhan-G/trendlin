@@ -32,29 +32,34 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       }), { status: 400 });
     }
     
-    // 1. UPDATE the category (without hero_image)
-    await DB.prepare(`
-      UPDATE categories 
-      SET 
-        name = ?,
-        slug = ?,
-        icon = ?,
-        description = ?,
-        is_active = ?,
-        updated_at = datetime('now')
-      WHERE id = ?
-    `).bind(
-      name, 
-      slug, 
-      icon || null, 
-      description || null, 
-      is_active || 1, 
-      id
-    ).run();
+    // Check if category exists
+    const categoryExists = await DB.prepare(
+      'SELECT id FROM categories WHERE id = ?'
+    ).bind(id).first();
     
-    // 2. UPDATE or INSERT hero image in category_hero table
+    if (!categoryExists) {
+      // If category doesn't exist, create it
+      await DB.prepare(`
+        INSERT INTO categories (id, name, slug, icon, description, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      `).bind(id, name, slug, icon || null, description || null, is_active || 1).run();
+    } else {
+      // Update existing category
+      await DB.prepare(`
+        UPDATE categories 
+        SET 
+          name = ?,
+          slug = ?,
+          icon = ?,
+          description = ?,
+          is_active = ?,
+          updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(name, slug, icon || null, description || null, is_active || 1, id).run();
+    }
+    
+    // Update or insert hero image
     if (hero_image) {
-      // Check if hero image already exists
       const existingHero = await DB.prepare(
         'SELECT id FROM category_hero WHERE category_id = ?'
       ).bind(id).first();
@@ -98,9 +103,9 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
   const id = params.id;
   
   try {
-    // Check if category has posts (using correct column name 'category')
+    // Check if category has posts
     const posts = await DB.prepare(
-      'SELECT COUNT(*) as count FROM posts WHERE category = ? AND is_draft = 0'
+      'SELECT COUNT(*) as count FROM posts WHERE category = (SELECT name FROM categories WHERE id = ?) AND is_draft = 0'
     ).bind(id).first();
     
     if (posts && posts.count > 0) {
@@ -110,12 +115,12 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
       }), { status: 400 });
     }
     
-    // 1. Delete hero images first (foreign key constraint)
+    // Delete hero images first (foreign key constraint)
     await DB.prepare(
       'DELETE FROM category_hero WHERE category_id = ?'
     ).bind(id).run();
     
-    // 2. Delete the category
+    // Delete the category
     await DB.prepare(
       'DELETE FROM categories WHERE id = ?'
     ).bind(id).run();

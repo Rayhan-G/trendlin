@@ -9,6 +9,160 @@ const $$Astro = createAstro("https://trendlin.com");
 const $$Categories = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Categories;
+  const allCategories = [
+    {
+      name: "Health & Wellness",
+      icon: "\u{1F9D8}",
+      slug: "health-wellness",
+      description: "Your guide to holistic living. Discover expert advice on fitness, mental health, nutrition, and self-care practices for a balanced life.",
+      gradient: "from-emerald-500 to-teal-600",
+      color: "#10b981"
+    },
+    {
+      name: "Food & Dining",
+      icon: "\u{1F37D}\uFE0F",
+      slug: "food-dining",
+      description: "Explore LA's vibrant food scene. From hidden gems to fine dining, we bring you honest reviews and culinary adventures.",
+      gradient: "from-rose-500 to-red-600",
+      color: "#ef4444"
+    },
+    {
+      name: "Entertainment",
+      icon: "\u{1F3AC}",
+      slug: "entertainment",
+      description: "Stay in the know with LA's entertainment scene. Movies, concerts, events, and the latest cultural happenings in the City of Angels.",
+      gradient: "from-purple-500 to-violet-700",
+      color: "#8b5cf6"
+    },
+    {
+      name: "Lifestyle",
+      icon: "\u{1F334}",
+      slug: "lifestyle",
+      description: "Embrace the LA lifestyle. Discover wellness, home decor, local events, and everything that makes living in Los Angeles special.",
+      gradient: "from-green-500 to-emerald-600",
+      color: "#22c55e"
+    },
+    {
+      name: "Technology",
+      icon: "\u{1F4BB}",
+      slug: "technology",
+      description: "Stay ahead with the latest tech trends. Reviews, innovations, and digital insights shaping the future in LA and beyond.",
+      gradient: "from-cyan-500 to-blue-600",
+      color: "#06b6d4"
+    },
+    {
+      name: "Shopping",
+      icon: "\u{1F6CD}\uFE0F",
+      slug: "shopping",
+      description: "Find the best deals and shopping guides. From luxury boutiques to thrift stores, we help you shop smarter in LA.",
+      gradient: "from-blue-500 to-indigo-600",
+      color: "#3b82f6"
+    },
+    {
+      name: "Real Estate",
+      icon: "\u{1F3E0}",
+      slug: "real-estate",
+      description: "Navigate LA's real estate market. Neighborhood guides, market trends, and tips for buyers, sellers, and renters.",
+      gradient: "from-pink-500 to-rose-600",
+      color: "#ec4899"
+    },
+    {
+      name: "Finance",
+      icon: "\u{1F4B0}",
+      slug: "finance",
+      description: "Smart money moves for LA residents. Investing, budgeting, and financial advice tailored to your life in Los Angeles.",
+      gradient: "from-teal-500 to-cyan-600",
+      color: "#14b8a6"
+    },
+    {
+      name: "Education",
+      icon: "\u{1F4DA}",
+      slug: "education",
+      description: "K-12, higher education, online learning, and professional development resources for lifelong learning.",
+      gradient: "from-blue-500 to-sky-600",
+      color: "#3b82f6"
+    },
+    {
+      name: "Careers",
+      icon: "\u{1F4BC}",
+      slug: "careers",
+      description: "Job search strategies, career development, workplace trends, and professional growth opportunities.",
+      gradient: "from-indigo-500 to-purple-600",
+      color: "#6366f1"
+    },
+    {
+      name: "Travel",
+      icon: "\u2708\uFE0F",
+      slug: "travel",
+      description: "Discover amazing destinations, transportation options, accommodation guides, and travel planning tips.",
+      gradient: "from-sky-500 to-indigo-600",
+      color: "#0ea5e9"
+    },
+    {
+      name: "Sports",
+      icon: "\u26BD",
+      slug: "sports",
+      description: "Team sports, individual athletics, fitness training, and esports coverage for sports enthusiasts.",
+      gradient: "from-green-500 to-emerald-600",
+      color: "#22c55e"
+    },
+    {
+      name: "Automotive",
+      icon: "\u{1F697}",
+      slug: "automotive",
+      description: "Cars, motorcycles, electric vehicles, and automotive industry insights for vehicle enthusiasts.",
+      gradient: "from-gray-500 to-zinc-600",
+      color: "#6b7280"
+    },
+    {
+      name: "Science",
+      icon: "\u{1F52C}",
+      slug: "science",
+      description: "Biology, chemistry, physics, space exploration, and environmental science discoveries.",
+      gradient: "from-amber-500 to-orange-600",
+      color: "#f59e0b"
+    },
+    {
+      name: "Family",
+      icon: "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}",
+      slug: "family",
+      description: "Parenting advice, pregnancy guidance, child development, and family life resources.",
+      gradient: "from-pink-500 to-rose-600",
+      color: "#ec4899"
+    },
+    {
+      name: "Pets",
+      icon: "\u{1F43E}",
+      slug: "pets",
+      description: "Pet care essentials, animal health, training tips, and adoption information for pet lovers.",
+      gradient: "from-yellow-500 to-amber-600",
+      color: "#eab308"
+    },
+    {
+      name: "Government",
+      icon: "\u{1F3DB}\uFE0F",
+      slug: "government",
+      description: "Federal, state, and local government services, policies, and citizen resources.",
+      gradient: "from-slate-500 to-gray-600",
+      color: "#64748b"
+    },
+    {
+      name: "Legal",
+      icon: "\u2696\uFE0F",
+      slug: "legal",
+      description: "Civil, criminal, family, business, and other legal information and resources.",
+      gradient: "from-stone-500 to-neutral-600",
+      color: "#78716c"
+    },
+    {
+      name: "Environment",
+      icon: "\u{1F30D}",
+      slug: "environment",
+      description: "Climate change, conservation, sustainability, and green living solutions for a better planet.",
+      gradient: "from-emerald-500 to-green-600",
+      color: "#10b981"
+    }
+  ];
   let categories = [];
   try {
     const { DB } = Astro2.locals.runtime.env;
@@ -25,12 +179,51 @@ const $$Categories = createComponent(async ($$result, $$props, $$slots) => {
     GROUP BY c.id
     ORDER BY c.name ASC
   `).all();
-    categories = result.results || [];
+    const dbCategories = result.results || [];
+    const categoryMap = {};
+    dbCategories.forEach((cat) => {
+      categoryMap[cat.name] = cat;
+    });
+    allCategories.forEach((hardcodedCat) => {
+      if (!categoryMap[hardcodedCat.name]) {
+        categories.push({
+          id: 0,
+          // Will be handled by the database
+          name: hardcodedCat.name,
+          slug: hardcodedCat.slug,
+          icon: hardcodedCat.icon,
+          description: hardcodedCat.description,
+          hero_id: null,
+          hero_image: null,
+          hero_active: 0,
+          post_count: 0,
+          is_active: 1
+        });
+      } else {
+        const dbCat = categoryMap[hardcodedCat.name];
+        categories.push({
+          ...dbCat,
+          icon: dbCat.icon || hardcodedCat.icon,
+          description: dbCat.description || hardcodedCat.description
+        });
+      }
+    });
   } catch (error) {
     console.error("Error fetching categories:", error);
+    categories = allCategories.map((cat) => ({
+      ...cat,
+      id: 0,
+      hero_id: null,
+      hero_image: null,
+      hero_active: 0,
+      post_count: 0,
+      is_active: 1
+    }));
   }
   return renderTemplate`${renderComponent($$result, "AdminLayout", $$AdminLayout, { "title": "Categories - Trendlin Admin" }, { "default": async ($$result2) => renderTemplate`    ${maybeRenderHead()}<div class="page-header"> <div class="header-content"> <div class="header-icon-wrapper"> <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path> </svg> </div> <div> <h1 class="page-title">Category Management</h1> <p class="page-subtitle"> <span class="category-count">${categories.length}</span> categories with hero images
-</p> </div> </div> </div>    <div class="categories-grid"> ${categories.map((category) => {
+</p> </div> </div> <div class="header-actions"> <button class="btn btn-sm btn-secondary" onclick="refreshPage()"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <polyline points="23 4 23 10 17 10"></polyline> <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path> </svg>
+Refresh
+</button> </div> </div>    <div class="categories-grid"> ${categories.map((category) => {
     category.description ? category.description.replace(/'/g, "\\'").replace(/"/g, '\\"') : "";
     category.name ? category.name.replace(/'/g, "\\'").replace(/"/g, '\\"') : "";
     category.slug ? category.slug.replace(/'/g, "\\'").replace(/"/g, '\\"') : "";
@@ -49,9 +242,9 @@ Add Hero Image
 </button> </div>`} </div> <div class="category-description"> ${category.description || "No description provided"} </div> <div class="category-stats"> <div class="stat"> <span class="stat-label"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path> <polyline points="22,6 12,13 2,6"></polyline> </svg>
 Posts
 </span> <span class="stat-value">${category.post_count || 0}</span> </div> <div class="stat"> <span class="stat-label">Status</span> <span${addAttribute(`status-badge ${category.is_active ? "status-active" : "status-inactive"}`, "class")}> <span class="status-dot"></span> ${category.is_active ? "Active" : "Inactive"} </span> </div> </div> </div>`;
-  })} </div>    <div id="editModal" class="modal-overlay" style="display:none;"> <div class="modal modal-lg"> <div class="modal-header"> <h2 id="modalTitle">Manage Hero Image</h2> <button class="modal-close" onclick="closeModal()"> <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line> </svg> </button> </div> <form id="categoryForm"> <input type="hidden" id="categoryId" name="id"> <input type="hidden" id="categoryHeroId" name="hero_id"> <div class="form-group"> <label class="form-label">Category</label> <p id="categoryDisplayName" class="category-display-name"></p> </div> <!-- Hero Image Section --> <div class="form-group hero-section"> <label class="form-label">Hero Image URL</label> <div class="hero-upload-wrapper"> <div class="hero-input-group"> <input type="text" id="categoryHero" name="hero_image" placeholder="https://example.com/hero.jpg" class="form-input"> <button type="button" class="btn btn-browse-media" onclick="openMediaLibrary()" title="Browse Media Library"> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect> <circle cx="8.5" cy="8.5" r="1.5"></circle> <polyline points="21 15 16 10 5 21"></polyline> </svg>
+  })} </div>    <div id="editModal" class="modal-overlay" style="display:none;"> <div class="modal modal-lg"> <div class="modal-header"> <h2 id="modalTitle">Manage Hero Image</h2> <button class="modal-close" onclick="closeModal()"> <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <line x1="18" y1="6" x2="6" y2="18"></line> <line x1="6" y1="6" x2="18" y2="18"></line> </svg> </button> </div> <form id="categoryForm"> <input type="hidden" id="categoryId" name="id"> <input type="hidden" id="categoryHeroId" name="hero_id"> <div class="form-group"> <label class="form-label">Category</label> <div class="category-display-wrapper"> <span id="categoryDisplayIcon" class="category-display-icon"></span> <p id="categoryDisplayName" class="category-display-name"></p> </div> </div> <!-- Hero Image Section --> <div class="form-group hero-section"> <label class="form-label">Hero Image URL</label> <div class="hero-upload-wrapper"> <div class="hero-input-group"> <input type="text" id="categoryHero" name="hero_image" placeholder="https://example.com/hero.jpg" class="form-input"> <button type="button" class="btn btn-browse-media" onclick="openMediaLibrary()" title="Browse Media Library"> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect> <circle cx="8.5" cy="8.5" r="1.5"></circle> <polyline points="21 15 16 10 5 21"></polyline> </svg>
 Browse
-</button> </div> <div class="hero-upload-help"> <span class="help-text">Recommended: 1200×400px</span> <button type="button" class="btn btn-sm btn-secondary upload-btn" onclick="document.getElementById('heroFileInput').click()"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path> <polyline points="17 8 12 3 7 8"></polyline> <line x1="12" y1="3" x2="12" y2="15"></line> </svg>
+</button> </div> <div class="hero-upload-help"> <span class="help-text">Recommended: 1200×400px (Max 5MB)</span> <button type="button" class="btn btn-sm btn-secondary upload-btn" onclick="document.getElementById('heroFileInput').click()"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path> <polyline points="17 8 12 3 7 8"></polyline> <line x1="12" y1="3" x2="12" y2="15"></line> </svg>
 Upload
 </button> <input type="file" id="heroFileInput" accept="image/*" style="display:none;"> </div> </div> <!-- Preview Box --> <div id="heroPreview" class="hero-preview-box" style="display:none;"> <div class="hero-preview-content"> <img id="heroPreviewImage" src="" alt="Hero preview"> <div class="hero-preview-actions"> <button type="button" class="btn btn-sm btn-danger" onclick="removeHeroPreview()"> <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"> <polyline points="3 6 5 6 21 6"></polyline> <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path> </svg>
 Remove

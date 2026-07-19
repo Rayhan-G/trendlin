@@ -22,24 +22,27 @@ const PUT = async ({ params, request, locals }) => {
         error: "Category with this slug already exists"
       }), { status: 400 });
     }
-    await DB.prepare(`
-      UPDATE categories 
-      SET 
-        name = ?,
-        slug = ?,
-        icon = ?,
-        description = ?,
-        is_active = ?,
-        updated_at = datetime('now')
-      WHERE id = ?
-    `).bind(
-      name,
-      slug,
-      icon || null,
-      description || null,
-      is_active || 1,
-      id
-    ).run();
+    const categoryExists = await DB.prepare(
+      "SELECT id FROM categories WHERE id = ?"
+    ).bind(id).first();
+    if (!categoryExists) {
+      await DB.prepare(`
+        INSERT INTO categories (id, name, slug, icon, description, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      `).bind(id, name, slug, icon || null, description || null, is_active || 1).run();
+    } else {
+      await DB.prepare(`
+        UPDATE categories 
+        SET 
+          name = ?,
+          slug = ?,
+          icon = ?,
+          description = ?,
+          is_active = ?,
+          updated_at = datetime('now')
+        WHERE id = ?
+      `).bind(name, slug, icon || null, description || null, is_active || 1, id).run();
+    }
     if (hero_image) {
       const existingHero = await DB.prepare(
         "SELECT id FROM category_hero WHERE category_id = ?"
@@ -75,7 +78,7 @@ const DELETE = async ({ params, locals }) => {
   const id = params.id;
   try {
     const posts = await DB.prepare(
-      "SELECT COUNT(*) as count FROM posts WHERE category = ? AND is_draft = 0"
+      "SELECT COUNT(*) as count FROM posts WHERE category = (SELECT name FROM categories WHERE id = ?) AND is_draft = 0"
     ).bind(id).first();
     if (posts && posts.count > 0) {
       return new Response(JSON.stringify({

@@ -12,6 +12,15 @@ const PUT = async ({ params, request, locals }) => {
         error: "Hero image URL is required"
       }), { status: 400 });
     }
+    const categoryExists = await DB.prepare(
+      "SELECT id FROM categories WHERE id = ?"
+    ).bind(categoryId).first();
+    if (!categoryExists) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Category not found"
+      }), { status: 404 });
+    }
     if (hero_id) {
       await DB.prepare(`
         UPDATE category_hero 
@@ -19,10 +28,21 @@ const PUT = async ({ params, request, locals }) => {
         WHERE id = ? AND category_id = ?
       `).bind(hero_image, hero_id, categoryId).run();
     } else {
-      await DB.prepare(`
-        INSERT INTO category_hero (category_id, hero_image, is_active, created_at)
-        VALUES (?, ?, 1, datetime('now'))
-      `).bind(categoryId, hero_image).run();
+      const existingHero = await DB.prepare(
+        "SELECT id FROM category_hero WHERE category_id = ?"
+      ).bind(categoryId).first();
+      if (existingHero) {
+        await DB.prepare(`
+          UPDATE category_hero 
+          SET hero_image = ?, updated_at = datetime('now')
+          WHERE category_id = ?
+        `).bind(hero_image, categoryId).run();
+      } else {
+        await DB.prepare(`
+          INSERT INTO category_hero (category_id, hero_image, is_active, created_at)
+          VALUES (?, ?, 1, datetime('now'))
+        `).bind(categoryId, hero_image).run();
+      }
     }
     return new Response(JSON.stringify({
       success: true,
@@ -46,6 +66,15 @@ const DELETE = async ({ params, request, locals }) => {
         success: false,
         error: "Hero ID is required"
       }), { status: 400 });
+    }
+    const hero = await DB.prepare(
+      "SELECT id FROM category_hero WHERE id = ? AND category_id = ?"
+    ).bind(heroId, categoryId).first();
+    if (!hero) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Hero image not found for this category"
+      }), { status: 404 });
     }
     await DB.prepare(
       "DELETE FROM category_hero WHERE id = ? AND category_id = ?"

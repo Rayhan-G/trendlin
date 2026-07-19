@@ -4,7 +4,9 @@
 
 import type { APIRoute } from 'astro';
 
+// ============================================
 // PUT: Add or Update Hero Image
+// ============================================
 export const PUT: APIRoute = async ({ params, request, locals }) => {
   const { DB } = locals.runtime.env;
   const categoryId = params.id;
@@ -19,6 +21,18 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       }), { status: 400 });
     }
     
+    // Check if category exists
+    const categoryExists = await DB.prepare(
+      'SELECT id FROM categories WHERE id = ?'
+    ).bind(categoryId).first();
+    
+    if (!categoryExists) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Category not found'
+      }), { status: 404 });
+    }
+    
     if (hero_id) {
       // Update existing hero
       await DB.prepare(`
@@ -27,11 +41,25 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         WHERE id = ? AND category_id = ?
       `).bind(hero_image, hero_id, categoryId).run();
     } else {
-      // Insert new hero
-      await DB.prepare(`
-        INSERT INTO category_hero (category_id, hero_image, is_active, created_at)
-        VALUES (?, ?, 1, datetime('now'))
-      `).bind(categoryId, hero_image).run();
+      // Check if hero already exists for this category
+      const existingHero = await DB.prepare(
+        'SELECT id FROM category_hero WHERE category_id = ?'
+      ).bind(categoryId).first();
+      
+      if (existingHero) {
+        // Update existing hero
+        await DB.prepare(`
+          UPDATE category_hero 
+          SET hero_image = ?, updated_at = datetime('now')
+          WHERE category_id = ?
+        `).bind(hero_image, categoryId).run();
+      } else {
+        // Insert new hero
+        await DB.prepare(`
+          INSERT INTO category_hero (category_id, hero_image, is_active, created_at)
+          VALUES (?, ?, 1, datetime('now'))
+        `).bind(categoryId, hero_image).run();
+      }
     }
     
     return new Response(JSON.stringify({
@@ -48,7 +76,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   }
 };
 
+// ============================================
 // DELETE: Remove Hero Image
+// ============================================
 export const DELETE: APIRoute = async ({ params, request, locals }) => {
   const { DB } = locals.runtime.env;
   const categoryId = params.id;
@@ -61,6 +91,18 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
         success: false,
         error: 'Hero ID is required'
       }), { status: 400 });
+    }
+    
+    // Verify the hero belongs to this category
+    const hero = await DB.prepare(
+      'SELECT id FROM category_hero WHERE id = ? AND category_id = ?'
+    ).bind(heroId, categoryId).first();
+    
+    if (!hero) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Hero image not found for this category'
+      }), { status: 404 });
     }
     
     await DB.prepare(
